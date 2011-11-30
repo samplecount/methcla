@@ -29,3 +29,7 @@ Link                License         Notes
 See [IBM Inside memory management](http://www.ibm.com/developerworks/linux/library/l-memory/) for an overview and also the seminal paper [Dynamic Storage Allocation: A Survey and Critical Review][Wilson95] by Wilson et. al.
 
 [Wilson95]:     ftp://osinside.net/pub/DynamicStorageAllocationSurvey-.pdf
+
+## Concurrency
+
+Here's an implementation of an [AtomicDouble](http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/extra/AtomicDouble.java?view=markup) in Java by Doug Lea, useful as a synchronization primitive for control buses, where a spinlock would be overkill.
