@@ -1,8 +1,8 @@
 #ifndef MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
 #define MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
 
-#include <Mescaline/Audio/IO/Client.h>
-#include <Mescaline/Audio/IO/Driver.h>
+#include <Mescaline/Audio/IO/Client.hpp>
+#include <Mescaline/Audio/IO/Driver.hpp>
 #include <AudioUnit/AudioUnit.h>
 #include <boost/cstdint.hpp>
 #include "CAStreamBasicDescription.h"

@@ -1,7 +1,13 @@
-#include <Mescaline/Audio/Engine.h>
+#include <Mescaline/Audio/Engine.hpp>
+#include <Mescaline/Audio/Group.hpp>
+#include <Mescaline/Audio/SynthDef.hpp>
+#include <boost/foreach.hpp>
 #include <cstdlib>
+#include <oscpp/client.hpp>
+#include <oscpp/server.hpp>
 
 using namespace Mescaline::Audio;
+using namespace Mescaline::Memory;
 
 void NodeMap::insert(Node* node)
 {
@@ -11,100 +17,90 @@ void NodeMap::insert(Node* node)
     m_nodes[id] = node;
 }
 
-void* NRTMemoryManager::malloc(size_t numBytes) throw(MemoryAllocationFailure)
-{
-    void* ptr = ::malloc(numBytes);
-    if (ptr == 0)
-        BOOST_THROW_EXCEPTION(MemoryAllocationFailure());
-    return ptr;
-}
-
-void* NRTMemoryManager::memalign(const Alignment& align, size_t numBytes) throw(MemoryAllocationFailure)
-{
-    void* ptr;
-    int err = posix_memalign(&ptr, align.alignment(), numBytes);
-    if (err != 0)
-        BOOST_THROW_EXCEPTION(MemoryAllocationFailure());
-    return ptr;
-}
-
-void NRTMemoryManager::free(void* ptr) throw(MemoryAllocationFailure)
-{
-    if (ptr != 0)
-        ::free(ptr);
-}
-
-AudioBus::AudioBus(MemoryManager& mem, size_t numFrames, uint32_t writeCount)
-    : m_writeCount(writeCount)
-{
-    m_data = mem.allocAligned<sample_t>(MemoryManager::Alignment(16), numFrames);
-}
-
 Environment::Environment(const Options& options)
-    : m_rootNode(0)
-    , m_nodes(options.maxNumNodes)
+    : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
-    , m_audioBuses(options.maxNumAudioBuses, 0)
+    , m_rootNode(0)
+    , m_nodes(options.maxNumNodes)
+    , m_audioBuses(options.maxNumAudioBuses)
+    , m_audioInputChannels(options.numHardwareInputChannels)
+    , m_audioOutputChannels(options.numHardwareOutputChannels)
+    , m_epoch(0)
 {
+    m_pluginInterface = new PluginInterface(*this);
     m_rootNode = Group::construct(*this, 0);
     m_nodes.insert(m_rootNode);
+
+    const Epoch prevEpoch = epoch() - 1;
+
     for (size_t i=0; i < options.maxNumAudioBuses; i++) {
-        m_audioBuses[i] = new AudioBus(nrtMem(), blockSize(), 0);
+        m_audioBuses.push_back(new InternalAudioBus(blockSize(), prevEpoch));
+    }
+    for (size_t i=0; i < options.numHardwareInputChannels; i++) {
+        m_audioInputChannels.push_back(new ExternalAudioBus(blockSize(), prevEpoch));
+    }
+    for (size_t i=0; i < options.numHardwareOutputChannels; i++) {
+        m_audioOutputChannels.push_back(new ExternalAudioBus(blockSize(), prevEpoch));
     }
 }
 
-void* Node::operator new(size_t numBytes, Environment& env)
+Environment::~Environment()
 {
-    return env.rtMem().malloc(numBytes);
+    delete m_pluginInterface;
 }
 
-void Node::operator delete(void* ptr, Environment& env)
+void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
-    env.rtMem().free(ptr);
-}
+    BOOST_ASSERT(numFrames <= blockSize());
 
-template <class T> void Node::free(T* node)
-{
-    Environment& env = node->environment();
-    node->~T();
-    env.rtMem().free(node);
-}
+    size_t numInputs = m_audioInputChannels.size();
+    size_t numOutputs = m_audioOutputChannels.size();
 
-Group* Group::construct(Environment& env, const NodeId& id)
-{
-    return new (env) Group(env, id);
-}
-
-void Group::free()
-{
-    Node::free<Group>(this);
-}
-
-void Group::process(size_t numFrames)
-{
-    for (NodeList::iterator it = m_children.begin(); it != m_children.end(); it++)
-        it->process(numFrames);
-}
-
-void Synth::process(size_t numFrames)
-{
-    // Parallel scheduler:
-    // Lock input buses in a deterministic order
-    // Copy data from buses to internal buffers
-    // Unlock input buses in reverse order
+    // Connect input and output buses
+    for (size_t i=0; i < numInputs; i++) {
+        m_audioInputChannels[i].setData(inputs[i]);
+        m_audioInputChannels[i].setEpoch(epoch());
+    }
+    for (size_t i=0; i < numOutputs; i++) {
+        m_audioOutputChannels[i].setData(outputs[i]);
+    }
     
-    // Sequential scheduler
-    // Cache bus data pointers in internal buffer containers
-    // BUT: need to take writeCount into account! Copy in any case?
+    // Run DSP graph
+    m_rootNode->process(numFrames);
+    
+    // Zero outputs that haven't been written to
+    for (size_t i=0; i < numOutputs; i++) {
+        if (m_audioOutputChannels[i].epoch() != epoch()) {
+            memset(outputs[i], 0, numFrames * sizeof(sample_t));
+        }
+    }
 
-    compute(numFrames, m_inputBuffers, m_outputBuffers);
-
-    // Parallel scheduler:
-    // Lock output buses in a deterministic order
-    // Copy data from internal buffers to buses
-    // Unlock output buses in reverse order
+    m_epoch++;
 }
 
-void Synth::compute(size_t numFrames, sample_t** inputs, sample_t** outputs)
+MescalineHost* Environment::pluginInterface()
 {
+	return m_pluginInterface;
+}
+
+Engine::Engine()
+    : m_env(0)
+{ }
+
+void Engine::configure(const IO::Driver& driver)
+{
+    if (m_env != 0) {
+        delete m_env;
+    }
+    Environment::Options options;
+    options.sampleRate = driver.sampleRate();
+    options.blockSize = driver.bufferSize();
+    options.numHardwareInputChannels = driver.numInputs();
+    options.numHardwareOutputChannels = driver.numOutputs();
+    m_env = new Environment(options);
+}
+
+void Engine::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
+{
+    if (m_env) m_env->process(numFrames, inputs, outputs);
 }

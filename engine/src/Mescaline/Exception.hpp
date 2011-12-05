@@ -7,6 +7,7 @@
 namespace Mescaline {
 struct Exception : virtual std::exception, virtual boost::exception { };
 struct MemoryAllocationFailure : virtual Exception { };
+struct InvalidInput : virtual Exception { };
 };
 
 #endif // MESCALINE_EXCEPTION_HPP_INCLUDED
