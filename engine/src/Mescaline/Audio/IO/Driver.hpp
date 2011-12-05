@@ -1,10 +1,12 @@
 #ifndef MESCALINE_AUDIO_IO_DRIVER_H_INCLUDED
 #define MESCALINE_AUDIO_IO_DRIVER_H_INCLUDED
 
+#include <Mescaline/Exception.hpp>
 #include <boost/cstdint.hpp>
 
 namespace Mescaline { namespace Audio { namespace IO
 {
+struct Exception : virtual Mescaline::Exception { };
 
 class Driver
 {

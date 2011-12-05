@@ -5,15 +5,15 @@
 #include <Mescaline/Audio/IO/Driver.hpp>
 #include <AudioUnit/AudioUnit.h>
 #include <boost/cstdint.hpp>
-#include "CAStreamBasicDescription.h"
+#include <boost/exception/all.hpp>
 
 namespace Mescaline { namespace Audio { namespace IO
 {
     class RemoteIODriver : public Driver
     {
     public:
-        RemoteIODriver(Client* client);
-    	virtual ~RemoteIODriver();
+        RemoteIODriver(Client* client) throw (IO::Exception);
+        virtual ~RemoteIODriver() throw (IO::Exception);
 
         virtual double sampleRate() const { return m_sampleRate; }
         virtual size_t numInputs() const { return m_numInputs; }
@@ -25,8 +25,8 @@ namespace Mescaline { namespace Audio { namespace IO
 
     private:
         static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
-        static OSStatus RenderCallback(void				*inRefCon, 
-                                       AudioUnitRenderActionFlags 	*ioActionFlags, 
+        static OSStatus RenderCallback(void                         *inRefCon, 
+                                       AudioUnitRenderActionFlags   *ioActionFlags, 
                                        const AudioTimeStamp         *inTimeStamp, 
                                        UInt32                       inBusNumber, 
                                        UInt32                       inNumberFrames, 
@@ -39,8 +39,8 @@ namespace Mescaline { namespace Audio { namespace IO
         size_t              m_numOutputs;
         size_t              m_bufferSize;
         AudioUnit           m_rioUnit;
-    	float**				m_inputBuffers;
-    	float**				m_outputBuffers;
+        float**             m_inputBuffers;
+        float**             m_outputBuffers;
         AudioBufferList*    m_CAInputBuffers;
     };
 }; }; };

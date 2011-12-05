@@ -1,10 +1,22 @@
-#include <Mescaline/Audio/IO/RemoteIODriver.h>
+#include <Mescaline/Audio/IO/RemoteIODriver.hpp>
+#include <Mescaline/Exception.hpp>
 #include <AudioToolbox/AudioToolbox.h>
-#include "CAXException.h"
 
 using namespace Mescaline::Audio::IO;
 
-RemoteIODriver::RemoteIODriver(Client* client)
+typedef boost::error_info<struct tag_OSStatus,OSStatus> OSStatusInfo;
+
+#define MESCALINE_THROW_IF_ERROR(expr, msg) \
+    do { \
+        OSStatus err__ = expr; \
+        if (err__ != 0) { \
+            BOOST_THROW_EXCEPTION(Mescaline::Audio::IO::Exception() \
+                    << Mescaline::Exception::StringInfo(msg) \
+                    << OSStatusInfo(err__)); \
+        } \
+    } while (false);
+
+RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     : m_client(client)
     , m_numInputs(2)
     , m_numOutputs(2)
@@ -13,45 +25,45 @@ RemoteIODriver::RemoteIODriver(Client* client)
     , m_CAInputBuffers(0)
 {
     // Initialize and configure the audio session
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioSessionInitialize(NULL, NULL, InterruptionCallback, this)
       , "couldn't initialize audio session");
     
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioSessionSetActive(true)
       , "couldn't set audio session active\n");
     
     UInt32 audioCategory = kAudioSessionCategory_PlayAndRecord;
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioSessionSetProperty(kAudioSessionProperty_AudioCategory, sizeof(audioCategory), &audioCategory)
       , "couldn't set audio category");
-    //XThrowIfError(AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self), "couldn't set property listener");
+    //MESCALINE_THROW_IF_ERROR(AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self), "couldn't set property listener");
     
     Float64 hwSampleRate;
     UInt32 outSize = sizeof(hwSampleRate);
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareSampleRate, &outSize, &hwSampleRate)
       , "couldn't get hw sample rate");
     m_sampleRate = hwSampleRate;
 
     Float32 hwBufferSize;
     outSize = sizeof(hwBufferSize);
-	XThrowIfError(
+	MESCALINE_THROW_IF_ERROR(
 	    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareIOBufferDuration, &outSize, &hwBufferSize)
       , "couldn't set i/o buffer duration");
     
     outSize = sizeof(m_numInputs);
-	XThrowIfError(
+	MESCALINE_THROW_IF_ERROR(
 	    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareInputNumberChannels, &outSize, &m_numInputs)
       , "couldn't get hardware input channels");
     
     outSize = sizeof(m_numOutputs);
-	XThrowIfError(
+	MESCALINE_THROW_IF_ERROR(
 	    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareOutputNumberChannels, &outSize, &m_numOutputs)
      ,  "couldn't get hardware output channels");
 
     // Float32 preferredBufferSize = .005;
-    // XThrowIfError(
+    // MESCALINE_THROW_IF_ERROR(
     //     AudioSessionSetProperty(kAudioSessionProperty_PreferredHardwareIOBufferDuration, sizeof(preferredBufferSize), &preferredBufferSize)
     //   , "couldn't set i/o buffer duration");
     
@@ -65,60 +77,86 @@ RemoteIODriver::RemoteIODriver(Client* client)
     
     AudioComponent comp = AudioComponentFindNext(NULL, &desc);
     
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioComponentInstanceNew(comp, &m_rioUnit)
       , "couldn't open the remote I/O unit");
     
     UInt32 enableOutput = 1;
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitSetProperty(m_rioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, 0, &enableOutput, sizeof(enableOutput))
       , "couldn't enable output on the remote I/O unit");
     UInt32 enableInput = 1;
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitSetProperty(m_rioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Input, 1, &enableInput, sizeof(enableInput))
       , "couldn't enable input on the remote I/O unit");
     
     // This needs to be set before initializing the AudioUnit?
     m_bufferSize = (size_t)(m_sampleRate * hwBufferSize + .5);
     UInt32 maxFPS = m_bufferSize;
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 1, &maxFPS, sizeof(maxFPS))
       , "couldn't set AudioUnit buffer size");
     
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 0, &maxFPS, sizeof(maxFPS))
       , "couldn't set AudioUnit buffer size");
 
-    // XThrowIfError(
+    // MESCALINE_THROW_IF_ERROR(
     //     AudioUnitGetProperty(m_rioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 0, &m_bufferSize, &outSize)
     //   , "couldn't get AudioUnit buffer size");
     
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitInitialize(m_rioUnit)
       , "couldn't initialize the remote I/O unit");
 
-    // Set our required format - Canonical AU format: LPCM non-interleaved 8.24 fixed point
-    CAStreamBasicDescription outFormat;
-    outFormat.SetAUCanonical(m_numOutputs, false);
-    outFormat.mSampleRate = m_sampleRate;
-    XThrowIfError(
-        AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &outFormat, sizeof(outFormat))
-      , "couldn't set the remote I/O unit's output client format");
-    XThrowIfError(AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &outFormat, sizeof(outFormat))
+    // Set input and output format
+    AudioStreamBasicDescription auFormat;
+    const size_t sampleSize = sizeof(Float32);
+    
+    // Input format
+    memset(&auFormat, 0, sizeof(auFormat));
+    auFormat.mSampleRate = m_sampleRate;
+    auFormat.mFormatID = kAudioFormatLinearPCM;
+    auFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked;
+    auFormat.mBitsPerChannel = 8 * sizeof(Float32);
+    auFormat.mChannelsPerFrame = m_numInputs;
+    auFormat.mFramesPerPacket = 1;
+    auFormat.mBytesPerPacket = sampleSize;
+    auFormat.mBytesPerFrame = sampleSize;
+    auFormat.mFormatFlags |= kAudioFormatFlagIsNonInterleaved;
+
+    MESCALINE_THROW_IF_ERROR(
+        AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &auFormat, sizeof(auFormat))
       , "couldn't set the remote I/O unit's input client format");
+
+    // Output format
+    memset(&auFormat, 0, sizeof(auFormat));
+    auFormat.mSampleRate = m_sampleRate;
+    auFormat.mFormatID = kAudioFormatLinearPCM;
+    auFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked;
+    auFormat.mBitsPerChannel = 8 * sizeof(Float32);
+    auFormat.mChannelsPerFrame = m_numInputs;
+    auFormat.mFramesPerPacket = 1;
+    auFormat.mBytesPerPacket = sampleSize;
+    auFormat.mBytesPerFrame = sampleSize;
+    auFormat.mFormatFlags |= kAudioFormatFlagIsNonInterleaved;
+
+    MESCALINE_THROW_IF_ERROR(
+        AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &auFormat, sizeof(auFormat))
+      , "couldn't set the remote I/O unit's output client format");
         
-    outSize = sizeof(outFormat);
-    XThrowIfError(
-        AudioUnitGetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &outFormat, &outSize)
-      , "couldn't get the remote I/O unit's output client format");
-    outFormat.Print();
+    // outSize = sizeof(outFormat);
+    // MESCALINE_THROW_IF_ERROR(
+    //     AudioUnitGetProperty(m_rioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &outFormat, &outSize)
+    //   , "couldn't get the remote I/O unit's output client format");
+    // outFormat.Print();
 
     // Set render callback
     AURenderCallbackStruct inputProc;
     inputProc.inputProc = RenderCallback;
     inputProc.inputProcRefCon = this;
 
-    XThrowIfError(
+    MESCALINE_THROW_IF_ERROR(
         AudioUnitSetProperty(m_rioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &inputProc, sizeof(inputProc))
       , "couldn't set remote i/o render callback");
     
@@ -139,7 +177,7 @@ RemoteIODriver::RemoteIODriver(Client* client)
     client->configure(*this);
 }
 
-RemoteIODriver::~RemoteIODriver()
+RemoteIODriver::~RemoteIODriver() throw (IO::Exception)
 {
     for (size_t i=0; i < m_numInputs; i++) {
         m_inputBuffers[i];
@@ -151,25 +189,25 @@ RemoteIODriver::~RemoteIODriver()
 
 void RemoteIODriver::start()
 {
-    XThrowIfError(AudioOutputUnitStart(m_rioUnit), "couldn't start remote i/o unit");
+    MESCALINE_THROW_IF_ERROR(AudioOutputUnitStart(m_rioUnit), "couldn't start remote i/o unit");
 }
 
 void RemoteIODriver::stop()
 {
-    XThrowIfError(AudioOutputUnitStop(m_rioUnit), "couldn't start remote i/o unit");
+    MESCALINE_THROW_IF_ERROR(AudioOutputUnitStop(m_rioUnit), "couldn't start remote i/o unit");
 }
 
 void RemoteIODriver::InterruptionCallback(void *inClientData, UInt32 inInterruption)
 {
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inClientData);
 
-	if (inInterruption == kAudioSessionEndInterruption) {
-		// make sure we are again the active session
-		XThrowIfError(AudioSessionSetActive(true), "couldn't set audio session active");
+    if (inInterruption == kAudioSessionEndInterruption) {
+        // make sure we are again the active session
+        MESCALINE_THROW_IF_ERROR(AudioSessionSetActive(true), "couldn't set audio session active");
         self->start();
-	}
+    }
 
-	if (inInterruption == kAudioSessionBeginInterruption) {
+    if (inInterruption == kAudioSessionBeginInterruption) {
         self->stop();
     }
 }
