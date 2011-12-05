@@ -73,7 +73,7 @@ static inline void MescalineHostRegisterSynthDef(MescalineHost* self, MescalineS
 
 typedef void (*MescalineInitFunc)(MescalineHost* host);
 
-#define MESCALINE_MAKE_INIT_FUNC__PRIVATE(name) init_##name
+#define MESCALINE_MAKE_INIT_FUNC__PRIVATE(name) MescalineInit_##name
 #define MESCALINE_DECLARE_INIT_FUNC(name) \
     MESCALINE_EXPORT void MESCALINE_MAKE_INIT_FUNC__PRIVATE(name) (MescalineHost* host)
 #define MESCALINE_INIT_FUNC(name) MESCALINE_MAKE_INIT_FUNC__PRIVATE(name)
