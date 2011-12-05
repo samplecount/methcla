@@ -1,8 +1,10 @@
 #ifndef MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
 #define MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
 
+#include <Mescaline/API.h>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/IO/Driver.hpp>
+#include <Mescaline/Memory.hpp>
 #include <AudioUnit/AudioUnit.h>
 #include <boost/cstdint.hpp>
 #include <boost/exception/all.hpp>
@@ -39,8 +41,8 @@ namespace Mescaline { namespace Audio { namespace IO
         size_t              m_numOutputs;
         size_t              m_bufferSize;
         AudioUnit           m_rioUnit;
-        float**             m_inputBuffers;
-        float**             m_outputBuffers;
+        sample_t**          m_inputBuffers;
+        sample_t**          m_outputBuffers;
         AudioBufferList*    m_CAInputBuffers;
     };
 }; }; };

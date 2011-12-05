@@ -111,14 +111,14 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
 
     // Set input and output format
     AudioStreamBasicDescription auFormat;
-    const size_t sampleSize = sizeof(Float32);
+    const size_t sampleSize = sizeof(sample_t);
     
     // Input format
     memset(&auFormat, 0, sizeof(auFormat));
     auFormat.mSampleRate = m_sampleRate;
     auFormat.mFormatID = kAudioFormatLinearPCM;
     auFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked;
-    auFormat.mBitsPerChannel = 8 * sizeof(Float32);
+    auFormat.mBitsPerChannel = 8 * sampleSize;
     auFormat.mChannelsPerFrame = m_numInputs;
     auFormat.mFramesPerPacket = 1;
     auFormat.mBytesPerPacket = sampleSize;
@@ -134,7 +134,7 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     auFormat.mSampleRate = m_sampleRate;
     auFormat.mFormatID = kAudioFormatLinearPCM;
     auFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked;
-    auFormat.mBitsPerChannel = 8 * sizeof(Float32);
+    auFormat.mBitsPerChannel = 8 * sampleSize;
     auFormat.mChannelsPerFrame = m_numInputs;
     auFormat.mFramesPerPacket = 1;
     auFormat.mBytesPerPacket = sampleSize;
@@ -162,14 +162,14 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     
     // Initialize I/O buffers
     m_inputBuffers = new float*[m_numInputs];
-    m_outputBuffers = new float*[m_numInputs];
+    m_outputBuffers = new float*[m_numOutputs];
     m_CAInputBuffers = new AudioBufferList[m_numInputs];
     m_CAInputBuffers->mNumberBuffers = m_numInputs;
     
     for (size_t i = 0; i < m_numInputs; i++) {
-        m_inputBuffers[i] = new float[m_bufferSize];
+        m_inputBuffers[i] = Mescaline::Memory::allocAligned<sample_t>(Mescaline::Memory::Alignment::SIMDAlignment(), m_bufferSize);
         m_CAInputBuffers->mBuffers[i].mNumberChannels = 1;
-        m_CAInputBuffers->mBuffers[i].mDataByteSize = m_bufferSize * sizeof(AudioUnitSampleType);
+        m_CAInputBuffers->mBuffers[i].mDataByteSize = m_bufferSize * sizeof(sample_t);
         m_CAInputBuffers->mBuffers[i].mData = m_inputBuffers[i];
     }
     
@@ -179,9 +179,11 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
 
 RemoteIODriver::~RemoteIODriver() throw (IO::Exception)
 {
+    // Free input buffer memory
     for (size_t i=0; i < m_numInputs; i++) {
-        m_inputBuffers[i];
+        Mescaline::Memory::free(m_inputBuffers[i]);
     }
+    // Free buffer pointer arrays
     delete [] m_inputBuffers;
     delete [] m_outputBuffers;
     delete [] m_CAInputBuffers;
