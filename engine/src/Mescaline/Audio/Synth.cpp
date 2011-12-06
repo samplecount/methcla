@@ -53,6 +53,7 @@ Synth* Synth::construct(Environment& env, const SynthDef& synthDef, const NodeId
     const size_t bufferDataAllocSize = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
     const size_t allocSize = bufferDataOffset + bufferDataAllocSize;
     
+    // Need to align the alloc'd memory here so the audio buffer memory turns out aligned, too.
     char* mem = env.rtMem().allocAligned<char>(bufferAlignment, allocSize);
     
     AudioInputConnection* audioInputConnections = (AudioInputConnection*)(mem + audioInputOffset);
