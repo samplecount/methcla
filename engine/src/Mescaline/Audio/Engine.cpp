@@ -28,7 +28,7 @@ Environment::Environment(const Options& options)
     , m_epoch(0)
 {
     m_pluginInterface = new PluginInterface(*this);
-    m_rootNode = Group::construct(*this, 0);
+    m_rootNode = Group::construct(*this, 0, 0);
     m_nodes.insert(m_rootNode);
 
     const Epoch prevEpoch = epoch() - 1;

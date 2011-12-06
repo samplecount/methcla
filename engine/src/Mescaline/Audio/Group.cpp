@@ -4,9 +4,9 @@
 
 using namespace Mescaline::Audio;
 
-Group* Group::construct(Environment& env, const NodeId& id)
+Group* Group::construct(Environment& env, const NodeId& id, Group* parent)
 {
-    return new (env) Group(env, id);
+    return new (env) Group(env, id, parent);
 }
 
 void Group::free()

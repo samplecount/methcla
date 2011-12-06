@@ -11,13 +11,16 @@ namespace Mescaline { namespace Audio {
     const NodeId InvalidNodeId = -1;
 
     class Environment;
+    class Group;
 
-    class Node : boost::noncopyable, public boost::intrusive::list_base_hook<>
+    class Node : public boost::noncopyable
+               , public boost::intrusive::list_base_hook<>
     {
     protected:
-        Node(Environment& env, const NodeId& id)
+        Node(Environment& env, const NodeId& id, Group* parent)
             : m_env(env)
             , m_id(id)
+            , m_parent(parent)
         { }
 
     public:
@@ -27,6 +30,9 @@ namespace Mescaline { namespace Audio {
         
         /// Return the node's id.
         const NodeId& id() const { return m_id; }
+
+        const Group* parent() const { return m_parent; }
+        Group* parent() { return m_parent; }
 
         // Process a number of frames.
         virtual void process(size_t numFrames) = 0;
@@ -43,6 +49,7 @@ namespace Mescaline { namespace Audio {
     private:
         Environment&    m_env;
         NodeId          m_id;
+        Group*          m_parent;
     };
 
     typedef boost::intrusive::list<Node> NodeList;

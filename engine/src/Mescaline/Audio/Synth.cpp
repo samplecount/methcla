@@ -3,8 +3,9 @@
 using namespace Mescaline::Audio;
 
 Synth::Synth( Environment& env
-            , const SynthDef& synthDef
             , const NodeId& id
+            , Group* parent
+            , const SynthDef& synthDef
             , MescalineSynth* synth
             , size_t numAudioInputs
             , AudioInputConnection* audioInputConnections
@@ -12,7 +13,7 @@ Synth::Synth( Environment& env
             , AudioOutputConnection* audioOutputConnections
             , sample_t** audioBuffers
             )
-    : Node(env, id)
+    : Node(env, id, parent)
     , m_synthDef(synthDef)
     , m_synth(synth)
     , m_numAudioInputs(numAudioInputs)
@@ -32,7 +33,7 @@ Synth::~Synth()
     // Call destructors
 }
 
-Synth* Synth::construct(Environment& env, const SynthDef& synthDef, const NodeId& id)
+Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const SynthDef& synthDef)
 {
     const Alignment bufferAlignment(Alignment::SIMDAlignment());
     BOOST_ASSERT_MSG( bufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
@@ -76,7 +77,8 @@ Synth* Synth::construct(Environment& env, const SynthDef& synthDef, const NodeId
     MescalineSynth* synth = reinterpret_cast<MescalineSynth*>(mem + sizeof(Synth));
     synthDef.construct(synth, 0, 0);
 
-    return new (mem) Synth( env, synthDef, id, synth
+    return new (mem) Synth( env, id, parent
+                          , synthDef, synth
                           , numAudioInputs, audioInputConnections
                           , numAudioOutputs, audioOutputConnections
                           , audioInputBuffers );

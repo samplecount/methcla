@@ -43,7 +43,6 @@ namespace Mescaline { namespace Audio
     //     uint32_t m_id;
     // };
 
-    class Node;
     // class ControlBus : boost::noncopyable
     // {
     // public:
@@ -55,7 +54,7 @@ namespace Mescaline { namespace Audio
     //     ValueType   m_data;
     // };
 
-    class PluginInterface;
+    class Node;
 
     class NodeMap
     {
@@ -76,6 +75,7 @@ namespace Mescaline { namespace Audio
     };
 
     class Group;
+    class PluginInterface;
 
 
     class Environment : public boost::noncopyable

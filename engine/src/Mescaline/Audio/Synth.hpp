@@ -145,8 +145,9 @@ protected:
     };
 
     Synth( Environment& env
-         , const SynthDef& synthDef
          , const NodeId& id
+         , Group* parent
+         , const SynthDef& synthDef
          , MescalineSynth* synth
          , size_t numAudioInputs
          , AudioInputConnection* audioInputConnections
@@ -156,7 +157,7 @@ protected:
          );
 
 public:
-    static Synth* construct(Environment& env, const SynthDef& synthDef, const NodeId& id);
+    static Synth* construct(Environment& env, const NodeId& id, Group* parent, const SynthDef& synthDef);
     virtual ~Synth();
 
     /// Return this synth's SynthDef.

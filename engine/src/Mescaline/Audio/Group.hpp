@@ -7,13 +7,13 @@ namespace Mescaline { namespace Audio {
 
 class Group : public Node
 {
-protected:
-    Group(Environment& env, const NodeId& id)
-        : Node(env, id)
-    { }
+ protected:
+     Group(Environment& env, const NodeId& id, Group* parent)
+         : Node(env, id, parent)
+     { }
 
 public:
-    static Group* construct(Environment& env, const NodeId& id);
+    static Group* construct(Environment& env, const NodeId& id, Group* parent);
 
     const NodeList& children() const { return m_children; }
 
