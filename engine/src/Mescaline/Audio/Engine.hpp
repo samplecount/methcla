@@ -29,8 +29,6 @@ namespace Mescaline { namespace Audio
 
     // typedef int32_t ControlBusId;
 
-    // const BusId InvalidBusId = -1;
-
     // class ControlBusId
     // {
     // public:
@@ -79,32 +77,6 @@ namespace Mescaline { namespace Audio
 
     class Group;
 
-    // class Epoch
-    // {
-    // public:
-    //     Epoch()
-    //         : m_prev(-1)
-    //         , m_cur(m_prev + 1)
-    //     { }
-    // 
-    //     uint32_t previous() const { return m_prev; }
-    //     uint32_t current() const { return m_cur; }
-    //     
-    //     bool operator == (const Epoch& other) const
-    //     {
-    //         return m_cur == other.m_cur;
-    //     }
-    // 
-    //     Epoch& operator ++ ()
-    //     {
-    //         m_prev = m_cur;
-    //         m_cur += 1;
-    //     }
-    // 
-    // private:
-    //     uint32_t m_cur;
-    //     uint32_t m_prev;
-    // };
 
     class Environment : public boost::noncopyable
     {
