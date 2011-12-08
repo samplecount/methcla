@@ -11,6 +11,8 @@
 #include <AudioToolbox/AudioServices.h>
 #include <boost/thread.hpp>
 
+#include <iostream>
+
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
 
@@ -26,7 +28,7 @@ public:
 
         // Create osc instance
         const Mescaline::Audio::SynthDef& def = environment()->lookupSynthDef("osc");
-        Mescaline::Audio::Synth* synth = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), def);
+        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), def);
         environment()->rootNode()->addToTail(*synth);
         synth->mapOutput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kOut);
 
@@ -36,10 +38,12 @@ public:
         scope->mapInput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kIn);
         m_scope = scope->synth<Mescaline::Audio::ScopeSynth>();
     }
-
+    
+    Mescaline::Audio::Synth* osc() { return m_osc; }
     Mescaline::Audio::ScopeSynth* scope() { return m_scope; }
 
 private:
+    Mescaline::Audio::Synth* m_osc;
     Mescaline::Audio::ScopeSynth* m_scope;
 };
 
@@ -417,6 +421,11 @@ void cycleOscilloscopeLines()
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    NSArray *t = [[event allTouches] allObjects];
+    float freq = [[t objectAtIndex:0] locationInView:view].y;
+
+    *reinterpret_cast<MyEngine*>(m_engine)->osc()->controlInput(0) = freq;
+
 //    // If we are in a pinch event...
 //    if ((event == pinchEvent) && ([[event allTouches] count] == 2))
 //    {
