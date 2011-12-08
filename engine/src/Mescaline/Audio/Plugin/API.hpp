@@ -36,8 +36,8 @@ namespace Mescaline { namespace Audio { namespace Plugin {
                              , MescalineSynth* instance )
         {
             instance->fProcess = &Process;
-            instance->fGetInputControl = &GetInputControl;
-            instance->fGetOutputControl = &GetOutputControl;
+            instance->fGetControlInput = &GetControlInput;
+            instance->fGetControlOutput = &GetControlOutput;
             new (instance) T(host, reinterpret_cast<const SynthDef<T>*>(self));
         }
 
@@ -56,14 +56,14 @@ namespace Mescaline { namespace Audio { namespace Plugin {
             reinterpret_cast<T*>(instance)->process(numFrames, inputs, outputs);
         }
 
-        static sample_t* GetInputControl(MescalineSynth* instance, unsigned int index)
+        static float* GetControlInput(MescalineSynth* instance, size_t index)
         {
-            return reinterpret_cast<T*>(instance)->inputControl(index);
+            return reinterpret_cast<T*>(instance)->controlInput(index);
         }
 
-        static sample_t* GetOutputControl(MescalineSynth* instance, unsigned int index)
+        static float* GetControlOutput(MescalineSynth* instance, size_t index)
         {
-            return reinterpret_cast<T*>(instance)->outputControl(index);
+            return reinterpret_cast<T*>(instance)->controlOutput(index);
         }
 
     private:

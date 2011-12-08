@@ -17,8 +17,8 @@ typedef struct MescalineHost MescalineHost;
 struct MescalineSynth
 {
     void (*fProcess)(MescalineSynth* self, unsigned int numFrames, sample_t** inputs, sample_t** outputs);
-    sample_t* (*fGetInputControl)(MescalineSynth* self, unsigned int index);
-    sample_t* (*fGetOutputControl)(MescalineSynth* self, unsigned int index);
+    float* (*fGetControlInput)(MescalineSynth* self, size_t index);
+    float* (*fGetControlOutput)(MescalineSynth* self, size_t index);
 };
 
 static inline void MescalineSynthProcess(MescalineSynth* self, unsigned int numFrames, sample_t** inputs, sample_t** outputs)
@@ -26,14 +26,14 @@ static inline void MescalineSynthProcess(MescalineSynth* self, unsigned int numF
     if (self->fProcess != NULL) (*self->fProcess)(self, numFrames, inputs, outputs);
 }
 
-static inline sample_t* MescalineSynthGetInputControl(MescalineSynth* self, unsigned int index)
+static inline float* MescalineSynthGetControlInput(MescalineSynth* self, size_t index)
 {
-    return self->fGetInputControl == NULL ? NULL : (*self->fGetInputControl)(self, index);
+    return self->fGetControlInput == NULL ? NULL : (*self->fGetControlInput)(self, index);
 }
 
-static inline sample_t* MescalineSynthGetOutputControl(MescalineSynth* self, unsigned int index)
+static inline float* MescalineSynthGetControlOutput(MescalineSynth* self, size_t index)
 {
-    return self->fGetOutputControl == NULL ? NULL : (*self->fGetOutputControl)(self, index);
+    return self->fGetControlOutput == NULL ? NULL : (*self->fGetControlOutput)(self, index);
 }
 
 typedef struct MescalineSynth MescalineSynth;
@@ -63,8 +63,8 @@ struct MescalineSynthDef
                                , MescalineSynth* instance );
 
     // Querying
-    const char*     (*fGetInputControlName)(const MescalineSynthDef* self, unsigned int index);
-    const char*     (*fGetOutputControlName)(const MescalineSynthDef* self, unsigned int index);
+    const char*     (*fGetControlInputName)(const MescalineSynthDef* self, size_t index);
+    const char*     (*fGetOutputControlName)(const MescalineSynthDef* self, size_t index);
 
     const char*     (*fGetDescription)(const MescalineSynthDef* self);    
 };
@@ -80,12 +80,12 @@ static inline void MescalineSynthDefDestroy(MescalineHost* host, MescalineSynthD
     if (self->fDestroy != NULL) (*self->fDestroy)(host, self, instance);
 }
 
-static inline const char* MescalineSynthDefGetInputControlName(MescalineSynthDef* self, unsigned int index)
+static inline const char* MescalineSynthDefGetControlInputName(MescalineSynthDef* self, size_t index)
 {
-    return self->fGetInputControlName == NULL ? NULL : (*self->fGetInputControlName)(self, index);
+    return self->fGetControlInputName == NULL ? NULL : (*self->fGetControlInputName)(self, index);
 }
 
-static inline const char* MescalineSynthDefGetOutputControlName(MescalineSynthDef* self, unsigned int index)
+static inline const char* MescalineSynthDefGetOutputControlName(MescalineSynthDef* self, size_t index)
 {
     return self->fGetOutputControlName == NULL ? NULL : (*self->fGetOutputControlName)(self, index);
 }

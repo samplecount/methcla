@@ -16,8 +16,8 @@ namespace Mescaline { namespace Audio
         typedef boost::lockfree::ringbuffer<sample_t,1024> Buffer;
         Buffer& buffer() { return m_buffer; }
 
-        sample_t* inputControl(size_t index) { return 0; }
-        sample_t* outputControl(size_t index) { return 0; }
+        float* controlInput(size_t index) { return 0; }
+        float* controlOutput(size_t index) { return 0; }
 
     private:
         Buffer m_buffer;

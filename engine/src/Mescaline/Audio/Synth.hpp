@@ -150,9 +150,7 @@ protected:
          , Group* parent
          , const SynthDef& synthDef
          , MescalineSynth* synth
-         , size_t numAudioInputs
          , AudioInputConnection* audioInputConnections
-         , size_t numAudioOutputs
          , AudioOutputConnection* audioOutputConnections
          , sample_t** audioBuffers
          );
@@ -166,12 +164,12 @@ public:
     const SynthDef& synthDef() const { return m_synthDef; }
 
     /// Return number of inputs.
-    size_t numAudioInputs() const { return m_numAudioInputs; }
+    size_t numAudioInputs() const { return m_synthDef.numAudioInputs(); }
     /// Map input to bus.
     void mapInput(size_t input, const AudioBusId& bus, InputConnectionType type);
 
     // Return number of outputs.
-    size_t numAudioOutputs() const { return m_numAudioOutputs; }
+    size_t numAudioOutputs() const { return m_synthDef.numAudioOutputs(); }
     // Map output to bus.
     void mapOutput(size_t output, const AudioBusId& bus, OutputConnectionType type);
 
@@ -179,6 +177,11 @@ public:
     typedef boost::intrusive::list<AudioOutputConnection> AudioOutputConnections;
     // typedef boost::container::vector<Connection<ControlBus, InputConnectionType> > ControlInputConnections;
     // typedef boost::container::vector<Connection<ControlBus, OutputConnectionType> > ControlOutputConnections;
+
+    size_t numControlInputs() const { return m_synthDef.numControlInputs(); }
+    size_t numControlOutputs() const { return m_synthDef.numControlOutputs(); }
+    float* controlInput(size_t index) { return MescalineSynthGetControlInput(m_synth, index); }
+    float* controlOutput(size_t index) { return MescalineSynthGetControlOutput(m_synth, index); }
 
     /// Sample offset for sample accurate synth scheduling.
     size_t sampleOffset() const { return 0; }
@@ -192,12 +195,6 @@ private:
     const SynthDef&         m_synthDef;
     std::bitset<32>         m_flags;
     MescalineSynth*         m_synth;
-    size_t                  m_numAudioInputs;
-    size_t                  m_numAudioOutputs;
-    // size_t                  m_numControlInputs;
-    // size_t                  m_numControlOutputs;
-    // AudioBusId              m_audioInputBus;
-    // AudioBusId              m_audioOutputBus;
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
     sample_t**              m_audioBuffers;

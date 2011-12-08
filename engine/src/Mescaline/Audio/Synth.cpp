@@ -7,23 +7,19 @@ Synth::Synth( Environment& env
             , Group* parent
             , const SynthDef& synthDef
             , MescalineSynth* synth
-            , size_t numAudioInputs
             , AudioInputConnection* audioInputConnections
-            , size_t numAudioOutputs
             , AudioOutputConnection* audioOutputConnections
             , sample_t** audioBuffers
             )
     : Node(env, id, parent)
     , m_synthDef(synthDef)
     , m_synth(synth)
-    , m_numAudioInputs(numAudioInputs)
-    , m_numAudioOutputs(numAudioOutputs)
     , m_audioBuffers(audioBuffers)
 {
-    for (size_t i=0; i < numAudioInputs; i++) {
+    for (size_t i=0; i < numAudioInputs(); i++) {
         m_audioInputConnections.push_back(audioInputConnections[i]);
     }
-    for (size_t i=0; i < numAudioOutputs; i++) {
+    for (size_t i=0; i < numAudioOutputs(); i++) {
         m_audioOutputConnections.push_back(audioOutputConnections[i]);
     }
 }
@@ -79,8 +75,8 @@ Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const
 
     return new (mem) Synth( env, id, parent
                           , synthDef, synth
-                          , numAudioInputs, audioInputConnections
-                          , numAudioOutputs, audioOutputConnections
+                          , audioInputConnections
+                          , audioOutputConnections
                           , audioInputBuffers );
 }
 
