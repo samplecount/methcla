@@ -1,7 +1,7 @@
 #ifndef MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 #define MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 
-#include <Mescaline/API.h>
+#include <Mescaline/Audio/Plugin/API.h>
 #include <boost/utility.hpp>
 #include <cstring>
 #include <string>
@@ -18,6 +18,8 @@ public:
         , m_def(def)
     { }
     
+    const char* name() const { return m_def->name; }
+
     size_t instanceSize      () const { return m_def->instanceSize;       }
     size_t instanceAlignment () const { return m_def->instanceAlignment;  }
     
@@ -29,14 +31,17 @@ public:
     void initialize() { (*m_def->fInitialize)(m_host, m_def); }
     void cleanup() { (*m_def->fCleanup)(m_host, m_def); }
 
-    void construct(MescalineSynth* instance, sample_t** inputControls, sample_t** outputControls) const
+    void construct(MescalineSynth* instance) const
     {
         memset(instance, 0, sizeof(MescalineSynth));
-        (*m_def->fConstruct)(m_host, m_def, instance, inputControls, outputControls);
+        MescalineSynthDefConstruct(m_host, m_def, instance);
     }
+
     void destroy(MescalineSynth* instance) const
-        { (*m_def->fDestroy)(m_host, m_def, instance); }
-    
+    {
+        MescalineSynthDefDestroy(m_host, m_def, instance);
+    }
+
 private:
     MescalineHost*     m_host;
     MescalineSynthDef* m_def;

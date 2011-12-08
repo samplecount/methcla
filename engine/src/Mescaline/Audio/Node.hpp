@@ -8,7 +8,7 @@
 namespace Mescaline { namespace Audio {
 
     typedef int32_t NodeId;
-    const NodeId InvalidNodeId = -1;
+    // const NodeId InvalidNodeId = -1;
 
     class Environment;
     class Group;
@@ -22,6 +22,7 @@ namespace Mescaline { namespace Audio {
             , m_id(id)
             , m_parent(parent)
         { }
+        virtual ~Node();
 
     public:
         /// Return environment.
@@ -33,6 +34,10 @@ namespace Mescaline { namespace Audio {
 
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
+        bool isRootNode() const { return parent() == 0; }
+
+        /// Free the node.
+        virtual void free() = 0;
 
         // Process a number of frames.
         virtual void process(size_t numFrames) = 0;
@@ -42,9 +47,9 @@ namespace Mescaline { namespace Audio {
         void operator delete(void* ptr);
         void* operator new(size_t numBytes, Environment& env);
         void operator delete(void* ptr, Environment& env);
+
+        /// To be used by subclasses in their implementation of free.
         template <class T> static void free(T* node);
-        friend class NodeMap;
-        virtual void free() = 0;
 
     private:
         Environment&    m_env;

@@ -1,12 +1,15 @@
 #include <Mescaline/Faust.hpp>
-#include <Mescaline/API.h>
+#include <Mescaline/Audio/Plugin/API.hpp>
+
 #include <boost/type_traits.hpp>
-#include <cmath>
+
 #include <algorithm>
+#include <cmath>
 #include <map>
 #include <string>
 
 using namespace Faust;
+using namespace Mescaline::Audio;
 using namespace std;
 
 #define FAUSTFLOAT sample_t
@@ -32,16 +35,23 @@ private:
 class MescalineFaustSynth : public MescalineSynth
 {
 public:
-    MescalineFaustSynth(double sampleRate)
+    MescalineFaustSynth(MescalineHost* host, const Plugin::SynthDef<MescalineFaustSynth>* synthDef)
     {
-        fProcess = &Process;
-        m_dsp.instanceInit(sampleRate);
+        m_dsp.instanceInit(MescalineHostGetSampleRate(host));
     }
 
-private:
-    static void Process(MescalineSynth* self, unsigned int numFrames, sample_t** inputs, sample_t** outputs)
+    void process(unsigned int numFrames, sample_t** inputs, sample_t** outputs)
     {
-        static_cast<MescalineFaustSynth*>(self)->m_dsp.compute(numFrames, inputs, outputs);
+        m_dsp.compute(numFrames, inputs, outputs);
+    }
+
+    sample_t* inputControl(size_t index)
+    {
+        return 0;
+    }
+    sample_t* outputControl(size_t index)
+    {
+        return 0;
     }
 
 private:
@@ -51,52 +61,25 @@ private:
 #define MESCALINE_TO_STRING(x) #x
 #define MESCALINE_STRINGIFY(x) MESCALINE_TO_STRING(x)
 
-class SynthDef : public MescalineSynthDef
+class SynthDef : public Plugin::SynthDef<MescalineFaustSynth>
 {
 public:
-    SynthDef(dsp* dsp)
+    SynthDef(const char* name, dsp* dsp)
+    : Plugin::SynthDef<MescalineFaustSynth>(name, dsp->getNumInputs(), dsp->getNumOutputs(), 0, 0)
     {
         FAUSTCLASS::metadata(&m_metaData);
-        instanceSize = sizeof(MescalineFaustSynth);
-        instanceAlignment = boost::alignment_of<MescalineFaustSynth>();
-        numAudioInputs = dsp->getNumInputs();
-        numAudioOutputs = dsp->getNumOutputs();
-        numControlInputs = 0;
-        numControlOutputs = 0;
-        fConstruct = &Construct;
-        fDestroy = &Destroy;
     }
 
 private:
-    static SynthDef* cast(MescalineSynthDef* self)
-        { return reinterpret_cast<SynthDef*>(self); }
-
-    static void Construct( MescalineHost* host
-                         , MescalineSynthDef* self
-                         , MescalineSynth* instance
-                         , sample_t** inputControls
-                         , sample_t** outputControls )
-    {
-        new (instance) MescalineFaustSynth(MescalineHostGetSampleRate(host));
-        // TODO: get control pointers
-    }
-    
-    static void Destroy( MescalineHost* host
-                       , MescalineSynthDef* self
-                       , MescalineSynth* instance )
-    {
-        reinterpret_cast<MescalineFaustSynth*>(instance)->~MescalineFaustSynth();
-    }
-
-private:
+    string      m_name;
     MetaData    m_metaData;
 };
 
-MESCALINE_DECLARE_INIT_FUNC(FAUSTCLASS)
+MESCALINE_EXPORT void MESCALINE_INIT_FUNC(FAUSTCLASS)(MescalineHost* host)
 {
     FAUSTCLASS* dsp = new FAUSTCLASS;
     dsp->classInit(MescalineHostGetSampleRate(host));
-    MescalineSynthDef* def = new SynthDef(dsp);
-    MescalineHostRegisterSynthDef(host, MESCALINE_STRINGIFY(FAUSTCLASS), def);
+    MescalineSynthDef* def = new SynthDef(MESCALINE_STRINGIFY(FAUSTCLASS), dsp);
+    MescalineHostRegisterSynthDef(host, def);
     delete dsp;
 }

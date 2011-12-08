@@ -5,6 +5,11 @@
 
 using namespace Mescaline::Audio;
 
+Node::~Node()
+{
+    environment().releaseNodeId(this->id());
+}
+
 void* Node::operator new(size_t, void* where)
 {
     return where;
@@ -36,6 +41,6 @@ template <class T> void Node::free(T* node)
     node->~T();
     env.rtMem().free(node);
 }
-        
-template void Node::free<Group>(Group* node);
-template void Node::free<Synth>(Synth* node);
+
+template void Node::free<>(Group* node);
+template void Node::free<>(Synth* node);

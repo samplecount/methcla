@@ -2,7 +2,7 @@
 #define MESCALINE_AUDIO_HPP_INCLUDED
 
 #include <boost/cstdint.hpp>
-#include <Mescaline/API.h>
+#include <Mescaline/Audio/Plugin/Types.h>
 
 namespace Mescaline { namespace Audio
 {

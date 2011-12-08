@@ -1,9 +1,10 @@
 #ifndef MESCALINE_AUDIO_SYNTH_HPP_INCLUDED
 #define MESCALINE_AUDIO_SYNTH_HPP_INCLUDED
 
-#include <Mescaline/API.h>
 #include <Mescaline/Audio/AudioBus.hpp>
 #include <Mescaline/Audio/Engine.hpp>
+#include <Mescaline/Audio/Plugin/API.h>
+
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
 
@@ -158,6 +159,7 @@ protected:
 
 public:
     static Synth* construct(Environment& env, const NodeId& id, Group* parent, const SynthDef& synthDef);
+    virtual void free();
     virtual ~Synth();
 
     /// Return this synth's SynthDef.
@@ -184,8 +186,7 @@ public:
     /// Sets up inputs and outputs and calls compute.
     virtual void process(size_t numFrames);
 
-protected:
-    virtual void free();
+    template <class T> T* synth() { return reinterpret_cast<T*>(m_synth); }
 
 private:
     const SynthDef&         m_synthDef;

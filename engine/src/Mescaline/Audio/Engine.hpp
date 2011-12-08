@@ -1,17 +1,18 @@
 #ifndef MESCALINE_AUDIO_ENGINE_H_INCLUDED
 #define MESCALINE_AUDIO_ENGINE_H_INCLUDED
 
-#include <Mescaline/API.h>
 #include <Mescaline/Audio.hpp>
 #include <Mescaline/Audio/AudioBus.hpp>
-#include <Mescaline/Audio/Node.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
+#include <Mescaline/Audio/Node.hpp>
+#include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Audio/SynthDef.hpp>
 #include <Mescaline/Exception.hpp>
 #include <Mescaline/Memory/Manager.hpp>
 
 #include <boost/container/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/lockfree/fifo.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/thread/thread.hpp>
@@ -74,14 +75,40 @@ namespace Mescaline { namespace Audio
 
         void insert(Node* node);
         const_reference lookup(const NodeId& nodeId) const { return m_nodes.at(nodeId); }
+        void release(const NodeId& nodeId);
 
     private:
         Nodes m_nodes;
     };
 
+    class SynthDefMap
+    {
+    public:
+        void insert(SynthDef* synthDef)
+        {
+            string tmpName(synthDef->name());
+            m_map.insert(tmpName, synthDef);
+        }
+
+        const SynthDef& lookup(const char* name) const
+        {
+            string tmpName(name);
+            return m_map.at(name);
+        }
+
+    private:
+        typedef boost::ptr_map<string,SynthDef> Map;
+        Map m_map;
+    };
+
     class Group;
     class PluginInterface;
 
+    struct Command
+    {
+        virtual ~Command() { }
+        virtual void perform() { }
+    };
 
     class Environment : public boost::noncopyable
     {
@@ -110,11 +137,8 @@ namespace Mescaline { namespace Audio
         Environment(const Options& options);
         ~Environment();
 
-        typedef boost::ptr_map<string,SynthDef> SynthDefMap;
-        const SynthDefMap& synthDefs() const { return m_synthDefs; }
-        void registerSynthDef(SynthDef* synthDef)
-            { string name(synthDef->name());
-              m_synthDefs.insert(name, synthDef); }
+        const SynthDef& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
+        void registerSynthDef(SynthDef* synthDef) { m_synthDefs.insert(synthDef); }
         
         Group* rootNode() { return m_rootNode; }
         const NodeMap& nodes() const { return m_nodes; }
@@ -141,9 +165,17 @@ namespace Mescaline { namespace Audio
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
 
-    	MescalineHost* pluginInterface();
-	
-   private:
+        MescalineHost* pluginInterface();
+
+        typedef boost::lockfree::fifo<Command*> CommandFIFO;
+
+    protected:
+        friend class Node;
+
+        void insertNode(Node* node);
+        void releaseNodeId(const NodeId& nodeId);
+
+    private:
         const size_t                m_sampleRate;
         const size_t                m_blockSize;
         PluginInterface*            m_pluginInterface;
@@ -155,6 +187,8 @@ namespace Mescaline { namespace Audio
         boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                       m_epoch;
+        CommandFIFO                 m_nrtToRtFIFO;
+        CommandFIFO                 m_rtToNrtFIFO;
     };
     
     // This is the interface that plugins use (via its function pointers,
@@ -176,8 +210,8 @@ namespace Mescaline { namespace Audio
             { return reinterpret_cast<const PluginInterface*>(self); }
         static unsigned int GetSampleRate(const MescalineHost* self)
             { return cast_const(self)->m_env.sampleRate(); }
-        static void RegisterSynthDef(MescalineHost* self, const char* name, MescalineSynthDef* synthDef)
-            { cast(self)->m_env.registerSynthDef(name, new SynthDef(self, synthDef)); }
+        static void RegisterSynthDef(MescalineHost* self, MescalineSynthDef* synthDef)
+            { cast(self)->m_env.registerSynthDef(new SynthDef(self, synthDef)); }
 
     private:
         Environment& m_env;

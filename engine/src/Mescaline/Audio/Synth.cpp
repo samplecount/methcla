@@ -75,7 +75,7 @@ Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const
     }
 
     MescalineSynth* synth = reinterpret_cast<MescalineSynth*>(mem + sizeof(Synth));
-    synthDef.construct(synth, 0, 0);
+    synthDef.construct(synth);
 
     return new (mem) Synth( env, id, parent
                           , synthDef, synth
@@ -171,7 +171,7 @@ void Synth::process(size_t numFrames)
         it->read(env, numFrames, inputBuffers[it->index()]);
     }
 
-    (*m_synth->fProcess)(m_synth, numFrames, inputBuffers, outputBuffers);
+    MescalineSynthProcess(m_synth, numFrames, inputBuffers, outputBuffers);
 
     for ( AudioOutputConnections::iterator it = m_audioOutputConnections.begin()
         ; it != m_audioOutputConnections.end()

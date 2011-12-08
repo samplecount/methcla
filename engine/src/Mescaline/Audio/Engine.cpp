@@ -17,6 +17,13 @@ void NodeMap::insert(Node* node)
     m_nodes[id] = node;
 }
 
+void NodeMap::release(const NodeId& nodeId)
+{
+    if (m_nodes[nodeId] == 0)
+        BOOST_THROW_EXCEPTION(InvalidNodeId() << ErrorInfoNodeId(nodeId));
+    m_nodes[nodeId] = 0;
+}
+
 Environment::Environment(const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -29,7 +36,6 @@ Environment::Environment(const Options& options)
 {
     m_pluginInterface = new PluginInterface(*this);
     m_rootNode = Group::construct(*this, 0, 0);
-    m_nodes.insert(m_rootNode);
 
     const Epoch prevEpoch = epoch() - 1;
 
@@ -81,6 +87,16 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
 MescalineHost* Environment::pluginInterface()
 {
 	return m_pluginInterface;
+}
+
+void Environment::insertNode(Node* node)
+{
+    m_nodes.insert(node);
+}
+
+void Environment::releaseNodeId(const NodeId& nodeId)
+{
+    m_nodes.release(nodeId);
 }
 
 Engine::Engine()

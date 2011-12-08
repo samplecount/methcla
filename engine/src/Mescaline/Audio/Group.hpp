@@ -7,23 +7,32 @@ namespace Mescaline { namespace Audio {
 
 class Group : public Node
 {
- protected:
-     Group(Environment& env, const NodeId& id, Group* parent)
-         : Node(env, id, parent)
-     { }
+protected:
+    Group(Environment& env, const NodeId& id, Group* parent)
+        : Node(env, id, parent)
+    { }
 
 public:
-    static Group* construct(Environment& env, const NodeId& id, Group* parent);
+    enum AddAction
+    {
+        kAddToHead
+      , kAddToTail
+      , kAddBefore
+      , kAddAfter
+      , kReplace
+    };
+
+    static Group* construct(Environment& env, const NodeId& id, Group* target /*, AddAction addAction*/);
+    virtual void free();
 
     const NodeList& children() const { return m_children; }
-
     void addToHead(Node& node) { m_children.push_front(node); }
     void addToTail(Node& node) { m_children.push_back(node); }
 
     virtual void process(size_t numFrames);
 
 protected:
-    virtual void free();
+    // static void addNode(
 
 private:
     NodeList m_children;

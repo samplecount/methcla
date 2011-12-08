@@ -1,7 +1,6 @@
 #ifndef MESCLINE_AUDIO_AUDIOBUS_HPP_INCLUDED
 #define MESCLINE_AUDIO_AUDIOBUS_HPP_INCLUDED
 
-#include <Mescaline/API.h>
 #include <Mescaline/Audio.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/utility.hpp>
