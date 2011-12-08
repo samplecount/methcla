@@ -26,6 +26,12 @@ void Node::operator delete(void* ptr, Environment& env)
 
 template <class T> void Node::free(T* node)
 {
+    if (node->isRootNode()) {
+        BOOST_THROW_EXCEPTION(
+            InvalidNodeId()
+         << ErrorInfoNodeId(node->id())
+         << ErrorInfoString("cannot free root node"));
+    }
     Environment& env = node->environment();
     node->~T();
     env.rtMem().free(node);

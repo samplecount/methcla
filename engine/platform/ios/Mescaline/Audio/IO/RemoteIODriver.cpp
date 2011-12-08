@@ -1,5 +1,6 @@
 #include <Mescaline/Audio/IO/RemoteIODriver.hpp>
 #include <Mescaline/Exception.hpp>
+
 #include <AudioToolbox/AudioToolbox.h>
 
 using namespace Mescaline::Audio::IO;
@@ -11,7 +12,7 @@ typedef boost::error_info<struct tag_OSStatus,OSStatus> OSStatusInfo;
         OSStatus err__ = expr; \
         if (err__ != 0) { \
             BOOST_THROW_EXCEPTION(Mescaline::Audio::IO::Exception() \
-                    << Mescaline::Exception::StringInfo(msg) \
+                    << Mescaline::ErrorInfoString(msg) \
                     << OSStatusInfo(err__)); \
         } \
     } while (false);

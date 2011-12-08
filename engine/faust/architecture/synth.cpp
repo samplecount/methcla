@@ -55,10 +55,8 @@ class SynthDef : public MescalineSynthDef
 {
 public:
     SynthDef(dsp* dsp)
-        : m_name(MESCALINE_STRINGIFY(FAUSTCLASS))
     {
         FAUSTCLASS::metadata(&m_metaData);
-        name = m_name.c_str();
         instanceSize = sizeof(MescalineFaustSynth);
         instanceAlignment = boost::alignment_of<MescalineFaustSynth>();
         numAudioInputs = dsp->getNumInputs();
@@ -91,7 +89,6 @@ private:
     }
 
 private:
-    string      m_name;
     MetaData    m_metaData;
 };
 
@@ -100,6 +97,6 @@ MESCALINE_DECLARE_INIT_FUNC(FAUSTCLASS)
     FAUSTCLASS* dsp = new FAUSTCLASS;
     dsp->classInit(MescalineHostGetSampleRate(host));
     MescalineSynthDef* def = new SynthDef(dsp);
-    MescalineHostRegisterSynthDef(host, def);
+    MescalineHostRegisterSynthDef(host, MESCALINE_STRINGIFY(FAUSTCLASS), def);
     delete dsp;
 }

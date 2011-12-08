@@ -7,13 +7,11 @@
 
 namespace Mescaline {
 
-struct Exception : virtual std::exception, virtual boost::exception
-{
-    typedef boost::error_info<struct tag_StringInfo,std::string> StringInfo;
-};
-
+struct Exception : virtual std::exception, virtual boost::exception { };
 struct MemoryAllocationFailure : virtual Exception { };
 struct InvalidInput : virtual Exception { };
+
+typedef boost::error_info<struct ErrorInfoStringTag, std::string> ErrorInfoString;
 
 };
 

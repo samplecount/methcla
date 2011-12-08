@@ -54,6 +54,11 @@ namespace Mescaline { namespace Audio
     //     ValueType   m_data;
     // };
 
+    struct EngineException : virtual Mescaline::Exception { };
+    struct InvalidNodeId : virtual EngineException { };
+    struct DuplicateNodeId : virtual EngineException { };
+    typedef boost::error_info<struct ErrorInfoNodeIdTag, NodeId> ErrorInfoNodeId;
+
     class Node;
 
     class NodeMap
@@ -171,8 +176,8 @@ namespace Mescaline { namespace Audio
             { return reinterpret_cast<const PluginInterface*>(self); }
         static unsigned int GetSampleRate(const MescalineHost* self)
             { return cast_const(self)->m_env.sampleRate(); }
-        static void RegisterSynthDef(MescalineHost* self, MescalineSynthDef* synthDef)
-            { cast(self)->m_env.registerSynthDef(new SynthDef(self, synthDef)); }
+        static void RegisterSynthDef(MescalineHost* self, const char* name, MescalineSynthDef* synthDef)
+            { cast(self)->m_env.registerSynthDef(name, new SynthDef(self, synthDef)); }
 
     private:
         Environment& m_env;

@@ -13,7 +13,7 @@ void NodeMap::insert(Node* node)
 {
     NodeId id = node->id();
     if (m_nodes[id] != 0)
-        m_nodes[id]->free();
+        BOOST_THROW_EXCEPTION(DuplicateNodeId() << ErrorInfoNodeId(id));
     m_nodes[id] = node;
 }
 

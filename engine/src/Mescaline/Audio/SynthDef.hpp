@@ -17,8 +17,6 @@ public:
         : m_host(host)
         , m_def(def)
     { }
-
-    const char* name() const { return m_def->name; }
     
     size_t instanceSize      () const { return m_def->instanceSize;       }
     size_t instanceAlignment () const { return m_def->instanceAlignment;  }
