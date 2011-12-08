@@ -1,0 +1,536 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D3623260D0F684500981E51 /* MescalineMobileAppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */; };
+		1D3623EC0D0F72F000981E51 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */; };
+		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
+		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
+		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
+		538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 538A754E148FCF1E00C47BF1 /* scope.cpp */; };
+		53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB8E2E147EC774002E3B51 /* osc.cpp */; };
+		53BB902E1481924B002E3B51 /* RemoteIODriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */; };
+		53BB905714825BB7002E3B51 /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB905614825BB7002E3B51 /* Engine.cpp */; };
+		53ED31DF14869960003FF7C2 /* Manager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED31DD14869960003FF7C2 /* Manager.cpp */; };
+		53ED337C1487A825003FF7C2 /* Memory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED337A1487A825003FF7C2 /* Memory.cpp */; };
+		53ED35C4148A88D3003FF7C2 /* Node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35C2148A88D3003FF7C2 /* Node.cpp */; };
+		53ED35EA148A8D19003FF7C2 /* Group.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35E6148A8D19003FF7C2 /* Group.cpp */; };
+		53ED35EB148A8D19003FF7C2 /* Synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35E8148A8D19003FF7C2 /* Synth.cpp */; };
+		53ED3606148A8EB1003FF7C2 /* AudioBus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED3605148A8EB1003FF7C2 /* AudioBus.cpp */; };
+		A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = A15CFB1C0DE4A8C600FB5D08 /* icon.png */; };
+		A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */; };
+		A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */; };
+		A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */; };
+		F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */; };
+		F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		1D3623240D0F684500981E51 /* MescalineMobileAppDelegate.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; path = MescalineMobileAppDelegate.h; sourceTree = "<group>"; };
+		1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MescalineMobileAppDelegate.mm; sourceTree = "<group>"; };
+		1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		1D6058910D05DD3D006BFB54 /* Mescaline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Mescaline.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainWindow.xib; path = ../MainWindow.xib; sourceTree = "<group>"; };
+		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MescalineMobile_Prefix.pch; sourceTree = "<group>"; };
+		538A754E148FCF1E00C47BF1 /* scope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scope.cpp; sourceTree = "<group>"; };
+		538A754F148FCF1E00C47BF1 /* scope.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scope.hpp; sourceTree = "<group>"; };
+		538A756F148FD2A600C47BF1 /* Faust.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Faust.hpp; path = Mescaline/Faust.hpp; sourceTree = "<group>"; };
+		538A7583148FD43500C47BF1 /* API.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = API.hpp; path = Plugin/API.hpp; sourceTree = "<group>"; };
+		538A761514911A8F00C47BF1 /* API.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = API.h; path = Plugin/API.h; sourceTree = "<group>"; };
+		53BB8E2E147EC774002E3B51 /* osc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = osc.cpp; sourceTree = "<group>"; };
+		53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RemoteIODriver.cpp; path = ../platform/ios/Mescaline/Audio/IO/RemoteIODriver.cpp; sourceTree = SOURCE_ROOT; };
+		53BB902D1481924B002E3B51 /* RemoteIODriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteIODriver.hpp; sourceTree = "<group>"; };
+		53BB903314819259002E3B51 /* Client.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Client.hpp; sourceTree = "<group>"; };
+		53BB903414819259002E3B51 /* Engine.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Engine.hpp; sourceTree = "<group>"; };
+		53BB905614825BB7002E3B51 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Engine.cpp; sourceTree = "<group>"; };
+		53BB906714825F41002E3B51 /* Driver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Driver.hpp; sourceTree = "<group>"; };
+		53BB906814825F6A002E3B51 /* Audio.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Audio.hpp; sourceTree = "<group>"; };
+		53ED31DB14869960003FF7C2 /* Exception.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Exception.hpp; sourceTree = "<group>"; };
+		53ED31DD14869960003FF7C2 /* Manager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Manager.cpp; sourceTree = "<group>"; };
+		53ED31DE14869960003FF7C2 /* Manager.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Manager.hpp; sourceTree = "<group>"; };
+		53ED330D148796FC003FF7C2 /* client.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = client.hpp; sourceTree = "<group>"; };
+		53ED330E148796FC003FF7C2 /* error.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = error.hpp; sourceTree = "<group>"; };
+		53ED330F148796FC003FF7C2 /* host.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = host.hpp; sourceTree = "<group>"; };
+		53ED3310148796FC003FF7C2 /* server.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = server.hpp; sourceTree = "<group>"; };
+		53ED3311148796FC003FF7C2 /* stream.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = stream.hpp; sourceTree = "<group>"; };
+		53ED3312148796FC003FF7C2 /* types.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = types.hpp; sourceTree = "<group>"; };
+		53ED337A1487A825003FF7C2 /* Memory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Memory.cpp; sourceTree = "<group>"; };
+		53ED337B1487A825003FF7C2 /* Memory.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Memory.hpp; sourceTree = "<group>"; };
+		53ED33F51487EDA8003FF7C2 /* SynthDef.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SynthDef.hpp; sourceTree = "<group>"; };
+		53ED34531487F9B8003FF7C2 /* synth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = synth.cpp; sourceTree = "<group>"; };
+		53ED35C2148A88D3003FF7C2 /* Node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Node.cpp; sourceTree = "<group>"; };
+		53ED35C3148A88D3003FF7C2 /* Node.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Node.hpp; sourceTree = "<group>"; };
+		53ED35E5148A8D19003FF7C2 /* AudioBus.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AudioBus.hpp; sourceTree = "<group>"; };
+		53ED35E6148A8D19003FF7C2 /* Group.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Group.cpp; sourceTree = "<group>"; };
+		53ED35E7148A8D19003FF7C2 /* Group.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Group.hpp; sourceTree = "<group>"; };
+		53ED35E8148A8D19003FF7C2 /* Synth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Synth.cpp; sourceTree = "<group>"; };
+		53ED35E9148A8D19003FF7C2 /* Synth.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Synth.hpp; sourceTree = "<group>"; };
+		53ED3605148A8EB1003FF7C2 /* AudioBus.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AudioBus.cpp; sourceTree = "<group>"; };
+		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Info.plist; sourceTree = "<group>"; };
+		A15CFB1C0DE4A8C600FB5D08 /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
+		A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAGLView.m; sourceTree = "<group>"; };
+		A16C46DD0DE37EC400F4A0B3 /* EAGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAGLView.h; sourceTree = "<group>"; };
+		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = drawbuffer.cpp; sourceTree = "<group>"; };
+		F712EAAF0DF0FEAF003F7B58 /* drawbuffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = drawbuffer.hpp; sourceTree = "<group>"; };
+		F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1D60588F0D05DD3D006BFB54 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
+				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
+				1D3623EC0D0F72F000981E51 /* CoreGraphics.framework in Frameworks */,
+				F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */,
+				A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */,
+				A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				A16C46DD0DE37EC400F4A0B3 /* EAGLView.h */,
+				A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */,
+				1D3623240D0F684500981E51 /* MescalineMobileAppDelegate.h */,
+				1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1D6058910D05DD3D006BFB54 /* Mescaline.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
+			isa = PBXGroup;
+			children = (
+				53BB9115148404AC002E3B51 /* external_libraries */,
+				53ED34511487F9B8003FF7C2 /* faust */,
+				53BB902F14819259002E3B51 /* src */,
+				53BB90271481924B002E3B51 /* platform */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = CustomTemplate;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				538A754E148FCF1E00C47BF1 /* scope.cpp */,
+				538A754F148FCF1E00C47BF1 /* scope.hpp */,
+				53BB8E2E147EC774002E3B51 /* osc.cpp */,
+				F712EAAF0DF0FEAF003F7B58 /* drawbuffer.hpp */,
+				F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */,
+				32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */,
+				29B97316FDCFA39411CA2CEA /* main.m */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A15CFB1C0DE4A8C600FB5D08 /* icon.png */,
+				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
+				8D1107310486CEB800E47090 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */,
+				A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */,
+				F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */,
+				1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */,
+				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
+				1D30AB110D05D00D00671497 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		538A757E148FD42300C47BF1 /* Plugin */ = {
+			isa = PBXGroup;
+			children = (
+				538A761514911A8F00C47BF1 /* API.h */,
+				538A7583148FD43500C47BF1 /* API.hpp */,
+			);
+			name = Plugin;
+			sourceTree = "<group>";
+		};
+		53BB90271481924B002E3B51 /* platform */ = {
+			isa = PBXGroup;
+			children = (
+				53BB90281481924B002E3B51 /* ios */,
+			);
+			name = platform;
+			path = ../platform;
+			sourceTree = SOURCE_ROOT;
+		};
+		53BB90281481924B002E3B51 /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				53BB90291481924B002E3B51 /* Mescaline */,
+			);
+			path = ios;
+			sourceTree = "<group>";
+		};
+		53BB90291481924B002E3B51 /* Mescaline */ = {
+			isa = PBXGroup;
+			children = (
+				53BB902A1481924B002E3B51 /* Audio */,
+			);
+			path = Mescaline;
+			sourceTree = "<group>";
+		};
+		53BB902A1481924B002E3B51 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				53BB902B1481924B002E3B51 /* IO */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		53BB902B1481924B002E3B51 /* IO */ = {
+			isa = PBXGroup;
+			children = (
+				53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */,
+				53BB902D1481924B002E3B51 /* RemoteIODriver.hpp */,
+			);
+			path = IO;
+			sourceTree = "<group>";
+		};
+		53BB902F14819259002E3B51 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				53BB903014819259002E3B51 /* Mescaline */,
+				538A756F148FD2A600C47BF1 /* Faust.hpp */,
+			);
+			name = src;
+			path = ../src;
+			sourceTree = SOURCE_ROOT;
+		};
+		53BB903014819259002E3B51 /* Mescaline */ = {
+			isa = PBXGroup;
+			children = (
+				53BB906814825F6A002E3B51 /* Audio.hpp */,
+				53BB903114819259002E3B51 /* Audio */,
+				53ED31DB14869960003FF7C2 /* Exception.hpp */,
+				53BB903514819259002E3B51 /* Faust */,
+				53ED31DC14869960003FF7C2 /* Memory */,
+				53ED337A1487A825003FF7C2 /* Memory.cpp */,
+				53ED337B1487A825003FF7C2 /* Memory.hpp */,
+			);
+			path = Mescaline;
+			sourceTree = "<group>";
+		};
+		53BB903114819259002E3B51 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				53ED3605148A8EB1003FF7C2 /* AudioBus.cpp */,
+				53ED35E5148A8D19003FF7C2 /* AudioBus.hpp */,
+				53ED35E6148A8D19003FF7C2 /* Group.cpp */,
+				53ED35E7148A8D19003FF7C2 /* Group.hpp */,
+				53ED35E8148A8D19003FF7C2 /* Synth.cpp */,
+				53ED35E9148A8D19003FF7C2 /* Synth.hpp */,
+				53ED33F51487EDA8003FF7C2 /* SynthDef.hpp */,
+				53BB905614825BB7002E3B51 /* Engine.cpp */,
+				53BB903414819259002E3B51 /* Engine.hpp */,
+				53BB903214819259002E3B51 /* IO */,
+				53ED35C2148A88D3003FF7C2 /* Node.cpp */,
+				53ED35C3148A88D3003FF7C2 /* Node.hpp */,
+				538A757E148FD42300C47BF1 /* Plugin */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		53BB903214819259002E3B51 /* IO */ = {
+			isa = PBXGroup;
+			children = (
+				53BB906714825F41002E3B51 /* Driver.hpp */,
+				53BB903314819259002E3B51 /* Client.hpp */,
+			);
+			path = IO;
+			sourceTree = "<group>";
+		};
+		53BB903514819259002E3B51 /* Faust */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Faust;
+			sourceTree = "<group>";
+		};
+		53BB9115148404AC002E3B51 /* external_libraries */ = {
+			isa = PBXGroup;
+			children = (
+				53ED32C2148796FB003FF7C2 /* oscpp */,
+			);
+			name = external_libraries;
+			sourceTree = "<group>";
+		};
+		53ED31DC14869960003FF7C2 /* Memory */ = {
+			isa = PBXGroup;
+			children = (
+				53ED31DD14869960003FF7C2 /* Manager.cpp */,
+				53ED31DE14869960003FF7C2 /* Manager.hpp */,
+			);
+			path = Memory;
+			sourceTree = "<group>";
+		};
+		53ED32C2148796FB003FF7C2 /* oscpp */ = {
+			isa = PBXGroup;
+			children = (
+				53ED330C148796FC003FF7C2 /* oscpp */,
+			);
+			name = oscpp;
+			path = ../external_libraries/oscpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		53ED330C148796FC003FF7C2 /* oscpp */ = {
+			isa = PBXGroup;
+			children = (
+				53ED330D148796FC003FF7C2 /* client.hpp */,
+				53ED330E148796FC003FF7C2 /* error.hpp */,
+				53ED330F148796FC003FF7C2 /* host.hpp */,
+				53ED3310148796FC003FF7C2 /* server.hpp */,
+				53ED3311148796FC003FF7C2 /* stream.hpp */,
+				53ED3312148796FC003FF7C2 /* types.hpp */,
+			);
+			path = oscpp;
+			sourceTree = "<group>";
+		};
+		53ED34511487F9B8003FF7C2 /* faust */ = {
+			isa = PBXGroup;
+			children = (
+				53ED34521487F9B8003FF7C2 /* architecture */,
+			);
+			name = faust;
+			path = ../faust;
+			sourceTree = SOURCE_ROOT;
+		};
+		53ED34521487F9B8003FF7C2 /* architecture */ = {
+			isa = PBXGroup;
+			children = (
+				53ED34531487F9B8003FF7C2 /* synth.cpp */,
+			);
+			path = architecture;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1D6058900D05DD3D006BFB54 /* Mescaline */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Mescaline" */;
+			buildPhases = (
+				1D60588D0D05DD3D006BFB54 /* Resources */,
+				1D60588E0D05DD3D006BFB54 /* Sources */,
+				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Mescaline;
+			productName = aurioTouch;
+			productReference = 1D6058910D05DD3D006BFB54 /* Mescaline.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "MescalineMobile" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1D6058900D05DD3D006BFB54 /* Mescaline */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1D60588D0D05DD3D006BFB54 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
+				A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1D60588E0D05DD3D006BFB54 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
+				1D3623260D0F684500981E51 /* MescalineMobileAppDelegate.mm in Sources */,
+				A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */,
+				F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */,
+				53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */,
+				53BB902E1481924B002E3B51 /* RemoteIODriver.cpp in Sources */,
+				53BB905714825BB7002E3B51 /* Engine.cpp in Sources */,
+				53ED31DF14869960003FF7C2 /* Manager.cpp in Sources */,
+				53ED337C1487A825003FF7C2 /* Memory.cpp in Sources */,
+				53ED35C4148A88D3003FF7C2 /* Node.cpp in Sources */,
+				53ED35EA148A8D19003FF7C2 /* Group.cpp in Sources */,
+				53ED35EB148A8D19003FF7C2 /* Synth.cpp in Sources */,
+				53ED3606148A8EB1003FF7C2 /* AudioBus.cpp in Sources */,
+				538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1D6058940D05DD3E006BFB54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = MescalineMobile_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_NAME = Mescaline;
+			};
+			name = Debug;
+		};
+		1D6058950D05DD3E006BFB54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = MescalineMobile_Prefix.pch;
+				INFOPLIST_FILE = Info.plist;
+				PRODUCT_NAME = Mescaline;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"CA_PREFER_FIXED_POINT=0",
+					OSC_HOST_LITTLE_ENDIAN,
+				);
+				GCC_THUMB_SUPPORT = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../src,
+					../platform/ios,
+					../external_libraries/boost/include,
+					../external_libraries/boost_lockfree,
+					../external_libraries/faust/architecture,
+					../external_libraries/oscpp,
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PREBINDING = NO;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"CA_PREFER_FIXED_POINT=0",
+					OSC_HOST_LITTLE_ENDIAN,
+				);
+				GCC_THUMB_SUPPORT = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					../src,
+					../platform/ios,
+					../external_libraries/boost/include,
+					../external_libraries/boost_lockfree,
+					../external_libraries/faust/architecture,
+					../external_libraries/oscpp,
+				);
+				PREBINDING = NO;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 2;
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Mescaline" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D6058940D05DD3E006BFB54 /* Debug */,
+				1D6058950D05DD3E006BFB54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "MescalineMobile" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}
