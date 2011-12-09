@@ -1,3 +1,8 @@
+## Mobile music apps
+
+* [Lemur](http://liine.net/en/products/lemur/)
+* [Reactable Mobile](http://www.reactable.com/products/mobile/)
+
 ## Memory allocation
 
 We're looking for a fast user-space storage allocator.
