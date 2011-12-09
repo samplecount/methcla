@@ -81,6 +81,7 @@
 		A16C46DD0DE37EC400F4A0B3 /* EAGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAGLView.h; sourceTree = "<group>"; };
 		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		A5F47A1A14924EB70086159B /* Hash.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Hash.hpp; sourceTree = "<group>"; };
 		F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = drawbuffer.cpp; sourceTree = "<group>"; };
 		F712EAAF0DF0FEAF003F7B58 /* drawbuffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = drawbuffer.hpp; sourceTree = "<group>"; };
 		F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -242,10 +243,10 @@
 				53BB906814825F6A002E3B51 /* Audio.hpp */,
 				53BB903114819259002E3B51 /* Audio */,
 				53ED31DB14869960003FF7C2 /* Exception.hpp */,
-				53BB903514819259002E3B51 /* Faust */,
 				53ED31DC14869960003FF7C2 /* Memory */,
 				53ED337A1487A825003FF7C2 /* Memory.cpp */,
 				53ED337B1487A825003FF7C2 /* Memory.hpp */,
+				A5F47A1914924EB70086159B /* Utility */,
 			);
 			path = Mescaline;
 			sourceTree = "<group>";
@@ -277,13 +278,6 @@
 				53BB903314819259002E3B51 /* Client.hpp */,
 			);
 			path = IO;
-			sourceTree = "<group>";
-		};
-		53BB903514819259002E3B51 /* Faust */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Faust;
 			sourceTree = "<group>";
 		};
 		53BB9115148404AC002E3B51 /* external_libraries */ = {
@@ -340,6 +334,14 @@
 				53ED34531487F9B8003FF7C2 /* synth.cpp */,
 			);
 			path = architecture;
+			sourceTree = "<group>";
+		};
+		A5F47A1914924EB70086159B /* Utility */ = {
+			isa = PBXGroup;
+			children = (
+				A5F47A1A14924EB70086159B /* Hash.hpp */,
+			);
+			path = Utility;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
