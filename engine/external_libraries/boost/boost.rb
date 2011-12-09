@@ -140,13 +140,13 @@ end
 
 #===============================================================================
 def unpack
-  if File.directory?(BOOST_SRC)
-    puts "    Unpacking #{BJAM_USER_CONFIG} ..."
-    system "tar xjf #{BOOST_TARBALL} #{BJAM_USER_CONFIG}"
-  else
+  # if File.directory?(BOOST_SRC)
+  #   puts "    Unpacking #{BJAM_USER_CONFIG} ..."
+  #   system "tar xjf #{BOOST_TARBALL} #{BJAM_USER_CONFIG}"
+  # else
     puts "    Unpacking to #{BOOST_SRC} ..."
     system "tar xfj #{BOOST_TARBALL}"
-  end
+  # end
 end
 
 #===============================================================================
