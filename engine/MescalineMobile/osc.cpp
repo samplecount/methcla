@@ -18,6 +18,7 @@
 #include <cmath>
 #include <map>
 #include <string>
+#include <vector>
 
 using namespace Faust;
 using namespace Mescaline::Audio;
@@ -208,16 +209,14 @@ private:
     map<const char*,const char*> m_map;
 };
 
-class MetaUI : public UI
+class ControlSpecAllocator : public UI
 {
 public:
-    MetaUI()
-        : m_numControlInputs(0)
-        , m_numControlOutputs(0)
-    { }
-
-    size_t numControlInputs() const { return m_numControlInputs; }
-    size_t numControlOutputs() const { return m_numControlOutputs; }
+    const Plugin::ControlSpec& controlInputSpec(size_t index) const { return m_controlInputs[index]; }
+    const Plugin::ControlSpec& controlOutputSpec(size_t index) const { return m_controlOutputs[index]; }
+    
+    size_t numControlInputs() const { return m_controlInputs.size(); }
+    size_t numControlOutputs() const { return m_controlOutputs.size(); }
 
     // -- widget's layouts
 
@@ -229,31 +228,47 @@ public:
 
     // -- active widgets
 
-    virtual void addButton(const char* label, float* zone) { addControlInput(); }
-    virtual void addToggleButton(const char* label, float* zone) { addControlInput(); }
-    virtual void addCheckButton(const char* label, float* zone) { addControlInput(); }
-    virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step) { addControlInput(); }
-    virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step) { addControlInput(); }
-    virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step) { addControlInput(); }
+    virtual void addButton(const char* label, float* zone)
+        { addControlInput(label, 0, 1, 1, 0, kMescalineTrigger); }
+    virtual void addToggleButton(const char* label, float* zone)
+        { addControlInput(label, 0, 1, 1, 0); }
+    virtual void addCheckButton(const char* label, float* zone)
+        { addControlInput(label, 0, 1, 1, 0); }
+    virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step)
+        { addControlInput(label, min, max, step, init); }
+    virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step)
+        { addControlInput(label, min, max, step, init); }
+    virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step)
+        { addControlInput(label, min, max, step, init); }
 
     // -- passive widgets
 
-    virtual void addNumDisplay(const char* label, float* zone, int precision) { addControlOutput(); }
-    virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max) { addControlOutput(); }
-    virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max) { addControlOutput(); }
-    virtual void addVerticalBargraph(const char* label, float* zone, float min, float max) { addControlOutput(); }
+    virtual void addNumDisplay(const char* label, float* zone, int precision)
+        { addControlOutput(label, 0.f, 0.f, 0.f, 0.f); }
+    virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max)
+        { addControlOutput(label, min, max, 1.f, min); }
+    virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max)
+        { addControlOutput(label, min, max, 0.f, min); }
+    virtual void addVerticalBargraph(const char* label, float* zone, float min, float max)
+        { addControlOutput(label, min, max, 0.f, min); }
 
 	// -- metadata declarations
 
     virtual void declare(float* , const char* , const char* ) { }
 
 protected:
-    void addControlInput() { m_numControlInputs++; }
-    void addControlOutput() { m_numControlOutputs++; }
+    void addControlInput(const char* name, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+    {
+        m_controlInputs.push_back(Plugin::ControlSpec(name, minValue, maxValue, stepSize, defaultValue, flags));
+    }
+    void addControlOutput(const char* name, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+    {
+        m_controlOutputs.push_back(Plugin::ControlSpec(name, minValue, maxValue, stepSize, defaultValue, flags));
+    }
 
 private:
-    size_t m_numControlInputs;
-    size_t m_numControlOutputs;
+    vector<Plugin::ControlSpec> m_controlInputs;
+    vector<Plugin::ControlSpec> m_controlOutputs;
 };
 
 class ControlAllocator : public UI
@@ -356,7 +371,7 @@ private:
 class SynthDef : public Plugin::SynthDef<MescalineFaustSynth>
 {
 public:
-    SynthDef(const char* name, dsp& dsp, const MetaUI& ui)
+    SynthDef(const char* name, dsp& dsp, const ControlSpecAllocator& ui)
         : Plugin::SynthDef<MescalineFaustSynth>(
             name
           , dsp.getNumInputs()
@@ -368,6 +383,13 @@ public:
                         // Reserve space for the control pointers
                         + (numControlInputs + numControlOutputs) * sizeof(float*);
         FAUSTCLASS::metadata(&m_metaData);
+        // Add control specs
+        for (size_t i=0; i < numControlInputs; i++) {
+            addControlInputSpec(i, ui.controlInputSpec(i));
+        }
+        for (size_t i=0; i < numControlOutputs; i++) {
+            addControlOutputSpec(i, ui.controlOutputSpec(i));
+        }
     }
 
 private:
@@ -378,7 +400,7 @@ private:
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(FAUSTCLASS)(MescalineHost* host)
 {
     FAUSTCLASS* dsp = new FAUSTCLASS;
-    MetaUI ui;
+    ControlSpecAllocator ui;
     dsp->init(MescalineHostGetSampleRate(host));
     dsp->buildUserInterface(&ui);
     MescalineSynthDef* def = new SynthDef(MESCALINE_STRINGIFY(FAUSTCLASS), *dsp, ui);
