@@ -55,6 +55,11 @@ Environment::~Environment()
     delete m_pluginInterface;
 }
 
+void Environment::initModule(MescalineInitFunc moduleInitFunc)
+{
+	(*moduleInitFunc)(m_pluginInterface);
+}
+
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
     BOOST_ASSERT(numFrames <= blockSize());
@@ -82,11 +87,6 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     }
 
     m_epoch++;
-}
-
-MescalineHost* Environment::pluginInterface()
-{
-	return m_pluginInterface;
 }
 
 void Environment::insertNode(Node* node)

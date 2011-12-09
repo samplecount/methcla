@@ -23,8 +23,8 @@ public:
     {
         Mescaline::Audio::Engine::configure(driver);
         
-        MESCALINE_INIT_FUNC(osc)(environment()->pluginInterface());
-        MESCALINE_INIT_FUNC(Scope)(environment()->pluginInterface());
+		environment()->initModule(MESCALINE_INIT_FUNC(osc));
+		environment()->initModule(MESCALINE_INIT_FUNC(Scope));
 
         // Create osc instance
         const Mescaline::Audio::SynthDef& def = environment()->lookupSynthDef("osc");

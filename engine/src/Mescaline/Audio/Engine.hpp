@@ -137,6 +137,8 @@ namespace Mescaline { namespace Audio
         Environment(const Options& options);
         ~Environment();
 
+		void initModule(MescalineInitFunc moduleInitFunc);
+
         const SynthDef& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
         void registerSynthDef(SynthDef* synthDef) { m_synthDefs.insert(synthDef); }
         
@@ -164,8 +166,6 @@ namespace Mescaline { namespace Audio
         const Epoch& epoch() const { return m_epoch; }
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
-
-        MescalineHost* pluginInterface();
 
         typedef boost::lockfree::fifo<Command*> CommandFIFO;
 
