@@ -32,8 +32,9 @@ Synth::~Synth()
 Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const SynthDef& synthDef)
 {
     const Alignment bufferAlignment(Alignment::SIMDAlignment());
+
     BOOST_ASSERT_MSG( bufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
-                    , "blockSize must be aligned to Alignment::kSIMDAlignment" );
+                    , "Environment.blockSize must be aligned to Alignment::SIMDAlignment" );
 
     const size_t numAudioInputs = synthDef.numAudioInputs();
     const size_t numAudioOutputs = synthDef.numAudioOutputs();
