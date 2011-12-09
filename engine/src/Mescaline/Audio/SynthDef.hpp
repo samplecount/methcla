@@ -2,7 +2,11 @@
 #define MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 
 #include <Mescaline/Audio/Plugin/API.h>
+#include <Mescaline/Utility/Hash.hpp>
+
+#include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
+
 #include <cstring>
 #include <string>
 
@@ -45,6 +49,33 @@ public:
 private:
     MescalineHost*     m_host;
     MescalineSynthDef* m_def;
+};
+
+class SynthDefMap
+{
+public:
+    void insert(const SynthDef* synthDef)
+    {
+        m_map[synthDef->name()] = synthDef;
+    }
+
+    const SynthDef& lookup(const char* name) const
+    {
+		// TODO: error handling
+        return *m_map.at(name);
+    }
+
+	// TODO: Use reference count for SynthDefs and implement delete/overwrite
+	// TODO: Use 4-byte aligned symbols for faster lookups
+
+private:
+    typedef boost::unordered_map<
+				const char*
+			  , const SynthDef*
+			  , Mescaline::Utility::Hash::string_hash
+			  , Mescaline::Utility::Hash::string_equal_to >
+			Map;
+    Map m_map;
 };
 
 }; };

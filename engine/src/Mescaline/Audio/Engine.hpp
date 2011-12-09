@@ -13,7 +13,6 @@
 #include <boost/container/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/lockfree/fifo.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/utility.hpp>
@@ -79,26 +78,6 @@ namespace Mescaline { namespace Audio
 
     private:
         Nodes m_nodes;
-    };
-
-    class SynthDefMap
-    {
-    public:
-        void insert(SynthDef* synthDef)
-        {
-            string tmpName(synthDef->name());
-            m_map.insert(tmpName, synthDef);
-        }
-
-        const SynthDef& lookup(const char* name) const
-        {
-            string tmpName(name);
-            return m_map.at(name);
-        }
-
-    private:
-        typedef boost::ptr_map<string,SynthDef> Map;
-        Map m_map;
     };
 
     class Group;
