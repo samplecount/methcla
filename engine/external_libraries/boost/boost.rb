@@ -204,9 +204,9 @@ def lipoficate(lib)
   mkdir_p(libdir)
 
   lib.lib_names.each { |la|
-    armv7 = "#{BOOST_SRC}/bin.v2/libs/#{lib.name}/build/darwin-4.2.1~iphone/release/architecture-arm/link-static/macosx-version-iphone-#{IPHONE_SDKVERSION}/target-os-iphone/threading-multi/#{la}"
-    i386 = "#{BOOST_SRC}/bin.v2/libs/#{lib.name}/build/darwin-4.2.1~iphonesim/release/architecture-x86/link-static/macosx-version-iphonesim-#{IPHONE_SDKVERSION}/target-os-iphone/threading-multi/#{la}"
-    unless system "lipo -create \"#{armv6}\" \"#{i386}\" -o \"#{libdir}/#{la}\""
+    arm = "#{BOOST_SRC}/bin.v2/libs/#{lib.name}/build/darwin-4.2.1~iphone/release/architecture-arm/link-static/macosx-version-iphone-#{IPHONE_SDKVERSION}/target-os-iphone/threading-multi/#{la}"
+    x86 = "#{BOOST_SRC}/bin.v2/libs/#{lib.name}/build/darwin-4.2.1~iphonesim/release/architecture-x86/link-static/macosx-version-iphonesim-#{IPHONE_SDKVERSION}/target-os-iphone/threading-multi/#{la}"
+    unless system "lipo -create \"#{arm}\" \"#{x86}\" -o \"#{libdir}/#{la}\""
       abort "Lipo #{la} failed"
     end
   }
