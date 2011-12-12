@@ -13,6 +13,7 @@
 #include <Mescaline/Audio/Plugin/API.hpp>
 
 #include <boost/type_traits.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -212,9 +213,22 @@ private:
 class ControlSpecAllocator : public UI
 {
 public:
-    const Plugin::ControlSpec& controlInputSpec(size_t index) const { return m_controlInputs[index]; }
-    const Plugin::ControlSpec& controlOutputSpec(size_t index) const { return m_controlOutputs[index]; }
-    
+    void finish()
+    {
+        for (MetaDataMap::iterator metaData = m_metaData.begin(); metaData != m_metaData.end(); metaData++) {
+            ControlSpecMap::iterator spec = m_controlSpecs.find(metaData->first);
+            if (spec == m_controlSpecs.end()) {
+                // Free metadata
+                delete metaData->second;
+            } else {
+                spec->second->setMetaData(metaData->second);
+            }
+        }
+    }
+
+    Plugin::ControlSpec* controlInputSpec(size_t index) const { return m_controlInputs[index]; }
+    Plugin::ControlSpec* controlOutputSpec(size_t index) const { return m_controlOutputs[index]; }
+
     size_t numControlInputs() const { return m_controlInputs.size(); }
     size_t numControlOutputs() const { return m_controlOutputs.size(); }
 
@@ -229,46 +243,64 @@ public:
     // -- active widgets
 
     virtual void addButton(const char* label, float* zone)
-        { addControlInput(label, 0, 1, 1, 0, kMescalineTrigger); }
+        { addControlInput(label, zone, 0, 1, 1, 0, kMescalineTrigger); }
     virtual void addToggleButton(const char* label, float* zone)
-        { addControlInput(label, 0, 1, 1, 0); }
+        { addControlInput(label, zone, 0, 1, 1, 0); }
     virtual void addCheckButton(const char* label, float* zone)
-        { addControlInput(label, 0, 1, 1, 0); }
+        { addControlInput(label, zone, 0, 1, 1, 0); }
     virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, min, max, step, init); }
+        { addControlInput(label, zone, min, max, step, init); }
     virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, min, max, step, init); }
+        { addControlInput(label, zone, min, max, step, init); }
     virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, min, max, step, init); }
+        { addControlInput(label, zone, min, max, step, init); }
 
     // -- passive widgets
 
     virtual void addNumDisplay(const char* label, float* zone, int precision)
-        { addControlOutput(label, 0.f, 0.f, 0.f, 0.f); }
+        { addControlOutput(label, zone, 0.f, 0.f, 0.f, 0.f); }
     virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max)
-        { addControlOutput(label, min, max, 1.f, min); }
+        { addControlOutput(label, zone, min, max, 1.f, min); }
     virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max)
-        { addControlOutput(label, min, max, 0.f, min); }
+        { addControlOutput(label, zone, min, max, 0.f, min); }
     virtual void addVerticalBargraph(const char* label, float* zone, float min, float max)
-        { addControlOutput(label, min, max, 0.f, min); }
+        { addControlOutput(label, zone, min, max, 0.f, min); }
 
 	// -- metadata declarations
 
-    virtual void declare(float* , const char* , const char* ) { }
+    virtual void declare(float* zone, const char* key, const char* value)
+    {
+        MetaDataMap::iterator spec = m_metaData.find(zone);
+        if (spec == m_metaData.end()) {
+            m_metaData[zone] = new Plugin::MetaData(key, value);
+        } else {
+            m_metaData[zone] = new Plugin::MetaData(*spec->second, key, value);
+        }
+    }
 
 protected:
-    void addControlInput(const char* name, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+    void addControlInput(const char*, float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
     {
-        m_controlInputs.push_back(Plugin::ControlSpec(name, minValue, maxValue, stepSize, defaultValue, flags));
+        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate zone/control spec" );
+        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags, minValue, maxValue, stepSize, defaultValue);
+        m_controlSpecs[zone] = spec;
+        m_controlInputs.push_back(spec);
     }
-    void addControlOutput(const char* name, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+    void addControlOutput(const char*, float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
     {
-        m_controlOutputs.push_back(Plugin::ControlSpec(name, minValue, maxValue, stepSize, defaultValue, flags));
+        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate zone/control spec" );
+        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags, minValue, maxValue, stepSize, defaultValue);
+        m_controlSpecs[zone] = spec;
+        m_controlOutputs.push_back(spec);
     }
 
 private:
-    vector<Plugin::ControlSpec> m_controlInputs;
-    vector<Plugin::ControlSpec> m_controlOutputs;
+    vector<Plugin::ControlSpec*> m_controlInputs;
+    vector<Plugin::ControlSpec*> m_controlOutputs;
+    typedef boost::unordered_map<const float*, const Plugin::MetaData*> MetaDataMap;
+    typedef boost::unordered_map<const float*, Plugin::ControlSpec*> ControlSpecMap;
+    MetaDataMap m_metaData;
+    ControlSpecMap m_controlSpecs;
 };
 
 class ControlAllocator : public UI
@@ -385,10 +417,10 @@ public:
         FAUSTCLASS::metadata(&m_metaData);
         // Add control specs
         for (size_t i=0; i < numControlInputs; i++) {
-            addControlInputSpec(i, ui.controlInputSpec(i));
+            addControlInputSpec(ui.controlInputSpec(i));
         }
         for (size_t i=0; i < numControlOutputs; i++) {
-            addControlOutputSpec(i, ui.controlOutputSpec(i));
+            addControlOutputSpec(ui.controlOutputSpec(i));
         }
     }
 

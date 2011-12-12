@@ -2,7 +2,10 @@
 #define MESCALINE_API_H_INCLUDED
 
 #include <Mescaline/Audio/Plugin/Types.h>
+
+#include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
 #if defined(__cplusplus)
 #   define MESCALINE_C_LINKAGE extern "C"
@@ -15,7 +18,7 @@
 struct MescalineSynth
 {
     /// Process numFrames of audio samples from inputs to outputs.
-    void (*fProcess)(MescalineSynth* self, unsigned int numFrames, sample_t** inputs, sample_t** outputs);
+    void (*fProcess)(MescalineSynth* self, size_t numFrames, sample_t** inputs, sample_t** outputs);
     /// Get the address of the control input at index.
     float* (*fGetControlInput)(MescalineSynth* self, size_t index);
     /// Get the address of the control output at index.
@@ -23,7 +26,7 @@ struct MescalineSynth
 };
 typedef struct MescalineSynth MescalineSynth;
 
-static inline void MescalineSynthProcess(MescalineSynth* self, unsigned int numFrames, sample_t** inputs, sample_t** outputs)
+static inline void MescalineSynthProcess(MescalineSynth* self, size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
     if (self->fProcess != NULL) (*self->fProcess)(self, numFrames, inputs, outputs);
 }
@@ -45,56 +48,133 @@ typedef enum
     kMescalineNoFlags      = 0x0
   , kMescalineBoundedBelow = 0x1
   , kMescalineBoundedAbove = 0x2
-  , kMescalineTrigger	   = 0x4
+  , kMescalineTrigger      = 0x4
 } MescalineControlFlags;
 
 typedef enum
 {
-    kMescalineWarpLinear
-  , kMescalineWarpExponential
-  , kMescalineWarpSine
-  , kMescalineWarpCosine
-  , kMescalineWarpDecibel
-  , kMescalineWarpCurve
-  , kMescalineWarpFunction
-} MescalineWarpType;
-
-typedef struct MescalineControlSpec MescalineControlSpec;
+    kMescalineMappingLinear
+  , kMescalineMappingExponential
+  , kMescalineMappingSine
+  , kMescalineMappingCosine
+  , kMescalineMappingDecibel
+  , kMescalineMappingCurve
+} MescalineMappingFunction;
 
 typedef struct
 {
-    MescalineWarpType type;
+    MescalineMappingFunction function;
     union {
         float curve;
-        struct {
-            float (*fMap)(const MescalineControlSpec* spec, float value);
-            float (*fUnmap)(const MescalineControlSpec* spec, float value);
-        } function;
-    } data;
-} MescalineWarp;
+    } params;
+} MescalineMapping;
+
+struct MescalineMetaData
+{
+    const struct MescalineMetaData* next;
+    const char* key;
+    const char* value;
+};
+typedef struct MescalineMetaData MescalineMetaData;
+
+static inline void MescalineMetaDataInit(MescalineMetaData* metadata, const char* key, const char* value)
+{
+    metadata->next = NULL;
+    metadata->key = key;
+    metadata->value = value;
+}
+
+static inline const MescalineMetaData* MescalineMetaDataTail(const MescalineMetaData* x)
+{
+    return x == NULL ? NULL : x->next;
+}
+
+static inline MescalineMetaData* MescalineMetaDataCons(MescalineMetaData* x1, const MescalineMetaData* x2)
+{
+    assert( x1->next == NULL );
+    x1->next = x2;
+    return x1;
+}
 
 struct MescalineControlSpec
 {
-    const char*             name;
-    float                   minValue;
-    float                   maxValue;
-    float                   stepSize;
-    float                   defaultValue;
-    MescalineControlFlags   flags;
-    MescalineWarp           warp;
+    MescalineControlFlags       flags;
+    float                       minValue;
+    float                       maxValue;
+    float                       stepSize;
+    float                       defaultValue;
+    MescalineMapping            mapping;
+    const MescalineMetaData*    metaData;
 };
+typedef struct MescalineControlSpec MescalineControlSpec;
+
+static inline void MescalineControlSpecInit(MescalineControlSpec* self)
+{
+    memset(self, 0, sizeof(MescalineControlSpec));
+}
+
+enum MescalineUINodeType
+{
+    kMescalineUIContainer
+  , kMescalineUIControl
+};
+
+struct MescalineUINode
+{
+    MescalineUINodeType type;
+    MescalineUINode*    next;
+};
+typedef struct MescalineUINode MescalineUINode;
+
+struct MescalineUIControl
+{
+    MescalineUINode             node;
+    const MescalineControlSpec* spec;
+    const char*                 type;
+    const char*                 label;
+};
+typedef struct MescalineUIElement MescalineUIElement;
+
+static inline void MescalineControlInit(MescalineUIControl* self, const MescalineControlSpec* spec, const char* type, const char* label)
+{
+    self->node.type = kMescalineUIControl;
+    self->node.next = NULL;
+    self->spec = spec;
+    self->type = type;
+    self->label = label;
+}
+
+struct MescalineUIContainer
+{
+    MescalineUINode     node;
+    const char*         type;
+    const char*         label;
+    MescalineUINode*    children;
+};
+typedef struct MescalineUIContainer MescalineUIContainer;
+
+static inline void MescalineContainerInit(MescalineUIContainer* self, const char* type, const char* label)
+{
+    self->node.type = kMescalineUIContainer;
+    self->node.next = NULL;
+    self->type = type;
+    self->label = label;
+    self->children = NULL;
+}
 
 struct MescalineSynthDef
 {
-    const char*     name;
+    const char*                 name;
 
-    unsigned int    instanceSize;
-    unsigned int    instanceAlignment;
+    size_t                      instanceSize;
+    size_t                      instanceAlignment;
 
-    unsigned int    numAudioInputs;
-    unsigned int    numAudioOutputs;
-    unsigned int    numControlInputs;
-    unsigned int    numControlOutputs;
+    size_t                      numAudioInputs;
+    size_t                      numAudioOutputs;
+    size_t                      numControlInputs;
+    size_t                      numControlOutputs;
+
+    const MescalineMetaData*    metadata;
 
     // Class initialization/cleanup
     void            (*fInitialize)(MescalineHost* host, const MescalineSynthDef* self);
@@ -111,11 +191,17 @@ struct MescalineSynthDef
     // Querying
     const MescalineControlSpec* (*fGetControlInputSpec)(const MescalineSynthDef* self, size_t index);
     const MescalineControlSpec* (*fGetControlOutputSpec)(const MescalineSynthDef* self, size_t index);
-
-	/// Return interface description in JSON format.
-    const char*     (*fGetDescription)(const MescalineSynthDef* self);    
+    const MescalineUINode* (*fGetUIDescription)(const MescalineSynthDef* self);
 };
 typedef struct MescalineSynthDef MescalineSynthDef;
+
+static inline void MescalineSynthDefInit(MescalineSynthDef* self, const char* name, size_t instanceSize, size_t instanceAlignment)
+{
+    memset(self, 0, sizeof(MescalineSynthDef));
+    self->name = name;
+    self->instanceSize = instanceSize;
+    self->instanceAlignment = instanceAlignment;
+}
 
 static inline void MescalineSynthDefConstruct(MescalineHost* host, MescalineSynthDef* self, MescalineSynth* instance)
 {
@@ -137,9 +223,9 @@ static inline const MescalineControlSpec* MescalineSynthDefGetControlOutputSpec(
     return self->fGetControlOutputSpec == NULL ? NULL : (*self->fGetControlOutputSpec)(self, index);
 }
 
-static inline const char* MescalineSynthDefGetDescription(MescalineSynthDef* self)
+static inline const MescalineUINode* MescalineSynthDefGetUIDescription(MescalineSynthDef* self)
 {
-    return self->fGetDescription == NULL ? NULL : (*self->fGetDescription)(self);
+    return self->fGetUIDescription == NULL ? NULL : (*self->fGetUIDescription)(self);
 }
 
 struct MescalineHost

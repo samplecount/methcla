@@ -2,100 +2,134 @@
 #define MESCALINE_AUDIO_PLUGIN_SYNTHDEF_HPP_INCLUDED
 
 #include <Mescaline/Audio/Plugin/API.h>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/type_traits.hpp>
+#include <boost/utility.hpp>
 #include <string>
 #include <vector>
 
 namespace Mescaline { namespace Audio { namespace Plugin {
 
-    class Warp : public MescalineWarp
+    class MetaData : public MescalineMetaData
     {
     public:
-        typedef float (*Function)(const MescalineControlSpec*, float);
+        MetaData(const char* key, const char* value)
+        {
+            MescalineMetaDataInit(this, key, value);
+        }
 
-        Warp(MescalineWarpType warp=kMescalineWarpLinear, float curve=0)
+        MetaData(const MetaData& list, const char* key, const char* value)
         {
-            type = warp;
-            data.curve = curve;
-            data.function.fMap = 0;
-            data.function.fUnmap = 0;
+            MescalineMetaDataInit(this, key, value);
+            MescalineMetaDataCons(this, &list);
         }
-        Warp(float curve)
+        ~MetaData()
         {
-            type = kMescalineWarpCurve;
-            data.curve = curve;
-            data.function.fMap = 0;
-            data.function.fUnmap = 0;
+            if (next) delete next;
         }
-        Warp(Function map, Function unmap)
+
+        class const_iterator
         {
-            type = kMescalineWarpFunction;
-            data.curve = 0;
-            data.function.fMap = map;
-            data.function.fUnmap = unmap;
+        public:
+            const_iterator(const MetaData* list)
+                : m_list(list)
+            { }
+            
+            const_iterator& operator++()
+            {
+                if (m_list) {
+                    m_list = reinterpret_cast<const MetaData*>(m_list->next);
+                }
+                return *this;
+            }
+            
+            const MetaData& operator->()
+            {
+                return *m_list;
+            }
+
+        private:
+            const MetaData* m_list;
+        };
+        
+        const_iterator begin() const { return const_iterator(this); }
+        const_iterator end() const { return const_iterator(0); }
+    };
+
+    class Mapping : public MescalineMapping
+    {
+    public:
+        Mapping(MescalineMappingFunction function=kMescalineMappingLinear, float curve=0)
+        {
+            this->function = function;
+            this->params.curve = curve;
         }
     };
 
     class ControlSpec : public MescalineControlSpec
     {
     public:
-        ControlSpec( const char* name = ""
+        ControlSpec( MescalineControlFlags flags = kMescalineNoFlags
                    , float minValue = 0
                    , float maxValue = 0
                    , float stepSize = 0
                    , float defaultValue=0
-                   , MescalineControlFlags flags = kMescalineNoFlags
-                   , const Warp& warp = Warp()
+                   , const Mapping& mapping = Mapping()
                    )
-            : m_name(name)
         {
-            MescalineControlSpec::name = m_name.c_str();
-            MescalineControlSpec::minValue = minValue;
-            MescalineControlSpec::maxValue = maxValue;
-            MescalineControlSpec::stepSize = stepSize;
-            MescalineControlSpec::defaultValue = defaultValue;
-            MescalineControlSpec::flags = flags;
-            MescalineControlSpec::warp = warp;
+            MescalineControlSpecInit(this);
+            this->flags = flags;
+            this->minValue = minValue;
+            this->maxValue = maxValue;
+            this->stepSize = stepSize;
+            this->defaultValue = defaultValue;
+            this->mapping = mapping;
         }
-                   
-    private:
-        std::string m_name;
+        ~ControlSpec()
+        {
+            delete metaData();
+        }
+        
+        void setMetaData(const MetaData* metaData) { MescalineControlSpec::metaData = reinterpret_cast<const MescalineMetaData*>(metaData); }
+        const MetaData* metaData() const { return reinterpret_cast<const MetaData*>(MescalineControlSpec::metaData); }
     };
 
-    template <class T> class SynthDef : public MescalineSynthDef
+    template <class T> class SynthDef : public MescalineSynthDef, boost::noncopyable
     {
     public:
-        SynthDef( const char* inName
-                , size_t inNumAudioInputs
-                , size_t inNumAudioOutputs
-                , size_t inNumControlInputs
-                , size_t inNumControlOutputs )
-            : m_name(inName)
-            , m_controlInputSpecs(inNumControlInputs)
-            , m_controlOutputSpecs(inNumControlOutputs)
+        SynthDef( const char* name
+                , size_t numAudioInputs
+                , size_t numAudioOutputs
+                , size_t numControlInputs
+                , size_t numControlOutputs )
+            : m_name(name)
+            , m_controlInputSpecs(numControlInputs)
+            , m_controlOutputSpecs(numControlOutputs)
         {
             // Initialize MescalineSynthDef fields
-            memset(this, 0, sizeof(MescalineSynthDef));
-            name = m_name.c_str();
-            instanceSize = sizeof(T);
-            instanceAlignment = boost::alignment_of<T>();
-            numAudioInputs = inNumAudioInputs;
-            numAudioOutputs = inNumAudioOutputs;
-            numControlInputs = inNumControlInputs;
-            numControlOutputs = inNumControlOutputs;
-            fConstruct = &Construct;
-            fDestroy = &Destroy;
+            MescalineSynthDefInit(this, m_name.c_str(), sizeof(T), boost::alignment_of<T>());
+            this->numAudioInputs = numAudioInputs;
+            this->numAudioOutputs = numAudioOutputs;
+            this->numControlInputs = numControlInputs;
+            this->numControlOutputs = numControlOutputs;
+            this->fConstruct = &Construct;
+            this->fDestroy = &Destroy;
+            this->fGetControlInputSpec = GetControlInputSpec;
+            this->fGetControlOutputSpec = GetControlOutputSpec;
+            this->fGetUIDescription = GetUIDescription;
         }
 
-        void addControlInputSpec(size_t index, const ControlSpec& spec)
-            { m_controlInputSpecs[index] = spec; }
-        void addControlOutputSpec(size_t index, const ControlSpec& spec)
-            { m_controlOutputSpecs[index] = spec; }
         const MescalineControlSpec* controlInputSpec(size_t index) const
-            { return m_controlInputSpecs[index]; }
+            { return &m_controlInputSpecs[index]; }
         const MescalineControlSpec* controlOutputSpec(size_t index) const
-            { return m_controlOutputSpecs[index]; }
-        
+            { return &m_controlOutputSpecs[index]; }
+
+    protected:
+        void addControlInputSpec(ControlSpec* spec)
+            { m_controlInputSpecs.push_back(spec); }
+        void addControlOutputSpec(ControlSpec* spec)
+            { m_controlOutputSpecs.push_back(spec); }
+
     private:
         static void Construct( MescalineHost* host
                              , const MescalineSynthDef* self
@@ -115,22 +149,27 @@ namespace Mescaline { namespace Audio { namespace Plugin {
         }
         
         static void Process( MescalineSynth* instance
-                           , unsigned int numFrames
+                           , size_t numFrames
                            , sample_t** inputs
                            , sample_t** outputs )
         {
             reinterpret_cast<T*>(instance)->process(numFrames, inputs, outputs);
         }
 
-		static MescalineControlSpec* GetControlInputSpec(const MescalineSynthDef* self, size_t index)
+		static const MescalineControlSpec* GetControlInputSpec(const MescalineSynthDef* self, size_t index)
 		{
             return reinterpret_cast<const SynthDef<T>*>(self)->controlInputSpec(index);
 		}
 
-		static MescalineControlSpec* GetControlOutputSpec(const MescalineSynthDef* self, size_t index)
+		static const MescalineControlSpec* GetControlOutputSpec(const MescalineSynthDef* self, size_t index)
 		{
             return reinterpret_cast<const SynthDef<T>*>(self)->controlOutputSpec(index);
 		}
+
+        static const MescalineUINode* GetUIDescription(const MescalineSynthDef* self)
+        {
+            return NULL;
+        }
 
         static float* GetControlInput(MescalineSynth* instance, size_t index)
         {
@@ -144,8 +183,9 @@ namespace Mescaline { namespace Audio { namespace Plugin {
 
     private:
         std::string m_name;
-        std::vector<ControlSpec> m_controlInputSpecs;
-        std::vector<ControlSpec> m_controlOutputSpecs;
+        typedef boost::ptr_vector<ControlSpec> ControlSpecs;
+        ControlSpecs m_controlInputSpecs;
+        ControlSpecs m_controlOutputSpecs;
     };
 
 }; }; };
