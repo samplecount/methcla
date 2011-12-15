@@ -13,13 +13,11 @@
 #include <Mescaline/Audio/Plugin/API.hpp>
 
 #include <boost/type_traits.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <map>
 #include <string>
-#include <vector>
 
 using namespace Faust;
 using namespace Mescaline::Audio;
@@ -27,10 +25,13 @@ using namespace std;
 
 #define FAUSTFLOAT sample_t
 
+// ==============================================================================
+// Begin generated code
+
 
 #ifndef FAUSTFLOAT
 #define FAUSTFLOAT float
-#endif  
+#endif
 
 typedef long double quad;
 
@@ -68,7 +69,7 @@ class osc : public dsp {
 	float 	fRec1_perm[4];
 	static float 	ftbl0[65536];
   public:
-	static void metadata(Meta* m) 	{ 
+	static void metadata(Meta* m) 	{
 		m->declare("name", "osc");
 		m->declare("version", "1.0");
 		m->declare("author", "Grame");
@@ -136,7 +137,7 @@ class osc : public dsp {
 			}
 			// post processing
 			for (int i=0; i<4; i++) fRec0_perm[i]=fRec0_tmp[count+i];
-			
+
 			// LOOP 0x101196930
 			// pre processing
 			for (int i=0; i<4; i++) fRec1_tmp[i]=fRec1_perm[i];
@@ -147,14 +148,14 @@ class osc : public dsp {
 			}
 			// post processing
 			for (int i=0; i<4; i++) fRec1_perm[i]=fRec1_tmp[count+i];
-			
+
 			// SECTION : 2
 			// LOOP 0x101194aa0
 			// exec code
 			for (int i=0; i<count; i++) {
 				output0[i] = (FAUSTFLOAT)(fRec0[i] * ftbl0[int((65536.0f * fRec1[i]))]);
 			}
-			
+
 		}
 		if (index < fullcount) {
 			// compute the remaining samples if any
@@ -170,7 +171,7 @@ class osc : public dsp {
 			}
 			// post processing
 			for (int i=0; i<4; i++) fRec0_perm[i]=fRec0_tmp[count+i];
-			
+
 			// LOOP 0x101196930
 			// pre processing
 			for (int i=0; i<4; i++) fRec1_tmp[i]=fRec1_perm[i];
@@ -181,14 +182,14 @@ class osc : public dsp {
 			}
 			// post processing
 			for (int i=0; i<4; i++) fRec1_perm[i]=fRec1_tmp[count+i];
-			
+
 			// SECTION : 2
 			// LOOP 0x101194aa0
 			// exec code
 			for (int i=0; i<count; i++) {
 				output0[i] = (FAUSTFLOAT)(fRec0[i] * ftbl0[int((65536.0f * fRec1[i]))]);
 			}
-			
+
 		}
 	}
 };
@@ -196,43 +197,67 @@ class osc : public dsp {
 
 float 	osc::ftbl0[65536];
 
+// End generated code
+// ==============================================================================
+
 class MetaData : public Meta
 {
 public:
+    MetaData(Plugin::MetaData* metaData)
+        : m_metaData(metaData)
+    { }
+
     virtual void declare(const char* key, const char* value)
     {
-        m_map[key] = value;
+        m_metaData->insert(key, value);
     }
 
-    const char* lookup(const char* key) { return m_map[key]; }
-
 private:
-    map<const char*,const char*> m_map;
+    Plugin::MetaData* m_metaData;
 };
 
 class ControlSpecAllocator : public UI
 {
 public:
+    typedef vector<Plugin::ControlSpec*> ControlSpecVector;
+
     void finish()
     {
-        for (MetaDataMap::iterator metaData = m_metaData.begin(); metaData != m_metaData.end(); metaData++) {
-            ControlSpecMap::iterator spec = m_controlSpecs.find(metaData->first);
-            if (spec == m_controlSpecs.end()) {
-                // Free metadata
-                delete metaData->second;
-            } else {
-                spec->second->setMetaData(metaData->second);
+        m_controlInputSpecs.reserve(m_inputZones.size());
+        for (vector<float*>::iterator zone = m_inputZones.begin(); zone != m_inputZones.end(); zone++) {
+            Plugin::MetaData* metaData = 0;
+            MetaDataMap::iterator it = m_metaData.find(*zone);
+            if (it != m_metaData.end()) {
+                metaData = it->second;
+                m_metaData.erase(*zone);
             }
+            const MescalineControlSpec& spec = m_controlSpecs[*zone];
+            m_controlInputSpecs.push_back(
+                new Plugin::ControlSpec(spec, metaData)
+                );
         }
+
+        m_controlOutputSpecs.reserve(m_outputZones.size());
+        for (vector<float*>::iterator zone = m_outputZones.begin(); zone != m_outputZones.end(); zone++) {
+            Plugin::MetaData* metaData = 0;
+            MetaDataMap::iterator it = m_metaData.find(*zone);
+            if (it != m_metaData.end()) {
+                metaData = it->second;
+                m_metaData.erase(*zone);
+            }
+            const MescalineControlSpec& spec = m_controlSpecs[*zone];
+            m_controlOutputSpecs.push_back(
+                new Plugin::ControlSpec(spec, metaData)
+                );
+        }
+
+        BOOST_ASSERT_MSG( m_metaData.empty(), "zone metadata left over" );
     }
 
-    Plugin::ControlSpec* controlInputSpec(size_t index) const { return m_controlInputs[index]; }
-    Plugin::ControlSpec* controlOutputSpec(size_t index) const { return m_controlOutputs[index]; }
+    const ControlSpecVector& controlInputSpecs() const { return m_controlInputSpecs; }
+    const ControlSpecVector& controlOutputSpecs() const { return m_controlOutputSpecs; }
 
-    size_t numControlInputs() const { return m_controlInputs.size(); }
-    size_t numControlOutputs() const { return m_controlOutputs.size(); }
-
-    // -- widget's layouts
+    // Layout widgets
 
     virtual void openFrameBox(const char* label) { }
     virtual void openTabBox(const char* label) { }
@@ -240,67 +265,85 @@ public:
     virtual void openVerticalBox(const char* label) { }
     virtual void closeBox() { };
 
-    // -- active widgets
+    // Active widgets
 
     virtual void addButton(const char* label, float* zone)
-        { addControlInput(label, zone, 0, 1, 1, 0, kMescalineTrigger); }
+        { addInputZone(zone, 0, 1, 1, 0, kMescalineControlTrigger); }
     virtual void addToggleButton(const char* label, float* zone)
-        { addControlInput(label, zone, 0, 1, 1, 0); }
+        { addInputZone(zone, 0, 1, 1, 0); }
     virtual void addCheckButton(const char* label, float* zone)
-        { addControlInput(label, zone, 0, 1, 1, 0); }
+        { addInputZone(zone, 0, 1, 1, 0); }
     virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, zone, min, max, step, init); }
+        { addInputZone(zone, min, max, step, init); }
     virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, zone, min, max, step, init); }
+        { addInputZone(zone, min, max, step, init); }
     virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step)
-        { addControlInput(label, zone, min, max, step, init); }
+        { addInputZone(zone, min, max, step, init); }
 
-    // -- passive widgets
+    // Passive widgets
 
     virtual void addNumDisplay(const char* label, float* zone, int precision)
-        { addControlOutput(label, zone, 0.f, 0.f, 0.f, 0.f); }
+        { addOutputZone(zone, -INFINITY, INFINITY, 0.f, 0.f); }
     virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max)
-        { addControlOutput(label, zone, min, max, 1.f, min); }
+        { addOutputZone(zone, min, max, 1, min); }
     virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max)
-        { addControlOutput(label, zone, min, max, 0.f, min); }
+        { addOutputZone(zone, min, max, 0, min); }
     virtual void addVerticalBargraph(const char* label, float* zone, float min, float max)
-        { addControlOutput(label, zone, min, max, 0.f, min); }
+        { addOutputZone(zone, min, max, 0, min); }
 
-	// -- metadata declarations
+	// Metadata
 
     virtual void declare(float* zone, const char* key, const char* value)
     {
-        MetaDataMap::iterator spec = m_metaData.find(zone);
-        if (spec == m_metaData.end()) {
-            m_metaData[zone] = new Plugin::MetaData(key, value);
+        MetaDataMap::iterator it = m_metaData.find(zone);
+        if (it == m_metaData.end()) {
+            Plugin::MetaData* md = new Plugin::MetaData();
+            md->insert(key, value);
+            m_metaData[zone] = md;
         } else {
-            m_metaData[zone] = new Plugin::MetaData(*spec->second, key, value);
+            it->second->insert(key, value);
         }
     }
 
 protected:
-    void addControlInput(const char*, float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+    void addInputZone(float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineControlFlags)
     {
-        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate zone/control spec" );
-        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags, minValue, maxValue, stepSize, defaultValue);
+        BOOST_ASSERT_MSG( find(m_inputZones.begin(), m_inputZones.end(), zone) == m_inputZones.end(), "duplicate input zone" );
+        MescalineControlSpec spec;
+        MescalineControlSpecInit(&spec);
+        spec.flags = flags;
+        spec.minValue = minValue;
+        spec.maxValue = maxValue;
+        spec.stepSize = stepSize;
+        spec.defaultValue = defaultValue;
         m_controlSpecs[zone] = spec;
-        m_controlInputs.push_back(spec);
+        m_inputZones.push_back(zone);
     }
-    void addControlOutput(const char*, float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineNoFlags)
+
+    void addOutputZone(float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineControlFlags)
     {
-        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate zone/control spec" );
-        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags, minValue, maxValue, stepSize, defaultValue);
+        BOOST_ASSERT_MSG( find(m_outputZones.begin(), m_outputZones.end(), zone) == m_outputZones.end(), "duplicate output zone" );
+        MescalineControlSpec spec;
+        MescalineControlSpecInit(&spec);
+        spec.flags = flags;
+        spec.minValue = minValue;
+        spec.maxValue = maxValue;
+        spec.stepSize = stepSize;
+        spec.defaultValue = defaultValue;
         m_controlSpecs[zone] = spec;
-        m_controlOutputs.push_back(spec);
+        m_outputZones.push_back(zone);
     }
 
 private:
-    vector<Plugin::ControlSpec*> m_controlInputs;
-    vector<Plugin::ControlSpec*> m_controlOutputs;
-    typedef boost::unordered_map<const float*, const Plugin::MetaData*> MetaDataMap;
-    typedef boost::unordered_map<const float*, Plugin::ControlSpec*> ControlSpecMap;
-    MetaDataMap m_metaData;
-    ControlSpecMap m_controlSpecs;
+    typedef boost::unordered_map<const float*,Plugin::MetaData*> MetaDataMap;
+    typedef boost::unordered_map<const float*,MescalineControlSpec> ControlSpecMap;
+
+    vector<float*>                  m_inputZones;
+    vector<float*>                  m_outputZones;
+    MetaDataMap                     m_metaData;
+    ControlSpecMap                  m_controlSpecs;
+    vector<Plugin::ControlSpec*>    m_controlInputSpecs;
+    vector<Plugin::ControlSpec*>    m_controlOutputSpecs;
 };
 
 class ControlAllocator : public UI
@@ -313,38 +356,40 @@ public:
         , m_currentControlOutput(0)
     { }
 
-    // layout widgets
+    // Layout widgets
     virtual void openFrameBox(const char* label) { }
     virtual void openTabBox(const char* label) { }
     virtual void openHorizontalBox(const char* label) { }
     virtual void openVerticalBox(const char* label) { }
     virtual void closeBox() { }
 
-    // active widgets
-    virtual void addButton(const char* label, float* zone)
+    // Active widgets
+    virtual void addButton(const char*, float* zone)
         { addControlInput(zone); }
-    virtual void addToggleButton(const char* label, float* zone)
+    virtual void addToggleButton(const char*, float* zone)
         { addControlInput(zone); }
-    virtual void addCheckButton(const char* label, float* zone)
+    virtual void addCheckButton(const char*, float* zone)
         { addControlInput(zone); }
-    virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step)
+    virtual void addVerticalSlider(const char*, float* zone, float, float, float, float)
         { addControlInput(zone); }
-    virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step)
+    virtual void addHorizontalSlider(const char*, float* zone, float, float, float, float)
         { addControlInput(zone); }
-    virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step)
+    virtual void addNumEntry(const char*, float* zone, float, float, float, float)
         { addControlInput(zone); }
 
-    // passive widgets
-    virtual void addNumDisplay(const char* label, float* zone, int precision)
+    // Passive widgets
+    virtual void addNumDisplay(const char*, float* zone, int)
         { addControlOutput(zone); }
-    virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max)
+    virtual void addTextDisplay(const char*, float* zone, const char**, float, float)
         { addControlOutput(zone); }
-    virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max)
+    virtual void addHorizontalBargraph(const char*, float* zone, float, float)
         { addControlOutput(zone); }
-    virtual void addVerticalBargraph(const char* label, float* zone, float min, float max)
+    virtual void addVerticalBargraph(const char*, float* zone, float, float)
         { addControlOutput(zone); }
 
-    virtual void declare(float*, const char*, const char*) { }
+    // Metadata
+    virtual void declare(float*, const char*, const char*)
+        { }
 
 private:
     void addControlInput(float* zone)
@@ -352,6 +397,7 @@ private:
         m_controlInputs[m_currentControlInput] = zone;
         m_currentControlInput++;
     }
+
     void addControlOutput(float* zone)
     {
         m_controlOutputs[m_currentControlOutput] = zone;
@@ -403,39 +449,54 @@ private:
 class SynthDef : public Plugin::SynthDef<MescalineFaustSynth>
 {
 public:
-    SynthDef(const char* name, dsp& dsp, const ControlSpecAllocator& ui)
+    SynthDef( const char* name
+            , size_t numAudioInputs
+            , size_t numAudioOutputs
+            , const vector<Plugin::ControlSpec*>& controlInputs
+            , const vector<Plugin::ControlSpec*>& controlOutputs )
         : Plugin::SynthDef<MescalineFaustSynth>(
             name
-          , dsp.getNumInputs()
-          , dsp.getNumOutputs()
-          , ui.numControlInputs()
-          , ui.numControlOutputs() )
+          , numAudioInputs
+          , numAudioOutputs
+          , controlInputs
+          , controlOutputs
+          , getMetaData() )
     {
         instanceSize = sizeof(MescalineFaustSynth)
                         // Reserve space for the control pointers
                         + (numControlInputs + numControlOutputs) * sizeof(float*);
-        FAUSTCLASS::metadata(&m_metaData);
-        // Add control specs
-        for (size_t i=0; i < numControlInputs; i++) {
-            addControlInputSpec(ui.controlInputSpec(i));
-        }
-        for (size_t i=0; i < numControlOutputs; i++) {
-            addControlOutputSpec(ui.controlOutputSpec(i));
-        }
+    }
+
+    static Plugin::MetaData* getMetaData()
+    {
+        Plugin::MetaData* metaData = new Plugin::MetaData();
+        MetaData adapter(metaData);
+        FAUSTCLASS::metadata(&adapter);
+        return metaData;
     }
 
 private:
-    string      m_name;
-    MetaData    m_metaData;
+    string m_name;
 };
 
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(FAUSTCLASS)(MescalineHost* host)
 {
     FAUSTCLASS* dsp = new FAUSTCLASS;
-    ControlSpecAllocator ui;
-    dsp->init(MescalineHostGetSampleRate(host));
-    dsp->buildUserInterface(&ui);
-    MescalineSynthDef* def = new SynthDef(MESCALINE_STRINGIFY(FAUSTCLASS), *dsp, ui);
-    MescalineHostRegisterSynthDef(host, def);
-    delete dsp;
+    try {
+        ControlSpecAllocator ui;
+        dsp->init(MescalineHostGetSampleRate(host));
+        dsp->buildUserInterface(&ui);
+        ui.finish();
+        MescalineSynthDef* def =
+            new SynthDef(
+                MESCALINE_STRINGIFY(FAUSTCLASS)
+              , dsp->getNumInputs()
+              , dsp->getNumOutputs()
+              , ui.controlInputSpecs()
+              , ui.controlOutputSpecs() );
+        MescalineHostRegisterSynthDef(host, def);
+    } catch (...) {
+        delete dsp;
+        throw;
+    }
 }
