@@ -143,6 +143,7 @@ protected:
       , kAudioOutputConnectionsChanged
       , kControlInputConnectionsChanged
       , kControlOutputConnectionsChanged
+      , kHasTriggerInput
     };
 
     Synth( Environment& env
