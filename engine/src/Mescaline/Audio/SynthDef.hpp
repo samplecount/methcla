@@ -27,11 +27,11 @@ public:
     size_t instanceSize      () const { return m_def->instanceSize;       }
     size_t instanceAlignment () const { return m_def->instanceAlignment;  }
     
-    size_t numAudioInputs    () const { return m_def-> numAudioInputs;    }
-    size_t numAudioOutputs   () const { return m_def-> numAudioOutputs;   }
-    size_t numControlInputs  () const { return m_def-> numControlInputs;  }
-    size_t numControlOutputs () const { return m_def-> numControlOutputs; }
-    
+    size_t numAudioInputs    () const { return m_def->numAudioInputs;    }
+    size_t numAudioOutputs   () const { return m_def->numAudioOutputs;   }
+    size_t numControlInputs  () const { return m_def->numControlInputs;  }
+    size_t numControlOutputs () const { return m_def->numControlOutputs; }
+
     void initialize() { (*m_def->fInitialize)(m_host, m_def); }
     void cleanup() { (*m_def->fCleanup)(m_host, m_def); }
 

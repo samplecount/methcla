@@ -22,9 +22,9 @@ public:
     virtual void configure(const Mescaline::Audio::IO::Driver& driver)
     {
         Mescaline::Audio::Engine::configure(driver);
-        
-		environment()->initModule(MESCALINE_INIT_FUNC(osc));
-		environment()->initModule(MESCALINE_INIT_FUNC(Scope));
+
+        environment()->initModule(MESCALINE_INIT_FUNC(osc));
+        environment()->initModule(MESCALINE_INIT_FUNC(Scope));
 
         // Create osc instance
         const Mescaline::Audio::SynthDef& def = environment()->lookupSynthDef("osc");
@@ -38,7 +38,7 @@ public:
         scope->mapInput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kIn);
         m_scope = scope->synth<Mescaline::Audio::ScopeSynth>();
     }
-    
+
     Mescaline::Audio::Synth* osc() { return m_osc; }
     Mescaline::Audio::ScopeSynth* scope() { return m_scope; }
 
@@ -51,10 +51,10 @@ private:
 
 // value, a, r, g, b
 GLfloat colorLevels[] = {
-0., 1., 0., 0., 0., 
-.333, 1., .7, 0., 0., 
-.667, 1., 0., 0., 1., 
-1., 1., 0., 1., 1., 
+0., 1., 0., 0., 0.,
+.333, 1., .7, 0., 0.,
+.667, 1., 0., 0., 1.,
+1., 1., 0., 1., 1.,
 };
 
 @synthesize window;
@@ -79,49 +79,49 @@ void cycleOscilloscopeLines()
 //    if (inID == kAudioSessionProperty_AudioRouteChange)
 //    {
 //        try {
-//             UInt32 isAudioInputAvailable; 
+//             UInt32 isAudioInputAvailable;
 //             UInt32 size = sizeof(isAudioInputAvailable);
 //             XThrowIfError(AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable, &size, &isAudioInputAvailable), "couldn't get AudioSession AudioInputAvailable property value");
-//             
+//
 //             if(THIS->unitIsRunning && !isAudioInputAvailable)
 //             {
 //                 XThrowIfError(AudioOutputUnitStop(THIS->rioUnit), "couldn't stop unit");
 //                 THIS->unitIsRunning = false;
 //             }
-//             
+//
 //             else if(!THIS->unitIsRunning && isAudioInputAvailable)
 //             {
 //                 XThrowIfError(AudioSessionSetActive(true), "couldn't set audio session active\n");
-//             
+//
 //                 if (!THIS->unitHasBeenCreated) // the rio unit is being created for the first time
 //                 {
 //                     XThrowIfError(SetupRemoteIO(THIS->rioUnit, THIS->inputProc, THIS->thruFormat), "couldn't setup remote i/o unit");
 //                     THIS->unitHasBeenCreated = true;
-//                     
+//
 //                     UInt32 maxFPS;
 //                     size = sizeof(maxFPS);
 //                     XThrowIfError(AudioUnitGetProperty(THIS->rioUnit, kAudioUnitProperty_MaximumFramesPerSlice, kAudioUnitScope_Global, 0, &maxFPS, &size), "couldn't get the remote I/O unit's max frames per slice");
-//                     
+//
 //                     THIS->fftBufferManager = new FFTBufferManager(maxFPS);
 //                     THIS->l_fftData = new int32_t[maxFPS/2];
-//                     
+//
 //                     THIS->oscilLine = (GLfloat*)malloc(drawBufferLen * 2 * sizeof(GLfloat));
 //                 }
-//                 
+//
 //                 XThrowIfError(AudioOutputUnitStart(THIS->rioUnit), "couldn't start unit");
 //                 THIS->unitIsRunning = true;
 //             }
-//                        
+//
 //            // we need to rescale the sonogram view's color thresholds for different input
 //            CFStringRef newRoute;
 //            size = sizeof(CFStringRef);
 //            XThrowIfError(AudioSessionGetProperty(kAudioSessionProperty_AudioRoute, &size, &newRoute), "couldn't get new audio route");
 //            if (newRoute)
-//            {   
+//            {
 //                CFShow(newRoute);
 //                if (CFStringCompare(newRoute, CFSTR("Headset"), NULL) == kCFCompareEqualTo) // headset plugged in
 //                {
-//                    colorLevels[0] = .3;                
+//                    colorLevels[0] = .3;
 //                    colorLevels[5] = .5;
 //                }
 //                else if (CFStringCompare(newRoute, CFSTR("Receiver"), NULL) == kCFCompareEqualTo) // headset plugged in
@@ -130,39 +130,39 @@ void cycleOscilloscopeLines()
 //                    colorLevels[5] = .333;
 //                    colorLevels[10] = .667;
 //                    colorLevels[15] = 1.0;
-//                    
-//                }           
+//
+//                }
 //                else
 //                {
 //                    colorLevels[0] = 0;
 //                    colorLevels[5] = .333;
 //                    colorLevels[10] = .667;
 //                    colorLevels[15] = 1.0;
-//                    
+//
 //                }
 //            }
 //        } catch (CAXException e) {
 //            char buf[256];
 //            fprintf(stderr, "Error: %s (%s)\n", e.mOperation, e.FormatError(buf));
 //        }
-//        
+//
 //    }
 //}
 
 //#pragma mark -RIO Render Callback
 //
 //static OSStatus PerformThru(
-//                            void                        *inRefCon, 
-//                            AudioUnitRenderActionFlags  *ioActionFlags, 
-//                            const AudioTimeStamp        *inTimeStamp, 
-//                            UInt32                      inBusNumber, 
-//                            UInt32                      inNumberFrames, 
+//                            void                        *inRefCon,
+//                            AudioUnitRenderActionFlags  *ioActionFlags,
+//                            const AudioTimeStamp        *inTimeStamp,
+//                            UInt32                      inBusNumber,
+//                            UInt32                      inNumberFrames,
 //                            AudioBufferList             *ioData)
 //{
 //    aurioTouchAppDelegate *THIS = (aurioTouchAppDelegate *)inRefCon;
 //    OSStatus err = AudioUnitRender(THIS->rioUnit, ioActionFlags, inTimeStamp, 1, inNumberFrames, ioData);
 //    if (err) { printf("PerformThru: error %d\n", (int)err); return err; }
-//    
+//
 //    // Remove DC component
 ////  for(UInt32 i = 0; i < ioData->mNumberBuffers; ++i)
 ////      THIS->dcFilter[i].InplaceFilter((SInt32*)(ioData->mBuffers[i].mData), inNumberFrames, 1);
@@ -172,31 +172,31 @@ void cycleOscilloscopeLines()
 //            inputs[i] = (float*)ioData->mBuffers[i].mData;
 //            outputs[i] = (float*)ioData->mBuffers[i].mData;
 //        }
-//    
+//
 //    if (THIS->displayMode == aurioTouchDisplayModeOscilloscopeWaveform)
 //    {
 //        // The draw buffer is used to hold a copy of the most recent PCM data to be drawn on the oscilloscope
 //        if (drawBufferLen != drawBufferLen_alloced)
 //        {
 //            int drawBuffer_i;
-//            
+//
 //            // Allocate our draw buffer if needed
 //            if (drawBufferLen_alloced == 0)
 //                for (drawBuffer_i=0; drawBuffer_i<kNumDrawBuffers; drawBuffer_i++)
 //                    drawBuffers[drawBuffer_i] = NULL;
-//            
+//
 //            // Fill the first element in the draw buffer with PCM data
 //            for (drawBuffer_i=0; drawBuffer_i<kNumDrawBuffers; drawBuffer_i++)
 //            {
 //                drawBuffers[drawBuffer_i] = (SInt8 *)realloc(drawBuffers[drawBuffer_i], drawBufferLen);
 //                bzero(drawBuffers[drawBuffer_i], drawBufferLen);
 //            }
-//            
+//
 //            drawBufferLen_alloced = drawBufferLen;
 //        }
-//        
+//
 //        int i;
-//        
+//
 //        SInt8 *data_ptr = (SInt8 *)(ioData->mBuffers[0].mData);
 //        for (i=0; i<inNumberFrames; i++)
 //        {
@@ -210,29 +210,29 @@ void cycleOscilloscopeLines()
 //        }
 //        drawBufferIdx += inNumberFrames;
 //    }
-//    
+//
 //    else if ((THIS->displayMode == aurioTouchDisplayModeSpectrum) || (THIS->displayMode == aurioTouchDisplayModeOscilloscopeFFT))
 //    {
 //        if (THIS->fftBufferManager == NULL) return noErr;
-//        
+//
 //        if (THIS->fftBufferManager->NeedsNewAudioData())
 //        {
-//            THIS->fftBufferManager->GrabAudioData(ioData); 
+//            THIS->fftBufferManager->GrabAudioData(ioData);
 //        }
-//        
+//
 //    }
 //    if (THIS->mute == YES) { SilenceData(ioData); }
-//    
+//
 //    return err;
 //}
 
 #pragma mark-
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application
-{   
+{
     // Turn off the idle timer, since this app doesn't rely on constant touch input
     application.idleTimerDisabled = YES;
-    
+
     memset(drawBuffers, 0, kNumDrawBuffers * sizeof(float*));
     drawBuffers[0] = (float*)malloc(drawBufferLen * sizeof(float));
 
@@ -242,19 +242,19 @@ void cycleOscilloscopeLines()
         m_audioDriver = new Mescaline::Audio::IO::RemoteIODriver(m_engine);
 
         oscilLine = (GLfloat*)malloc(drawBufferLen * 2 * sizeof(GLfloat));
-        
+
         m_audioDriver->start();
     }
     catch (...) {
         fprintf(stderr, "An unknown error occurred\n");
     }
-    
+
     // Set ourself as the delegate for the EAGLView so that we get drawing and touch events
     view.delegate = self;
-    
+
     // Enable multi touch so we can handle pinch and zoom in the oscilloscope
     view.multipleTouchEnabled = YES;
-        
+
     // Set up the view to refresh at 20 hz
     [view setAnimationInterval: 1./20.];
     [view startAnimation];
@@ -283,10 +283,10 @@ void cycleOscilloscopeLines()
 
 
 - (void)dealloc
-{   
+{
     [view release];
     [window release];
-    
+
     free(oscilLine);
 
     [super dealloc];
@@ -297,26 +297,26 @@ void cycleOscilloscopeLines()
 {
     // Clear the view
     glClear(GL_COLOR_BUFFER_BIT);
-    
+
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
+
     glColor4f(1., 1., 1., 1.);
-    
+
     glPushMatrix();
-    
+
     glTranslatef(0., 1024., 0.);
     glRotatef(-90., 0., 0., 1.);
-    
-    
+
+
     glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    
+
 //    {
 //        // Draw our background oscilloscope screen
 //        const GLfloat vertices[] = {
 //            0., 0.,
-//            512., 0., 
+//            512., 0.,
 //            0.,  512.,
 //            512.,  512.,
 //        };
@@ -326,40 +326,40 @@ void cycleOscilloscopeLines()
 //            0, 1,
 //            1, 1,
 //        };
-//        
-//        
+//
+//
 //        glBindTexture(GL_TEXTURE_2D, bgTexture);
-//        
+//
 //        glVertexPointer(2, GL_FLOAT, 0, vertices);
 //        glTexCoordPointer(2, GL_SHORT, 0, texCoords);
-//        
+//
 //        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 //    }
-    
+
     GLfloat *oscilLine_ptr;
     GLfloat max = drawBufferLen;
     float *drawBuffer_ptr;
-    
+
     // Alloc an array for our oscilloscope line vertices
     if (resetOscilLine) {
         oscilLine = (GLfloat*)realloc(oscilLine, drawBufferLen * 2 * sizeof(GLfloat));
         resetOscilLine = NO;
     }
-    
+
     glPushMatrix();
-    
+
     // Translate to the left side and vertical center of the screen, and scale so that the screen coordinates
     // go from 0 to 1 along the X, and -1 to 1 along the Y
     glTranslatef(0., 768./2., 0.);
     glScalef(1024., 768./2., 1.);
-    
+
     // Set up some GL state for our oscilloscope lines
     glDisable(GL_TEXTURE_2D);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
     glDisable(GL_LINE_SMOOTH);
     glLineWidth(2.);
-    
+
     reinterpret_cast<MyEngine*>(m_engine)->scope()->buffer().dequeue(drawBuffers[0], drawBufferLen);
 
     int drawBuffer_i;
@@ -367,10 +367,10 @@ void cycleOscilloscopeLines()
     for (drawBuffer_i=0; drawBuffer_i<kNumDrawBuffers; drawBuffer_i++)
     {
         if (!drawBuffers[drawBuffer_i]) continue;
-        
+
         oscilLine_ptr = oscilLine;
         drawBuffer_ptr = drawBuffers[drawBuffer_i];
-        
+
         GLfloat i;
         // Fill our vertex array with points
         for (i=0.; i<max; i=i+1.)
@@ -379,23 +379,23 @@ void cycleOscilloscopeLines()
 //            *oscilLine_ptr++ = 2. * (GLfloat)rand() / (GLfloat)RAND_MAX - 1.;
             *oscilLine_ptr++ = *drawBuffer_ptr++;
         }
-        
+
         // If we're drawing the newest line, draw it in solid green. Otherwise, draw it in a faded green.
         if (drawBuffer_i == 0)
             glColor4f(0., 1., 0., 1.);
         else
             glColor4f(0., 1., 0., (.24 * (1. - ((GLfloat)drawBuffer_i / (GLfloat)kNumDrawBuffers))));
-        
+
         // Set up vertex pointer,
         glVertexPointer(2, GL_FLOAT, 0, oscilLine);
-        
+
         // and draw the line.
         glDrawArrays(GL_LINE_STRIP, 0, drawBufferLen);
 
     }
-    
+
     glPopMatrix();
-        
+
     glPopMatrix();
 }
 
@@ -413,7 +413,7 @@ void cycleOscilloscopeLines()
 //        pinchEvent = event;
 //        NSArray *t = [[event allTouches] allObjects];
 //        lastPinchDist = fabs([[t objectAtIndex:0] locationInView:view].x - [[t objectAtIndex:1] locationInView:view].x);
-//        
+//
 //        sampleSizeText.text = [NSString stringWithFormat:@"%i ms", drawBufferLen / (int)(hwSampleRate / 1000.)];
 //        [view addSubview:sampleSizeOverlay];
 //    }
@@ -432,17 +432,17 @@ void cycleOscilloscopeLines()
 //        CGFloat thisPinchDist, pinchDiff;
 //        NSArray *t = [[event allTouches] allObjects];
 //        thisPinchDist = fabs([[t objectAtIndex:0] locationInView:view].x - [[t objectAtIndex:1] locationInView:view].x);
-//        
+//
 //        // Find out how far we traveled since the last event
 //        pinchDiff = thisPinchDist - lastPinchDist;
 //        // Adjust our draw buffer length accordingly,
 //        drawBufferLen -= 12 * (int)pinchDiff;
 //        drawBufferLen = CLAMP(kMinDrawSamples, drawBufferLen, kMaxDrawSamples);
 //        resetOscilLine = YES;
-//        
+//
 //        // and display the size of our oscilloscope window in our overlay view
 //        sampleSizeText.text = [NSString stringWithFormat:@"%i ms", drawBufferLen / (int)(hwSampleRate / 1000.)];
-//        
+//
 //        lastPinchDist = thisPinchDist;
 //    }
 }
@@ -464,7 +464,7 @@ void cycleOscilloscopeLines()
 //        self.displayMode = aurioTouchDisplayModeOscilloscopeWaveform;
 //        return;
 //    }
-//    
+//
 //    UITouch *touch = [touches anyObject];
 //    if (unitIsRunning)
 //    {
