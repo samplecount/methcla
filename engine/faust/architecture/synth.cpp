@@ -47,35 +47,15 @@ public:
 
     void finish()
     {
-        m_controlInputSpecs.reserve(m_inputZones.size());
-        for (vector<float*>::iterator zone = m_inputZones.begin(); zone != m_inputZones.end(); zone++) {
-            Plugin::MetaData* metaData = 0;
-            MetaDataMap::iterator it = m_metaData.find(*zone);
-            if (it != m_metaData.end()) {
-                metaData = it->second;
-                m_metaData.erase(*zone);
+        for (MetaDataMap::iterator md; md != m_metaData.end(); md++) {
+            ControlSpecMap::iterator spec = m_controlSpecs.find(md->first);
+            if (spec == m_controlSpecs.end()) {
+                delete md->second;
+            } else {
+                spec->second->metaData = md->second;
             }
-            const MescalineControlSpec& spec = m_controlSpecs[*zone];
-            m_controlInputSpecs.push_back(
-                new Plugin::ControlSpec(spec, metaData)
-                );
         }
-
-        m_controlOutputSpecs.reserve(m_outputZones.size());
-        for (vector<float*>::iterator zone = m_outputZones.begin(); zone != m_outputZones.end(); zone++) {
-            Plugin::MetaData* metaData = 0;
-            MetaDataMap::iterator it = m_metaData.find(*zone);
-            if (it != m_metaData.end()) {
-                metaData = it->second;
-                m_metaData.erase(*zone);
-            }
-            const MescalineControlSpec& spec = m_controlSpecs[*zone];
-            m_controlOutputSpecs.push_back(
-                new Plugin::ControlSpec(spec, metaData)
-                );
-        }
-
-        BOOST_ASSERT_MSG( m_metaData.empty(), "zone metadata left over" );
+        m_metaData.clear();
     }
 
     const ControlSpecVector& controlInputSpecs() const { return m_controlInputSpecs; }
@@ -87,83 +67,126 @@ public:
     virtual void openTabBox(const char* label) { }
     virtual void openHorizontalBox(const char* label) { }
     virtual void openVerticalBox(const char* label) { }
-    virtual void closeBox() { };
+    virtual void closeBox() { }
 
     // Active widgets
 
-    virtual void addButton(const char* label, float* zone)
-        { addInputZone(zone, 0, 1, 1, 0, kMescalineControlTrigger); }
-    virtual void addToggleButton(const char* label, float* zone)
-        { addInputZone(zone, 0, 1, 1, 0); }
-    virtual void addCheckButton(const char* label, float* zone)
-        { addInputZone(zone, 0, 1, 1, 0); }
-    virtual void addVerticalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addInputZone(zone, min, max, step, init); }
-    virtual void addHorizontalSlider(const char* label, float* zone, float init, float min, float max, float step)
-        { addInputZone(zone, min, max, step, init); }
-    virtual void addNumEntry(const char* label, float* zone, float init, float min, float max, float step)
-        { addInputZone(zone, min, max, step, init); }
+    virtual void addButton(const char*, float* zone)
+    {
+        Plugin::MetaData* md = addInputZone(zone, kMescalineControlTrigger);
+        md->insert("min", 0.f);
+        md->insert("max", 1.f);
+        md->insert("step", 1.f);
+        md->insert("default", 0.f);
+    }
+    virtual void addToggleButton(const char*, float* zone)
+    {
+        Plugin::MetaData* md = addInputZone(zone);
+        md->insert("min", 0.f);
+        md->insert("max", 1.f);
+        md->insert("step", 1.f);
+        md->insert("default", 0.f);
+    }
+    virtual void addCheckButton(const char*, float* zone)
+    {
+        Plugin::MetaData* md = addInputZone(zone);
+        md->insert("min", 0.f);
+        md->insert("max", 1.f);
+        md->insert("step", 1.f);
+        md->insert("default", 0.f);
+    }
+    virtual void addVerticalSlider(const char*, float* zone, float init, float min, float max, float step)
+    {
+        Plugin::MetaData* md = addInputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+        md->insert("step", step);
+        md->insert("default", init);
+    }
+    virtual void addHorizontalSlider(const char*, float* zone, float init, float min, float max, float step)
+    {
+        Plugin::MetaData* md = addInputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+        md->insert("step", step);
+        md->insert("default", init);
+    }
+    virtual void addNumEntry(const char*, float* zone, float init, float min, float max, float step)
+    {
+        Plugin::MetaData* md = addInputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+        md->insert("step", step);
+        md->insert("default", init);
+    }
 
     // Passive widgets
 
-    virtual void addNumDisplay(const char* label, float* zone, int precision)
-        { addOutputZone(zone, -INFINITY, INFINITY, 0.f, 0.f); }
-    virtual void addTextDisplay(const char* label, float* zone, const char* names[], float min, float max)
-        { addOutputZone(zone, min, max, 1, min); }
-    virtual void addHorizontalBargraph(const char* label, float* zone, float min, float max)
-        { addOutputZone(zone, min, max, 0, min); }
-    virtual void addVerticalBargraph(const char* label, float* zone, float min, float max)
-        { addOutputZone(zone, min, max, 0, min); }
+    virtual void addNumDisplay(const char*, float* zone, int precision)
+    {
+        Plugin::MetaData* md = addOutputZone(zone);
+        md->insert("precision", precision);
+    }
+    virtual void addTextDisplay(const char*, float* zone, const char* names[], float min, float max)
+    {
+        Plugin::MetaData* md = addOutputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+    }
+    virtual void addHorizontalBargraph(const char*, float* zone, float min, float max)
+    {
+        Plugin::MetaData* md = addOutputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+    }
+    virtual void addVerticalBargraph(const char*, float* zone, float min, float max)
+    {
+        Plugin::MetaData* md = addOutputZone(zone);
+        md->insert("min", min);
+        md->insert("max", max);
+    }
 
-	// Metadata
+    // Metadata
 
     virtual void declare(float* zone, const char* key, const char* value)
+    {
+        getMetaData(zone)->insert(key, value);
+    }
+
+protected:
+    Plugin::MetaData* getMetaData(float* zone)
     {
         MetaDataMap::iterator it = m_metaData.find(zone);
         if (it == m_metaData.end()) {
             Plugin::MetaData* md = new Plugin::MetaData();
-            md->insert(key, value);
             m_metaData[zone] = md;
-        } else {
-            it->second->insert(key, value);
+            return md;
         }
+        return it->second;
     }
 
-protected:
-    void addInputZone(float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineControlFlags)
+    Plugin::MetaData* addInputZone(float* zone, MescalineControlFlags flags=kMescalineControlFlags)
     {
-        BOOST_ASSERT_MSG( find(m_inputZones.begin(), m_inputZones.end(), zone) == m_inputZones.end(), "duplicate input zone" );
-        MescalineControlSpec spec;
-        MescalineControlSpecInit(&spec);
-        spec.flags = flags;
-        spec.minValue = minValue;
-        spec.maxValue = maxValue;
-        spec.stepSize = stepSize;
-        spec.defaultValue = defaultValue;
+        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate input zone" );
+        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
+        m_controlInputSpecs.push_back(spec);
         m_controlSpecs[zone] = spec;
-        m_inputZones.push_back(zone);
+        return getMetaData(zone);
     }
 
-    void addOutputZone(float* zone, float minValue, float maxValue, float stepSize, float defaultValue, MescalineControlFlags flags=kMescalineControlFlags)
+    Plugin::MetaData* addOutputZone(float* zone, MescalineControlFlags flags=kMescalineControlFlags)
     {
-        BOOST_ASSERT_MSG( find(m_outputZones.begin(), m_outputZones.end(), zone) == m_outputZones.end(), "duplicate output zone" );
-        MescalineControlSpec spec;
-        MescalineControlSpecInit(&spec);
-        spec.flags = flags;
-        spec.minValue = minValue;
-        spec.maxValue = maxValue;
-        spec.stepSize = stepSize;
-        spec.defaultValue = defaultValue;
+        BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate output zone" );
+        Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
+        m_controlOutputSpecs.push_back(spec);
         m_controlSpecs[zone] = spec;
-        m_outputZones.push_back(zone);
+        return getMetaData(zone);
     }
 
 private:
     typedef boost::unordered_map<const float*,Plugin::MetaData*> MetaDataMap;
-    typedef boost::unordered_map<const float*,MescalineControlSpec> ControlSpecMap;
+    typedef boost::unordered_map<const float*,Plugin::ControlSpec*> ControlSpecMap;
 
-    vector<float*>                  m_inputZones;
-    vector<float*>                  m_outputZones;
     MetaDataMap                     m_metaData;
     ControlSpecMap                  m_controlSpecs;
     vector<Plugin::ControlSpec*>    m_controlInputSpecs;

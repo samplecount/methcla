@@ -15,6 +15,103 @@
 
 #define MESCALINE_EXPORT MESCALINE_C_LINKAGE
 
+typedef enum
+{
+    kMescalineString
+  , kMescalineInt
+  , kMescalineFloat
+} MescalineValueType;
+
+struct MescalineValue
+{
+    MescalineValueType type;
+    union {
+        const char* stringValue;
+        int         intValue;
+        float       floatValue;
+    } data;
+};
+typedef struct MescalineValue MescalineValue;
+
+struct MescalineAssoc
+{
+    struct MescalineAssoc*  next;
+    const char*             key;
+    MescalineValue          value;
+};
+typedef struct MescalineAssoc MescalineAssoc;
+
+struct MescalineMetaData
+{
+    MescalineAssoc* data;
+};
+
+static inline void MescalineAssocInitString(MescalineAssoc* self, const char* key, const char* value)
+{
+    self->next = NULL;
+    self->key = key;
+    self->value.type = kMescalineString;
+    self->value.data.stringValue = value;
+}
+
+static inline void MescalineAssocInitInt(MescalineAssoc* self, const char* key, int value)
+{
+    self->next = NULL;
+    self->key = key;
+    self->value.type = kMescalineInt;
+    self->value.data.intValue = value;
+}
+
+static inline void MescalineAssocInitFloat(MescalineAssoc* self, const char* key, float value)
+{
+    self->next = NULL;
+    self->key = key;
+    self->value.type = kMescalineFloat;
+    self->value.data.floatValue = value;
+}
+
+static inline const char* MescalineAssocGetString(MescalineAssoc* self, const char* defaultValue)
+{
+    return self->value.type == kMescalineString ? self->value.data.stringValue : defaultValue;
+}
+
+static inline int MescalineAssocGetInt(MescalineAssoc* self)
+{
+    switch (self->value.type) {
+        case kMescalineString:
+            return atoi(self->value.data.stringValue);
+        case kMescalineInt:
+            return self->value.data.intValue;
+        case kMescalineFloat:
+            return (int)self->value.data.floatValue;
+    }
+    return 0;
+}
+
+static inline int MescalineAssocGetFloat(MescalineAssoc* self)
+{
+    switch (self->value.type) {
+        case kMescalineString:
+            return atof(self->value.data.stringValue);
+        case kMescalineInt:
+            return (float)self->value.data.intValue;
+        case kMescalineFloat:
+            return self->value.data.floatValue;
+    }
+    return 0;
+}
+
+static inline void MescalineMetaDataInit(MescalineMetaData* self)
+{
+    self->data = NULL;
+}
+
+static inline void MescalineMetaDataInsert(MescalineMetaData* self, MescalineAssoc* assoc)
+{
+    assoc->next = self->data;
+    self->data = assoc;
+}
+
 struct MescalineSynth
 {
     /// Process numFrames of audio samples from inputs to outputs.
@@ -53,27 +150,19 @@ typedef struct MescalineControlSpec MescalineControlSpec;
 struct MescalineControlSpec
 {
     MescalineControlFlags       flags;
-    float                       minValue;
-    float                       maxValue;
-    float                       stepSize;
-    float                       defaultValue;
-    const char* (*fGetMetaData)(const MescalineControlSpec* self, const char* key);
+    const MescalineMetaData*    metaData;
 };
 
 static inline void MescalineControlSpecInit(MescalineControlSpec* self)
 {
     self->flags = kMescalineControlFlags;
-    self->minValue = 0.f;
-    self->maxValue = 0.f;
-    self->stepSize = 0.f;
-    self->defaultValue = 0.f;
-    self->fGetMetaData = NULL;
+    self->metaData = NULL;
 }
 
-static inline const char* MescalineControlSpecGetMetaData(MescalineControlSpec* self, const char* key)
-{
-    return self->fGetMetaData == NULL ? NULL : (*self->fGetMetaData)(self, key);
-}
+// static inline const char* MescalineControlSpecGetMetaData(MescalineControlSpec* self, const char* key)
+// {
+//     return self->fGetMetaData == NULL ? NULL : (*self->fGetMetaData)(self, key);
+// }
 
 enum MescalineUINodeType
 {
@@ -137,6 +226,8 @@ struct MescalineSynthDef
     size_t                      numControlInputs;
     size_t                      numControlOutputs;
 
+    const MescalineMetaData*    metaData;
+
     // Class initialization/cleanup
     void            (*fInitialize)(MescalineHost* host, const MescalineSynthDef* self);
     void            (*fCleanup)(MescalineHost* host, const MescalineSynthDef* self);
@@ -153,7 +244,6 @@ struct MescalineSynthDef
     const MescalineControlSpec* (*fGetControlInputSpec)(const MescalineSynthDef* self, size_t index);
     const MescalineControlSpec* (*fGetControlOutputSpec)(const MescalineSynthDef* self, size_t index);
     const MescalineUINode* (*fGetUIDescription)(const MescalineSynthDef* self);
-    const char* (*fGetMetaData)(const MescalineSynthDef* self, const char* key);
 };
 
 static inline void MescalineSynthDefInit(MescalineSynthDef* self, const char* name, size_t instanceSize, size_t instanceAlignment)
@@ -189,10 +279,10 @@ static inline const MescalineUINode* MescalineSynthDefGetUIDescription(Mescaline
     return self->fGetUIDescription == NULL ? NULL : (*self->fGetUIDescription)(self);
 }
 
-static inline const char* MescalineSynthDefGetMetaData(MescalineSynthDef* self, const char* key)
-{
-    return self->fGetMetaData == NULL ? NULL : (*self->fGetMetaData)(self, key);
-}
+// static inline const char* MescalineSynthDefGetMetaData(MescalineSynthDef* self, const char* key)
+// {
+//     return self->fGetMetaData == NULL ? NULL : (*self->fGetMetaData)(self, key);
+// }
 
 struct MescalineHost
 {
