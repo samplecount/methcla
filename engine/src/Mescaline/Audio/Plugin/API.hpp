@@ -125,6 +125,7 @@ namespace Mescaline { namespace Audio { namespace Plugin {
 
         const MescalineControlSpec* controlInputSpec(size_t index) const
             { return &m_controlInputSpecs[index]; }
+
         const MescalineControlSpec* controlOutputSpec(size_t index) const
             { return &m_controlOutputSpecs[index]; }
 
