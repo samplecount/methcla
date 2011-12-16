@@ -116,6 +116,8 @@ namespace Mescaline { namespace Audio { namespace Plugin {
             this->fGetMetaData = &GetMetaData;
             BOOST_FOREACH(ControlSpec* x, controlInputs)  { m_controlInputSpecs.push_back(x); }
             BOOST_FOREACH(ControlSpec* x, controlOutputs) { m_controlOutputSpecs.push_back(x); }
+            BOOST_ASSERT( m_controlInputSpecs.size() == this->numControlInputs );
+            BOOST_ASSERT( m_controlOutputSpecs.size() == this->numControlOutputs );
         }
 
         virtual ~SynthDef()
