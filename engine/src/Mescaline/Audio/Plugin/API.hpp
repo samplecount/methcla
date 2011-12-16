@@ -110,9 +110,10 @@ namespace Mescaline { namespace Audio { namespace Plugin {
             this->numControlOutputs = controlOutputs.size();
             this->fConstruct = &Construct;
             this->fDestroy = &Destroy;
-            this->fGetControlInputSpec = GetControlInputSpec;
-            this->fGetControlOutputSpec = GetControlOutputSpec;
-            this->fGetUIDescription = GetUIDescription;
+            this->fGetControlInputSpec = &GetControlInputSpec;
+            this->fGetControlOutputSpec = &GetControlOutputSpec;
+            this->fGetUIDescription = &GetUIDescription;
+            this->fGetMetaData = &GetMetaData;
             BOOST_FOREACH(ControlSpec* x, controlInputs)  { m_controlInputSpecs.push_back(x); }
             BOOST_FOREACH(ControlSpec* x, controlOutputs) { m_controlOutputSpecs.push_back(x); }
         }
