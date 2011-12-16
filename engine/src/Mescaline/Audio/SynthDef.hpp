@@ -75,20 +75,20 @@ public:
 
     const SynthDef& lookup(const char* name) const
     {
-		// TODO: error handling
+        // TODO: error handling
         return *m_map.at(name);
     }
 
-	// TODO: Use reference count for SynthDefs and implement delete/overwrite
-	// TODO: Use 4-byte aligned symbols for faster lookups
+    // TODO: Use reference count for SynthDefs and implement delete/overwrite
+    // TODO: Use 4-byte aligned symbols for faster lookups
 
 private:
     typedef boost::unordered_map<
-				const char*
-			  , const SynthDef*
-			  , Mescaline::Utility::Hash::string_hash
-			  , Mescaline::Utility::Hash::string_equal_to >
-			Map;
+                const char*
+              , const SynthDef*
+              , Mescaline::Utility::Hash::string_hash
+              , Mescaline::Utility::Hash::string_equal_to >
+            Map;
     Map m_map;
 };
 
