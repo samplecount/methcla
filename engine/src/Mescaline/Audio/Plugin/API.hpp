@@ -15,7 +15,7 @@
 
 namespace Mescaline { namespace Audio { namespace Plugin {
 
-    class MetaData
+    class MetaData : boost::noncopyable
     {
     public:
         void insert(const char* key, const char* value)
@@ -44,7 +44,7 @@ namespace Mescaline { namespace Audio { namespace Plugin {
         Map                         m_map;
     };
 
-    class ControlSpec : public MescalineControlSpec
+    class ControlSpec : public MescalineControlSpec, boost::noncopyable
     {
     public:
         ControlSpec( const MescalineControlSpec& spec
