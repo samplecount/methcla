@@ -35,6 +35,20 @@ public:
     void initialize() { (*m_def->fInitialize)(m_host, m_def); }
     void cleanup() { (*m_def->fCleanup)(m_host, m_def); }
 
+    const MescalineControlSpec& controlInputSpec(size_t index) const
+    {
+        const MescalineControlSpec* spec = MescalineSynthDefGetControlInputSpec(m_def, index);
+        BOOST_ASSERT( spec != 0 );
+        return *spec;
+    }
+
+    const MescalineControlSpec& controlOutputSpec(size_t index) const
+    {
+        const MescalineControlSpec* spec = MescalineSynthDefGetControlOutputSpec(m_def, index);
+        BOOST_ASSERT( spec != 0 );
+        return *spec;
+    }
+
     void construct(MescalineSynth* instance) const
     {
         memset(instance, 0, sizeof(MescalineSynth));
