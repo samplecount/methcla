@@ -189,7 +189,7 @@ public:
     /// Sets up inputs and outputs and calls compute.
     virtual void process(size_t numFrames);
 
-    template <class T> T* synth() { return reinterpret_cast<T*>(m_synth); }
+    template <class T> T* synth() { return static_cast<T*>(m_synth); }
 
 private:
     const SynthDef&         m_synthDef;

@@ -80,7 +80,7 @@ namespace Mescaline { namespace Audio { namespace Plugin {
     private:
         static const char* GetMetaData(const MescalineControlSpec* self, const char* key)
         {
-            const ControlSpec* THIS = reinterpret_cast<const ControlSpec*>(self);
+            const ControlSpec* THIS = static_cast<const ControlSpec*>(self);
             return THIS->m_metaData == 0 ? 0 : THIS->m_metaData->lookup(key);
         }
 
@@ -135,14 +135,14 @@ namespace Mescaline { namespace Audio { namespace Plugin {
             instance->fProcess = &Process;
             instance->fGetControlInput = &GetControlInput;
             instance->fGetControlOutput = &GetControlOutput;
-            new (instance) T(host, reinterpret_cast<const SynthDef<T>*>(self));
+            new (instance) T(host, static_cast<const SynthDef<T>*>(self));
         }
 
         static void Destroy( MescalineHost*
                            , const MescalineSynthDef*
                            , MescalineSynth* instance )
         {
-            reinterpret_cast<T*>(instance)->~T();
+            static_cast<T*>(instance)->~T();
         }
 
         static void Process( MescalineSynth* instance
@@ -150,17 +150,17 @@ namespace Mescaline { namespace Audio { namespace Plugin {
                            , sample_t** inputs
                            , sample_t** outputs )
         {
-            reinterpret_cast<T*>(instance)->process(numFrames, inputs, outputs);
+            static_cast<T*>(instance)->process(numFrames, inputs, outputs);
         }
 
         static const MescalineControlSpec* GetControlInputSpec(const MescalineSynthDef* self, size_t index)
         {
-            return reinterpret_cast<const SynthDef<T>*>(self)->controlInputSpec(index);
+            return static_cast<const SynthDef<T>*>(self)->controlInputSpec(index);
         }
 
         static const MescalineControlSpec* GetControlOutputSpec(const MescalineSynthDef* self, size_t index)
         {
-            return reinterpret_cast<const SynthDef<T>*>(self)->controlOutputSpec(index);
+            return static_cast<const SynthDef<T>*>(self)->controlOutputSpec(index);
         }
 
         static const MescalineUINode* GetUIDescription(const MescalineSynthDef* self)
@@ -170,18 +170,18 @@ namespace Mescaline { namespace Audio { namespace Plugin {
 
         static const char* GetMetaData(const MescalineSynthDef* self, const char* key)
         {
-            const SynthDef<T>* THIS = reinterpret_cast<const SynthDef<T>*>(self);
+            const SynthDef<T>* THIS = static_cast<const SynthDef<T>*>(self);
             return THIS->m_metaData == NULL ? NULL : THIS->m_metaData->lookup(key);
         }
 
         static float* GetControlInput(MescalineSynth* instance, size_t index)
         {
-            return reinterpret_cast<T*>(instance)->controlInput(index);
+            return static_cast<T*>(instance)->controlInput(index);
         }
 
         static float* GetControlOutput(MescalineSynth* instance, size_t index)
         {
-            return reinterpret_cast<T*>(instance)->controlOutput(index);
+            return static_cast<T*>(instance)->controlOutput(index);
         }
 
     private:
