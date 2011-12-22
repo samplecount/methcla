@@ -167,12 +167,12 @@ def writeBjamUserConfig
   File.open(BJAM_USER_CONFIG, 'a') { |io|
     io << <<EOF
 using darwin : 4.2.1~iphone
- : /Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc-4.2 -arch armv7 -mthumb -fvisibility=hidden -fvisibility-inlines-hidden #{EXTRA_CPPFLAGS}
+ : /Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/gcc -arch armv7 -mthumb -fvisibility=hidden -fvisibility-inlines-hidden #{EXTRA_CPPFLAGS}
  : <striper>
  : <architecture>arm <target-os>iphone
  ;
 using darwin : 4.2.1~iphonesim
- : /Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc-4.2 -arch i386 -fvisibility=hidden -fvisibility-inlines-hidden #{EXTRA_CPPFLAGS}
+ : /Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin/gcc -arch i386 -fvisibility=hidden -fvisibility-inlines-hidden #{EXTRA_CPPFLAGS}
  : <striper>
  : <architecture>x86 <target-os>iphone
  ;
