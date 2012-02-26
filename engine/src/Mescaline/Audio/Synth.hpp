@@ -154,7 +154,7 @@ protected:
          , AudioInputConnection* audioInputConnections
          , AudioOutputConnection* audioOutputConnections
          , sample_t* controlBuffers
-         , sample_t** audioBuffers
+         , sample_t* audioBuffers
          );
 
 public:
@@ -216,7 +216,7 @@ private:
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
     sample_t*               m_controlBuffers;
-    sample_t**              m_audioBuffers;
+    sample_t*               m_audioBuffers;
 };
 
 }; };
