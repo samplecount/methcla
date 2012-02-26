@@ -20,7 +20,7 @@ Synth::Synth( Environment& env
 {
     // Connect ports
     for (size_t i=0; i < numControlInputs(); i++) {
-        // TODO: set default value
+        m_controlBuffers[i] = m_synthDef.controlInputPort(i).defaultValue();
         m_synthDef.connectPort(
             m_synth
           , m_synthDef.controlInputPort(i).index()
