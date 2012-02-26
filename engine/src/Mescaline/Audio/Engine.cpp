@@ -24,9 +24,10 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-Environment::Environment(const Options& options)
+Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
+    , m_synthDefs(pluginManager)
     , m_rootNode(0)
     , m_nodes(options.maxNumNodes)
     , m_audioBuses(options.maxNumAudioBuses)
@@ -99,21 +100,29 @@ void Environment::releaseNodeId(const NodeId& nodeId)
     m_nodes.release(nodeId);
 }
 
-Engine::Engine()
-    : m_env(0)
-{ }
+Engine::Engine(Plugin::Loader* pluginLoader)
+    : m_pluginLoader(pluginLoader)
+    , m_pluginManager(*pluginLoader)
+    , m_env(0)
+{
+    m_pluginManager.loadPlugins();
+}
+
+Engine::~Engine()
+{
+    delete m_env;
+    delete m_pluginLoader;
+}
 
 void Engine::configure(const IO::Driver& driver)
 {
-    if (m_env != 0) {
-        delete m_env;
-    }
+    delete m_env;
     Environment::Options options;
     options.sampleRate = driver.sampleRate();
     options.blockSize = driver.bufferSize();
     options.numHardwareInputChannels = driver.numInputs();
     options.numHardwareOutputChannels = driver.numOutputs();
-    m_env = new Environment(options);
+    m_env = new Environment(m_pluginManager, options);
 }
 
 void Engine::process(size_t numFrames, sample_t** inputs, sample_t** outputs)

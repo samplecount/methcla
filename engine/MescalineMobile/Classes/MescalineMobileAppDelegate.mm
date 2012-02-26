@@ -13,12 +13,38 @@
 
 #include <iostream>
 
+#include <lilv/lilv.h>
+
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
+
+class MyLoader : public Mescaline::Audio::Plugin::StaticLoader
+{
+public:
+    MyLoader()
+        : Mescaline::Audio::Plugin::StaticLoader(descriptorFunctions())
+    {
+        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
+    }
+
+    static Mescaline::Audio::Plugin::StaticLoader::DescriptorFunctionMap descriptorFunctions()
+    {
+        Mescaline::Audio::Plugin::StaticLoader::DescriptorFunctionMap dfs;
+        extern const LV2_Descriptor* puesnada_sine_lv2_descriptor(uint32_t index);
+        dfs["http://mescaline.puesnada.es/lv2/plugins/sine"] = puesnada_sine_lv2_descriptor;
+        return dfs;
+    }
+};
 
 class MyEngine : public Mescaline::Audio::Engine
 {
 public:
+    MyEngine(MyLoader* loader)
+        : Mescaline::Audio::Engine(loader)
+        , m_osc(0)
+        , m_scope(0)
+    { }
+
     virtual void configure(const Mescaline::Audio::IO::Driver& driver)
     {
         Mescaline::Audio::Engine::configure(driver);
@@ -27,16 +53,17 @@ public:
         environment()->initModule(MESCALINE_INIT_FUNC(Scope));
 
         // Create osc instance
-        const Mescaline::Audio::SynthDef& def = environment()->lookupSynthDef("osc");
-        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), def);
+        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment()->lookupSynthDef(
+            "http://mescaline.puesnada.es/lv2/plugins/sine" );
+        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), *def);
         environment()->rootNode()->addToTail(*synth);
         synth->mapOutput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kOut);
 
-        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
-        Mescaline::Audio::Synth* scope = Mescaline::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);
-        environment()->rootNode()->addToTail(*scope);
-        scope->mapInput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kIn);
-        m_scope = scope->synth<Mescaline::Audio::ScopeSynth>();
+//        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
+//        Mescaline::Audio::Synth* scope = Mescaline::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);
+//        environment()->rootNode()->addToTail(*scope);
+//        scope->mapInput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kIn);
+//        m_scope = scope->synth<Mescaline::Audio::ScopeSynth>();
     }
 
     Mescaline::Audio::Synth* osc() { return m_osc; }
@@ -238,7 +265,7 @@ void cycleOscilloscopeLines()
 
     try {
         // Initialize and configure the audio session
-        m_engine = new MyEngine();
+        m_engine = new MyEngine(new MyLoader());
         m_audioDriver = new Mescaline::Audio::IO::RemoteIODriver(m_engine);
 
         oscilLine = (GLfloat*)malloc(drawBufferLen * 2 * sizeof(GLfloat));
@@ -360,7 +387,7 @@ void cycleOscilloscopeLines()
     glDisable(GL_LINE_SMOOTH);
     glLineWidth(2.);
 
-    reinterpret_cast<MyEngine*>(m_engine)->scope()->buffer().dequeue(drawBuffers[0], drawBufferLen);
+//    reinterpret_cast<MyEngine*>(m_engine)->scope()->buffer().dequeue(drawBuffers[0], drawBufferLen);
 
     int drawBuffer_i;
     // Draw a line for each stored line in our buffer (the lines are stored and fade over time)
@@ -424,7 +451,7 @@ void cycleOscilloscopeLines()
     NSArray *t = [[event allTouches] allObjects];
     float freq = [[t objectAtIndex:0] locationInView:view].y;
 
-    *reinterpret_cast<MyEngine*>(m_engine)->osc()->controlInput(0) = freq;
+    reinterpret_cast<MyEngine*>(m_engine)->osc()->controlInput(0) = freq;
 
 //    // If we are in a pinch event...
 //    if ((event == pinchEvent) && ([[event allTouches] count] == 2))

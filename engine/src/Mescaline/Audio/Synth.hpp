@@ -149,20 +149,21 @@ protected:
     Synth( Environment& env
          , const NodeId& id
          , Group* parent
-         , const SynthDef& synthDef
-         , MescalineSynth* synth
+         , const Plugin::Plugin& synthDef
+         , LV2_Handle synth
          , AudioInputConnection* audioInputConnections
          , AudioOutputConnection* audioOutputConnections
+         , sample_t* controlBuffers
          , sample_t** audioBuffers
          );
 
 public:
-    static Synth* construct(Environment& env, const NodeId& id, Group* parent, const SynthDef& synthDef);
+    static Synth* construct(Environment& env, const NodeId& id, Group* parent, const Plugin::Plugin& synthDef);
     virtual void free();
     virtual ~Synth();
 
     /// Return this synth's SynthDef.
-    const SynthDef& synthDef() const { return m_synthDef; }
+    const Plugin::Plugin& synthDef() const { return m_synthDef; }
 
     /// Return number of inputs.
     size_t numAudioInputs() const { return m_synthDef.numAudioInputs(); }
@@ -181,8 +182,24 @@ public:
 
     size_t numControlInputs() const { return m_synthDef.numControlInputs(); }
     size_t numControlOutputs() const { return m_synthDef.numControlOutputs(); }
-    float* controlInput(size_t index) { return MescalineSynthGetControlInput(m_synth, index); }
-    float* controlOutput(size_t index) { return MescalineSynthGetControlOutput(m_synth, index); }
+
+    float controlInput(size_t index) const
+    {
+        BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
+        return m_controlBuffers[index];
+    }
+
+    float& controlInput(size_t index)
+    {
+        BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
+        return m_controlBuffers[index];
+    }
+
+    float controlOutput(size_t index) const
+    {
+        BOOST_ASSERT_MSG( index < numControlOutputs(), "control output index out of range" );
+        return m_controlBuffers[numControlInputs() + index];
+    }
 
     /// Sample offset for sample accurate synth scheduling.
     size_t sampleOffset() const { return 0; }
@@ -193,11 +210,12 @@ public:
     template <class T> T* synth() { return static_cast<T*>(m_synth); }
 
 private:
-    const SynthDef&         m_synthDef;
+    const Plugin::Plugin&   m_synthDef;
     std::bitset<32>         m_flags;
-    MescalineSynth*         m_synth;
+    LV2_Handle              m_synth;
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
+    sample_t*               m_controlBuffers;
     sample_t**              m_audioBuffers;
 };
 
