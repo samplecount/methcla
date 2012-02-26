@@ -52,7 +52,7 @@ public:
         environment()->initModule(MESCALINE_INIT_FUNC(osc));
         environment()->initModule(MESCALINE_INIT_FUNC(Scope));
 
-        // Create osc instance
+        // Create sine instance
         const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment()->lookupSynthDef(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
         Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), *def);
