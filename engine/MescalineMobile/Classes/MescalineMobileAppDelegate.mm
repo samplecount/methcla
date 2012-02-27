@@ -49,9 +49,6 @@ public:
     {
         Mescaline::Audio::Engine::configure(driver);
 
-        environment()->initModule(MESCALINE_INIT_FUNC(osc));
-        environment()->initModule(MESCALINE_INIT_FUNC(Scope));
-
         // Create sine instance
         const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment()->lookupSynthDef(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
