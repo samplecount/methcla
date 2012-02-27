@@ -15,6 +15,7 @@
 #include <boost/lockfree/fifo.hpp>
 #include <boost/lockfree/ringbuffer.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/utility.hpp>
 
@@ -24,11 +25,15 @@
 #include <string>
 #include <vector>
 
+#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+#include <lv2/lv2plug.in/ns/ext/atom/util.h>
 
 namespace Mescaline { namespace Audio
 {
-    using namespace Memory;
+    using namespace boost::container;
 
+    using namespace Memory;
 
     // typedef int32_t ControlBusId;
 
@@ -84,35 +89,115 @@ namespace Mescaline { namespace Audio
         Nodes m_nodes;
     };
 
+    class Environment;
+
+    class Message
+    {
+    public:
+        static const size_t kMaxPayloadBytes = 128;
+
+        typedef void (*Perform)(void* context, Environment& env, Message& message);
+
+        Message()
+            : m_perform(0)
+            , m_context(0)
+            , m_atomPtr(0)
+        {
+            memset(&m_atom, 0, sizeof(m_atom));
+#ifndef NDEBUG
+            memset(m_payload, 0, kMaxPayloadBytes);
+#endif
+        }
+
+        Message(Perform perform, void* context)
+            : m_perform(perform)
+            , m_context(context)
+            , m_atomPtr(0)
+        {
+            memset(&m_atom, 0, sizeof(m_atom));
+#ifndef NDEBUG
+            memset(m_payload, 0, kMaxPayloadBytes);
+#endif
+        }
+        Message(Perform perform, void* context, LV2_Atom* atom)
+            : m_perform(perform)
+            , m_context(context)
+            , m_atomPtr(atom)
+        {
+#ifndef NDEBUG
+            memset(&m_atom, 0, sizeof(m_atom));
+            memset(m_payload, 0, kMaxPayloadBytes);
+#endif
+        }
+        Message(const Message& other)
+        {
+            m_perform = other.m_perform;
+            m_context = other.m_context;
+            if (other.m_atomPtr != 0) {
+                m_atomPtr = other.m_atomPtr;
+            } else {
+                memcpy(&m_atom, &other.m_atom, lv2_atom_pad_size(lv2_atom_total_size(&m_atom)));
+            }
+        }
+
+        void perform(Environment& env)
+        {
+            if (m_perform != 0) m_perform(m_context, env, *this);
+        }
+
+        LV2_Atom* atom()
+        {
+            return m_atomPtr != 0 ? m_atomPtr : &m_atom;
+        }
+
+        bool needsFree() const
+        {
+            return m_atomPtr != 0;
+        }
+
+    private:
+        Perform     m_perform;
+        void*       m_context;
+        LV2_Atom*   m_atomPtr;
+        LV2_Atom    m_atom;
+        uint8_t     m_payload[kMaxPayloadBytes];
+    };
+
+    typedef boost::lockfree::ringbuffer<Message,0> MessageFIFO;
+
+    class NonRealtimeEngine
+    {
+    public:
+        NonRealtimeEngine(Environment& env);
+
+        bool send(const Message& msg);
+        size_t perform(size_t maxNumMessages);
+
+    private:
+        
+    private:
+        Environment&    m_env;
+        MessageFIFO     m_toNrtFifo;
+        MessageFIFO     m_fromNrtFifo;
+        boost::mutex    m_nrtSendMutex;
+        boost::mutex    m_nrtRecvMutex;
+    };
+
+    class MessageQueue
+    {
+    public:
+        MessageQueue(size_t size);
+    
+        void send(const Message& msg);
+        size_t perform(Environment& env);
+
+    private:
+        MessageFIFO     m_fifo;
+        boost::mutex    m_mutex;
+    };
+
     class Group;
     class PluginInterface;
-
-//    class Message
-//    {
-//    public:
-//        static const size_t kMaxPayloadBytes = 128;
-//
-//        typedef bool (*PerformFunc)(void*);
-//
-//        Message()
-//            : m_perform(0)
-//        {
-//#ifndef NDEBUG
-//            memset(m_payload, 0, kMaxPayloadBytes);
-//#endif
-//        }
-//        Message(const Message& other)
-//        {
-//            m_perform = other.m_perform;
-//            memcpy(m_payload, other.m_payload, kMaxPayloadBytes);
-//        }
-//
-//        char* payload() { return m_payload.bytes; }
-//
-//    private:
-//        bool (*m_perform)(void*);
-//        char m_payload[kMaxPayloadBytes];
-//    };
 
     class Environment : public boost::noncopyable
     {
@@ -140,8 +225,6 @@ namespace Mescaline { namespace Audio
 
         Environment(Plugin::Manager& pluginManager, const Options& options);
         ~Environment();
-
-        void initModule(MescalineInitFunc moduleInitFunc);
 
         const Plugin::Manager::PluginHandle& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
         void registerSynthDef(SynthDef* synthDef) { /* m_synthDefs.insert(synthDef); */ }
@@ -171,8 +254,8 @@ namespace Mescaline { namespace Audio
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
 
-        typedef boost::lockfree::ringbuffer<OSCPacket*, 1024> CommandFifo;
-//        typedef boost::lockfree::fifo<Message> MessageFifo;
+        const LV2_Atom_Forge& atomForge() const { return m_forge; }
+        void sendMessage(LV2_Atom* msg);
 
     protected:
         friend class Node;
@@ -196,6 +279,7 @@ namespace Mescaline { namespace Audio
 //        CommandFifo                 m_commandFifo;
 //        MessageFifo                 m_nrtToRtFifo;
 //        MessageFifo                 m_rtToNrtFifo;
+        MessageQueue                m_msgQueue;
     };
     
     // This is the interface that plugins use (via its function pointers,

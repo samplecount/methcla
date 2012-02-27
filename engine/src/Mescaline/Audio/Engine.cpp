@@ -6,6 +6,7 @@
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
 
+using namespace Mescaline;
 using namespace Mescaline::Audio;
 using namespace Mescaline::Memory;
 
@@ -24,6 +25,56 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
+NonRealtimeEngine::NonRealtimeEngine(Environment& env)
+    : m_env(env)
+    , m_toNrtFifo(8192)
+    , m_fromNrtFifo(8192)
+{ }
+
+bool NonRealtimeEngine::send(const Message& msg)
+{
+    return m_toNrtFifo.enqueue(msg);
+}
+
+size_t NonRealtimeEngine::perform(size_t maxNumMessages)
+{
+    Message msg;
+    size_t numMessages = 0;
+    while (numMessages < maxNumMessages && m_fromNrtFifo.dequeue(msg)) {
+        msg.perform(m_env);
+        numMessages++;
+    }
+    return numMessages;
+}
+
+//    mutex::scoped_lock(m_nrtMutex);
+//    do {
+//        /* SPIN */
+//    } while (!m_nrtFifo.enqueue(msg));
+
+MessageQueue::MessageQueue(size_t size)
+    : m_fifo(size)
+{ }
+
+void MessageQueue::send(const Message& msg)
+{
+    boost::mutex::scoped_lock(m_mutex);
+    do {
+        /* SPIN */
+    } while (!m_fifo.enqueue(msg));
+}
+
+size_t MessageQueue::perform(Environment& env)
+{
+    Message msg;
+    size_t n = 0;
+    while (m_fifo.dequeue(msg)) {
+        msg.perform(env);
+        n++;
+    }
+    return n;
+}
+
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -34,6 +85,7 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_audioInputChannels(options.numHardwareInputChannels)
     , m_audioOutputChannels(options.numHardwareOutputChannels)
     , m_epoch(0)
+    , m_msgQueue(8192)
 {
     m_pluginInterface = new PluginInterface(*this);
     m_rootNode = Group::construct(*this, 0, 0);
@@ -59,11 +111,16 @@ Environment::~Environment()
 void Environment::initModule(MescalineInitFunc moduleInitFunc)
 {
 	(*moduleInitFunc)(m_pluginInterface);
+void Environment::sendMessage(LV2_Atom* atom)
+{
+    m_msgQueue.send(Message(Environment_performMessage, this, atom));
 }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
-    BOOST_ASSERT(numFrames <= blockSize());
+    BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
+
+    m_msgQueue.perform(*this);
 
     size_t numInputs = m_audioInputChannels.size();
     size_t numOutputs = m_audioOutputChannels.size();
