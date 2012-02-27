@@ -108,9 +108,7 @@ Environment::~Environment()
     delete m_pluginInterface;
 }
 
-void Environment::initModule(MescalineInitFunc moduleInitFunc)
 {
-	(*moduleInitFunc)(m_pluginInterface);
 void Environment::sendMessage(LV2_Atom* atom)
 {
     m_msgQueue.send(Message(Environment_performMessage, this, atom));
