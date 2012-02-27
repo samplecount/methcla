@@ -426,6 +426,10 @@ public:
 
     const PluginHandle& lookup(const char* uri) const;
 
+    // Uri mapping
+    LV2_URID_Map* lv2UridMap();
+    LV2_URID_Unmap* lv2UridUnmap();
+
 private:
     void addFeature(const char* uri, void* data=0);
 
@@ -438,11 +442,13 @@ private:
 
 private:
     typedef std::vector<const LV2_Feature*> Features;
-    Loader&     m_loader;
-    LilvWorld*  m_world;
-    Features    m_features;
-    Map         m_plugins;
-    UriMap      m_uris;
+    Loader&         m_loader;
+    LilvWorld*      m_world;
+    Features        m_features;
+    Map             m_plugins;
+    UriMap          m_uris;
+    LV2_URID_Map    m_lv2UridMap;
+    LV2_URID_Unmap  m_lv2UridUnmap;
 };
 
 };

@@ -342,15 +342,21 @@ Manager::Manager(Loader& loader)
     BOOST_ASSERT_MSG(m_world != 0, "lilv_world_new() failed");
     
     // Initialize features
+
     // http://lv2plug.in/ns/lv2core#hardRTCapable
     addFeature( LV2_CORE_URI "#hardRTCapable" );
+
     // http://mescaline.puesnada.es/lv2/ext/rt-instantiate#rtInstantiation
     addFeature( PUESNADA_URI "/ext/rt-instantiate#rtInstantiation" );
+
     // http://lv2plug.in/ns/ext/urid
-    static LV2_URID_Map UridMap = { .handle = &m_uris, .map = UriMap_map };
-    addFeature( LV2_URID_MAP_URI, &UridMap );
-    static LV2_URID_Unmap UridUnmap = { .handle = &m_uris, .unmap = UriMap_unmap };
-    addFeature( LV2_URID_UNMAP_URI, &UridUnmap );
+    m_lv2UridMap.handle = &m_uris;
+    m_lv2UridMap.map = UriMap_map;
+    addFeature( LV2_URID_MAP_URI, &m_lv2UridMap );
+
+    m_lv2UridUnmap.handle = &m_uris;
+    m_lv2UridUnmap.unmap = UriMap_unmap;
+    addFeature( LV2_URID_UNMAP_URI, &m_lv2UridUnmap );
 }
 
 Manager::~Manager()
@@ -400,6 +406,16 @@ void Manager::loadPlugins()
             m_plugins[plugin->uri()] = plugin;
         }
     }
+}
+
+LV2_URID_Map* Manager::lv2UridMap()
+{
+    return &m_lv2UridMap;
+}
+
+LV2_URID_Unmap* Manager::lv2UridUnmap()
+{
+    return &m_lv2UridUnmap;
 }
 
 Node::Node(LilvNode* node)
