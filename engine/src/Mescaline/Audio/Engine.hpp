@@ -276,9 +276,6 @@ namespace Mescaline { namespace Audio
         boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                       m_epoch;
-//        CommandFifo                 m_commandFifo;
-//        MessageFifo                 m_nrtToRtFifo;
-//        MessageFifo                 m_rtToNrtFifo;
         MessageQueue                m_msgQueue;
     };
     
