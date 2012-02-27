@@ -87,6 +87,8 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_epoch(0)
     , m_msgQueue(8192)
 {
+    lv2_atom_forge_init(&m_forge, pluginManager.lv2UridMap());
+
     m_pluginInterface = new PluginInterface(*this);
     m_rootNode = Group::construct(*this, 0, 0);
 

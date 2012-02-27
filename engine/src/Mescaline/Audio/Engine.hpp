@@ -226,6 +226,7 @@ namespace Mescaline { namespace Audio
         Environment(Plugin::Manager& pluginManager, const Options& options);
         ~Environment();
 
+        Plugin::Manager& pluginManager() { return m_synthDefs; }
         const Plugin::Manager::PluginHandle& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
         void registerSynthDef(SynthDef* synthDef) { /* m_synthDefs.insert(synthDef); */ }
         
@@ -277,6 +278,7 @@ namespace Mescaline { namespace Audio
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                       m_epoch;
         MessageQueue                m_msgQueue;
+        LV2_Atom_Forge              m_forge;
     };
     
     // This is the interface that plugins use (via its function pointers,
