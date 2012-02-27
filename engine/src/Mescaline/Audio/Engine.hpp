@@ -287,8 +287,16 @@ namespace Mescaline { namespace Audio
         virtual void configure(const IO::Driver& driver);
         virtual void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
     
-    protected:
-        Environment* environment() { return m_env; }
+        Environment& environment()
+        {
+            BOOST_ASSERT( m_env != 0 );
+            return *m_env;
+        }
+        const Environment& environment() const
+        {
+            BOOST_ASSERT( m_env != 0 );
+            return *m_env;
+        }
 
     private:
         Plugin::Loader*     m_pluginLoader;

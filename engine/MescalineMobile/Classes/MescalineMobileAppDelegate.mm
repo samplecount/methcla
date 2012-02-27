@@ -50,10 +50,10 @@ public:
         Mescaline::Audio::Engine::configure(driver);
 
         // Create sine instance
-        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment()->lookupSynthDef(
+        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment().lookupSynthDef(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
-        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(*environment(), 1, environment()->rootNode(), *def);
-        environment()->rootNode()->addToTail(*synth);
+        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(environment(), 1, environment().rootNode(), *def);
+        environment().rootNode()->addToTail(*synth);
         synth->mapOutput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kOut);
 
 //        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
