@@ -381,8 +381,13 @@ private:
 class UriMap
 {
 public:
+    UriMap();
+
     LV2_URID map(const char* uri) const;
     const char* unmap(LV2_URID urid) const;
+
+private:
+    LV2_URID insert(const char* uri);
 
 private:
     typedef boost::unordered_map<

@@ -8,6 +8,8 @@
 #include <serd/serd.h>
 #include <utility>
 
+#include "lv2/lv2plug.in/ns/ext/reference/reference.h"
+
 using namespace boost;
 // using namespace Mescaline::Audio;
 using namespace Mescaline::Audio::Plugin;
@@ -281,18 +283,29 @@ LV2_Handle Plugin::construct(void* location, double sampleRate) const
 //    return *m_descriptor;
 //}
 
+UriMap::UriMap()
+{
+    const char* reference = LV2_REFERENCE_URI "#Reference";
+    insert(reference);
+    BOOST_ASSERT(   map(reference) == 0
+                 && unmap(0) != 0
+                 && strcmp(unmap(0), reference) == 0 );
+}
+
+LV2_URID UriMap::insert(const char* uri)
+{
+    LV2_URID urid = m_uriToId.size();
+    m_uriToId[uri] = urid;
+    m_idToUri[urid] = uri;
+    return urid;
+}
+
 LV2_URID UriMap::map(const char* uri) const
 {
     UriToId::const_iterator it = m_uriToId.find(uri);
-    LV2_URID urid;
-    if (it == m_uriToId.end()) {
-        urid = m_uriToId.size();
-        const_cast<UriMap*>(this)->m_uriToId[uri] = urid;
-        const_cast<UriMap*>(this)->m_idToUri[urid] = uri;
-    } else {
-        urid = it->second;
-    }
-    return urid;
+    return it == m_uriToId.end()
+            ? const_cast<UriMap*>(this)->insert(uri)
+            : it->second;
 }
 
 const char* UriMap::unmap(LV2_URID urid) const
