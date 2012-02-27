@@ -29,21 +29,6 @@ namespace Mescaline { namespace Audio
 {
     using namespace Memory;
 
-    class OSCPacket
-    {
-    public:
-        OSCPacket(char data[], size_t size)
-            : m_packet(data, size)
-            , m_data(data)
-        { }
-        ~OSCPacket()
-        {
-            delete [] m_data;
-        }
-
-        OSC::ServerPacket   m_packet;
-        char*               m_data;
-    };
 
     // typedef int32_t ControlBusId;
 
