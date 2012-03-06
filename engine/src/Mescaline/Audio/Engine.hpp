@@ -6,7 +6,6 @@
 #include <Mescaline/Audio/CommandEngine.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/Node.hpp>
-#include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Audio/SynthDef.hpp>
 #include <Mescaline/Exception.hpp>
 #include <Mescaline/Memory/Manager.hpp>
@@ -122,7 +121,6 @@ namespace Mescaline { namespace Audio
     };
 
     class Group;
-    class PluginInterface;
 
     class Environment : public boost::noncopyable
     {
@@ -207,7 +205,6 @@ namespace Mescaline { namespace Audio
     private:
         const size_t                m_sampleRate;
         const size_t                m_blockSize;
-        PluginInterface*            m_pluginInterface;
         RTMemoryManager             m_rtMem;
 //        SynthDefMap                 m_synthDefs;
         Plugin::Manager&            m_synthDefs;
@@ -221,28 +218,6 @@ namespace Mescaline { namespace Audio
         CommandEngine<Command>      m_commandEngine;
         Uris                        m_uris;
         LV2_Atom_Forge              m_forge;
-    };
-    
-    // This is the interface that plugins use (via its function pointers,
-    // inherited from MescalineHost).    
-    class PluginInterface : public MescalineHost
-    {
-    public:
-        PluginInterface(Environment& env)
-            : m_env(env)
-        {
-            fGetSampleRate = &GetSampleRate;
-            fRegisterSynthDef = &RegisterSynthDef;
-        }
-
-    private:
-        static unsigned int GetSampleRate(const MescalineHost* self)
-            { return static_cast<const PluginInterface*>(self)->m_env.sampleRate(); }
-        static void RegisterSynthDef(MescalineHost* self, MescalineSynthDef* synthDef)
-            { static_cast<PluginInterface*>(self)->m_env.registerSynthDef(new SynthDef(self, synthDef)); }
-
-    private:
-        Environment& m_env;
     };
     
     class Engine : public IO::Client
