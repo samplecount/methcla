@@ -6,18 +6,23 @@ using namespace Mescaline::Audio;
 
 Group* Group::construct(Environment& env, const NodeId& id, Group* parent)
 {
-    return new (env) Group(env, id, parent);
+    return new (env.rtMem()) Group(env, id, parent);
 }
 
 void Group::free()
 {
-    Node::free<Group>(this);
+    if (isRootNode()) {
+        BOOST_THROW_EXCEPTION(
+            InvalidNodeId()
+         << ErrorInfoNodeId(id())
+         << ErrorInfoString("cannot free root node")
+         );
+    } else {
+        Node::free();
+    }
 }
 
 void Group::process(size_t numFrames)
 {
-    // for (NodeList::iterator it = m_children.begin(); it != m_children.end(); it++)
-    //     it->process(numFrames);
     BOOST_FOREACH(Node& node, m_children) { node.process(numFrames); }
 }
-

@@ -10,37 +10,12 @@ Node::~Node()
     environment().releaseNodeId(this->id());
 }
 
-void* Node::operator new(size_t, void* where)
+void Node::free()
 {
-    return where;
+    delete this;
 }
 
-void Node::operator delete(void*)
+void Node::operator delete(void* ptr)
 {
+    Memory::AllocatedBase<Node, Memory::RTMemoryManager>::destroy(ptr);
 }
-
-void* Node::operator new(size_t numBytes, Environment& env)
-{
-    return env.rtMem().malloc(numBytes);
-}
-
-void Node::operator delete(void* ptr, Environment& env)
-{
-    env.rtMem().free(ptr);
-}
-
-template <class T> void Node::free(T* node)
-{
-    if (node->isRootNode()) {
-        BOOST_THROW_EXCEPTION(
-            InvalidNodeId()
-         << ErrorInfoNodeId(node->id())
-         << ErrorInfoString("cannot free root node"));
-    }
-    Environment& env = node->environment();
-    node->~T();
-    env.rtMem().free(node);
-}
-
-template void Node::free<>(Group* node);
-template void Node::free<>(Synth* node);

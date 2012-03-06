@@ -46,15 +46,15 @@ public:
     }
     void operator delete(void* ptr, Allocator& alloc)
     {
-        AllocatedBase<T, Allocator>::free(ptr);
+        AllocatedBase<T, Allocator>::destroy(ptr);
     }
     void operator delete(void* ptr)
     {
-        AllocatedBase<T, Allocator>::free(ptr);
+        AllocatedBase<T, Allocator>::destroy(ptr);
     }
 
-private:
-    static void free(void* ptr)
+protected:
+    static void destroy(void* ptr)
     {
         cout << "AllocatedBase::free" << endl;
         Chunk* chunk = static_cast<Chunk*>(ptr) - 1;

@@ -82,7 +82,6 @@ namespace Mescaline { namespace Audio
         Nodes m_nodes;
     };
 
-
     class Environment;
 
     class Command

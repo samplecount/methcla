@@ -156,11 +156,10 @@ protected:
          , sample_t* controlBuffers
          , sample_t* audioBuffers
          );
+    virtual ~Synth();
 
 public:
     static Synth* construct(Environment& env, const NodeId& id, Group* parent, const Plugin::Plugin& synthDef);
-    virtual void free();
-    virtual ~Synth();
 
     /// Return this synth's SynthDef.
     const Plugin::Plugin& synthDef() const { return m_synthDef; }
@@ -208,6 +207,9 @@ public:
     virtual void process(size_t numFrames);
 
     template <class T> T* synth() { return static_cast<T*>(m_synth); }
+
+protected:
+    void* operator new(size_t numBytes, void* where);
 
 private:
     const Plugin::Plugin&   m_synthDef;

@@ -1,6 +1,7 @@
 #ifndef MESCALINE_AUDIO_NODE_HPP_INCLUDED
 #define MESCALINE_AUDIO_NODE_HPP_INCLUDED
 
+#include <Mescaline/Memory/Manager.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
@@ -15,8 +16,9 @@ namespace Mescaline { namespace Audio {
 
     class Node : public boost::noncopyable
                , public boost::intrusive::list_base_hook<>
+               , public Memory::AllocatedBase<Node, Memory::RTMemoryManager>
     {
-    protected:
+    public:
         Node(Environment& env, const NodeId& id, Group* parent)
             : m_env(env)
             , m_id(id)
@@ -24,7 +26,6 @@ namespace Mescaline { namespace Audio {
         { }
         virtual ~Node();
 
-    public:
         /// Return environment.
         const Environment& environment() const { return m_env; }
         Environment& environment() { return m_env; }
@@ -37,19 +38,13 @@ namespace Mescaline { namespace Audio {
         bool isRootNode() const { return parent() == 0; }
 
         /// Free the node.
-        virtual void free() = 0;
+        virtual void free();
 
         // Process a number of frames.
         virtual void process(size_t numFrames) = 0;
 
     protected:
-        void* operator new(size_t numBytes, void* where);
         void operator delete(void* ptr);
-        void* operator new(size_t numBytes, Environment& env);
-        void operator delete(void* ptr, Environment& env);
-
-        /// To be used by subclasses in their implementation of free.
-        template <class T> static void free(T* node);
 
     private:
         Environment&    m_env;

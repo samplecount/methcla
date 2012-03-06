@@ -31,9 +31,6 @@ public:
 
     virtual void process(size_t numFrames);
 
-protected:
-    // static void addNode(
-
 private:
     NodeList m_children;
 };

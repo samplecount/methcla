@@ -71,6 +71,11 @@ Synth::~Synth()
     m_synthDef.destroy(m_synth);
 }
 
+void* Synth::operator new(size_t, void* where)
+{
+    return where;
+}
+
 Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const Plugin::Plugin& synthDef)
 {
     const Alignment bufferAlignment(Alignment::SIMDAlignment());
@@ -121,11 +126,6 @@ Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const
                           , audioOutputConnections
                           , controlBuffers
                           , audioBuffers );
-}
-
-void Synth::free()
-{
-    Node::free<Synth>(this);
 }
 
 template <typename BusId, typename ConnType>
