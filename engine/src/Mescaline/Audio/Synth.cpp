@@ -3,7 +3,7 @@
 using namespace Mescaline::Audio;
 
 Synth::Synth( Environment& env
-            , const NodeId& id
+            , const ResourceId& id
             , Group* parent
             , const Plugin::Plugin& synthDef
             , LV2_Handle synth
@@ -18,39 +18,47 @@ Synth::Synth( Environment& env
     , m_controlBuffers(controlBuffers)
     , m_audioBuffers(audioBuffers)
 {
-    // Connect control ports
-    for (size_t i=0; i < numControlInputs(); i++) {
-        m_controlBuffers[i] = m_synthDef.controlInputPort(i).defaultValue();
-        m_synthDef.connectPort(
-            m_synth
-          , m_synthDef.controlInputPort(i).index()
-          , m_controlBuffers + i );
-    }
-    for (size_t i=0; i < numControlOutputs(); i++) {
-        m_synthDef.connectPort(
-            m_synth
-          , m_synthDef.controlInputPort(i).index()
-          , m_controlBuffers + numControlInputs() + i );
-    }
-
-    // Connect audio ports
     const size_t blockSize = env.blockSize();
-    sample_t* currentAudioBuffer = m_audioBuffers;
+    sample_t* audioInputBuffers = m_audioBuffers;
+    sample_t* audioOutputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
 
-    for (size_t i=0; i < numAudioInputs(); i++) {
-        m_audioInputConnections.push_back(audioInputConnections[i]);
-        m_synthDef.connectPort( m_synth
-                              , m_synthDef.audioInputPort(i).index()
-                              , currentAudioBuffer );
-        currentAudioBuffer += blockSize;
-    }
+    for (size_t i=0; i < synthDef.numPorts(); i++) {
+        const FloatPort& port = synthDef.port(i);
+        // Connect control ports
+        if (port.isa(Port::kControl)) {
+            if (port.isa(Port::kInput)) {
+                m_controlBuffers[port.index()] = port.defaultValue();
+                m_synthDef.connectPort(
+                    m_synth
+                  , i
+                  , &m_controlBuffers[port.index()] );
+            } else if (port.isa(Port::kOutput)) {
+                m_synthDef.connectPort(
+                    m_synth
+                  , i
+                  , &m_controlBuffers[numControlInputs() + port.index()] );
+            } else {
+                BOOST_ASSERT_MSG( false, "Invalid port type" );
+            }
+        } else if (port.isa(Port::kAudio)) {
+            // Connect audio ports
+            if (port.isa(Port::kInput)) {
+                m_audioInputConnections.push_back(audioInputConnections[port.index()]);
+                m_synthDef.connectPort( m_synth
+                                      , i
+                                      , audioInputBuffers + port.index() * blockSize );
 
-    for (size_t i=0; i < numAudioOutputs(); i++) {
-        m_audioOutputConnections.push_back(audioOutputConnections[i]);
-        m_synthDef.connectPort( m_synth
-                              , m_synthDef.audioOutputPort(i).index()
-                              , currentAudioBuffer );
-        currentAudioBuffer += blockSize;
+            } else if (port.isa(Port::kOutput)) {
+                m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
+                m_synthDef.connectPort( m_synth
+                                      , i
+                                      , audioOutputBuffers + port.index() * blockSize );
+            } else {
+                BOOST_ASSERT_MSG( false, "Invalid port type" );
+            }
+        } else {
+            BOOST_ASSERT_MSG( false, "Invalid port type" );
+        }
     }
 
     // Check for control input triggers
@@ -76,7 +84,7 @@ void* Synth::operator new(size_t, void* where)
     return where;
 }
 
-Synth* Synth::construct(Environment& env, const NodeId& id, Group* parent, const Plugin::Plugin& synthDef)
+Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, const Plugin::Plugin& synthDef)
 {
     const Alignment bufferAlignment(Alignment::SIMDAlignment());
 
@@ -158,12 +166,12 @@ struct SortByBusId
 //     return find_if(m_audioInputConnections.begin(), m_audioInputConnections.end(), IfConnectionIndex(index));
 // }
 
-void Synth::mapInput(size_t index, const AudioBusId& bus, InputConnectionType type)
+void Synth::mapInput(size_t index, const ResourceId& bus, InputConnectionType type)
 {
     AudioInputConnections::iterator conn =
         find_if( m_audioInputConnections.begin()
                , m_audioInputConnections.end()
-               , IfConnectionIndex<AudioBusId,InputConnectionType>(index) );
+               , IfConnectionIndex<ResourceId,InputConnectionType>(index) );
     if (conn != m_audioInputConnections.end()) {
         if (conn->connect(bus, type)) {
             m_flags.set(kAudioInputConnectionsChanged);
@@ -171,16 +179,16 @@ void Synth::mapInput(size_t index, const AudioBusId& bus, InputConnectionType ty
     }
 }
 
-void Synth::mapOutput(size_t index, const AudioBusId& bus, OutputConnectionType type)
+void Synth::mapOutput(size_t index, const ResourceId& bus, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
-    sample_t* buffer = offset > 0 ? environment().rtMem().alloc<sample_t>(offset) : 0;
+    sample_t* buffer = offset > 0 ? env().rtMem().alloc<sample_t>(offset) : 0;
     AudioOutputConnections::iterator conn =
         find_if( m_audioOutputConnections.begin()
                , m_audioOutputConnections.end()
-               , IfConnectionIndex<AudioBusId,OutputConnectionType>(index) );
+               , IfConnectionIndex<ResourceId,OutputConnectionType>(index) );
     if (conn != m_audioOutputConnections.end()) {
-        conn->release(environment());
+        conn->release(env());
         if (conn->connect(bus, type, offset, buffer)) {
             m_flags.set(kAudioOutputConnectionsChanged);
         }
@@ -191,15 +199,15 @@ void Synth::process(size_t numFrames)
 {
     // Sort connections by bus id (if necessary)
     if (m_flags.test(kAudioInputConnectionsChanged)) {
-        m_audioInputConnections.sort(SortByBusId<AudioBusId,InputConnectionType>());
+        m_audioInputConnections.sort(SortByBusId<ResourceId,InputConnectionType>());
         m_flags.reset(kAudioInputConnectionsChanged);
     }
     if (m_flags.test(kAudioOutputConnectionsChanged)) {
-        m_audioOutputConnections.sort(SortByBusId<AudioBusId,OutputConnectionType>());
+        m_audioOutputConnections.sort(SortByBusId<ResourceId,OutputConnectionType>());
         m_flags.reset(kAudioOutputConnectionsChanged);
     }
 
-    Environment& env = environment();
+    Environment& env = this->env();
     const size_t blockSize = env.blockSize();
 
     sample_t* const inputBuffers = m_audioBuffers;

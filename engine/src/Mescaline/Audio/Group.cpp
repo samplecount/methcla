@@ -4,7 +4,7 @@
 
 using namespace Mescaline::Audio;
 
-Group* Group::construct(Environment& env, const NodeId& id, Group* parent)
+Group* Group::construct(Environment& env, const ResourceId& id, Group* parent)
 {
     return new (env.rtMem()) Group(env, id, parent);
 }

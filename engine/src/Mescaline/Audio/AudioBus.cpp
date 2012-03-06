@@ -3,9 +3,10 @@
 
 using namespace Mescaline::Audio;
 
-AudioBus::AudioBus(size_t numFrames, sample_t* data, const Epoch& epoch)
-: m_data(data)
-, m_epoch(epoch)
+AudioBus::AudioBus(const ResourceId& id, size_t numFrames, sample_t* data, const Epoch& epoch)
+    : Resource(id)
+    , m_data(data)
+    , m_epoch(epoch)
 {
 }
 
@@ -13,15 +14,16 @@ AudioBus::~AudioBus()
 {
 }
 
-ExternalAudioBus::ExternalAudioBus(size_t numFrames, const Epoch& epoch)
-: AudioBus(numFrames, 0, epoch)
+ExternalAudioBus::ExternalAudioBus(const ResourceId& id, size_t numFrames, const Epoch& epoch)
+    : AudioBus(id, numFrames, 0, epoch)
 {
 }
 
-InternalAudioBus::InternalAudioBus(size_t numFrames, const Epoch& epoch)
-: AudioBus( numFrames
-          , allocAligned<sample_t>(Alignment::SIMDAlignment(), numFrames)
-          , epoch )
+InternalAudioBus::InternalAudioBus(const ResourceId& id, size_t numFrames, const Epoch& epoch)
+    : AudioBus( id
+              , numFrames
+              , allocAligned<sample_t>(Alignment::SIMDAlignment(), numFrames)
+              , epoch )
 {
 }
 

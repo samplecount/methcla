@@ -6,6 +6,7 @@
 #include <Mescaline/Audio/Plugin/API.h>
 
 #include <boost/intrusive/list.hpp>
+#include <boost/thread/locks.hpp>
 #include <boost/utility.hpp>
 
 namespace Mescaline { namespace Audio {
@@ -55,46 +56,44 @@ private:
     ConnectionType  m_type;
 };
 
-class AudioInputConnection : public Connection<AudioBusId, InputConnectionType>
+class AudioInputConnection : public Connection<ResourceId, InputConnectionType>
 {
 public:
     AudioInputConnection(size_t index)
-        : Connection<AudioBusId,InputConnectionType>(index, kIn)
+        : Connection<ResourceId,InputConnectionType>(index, kIn)
     { }
 
     void read(Environment& env, size_t numFrames, sample_t* dst)
     {
         if (busId()) {
             AudioBus& bus = env.audioBus(busId());
-            bus.lockForReading();
-            // TODO: Exception handling, scoped lock
+            boost::shared_lock<AudioBus::Lock> lock(bus.lock());
             if (bus.epoch() == env.epoch()) {
                 memcpy(dst, bus.data(), numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
-            bus.unlockForReading();
         } else {
             memset(dst, 0, numFrames * sizeof(sample_t));
         }
     }
 };
 
-class AudioOutputConnection : public Connection<AudioBusId,OutputConnectionType>
+class AudioOutputConnection : public Connection<ResourceId,OutputConnectionType>
 {
 public:
     AudioOutputConnection(size_t index)
-        : Connection<AudioBusId,OutputConnectionType>(index, kOut)
+        : Connection<ResourceId,OutputConnectionType>(index, kOut)
         , m_offset(0)
         , m_buffer(0)
     { }
 
-    bool connect(const AudioBusId& busId, const OutputConnectionType& type, size_t offset, sample_t* buffer)
+    bool connect(const ResourceId& busId, const OutputConnectionType& type, size_t offset, sample_t* buffer)
     {
         BOOST_ASSERT((m_offset == 0) && (m_buffer == 0));
         m_offset = offset;
         m_buffer = buffer;
-        return Connection<AudioBusId,OutputConnectionType>::connect(busId, type);
+        return Connection<ResourceId,OutputConnectionType>::connect(busId, type);
     }
 
     void release(Environment& env)
@@ -111,8 +110,7 @@ public:
         if (busId()) {
             AudioBus& bus = env.audioBus(busId());
             const Epoch epoch = env.epoch();
-            bus.lockForWriting();
-            // TODO: Exception handling, scoped lock
+            boost::lock_guard<AudioBus::Lock> lock(bus.lock());
             if (bus.epoch() == epoch) {
                 // Accumulate
                 sample_t* dst = bus.data();
@@ -124,7 +122,6 @@ public:
                 memcpy(bus.data(), src, numFrames * sizeof(sample_t));
                 bus.setEpoch(epoch);
             }
-            bus.unlockForWriting();
         }
     }
 
@@ -147,7 +144,7 @@ protected:
     };
 
     Synth( Environment& env
-         , const NodeId& id
+         , const ResourceId& id
          , Group* parent
          , const Plugin::Plugin& synthDef
          , LV2_Handle synth
@@ -159,7 +156,7 @@ protected:
     virtual ~Synth();
 
 public:
-    static Synth* construct(Environment& env, const NodeId& id, Group* parent, const Plugin::Plugin& synthDef);
+    static Synth* construct(Environment& env, const ResourceId& id, Group* parent, const Plugin::Plugin& synthDef);
 
     /// Return this synth's SynthDef.
     const Plugin::Plugin& synthDef() const { return m_synthDef; }
@@ -167,12 +164,12 @@ public:
     /// Return number of inputs.
     size_t numAudioInputs() const { return m_synthDef.numAudioInputs(); }
     /// Map input to bus.
-    void mapInput(size_t input, const AudioBusId& bus, InputConnectionType type);
+    void mapInput(size_t input, const ResourceId& bus, InputConnectionType type);
 
     // Return number of outputs.
     size_t numAudioOutputs() const { return m_synthDef.numAudioOutputs(); }
     // Map output to bus.
-    void mapOutput(size_t output, const AudioBusId& bus, OutputConnectionType type);
+    void mapOutput(size_t output, const ResourceId& bus, OutputConnectionType type);
 
     typedef boost::intrusive::list<AudioInputConnection>  AudioInputConnections;
     typedef boost::intrusive::list<AudioOutputConnection> AudioOutputConnections;

@@ -53,11 +53,11 @@ public:
         Mescaline::Audio::Engine::configure(driver);
 
         // Create sine instance
-        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = environment().lookupSynthDef(
+        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = env().lookupSynthDef(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
-        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(environment(), 1, environment().rootNode(), *def);
-        environment().rootNode()->addToTail(*synth);
-        synth->mapOutput(0, Mescaline::Audio::AudioBusId(Mescaline::Audio::AudioBusId::kOutput, 0), Mescaline::Audio::kOut);
+        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(env(), env().nextResourceId(), env().rootNode(), *def);
+        env().rootNode()->addToTail(*synth);
+        synth->mapOutput(0, Mescaline::Audio::ResourceId(3), Mescaline::Audio::kOut);
 
 //        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
 //        Mescaline::Audio::Synth* scope = Mescaline::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);
@@ -458,10 +458,10 @@ void cycleOscilloscopeLines()
         const size_t atomSize = sizeof(LV2_Atom_String) + strlen(*it) + 1;
         LV2_Atom* atom = (LV2_Atom*)malloc(lv2_atom_pad_size(atomSize));
         LV2_Atom_Forge forge;
-        lv2_atom_forge_init(&forge, m_engine->environment().pluginManager().lv2UridMap());
+        lv2_atom_forge_init(&forge, m_engine->env().pluginManager().lv2UridMap());
         lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
         BOOST_ASSERT( lv2_atom_forge_string(&forge, (uint8_t*)(*it), strlen(*it)) != 0 );
-        m_engine->environment().sendMessage(atom);
+        m_engine->env().sendMessage(atom);
     }
 
 //    // If we are in a pinch event...

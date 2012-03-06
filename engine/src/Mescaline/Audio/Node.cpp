@@ -7,7 +7,8 @@ using namespace Mescaline::Audio;
 
 Node::~Node()
 {
-    environment().releaseNodeId(this->id());
+    // TODO: This needs to be different for different resources because removeResource is not realtime safe!
+//    environment().removeResource(*this);
 }
 
 void Node::free()

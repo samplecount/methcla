@@ -162,7 +162,7 @@ static optional<PluginDescriptor> loadPlugin(Loader& loader, const LilvPlugin* p
 // {
 // }
 
-FloatPort::FloatPort( Type type, uint32_t index, const char* symbol
+Mescaline::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* symbol
                     , float minValue, float maxValue, float defaultValue )
     : Port(type, index, symbol)
     , m_minValue(isnan(minValue) ? -numeric_limits<float>::max() : minValue)
@@ -177,6 +177,10 @@ Plugin::Plugin(Manager& manager, const LilvPlugin* plugin)
     : m_plugin(plugin)
     , m_descriptor(0)
     , m_features(manager.features())
+    , m_numAudioInputs(0)
+    , m_numAudioOutputs(0)
+    , m_numControlInputs(0)
+    , m_numControlOutputs(0)
 {
     m_bundlePath = lilv_uri_to_path(lilv_node_as_uri(lilv_plugin_get_bundle_uri(m_plugin)));
 
@@ -197,22 +201,34 @@ Plugin::Plugin(Manager& manager, const LilvPlugin* plugin)
             const char* symbol = lilv_node_as_string(lilv_port_get_symbol(m_plugin, lilvPort));
             if (lilv_port_is_a(m_plugin, lilvPort, audioClass->impl())) {
                 if (lilv_port_is_a(m_plugin, lilvPort, inputClass->impl())) {
-                    m_audioInputs.push_back(FloatPort( Port::Type(Port::kAudio|Port::kInput), i, symbol
-                                                     , minValues[i], maxValues[i], defValues[i]));
+                    m_ports.push_back(FloatPort( Port::Type(Port::kAudio|Port::kInput)
+                                               , m_numAudioInputs
+                                               , symbol
+                                               , minValues[i], maxValues[i], defValues[i]));
+                    m_numAudioInputs++;
                 } else if (lilv_port_is_a(m_plugin, lilvPort, outputClass->impl())) {
-                    m_audioOutputs.push_back(FloatPort( Port::Type(Port::kAudio|Port::kOutput), i, symbol
-                                                      , minValues[i], maxValues[i], defValues[i]));
+                    m_ports.push_back(FloatPort( Port::Type(Port::kAudio|Port::kOutput)
+                                               , m_numAudioOutputs
+                                               , symbol
+                                               , minValues[i], maxValues[i], defValues[i]));
+                    m_numAudioOutputs++;
                 } else {
                     // TODO: Unknown port class
                     BOOST_ASSERT_MSG( false, "Unknown audio port class" );
                 }
             } else if (lilv_port_is_a(m_plugin, lilvPort, controlClass->impl())) {
                 if (lilv_port_is_a(m_plugin, lilvPort, inputClass->impl())) {
-                    m_controlInputs.push_back(FloatPort( Port::Type(Port::kControl|Port::kInput), i, symbol
-                                                       , minValues[i], maxValues[i], defValues[i]));
+                    m_ports.push_back(FloatPort( Port::Type(Port::kControl|Port::kInput)
+                                               , m_numControlInputs
+                                               , symbol
+                                               , minValues[i], maxValues[i], defValues[i]));
+                    m_numControlInputs++;
                 } else if (lilv_port_is_a(m_plugin, lilvPort, outputClass->impl())) {
-                    m_controlOutputs.push_back(FloatPort( Port::Type(Port::kControl|Port::kOutput), i, symbol
-                                                        , minValues[i], maxValues[i], defValues[i]));
+                    m_ports.push_back(FloatPort( Port::Type(Port::kControl|Port::kOutput)
+                                               , m_numControlOutputs
+                                               , symbol
+                                               , minValues[i], maxValues[i], defValues[i]));
+                    m_numControlOutputs++;
                 } else {
                     // TODO: Unknown port class
                     BOOST_ASSERT_MSG( false, "Unknown control port class" );

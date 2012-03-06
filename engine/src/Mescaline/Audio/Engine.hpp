@@ -12,6 +12,7 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
 #include <oscpp/server.hpp>
@@ -27,22 +28,6 @@
 namespace Mescaline { namespace Audio
 {
     using namespace Memory;
-
-    // typedef int32_t ControlBusId;
-
-    // class ControlBusId
-    // {
-    // public:
-    //     ControlBusId()
-    //         : m_id(-1)
-    //     { }
-    //     ControlBusId(
-    //     uint32_t id() const { return m_id; }
-    //     operator bool () const { return m_id != -1; }
-    // 
-    // private:
-    //     uint32_t m_id;
-    // };
 
     // class ControlBus : boost::noncopyable
     // {
@@ -80,6 +65,56 @@ namespace Mescaline { namespace Audio
 
     private:
         Nodes m_nodes;
+    };
+
+    class ResourceMap
+    {
+    public:
+        void insert(Resource& resource)
+        {
+            pair<Map::iterator,bool> result = m_map.insert(Map::value_type(resource.id(), &resource));
+            BOOST_ASSERT_MSG( result.second, "Duplicate resource" );
+        }
+
+        void remove(Resource& resource)
+        {
+            size_t n = m_map.erase(resource.id());
+            BOOST_ASSERT_MSG( n > 0, "Missing resource" );
+        }
+
+        bool includes(const ResourceId& id)
+        {
+            return includesId(id);
+        }
+
+        Resource& lookup(const ResourceId& id)
+        {
+            Map::iterator it = m_map.find(id);
+            BOOST_ASSERT( it != m_map.end() );
+            return *it->second;
+        }
+
+        ResourceId nextId()
+        {
+            const uint32_t invalid = ResourceId();
+            uint32_t id = m_map.size() + 1;
+//            uint32_t id0 = id;
+            while ((includesId(id) || id == invalid) /* && id != id0 */) {
+                id++;
+            }
+//            BOOST_ASSERT_MSG( id != id0, "No more free resource IDs" );
+            return ResourceId(id);
+        }
+
+    private:
+        bool includesId(uint32_t id)
+        {
+            return m_map.find(id) != m_map.end();
+        }
+
+    private:
+        typedef boost::unordered_map<uint32_t,Resource*> Map;
+        Map m_map;
     };
 
     class Environment;
@@ -151,25 +186,30 @@ namespace Mescaline { namespace Audio
         Plugin::Manager& pluginManager() { return m_synthDefs; }
         const Plugin::Manager::PluginHandle& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
         void registerSynthDef(SynthDef* synthDef) { /* m_synthDefs.insert(synthDef); */ }
-        
+
         Group* rootNode() { return m_rootNode; }
-        const NodeMap& nodes() const { return m_nodes; }
 
         size_t sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
 
-        AudioBus& audioBus(AudioBusId busId)
+        ResourceId nextResourceId() { return m_resources.nextId(); }
+
+        AudioBus& audioBus(const ResourceId& busId)
         {
-            switch (busId.scope()) {
-                case AudioBusId::kInput:
-                    return m_audioInputChannels[busId.id()];
-                case AudioBusId::kOutput:
-                    return m_audioOutputChannels[busId.id()];
-                case AudioBusId::kInternal:
-                    return m_audioBuses[busId.id()];
-            }
-            BOOST_THROW_EXCEPTION(InvalidInput());
+            return dynamic_cast<AudioBus&>(m_resources.lookup(busId));
         }
+
+//        {
+//            switch (busId.scope()) {
+//                case AudioBusId::kInput:
+//                    return m_audioInputChannels[busId.id()];
+//                case AudioBusId::kOutput:
+//                    return m_audioOutputChannels[busId.id()];
+//                case AudioBusId::kInternal:
+//                    return m_audioBuses[busId.id()];
+//            }
+//            BOOST_THROW_EXCEPTION(InvalidInput());
+//        }
 
         RTMemoryManager& rtMem() { return m_rtMem; }
 
@@ -192,10 +232,10 @@ namespace Mescaline { namespace Audio
         void free(Context context, Command* cmd);
 
     protected:
-        friend class Node;
+        friend class Resource;
 
-        void insertNode(Node* node);
-        void releaseNodeId(const NodeId& nodeId);
+        void addResource(Resource& resource);
+        void removeResource(Resource& resource);
 
     private:
 //        void processMessages(MessageFIFO& fifo);
@@ -207,8 +247,9 @@ namespace Mescaline { namespace Audio
         RTMemoryManager             m_rtMem;
 //        SynthDefMap                 m_synthDefs;
         Plugin::Manager&            m_synthDefs;
+        ResourceMap                 m_resources;
         Group*                      m_rootNode;
-        NodeMap                     m_nodes;
+//        NodeMap                     m_nodes;
         boost::ptr_vector<ExternalAudioBus> m_audioInputChannels;
         boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
@@ -228,12 +269,12 @@ namespace Mescaline { namespace Audio
         virtual void configure(const IO::Driver& driver);
         virtual void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
     
-        Environment& environment()
+        Environment& env()
         {
             BOOST_ASSERT( m_env != 0 );
             return *m_env;
         }
-        const Environment& environment() const
+        const Environment& env() const
         {
             BOOST_ASSERT( m_env != 0 );
             return *m_env;

@@ -8,7 +8,7 @@ namespace Mescaline { namespace Audio {
 class Group : public Node
 {
 protected:
-    Group(Environment& env, const NodeId& id, Group* parent)
+    Group(Environment& env, const ResourceId& id, Group* parent)
         : Node(env, id, parent)
     { }
 
@@ -22,7 +22,7 @@ public:
       , kReplace
     };
 
-    static Group* construct(Environment& env, const NodeId& id, Group* target /*, AddAction addAction*/);
+    static Group* construct(Environment& env, const ResourceId& id, Group* target /*, AddAction addAction*/);
     virtual void free();
 
     const NodeList& children() const { return m_children; }

@@ -25,83 +25,6 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-//CommandServer::CommandServer(Environment& env)
-//    : m_env(env)
-//    , m_continue(true)
-//    , m_toNrtFifo(8192)
-//    , m_fromNrtFifo(8192)
-//{
-//    m_thread = boost::thread(&CommandServer::process, this);
-//}
-//
-//CommandServer::~CommandServer()
-//{
-//    m_continue = false;
-//    m_semaphore.post();
-//    m_thread.join();
-//}
-//
-//size_t CommandServer::execute(size_t maxNumMessages)
-//{
-//    Command* cmd;
-//    size_t numMessages = 0;
-//    while (numMessages < maxNumMessages && m_fromNrtFifo.dequeue(cmd)) {
-//        cmd->execute(kRealtime);
-//        numMessages++;
-//    }
-//    return numMessages;
-//}
-//
-//void CommandServer::enqueue(Context context, Command* cmd)
-//{
-//    if (context == kRealtime) {
-//        bool success = m_toNrtFifo.enqueue(cmd);
-//        // TODO: Error handling
-//        BOOST_ASSERT( success );
-//        m_semaphore.post();
-//    } else if (context == kNonRealtime) {
-//        do {
-//            /* SPIN */
-//        } while (!m_fromNrtFifo.enqueue(cmd));
-//    } else {
-//        BOOST_ASSERT_MSG( false, "Invalid execution context" );
-//    }
-//}
-//
-//void CommandServer::process()
-//{
-//    cout << "NonRealtimeEngine::process() >>" << endl;
-//    while (m_continue) {
-//        m_semaphore.wait();
-//        Command* cmd;
-//        while (m_toNrtFifo.dequeue(cmd)) {
-//            cout << "NonRealtimeEngine::process() " << cmd << endl;
-//            cmd->execute(kNonRealtime);
-//        }
-//    }
-//    cout << "<< NonRealtimeEngine::process()" << endl;    
-//}
-//
-//CommandServer* CommandServer::Command::owner()
-//{
-//    return *reinterpret_cast<CommandServer**>((reinterpret_cast<char*>(this) - sizeof(CommandServer*)));
-//}
-//
-//void* CommandServer::Command::alloc(CommandServer* owner, size_t size)
-//{
-//    CommandServer** ptr =
-//        static_cast<CommandServer**>(
-//            owner->env().rtMem().malloc(sizeof(CommandServer*) + size));
-//    ptr[0] = owner;
-//    return &ptr[1];
-//}
-//
-//void CommandServer::Command::free(void* ptr)
-//{
-//    CommandServer** ptr_ = static_cast<CommandServer**>(ptr) - 1;
-//    ptr_[0]->env().rtMem().free(ptr_);
-//}
-
 void LV2Command::perform(Context context)
 {
     BOOST_ASSERT( context == kRealtime );
@@ -121,7 +44,7 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_blockSize(options.blockSize)
     , m_synthDefs(pluginManager)
     , m_rootNode(0)
-    , m_nodes(options.maxNumNodes)
+//    , m_nodes(options.maxNumNodes)
     , m_audioBuses(options.maxNumAudioBuses)
     , m_audioInputChannels(options.numHardwareInputChannels)
     , m_audioOutputChannels(options.numHardwareOutputChannels)
@@ -132,18 +55,25 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     lv2_atom_forge_init(&m_forge, pluginManager.lv2UridMap());
     m_uris.atom_String = pluginManager.uriMap().map(LV2_ATOM__String);
 
-    m_rootNode = Group::construct(*this, 0, 0);
+    m_rootNode = Group::construct(*this, nextResourceId(), 0);
 
     const Epoch prevEpoch = epoch() - 1;
 
-    for (size_t i=0; i < options.maxNumAudioBuses; i++) {
-        m_audioBuses.push_back(new InternalAudioBus(blockSize(), prevEpoch));
-    }
     for (size_t i=0; i < options.numHardwareInputChannels; i++) {
-        m_audioInputChannels.push_back(new ExternalAudioBus(blockSize(), prevEpoch));
+        ExternalAudioBus* bus = new ExternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
+        m_audioInputChannels.push_back(bus);
+        addResource(*bus);
     }
     for (size_t i=0; i < options.numHardwareOutputChannels; i++) {
-        m_audioOutputChannels.push_back(new ExternalAudioBus(blockSize(), prevEpoch));
+        ExternalAudioBus* bus = new ExternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
+        m_audioOutputChannels.push_back(bus);
+        addResource(*bus);
+    }
+
+    for (size_t i=0; i < options.maxNumAudioBuses; i++) {
+        InternalAudioBus* bus = new InternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
+        m_audioBuses.push_back(bus);
+        addResource(*bus);
     }
 }
 
@@ -204,14 +134,14 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
-void Environment::insertNode(Node* node)
+void Environment::addResource(Resource& resource)
 {
-    m_nodes.insert(node);
+    m_resources.insert(resource);
 }
 
-void Environment::releaseNodeId(const NodeId& nodeId)
+void Environment::removeResource(Resource& resource)
 {
-    m_nodes.release(nodeId);
+    m_resources.remove(resource);
 }
 
 Engine::Engine(Plugin::Loader* pluginLoader)

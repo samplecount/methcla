@@ -11,7 +11,6 @@
 
 #include <Mescaline/Utility/Semaphore.hpp>
 
-#include <boost/lockfree/fifo.hpp>
 #include <boost/lockfree/ringbuffer.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
