@@ -25,54 +25,95 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-NonRealtimeEngine::NonRealtimeEngine(Environment& env)
-    : m_env(env)
-    , m_toNrtFifo(8192)
-    , m_fromNrtFifo(8192)
-{ }
+//CommandServer::CommandServer(Environment& env)
+//    : m_env(env)
+//    , m_continue(true)
+//    , m_toNrtFifo(8192)
+//    , m_fromNrtFifo(8192)
+//{
+//    m_thread = boost::thread(&CommandServer::process, this);
+//}
+//
+//CommandServer::~CommandServer()
+//{
+//    m_continue = false;
+//    m_semaphore.post();
+//    m_thread.join();
+//}
+//
+//size_t CommandServer::execute(size_t maxNumMessages)
+//{
+//    Command* cmd;
+//    size_t numMessages = 0;
+//    while (numMessages < maxNumMessages && m_fromNrtFifo.dequeue(cmd)) {
+//        cmd->execute(kRealtime);
+//        numMessages++;
+//    }
+//    return numMessages;
+//}
+//
+//void CommandServer::enqueue(Context context, Command* cmd)
+//{
+//    if (context == kRealtime) {
+//        bool success = m_toNrtFifo.enqueue(cmd);
+//        // TODO: Error handling
+//        BOOST_ASSERT( success );
+//        m_semaphore.post();
+//    } else if (context == kNonRealtime) {
+//        do {
+//            /* SPIN */
+//        } while (!m_fromNrtFifo.enqueue(cmd));
+//    } else {
+//        BOOST_ASSERT_MSG( false, "Invalid execution context" );
+//    }
+//}
+//
+//void CommandServer::process()
+//{
+//    cout << "NonRealtimeEngine::process() >>" << endl;
+//    while (m_continue) {
+//        m_semaphore.wait();
+//        Command* cmd;
+//        while (m_toNrtFifo.dequeue(cmd)) {
+//            cout << "NonRealtimeEngine::process() " << cmd << endl;
+//            cmd->execute(kNonRealtime);
+//        }
+//    }
+//    cout << "<< NonRealtimeEngine::process()" << endl;    
+//}
+//
+//CommandServer* CommandServer::Command::owner()
+//{
+//    return *reinterpret_cast<CommandServer**>((reinterpret_cast<char*>(this) - sizeof(CommandServer*)));
+//}
+//
+//void* CommandServer::Command::alloc(CommandServer* owner, size_t size)
+//{
+//    CommandServer** ptr =
+//        static_cast<CommandServer**>(
+//            owner->env().rtMem().malloc(sizeof(CommandServer*) + size));
+//    ptr[0] = owner;
+//    return &ptr[1];
+//}
+//
+//void CommandServer::Command::free(void* ptr)
+//{
+//    CommandServer** ptr_ = static_cast<CommandServer**>(ptr) - 1;
+//    ptr_[0]->env().rtMem().free(ptr_);
+//}
 
-bool NonRealtimeEngine::send(const Message& msg)
+void LV2Command::perform(Context context)
 {
-    return m_toNrtFifo.enqueue(msg);
-}
-
-size_t NonRealtimeEngine::perform(size_t maxNumMessages)
-{
-    Message msg;
-    size_t numMessages = 0;
-    while (numMessages < maxNumMessages && m_fromNrtFifo.dequeue(msg)) {
-        msg.perform(m_env);
-        numMessages++;
+    BOOST_ASSERT( context == kRealtime );
+    LV2_Atom* atom = m_atom;
+    cout << "Message: " << atom << endl
+         << "    atom size: " << atom->size << endl
+         << "    atom type: " << atom->type << endl;
+    if (atom->type == env().uris().atom_String) {
+        const char* str = (const char*)LV2_ATOM_BODY(atom);
+        cout << "    string: " << str << endl;
     }
-    return numMessages;
-}
-
-//    mutex::scoped_lock(m_nrtMutex);
-//    do {
-//        /* SPIN */
-//    } while (!m_nrtFifo.enqueue(msg));
-
-MessageQueue::MessageQueue(size_t size)
-    : m_fifo(size)
-{ }
-
-void MessageQueue::send(const Message& msg)
-{
-    boost::mutex::scoped_lock(m_mutex);
-    do {
-        /* SPIN */
-    } while (!m_fifo.enqueue(msg));
-}
-
-size_t MessageQueue::perform(Environment& env)
-{
-    Message msg;
-    size_t n = 0;
-    while (m_fifo.dequeue(msg)) {
-        msg.perform(env);
-        n++;
-    }
-    return n;
+    env().free(context, this);
 }
 
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
@@ -85,7 +126,8 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_audioInputChannels(options.numHardwareInputChannels)
     , m_audioOutputChannels(options.numHardwareOutputChannels)
     , m_epoch(0)
-    , m_msgQueue(8192)
+    , m_commandChannel(8192)
+    , m_commandEngine(8192)
 {
     lv2_atom_forge_init(&m_forge, pluginManager.lv2UridMap());
     m_uris.atom_String = pluginManager.uriMap().map(LV2_ATOM__String);
@@ -111,17 +153,33 @@ Environment::~Environment()
     delete m_pluginInterface;
 }
 
+template <class T> class RealtimeCommand : public Command
+                                         , public AllocatedBase<T, RTMemoryManager>
 {
+public:
+    RealtimeCommand(Environment& env)
+        : Command(env, kRealtime)
+    { }
+};
+
+
 void Environment::sendMessage(LV2_Atom* atom)
 {
-    m_msgQueue.send(Message(Environment_performMessage, this, atom));
+    m_commandChannel.enqueue(new LV2Command(*this, atom));
+}
+
+void Environment::free(Context context, Command* cmd)
+{
+    m_commandEngine.free(context, cmd);
 }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
 
-    m_msgQueue.perform(*this);
+    // Process external and non-realtime commands
+    m_commandChannel.perform();
+    m_commandEngine.perform(kRealtime);
 
     size_t numInputs = m_audioInputChannels.size();
     size_t numOutputs = m_audioOutputChannels.size();

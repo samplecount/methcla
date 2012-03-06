@@ -3,6 +3,7 @@
 
 #include <Mescaline/Audio.hpp>
 #include <Mescaline/Audio/AudioBus.hpp>
+#include <Mescaline/Audio/CommandEngine.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/Node.hpp>
 #include <Mescaline/Audio/Plugin/API.h>
@@ -10,13 +11,8 @@
 #include <Mescaline/Exception.hpp>
 #include <Mescaline/Memory/Manager.hpp>
 
-#include <boost/container/vector.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/lockfree/fifo.hpp>
-#include <boost/lockfree/ringbuffer.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/utility.hpp>
 
 #include <oscpp/server.hpp>
@@ -31,8 +27,6 @@
 
 namespace Mescaline { namespace Audio
 {
-    using namespace boost::container;
-
     using namespace Memory;
 
     // typedef int32_t ControlBusId;
@@ -89,111 +83,42 @@ namespace Mescaline { namespace Audio
         Nodes m_nodes;
     };
 
+
     class Environment;
 
-    class Message
+    class Command
     {
     public:
-        static const size_t kMaxPayloadBytes = 128;
-
-        typedef void (*Perform)(void* context, Environment& env, Message& message);
-
-        Message()
-            : m_perform(0)
-            , m_context(0)
-            , m_atomPtr(0)
-        {
-            memset(&m_atom, 0, sizeof(m_atom));
-#ifndef NDEBUG
-            memset(m_payload, 0, kMaxPayloadBytes);
-#endif
-        }
-
-        Message(Perform perform, void* context)
-            : m_perform(perform)
+        Command(Environment& env, Context context)
+            : m_env(env)
             , m_context(context)
-            , m_atomPtr(0)
-        {
-            memset(&m_atom, 0, sizeof(m_atom));
-#ifndef NDEBUG
-            memset(m_payload, 0, kMaxPayloadBytes);
-#endif
-        }
-        Message(Perform perform, void* context, LV2_Atom* atom)
-            : m_perform(perform)
-            , m_context(context)
-            , m_atomPtr(atom)
-        {
-#ifndef NDEBUG
-            memset(&m_atom, 0, sizeof(m_atom));
-            memset(m_payload, 0, kMaxPayloadBytes);
-#endif
-        }
-        Message(const Message& other)
-        {
-            m_perform = other.m_perform;
-            m_context = other.m_context;
-            if (other.m_atomPtr != 0) {
-                m_atomPtr = other.m_atomPtr;
-            } else {
-                memcpy(&m_atom, &other.m_atom, lv2_atom_pad_size(lv2_atom_total_size(&m_atom)));
-            }
-        }
+        { }
+        virtual ~Command() { }
 
-        void perform(Environment& env)
-        {
-            if (m_perform != 0) m_perform(m_context, env, *this);
-        }
+        Environment& env() { return m_env; }
+        Context context() const { return m_context; }
 
-        LV2_Atom* atom()
-        {
-            return m_atomPtr != 0 ? m_atomPtr : &m_atom;
-        }
+        virtual void perform(Context context) = 0;
 
-        bool needsFree() const
-        {
-            return m_atomPtr != 0;
-        }
-
-    private:
-        Perform     m_perform;
-        void*       m_context;
-        LV2_Atom*   m_atomPtr;
-        LV2_Atom    m_atom;
-        uint8_t     m_payload[kMaxPayloadBytes];
-    };
-
-    typedef boost::lockfree::ringbuffer<Message,0> MessageFIFO;
-
-    class NonRealtimeEngine
-    {
-    public:
-        NonRealtimeEngine(Environment& env);
-
-        bool send(const Message& msg);
-        size_t perform(size_t maxNumMessages);
-
-    private:
-        
     private:
         Environment&    m_env;
-        MessageFIFO     m_toNrtFifo;
-        MessageFIFO     m_fromNrtFifo;
-        boost::mutex    m_nrtSendMutex;
-        boost::mutex    m_nrtRecvMutex;
+        Context         m_context;
     };
 
-    class MessageQueue
+    class LV2Command : public Command
     {
     public:
-        MessageQueue(size_t size);
-    
-        void send(const Message& msg);
-        size_t perform(Environment& env);
+        LV2Command(Environment& env, LV2_Atom* atom)
+            : Command(env, kNonRealtime)
+            , m_atom(atom)
+        { }
+        virtual ~LV2Command()
+        { ::free(m_atom); }
+
+        virtual void perform(Context context);
 
     private:
-        MessageFIFO     m_fifo;
-        boost::mutex    m_mutex;
+        LV2_Atom*    m_atom;
     };
 
     class Group;
@@ -263,13 +188,21 @@ namespace Mescaline { namespace Audio
         // URIs and messages
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
+
         void sendMessage(LV2_Atom* msg);
+
+        // Commands
+        void free(Context context, Command* cmd);
 
     protected:
         friend class Node;
 
         void insertNode(Node* node);
         void releaseNodeId(const NodeId& nodeId);
+
+    private:
+//        void processMessages(MessageFIFO& fifo);
+//        void dispatchMessages(const LV2_Atom_Sequencet* bundle);
 
     private:
         const size_t                m_sampleRate;
@@ -284,7 +217,8 @@ namespace Mescaline { namespace Audio
         boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                       m_epoch;
-        MessageQueue                m_msgQueue;
+        CommandChannel<Command>     m_commandChannel;
+        CommandEngine<Command>      m_commandEngine;
         Uris                        m_uris;
         LV2_Atom_Forge              m_forge;
     };
