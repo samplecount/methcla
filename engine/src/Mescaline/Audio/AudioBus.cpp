@@ -27,5 +27,5 @@ InternalAudioBus::InternalAudioBus(size_t numFrames, const Epoch& epoch)
 
 InternalAudioBus::~InternalAudioBus()
 {
-    free(data());
+    ::free(data());
 }

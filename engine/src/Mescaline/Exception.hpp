@@ -11,7 +11,8 @@ struct Exception : virtual std::exception, virtual boost::exception { };
 struct MemoryAllocationFailure : virtual Exception { };
 struct InvalidInput : virtual Exception { };
 
-typedef boost::error_info<struct ErrorInfoStringTag, std::string> ErrorInfoString;
+struct ErrorInfoStringTag { };
+typedef boost::error_info<ErrorInfoStringTag, std::string> ErrorInfoString;
 
 };
 
