@@ -255,6 +255,13 @@ namespace Mescaline { namespace Audio
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
 
+        struct Uris
+        {
+            LV2_URID atom_String;
+        };
+
+        // URIs and messages
+        const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
         void sendMessage(LV2_Atom* msg);
 
@@ -278,6 +285,7 @@ namespace Mescaline { namespace Audio
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                       m_epoch;
         MessageQueue                m_msgQueue;
+        Uris                        m_uris;
         LV2_Atom_Forge              m_forge;
     };
     
