@@ -427,6 +427,7 @@ public:
     const PluginHandle& lookup(const char* uri) const;
 
     // Uri mapping
+    const UriMap& uriMap() const { return m_uriMap; }
     LV2_URID_Map* lv2UridMap();
     LV2_URID_Unmap* lv2UridUnmap();
 
@@ -446,7 +447,7 @@ private:
     LilvWorld*      m_world;
     Features        m_features;
     Map             m_plugins;
-    UriMap          m_uris;
+    UriMap          m_uriMap;
     LV2_URID_Map    m_lv2UridMap;
     LV2_URID_Unmap  m_lv2UridUnmap;
 };

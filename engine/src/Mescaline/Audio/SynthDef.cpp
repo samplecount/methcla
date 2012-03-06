@@ -350,11 +350,11 @@ Manager::Manager(Loader& loader)
     addFeature( PUESNADA_URI "/ext/rt-instantiate#rtInstantiation" );
 
     // http://lv2plug.in/ns/ext/urid
-    m_lv2UridMap.handle = &m_uris;
+    m_lv2UridMap.handle = &m_uriMap;
     m_lv2UridMap.map = UriMap_map;
     addFeature( LV2_URID_MAP_URI, &m_lv2UridMap );
 
-    m_lv2UridUnmap.handle = &m_uris;
+    m_lv2UridUnmap.handle = &m_uriMap;
     m_lv2UridUnmap.unmap = UriMap_unmap;
     addFeature( LV2_URID_UNMAP_URI, &m_lv2UridUnmap );
 }
