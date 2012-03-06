@@ -58,7 +58,7 @@ namespace Mescaline { namespace Audio
     struct EngineException : virtual Mescaline::Exception { };
     struct InvalidNodeId : virtual EngineException { };
     struct DuplicateNodeId : virtual EngineException { };
-    struct ErrorInfoNodeIdTag {};
+    struct ErrorInfoNodeIdTag { };
     typedef boost::error_info<ErrorInfoNodeIdTag, NodeId> ErrorInfoNodeId;
 
     class Node;
