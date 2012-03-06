@@ -14,6 +14,9 @@
 #include <iostream>
 
 #include <lilv/lilv.h>
+#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+#include <lv2/lv2plug.in/ns/ext/atom/util.h>
 
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
@@ -449,6 +452,17 @@ void cycleOscilloscopeLines()
     float freq = [[t objectAtIndex:0] locationInView:view].y;
 
     reinterpret_cast<MyEngine*>(m_engine)->osc()->controlInput(0) = freq;
+
+    const char* str[] = { "Hello!", "Mother Mary wasn't merry", "Blah albajsdhakjsh balsdj", 0 };
+    for (const char** it = str; *it != 0; it++) {
+        const size_t atomSize = sizeof(LV2_Atom_String) + strlen(*it) + 1;
+        LV2_Atom* atom = (LV2_Atom*)malloc(lv2_atom_pad_size(atomSize));
+        LV2_Atom_Forge forge;
+        lv2_atom_forge_init(&forge, m_engine->environment().pluginManager().lv2UridMap());
+        lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
+        BOOST_ASSERT( lv2_atom_forge_string(&forge, (uint8_t*)(*it), strlen(*it)) != 0 );
+        m_engine->environment().sendMessage(atom);
+    }
 
 //    // If we are in a pinch event...
 //    if ((event == pinchEvent) && ([[event allTouches] count] == 2))
