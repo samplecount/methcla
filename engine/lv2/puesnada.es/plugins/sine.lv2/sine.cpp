@@ -110,13 +110,13 @@ run(LV2_Handle instance, uint32_t numFrames)
 {
     Sine* sine = (Sine*)instance;
 
-    const float  freq     = *(sine->freq);
+    const float  freq     = *sine->freq;
     double phase          = sine->phase;
     const double phaseInc = freq * sine->freqToPhaseInc;
     float* const output   = sine->output;
 
     for (uint32_t k = 0; k < numFrames; k++) {
-        output[k] = sinf(phase);
+        output[k] = sin(phase);
         phase += phaseInc;
     }
     
