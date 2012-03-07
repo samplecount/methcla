@@ -7,38 +7,6 @@
 
 namespace Mescaline { namespace Audio {
 
-class AudioBusId
-{
-public:
-    enum Scope
-    {
-        kInput = 1
-      , kOutput = 2
-      , kInternal = 3
-    };
-    
-    AudioBusId()
-        : m_id(InvalidId)
-    { }
-    AudioBusId(Scope scope, uint32_t id)
-        : m_id((uint32_t(scope) & ScopeMask) | (id << ScopeBits))
-    { }
-
-    Scope scope() const { return Scope(m_id & ScopeMask); }
-    uint32_t id() const { return m_id >> ScopeBits; }
-    operator bool () const { return m_id != InvalidId; }
-
-    AudioBusId operator + (size_t offset) { return AudioBusId(scope(), m_id + offset); }
-
-protected:
-    static const uint32_t InvalidId = 0;
-    static const uint32_t ScopeBits = 2;
-    static const uint32_t ScopeMask = 3;
-
-private:
-    uint32_t m_id;
-};
-
 class AudioBus : public Resource
 {
 public:
