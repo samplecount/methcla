@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ -f "$HOME/.profile" ]; then
+	source "$HOME/.profile"
+elif [ -f "$HOME/.bash_login" ]; then
+	source "$HOME/.bash_login"
+fi
+	
+ncpu=`sysctl -n hw.ncpu`
+rtsopts="+RTS -N -RTS"
+
+ghc --make -rtsopts -threaded -o shakefile.exe shakefile.hs || exit 1
+./shakefile.exe $rtsopts "$@" || exit 1

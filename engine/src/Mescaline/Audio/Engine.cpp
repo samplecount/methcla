@@ -3,8 +3,6 @@
 #include <Mescaline/Audio/SynthDef.hpp>
 #include <boost/foreach.hpp>
 #include <cstdlib>
-#include <oscpp/client.hpp>
-#include <oscpp/server.hpp>
 
 using namespace Mescaline;
 using namespace Mescaline::Audio;

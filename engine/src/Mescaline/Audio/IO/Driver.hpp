@@ -15,6 +15,9 @@ public:
     virtual size_t numInputs() const = 0;
     virtual size_t numOutputs() const = 0;
     virtual size_t bufferSize() const = 0;
+
+	virtual void start() = 0;
+	virtual void stop() = 0;
 };
 
 }; }; };

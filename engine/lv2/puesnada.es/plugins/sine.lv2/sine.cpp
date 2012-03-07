@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <lv2/lv2plug.in/ns/lv2core/lv2.h>
-#include <lv2/puesnada.es/ext/rt-instantiate/rt-instantiate.h>
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
+#include "lv2/puesnada.es/ext/rt-instantiate/rt-instantiate.h"
 
 #define SINE_URI "http://mescaline.puesnada.es/lv2/plugins/sine"
 

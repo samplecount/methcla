@@ -15,15 +15,13 @@
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
-#include <oscpp/server.hpp>
-
 #include <bitset>
 #include <string>
 #include <vector>
 
-#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
-#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
-#include <lv2/lv2plug.in/ns/ext/atom/util.h>
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
+#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 namespace Mescaline { namespace Audio
 {

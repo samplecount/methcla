@@ -24,8 +24,8 @@ namespace Mescaline { namespace Audio { namespace IO
         virtual size_t numOutputs() const { return m_numOutputs; }
         virtual size_t bufferSize() const { return m_bufferSize; }
 
-        void start();
-        void stop();
+        virtual void start();
+        virtual void stop();
 
     private:
         static void InterruptionCallback(void *inClientData, UInt32 inInterruption);

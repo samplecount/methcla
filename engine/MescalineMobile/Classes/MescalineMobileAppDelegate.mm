@@ -2,7 +2,8 @@
 #include "drawbuffer.hpp"
 #include "scope.hpp"
 
-#include <Mescaline/Audio/IO/Driver.hpp>
+#include <Mescaline/Audio/IO/Client.hpp>
+#include <Mescaline/Audio/IO/RemoteIODriver.hpp>
 #include <Mescaline/Audio/Group.hpp>
 #include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Audio/Synth.hpp>

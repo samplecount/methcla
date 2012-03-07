@@ -6,8 +6,7 @@
 #include <CoreFoundation/CFURL.h>
 
 #include <Mescaline/Audio/Engine.hpp>
-#include <Mescaline/Audio/IO/Client.hpp>
-#include <Mescaline/Audio/IO/RemoteIODriver.hpp>
+#include <Mescaline/Audio/IO/Driver.hpp>
 
 #import "EAGLView.h"
 
@@ -30,8 +29,8 @@ inline double linearInterp(double valA, double valB, double fract)
     GLfloat*				oscilLine;
     BOOL				resetOscilLine;
     
-    Mescaline::Audio::IO::RemoteIODriver* m_audioDriver;
-    Mescaline::Audio::Engine* m_engine;
+    Mescaline::Audio::IO::Driver*   m_audioDriver;
+    Mescaline::Audio::Engine*       m_engine;
 }
 
 @property (nonatomic, retain)	UIWindow*				window;

@@ -13,11 +13,13 @@
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
+		5383601F150790B90032BB86 /* liblilv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383601C150790B90032BB86 /* liblilv.a */; };
+		53836020150790B90032BB86 /* libserd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383601D150790B90032BB86 /* libserd.a */; };
+		53836021150790B90032BB86 /* libsord.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383601E150790B90032BB86 /* libsord.a */; };
+		5383602315079B0A0032BB86 /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383602215079B090032BB86 /* libmescaline.a */; };
 		538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 538A754E148FCF1E00C47BF1 /* scope.cpp */; };
 		538A7950149BB1C500C47BF1 /* libboost_system.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 538A794F149BB1C500C47BF1 /* libboost_system.a */; };
 		53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB8E2E147EC774002E3B51 /* osc.cpp */; };
-		53BB902E1481924B002E3B51 /* RemoteIODriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */; };
-		53BB905714825BB7002E3B51 /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB905614825BB7002E3B51 /* Engine.cpp */; };
 		53BD23CA14EEE6F500543AE5 /* lilv.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD207F14EEE6F400543AE5 /* lilv.ttl */; };
 		53BD245214EEE6F500543AE5 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = 53BD211514EEE6F400543AE5 /* COPYING */; };
 		53BD245414EEE6F500543AE5 /* lv2core.doap.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD211814EEE6F400543AE5 /* lv2core.doap.ttl */; };
@@ -62,31 +64,20 @@
 		53BD268714EEF28D00543AE5 /* tree.c in Sources */ = {isa = PBXBuildFile; fileRef = 53BD22C414EEE6F500543AE5 /* tree.c */; };
 		53BD268814EEF29100543AE5 /* hash.h in Headers */ = {isa = PBXBuildFile; fileRef = 53BD22C314EEE6F500543AE5 /* hash.h */; };
 		53BD268914EEF29100543AE5 /* tree.h in Headers */ = {isa = PBXBuildFile; fileRef = 53BD22C514EEE6F500543AE5 /* tree.h */; };
-		53BD268D14EEF41D00543AE5 /* libsord.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53BD265514EEF10800543AE5 /* libsord.a */; };
-		53BD268E14EEF42000543AE5 /* liblilv.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53BD266714EEF10F00543AE5 /* liblilv.a */; };
-		53BD269614EEF5AE00543AE5 /* libserd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53BD263114EEEE3700543AE5 /* libserd.a */; };
 		53BD269714F1625200543AE5 /* common.h in Headers */ = {isa = PBXBuildFile; fileRef = 53BD209014EEE6F400543AE5 /* common.h */; };
 		53BD269814F1625200543AE5 /* tree.c in Sources */ = {isa = PBXBuildFile; fileRef = 53BD209114EEE6F400543AE5 /* tree.c */; };
 		53BD269914F1625200543AE5 /* tree.h in Headers */ = {isa = PBXBuildFile; fileRef = 53BD209214EEE6F400543AE5 /* tree.h */; };
-		53BD269B14F2622400543AE5 /* SynthDef.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BD269A14F2622300543AE5 /* SynthDef.cpp */; };
 		53BD26C514F3A07200543AE5 /* manifest.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26B914F3A07200543AE5 /* manifest.ttl */; };
 		53BD26C614F3A07200543AE5 /* placement-instantiate.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26BB14F3A07200543AE5 /* placement-instantiate.ttl */; };
 		53BD26C714F3A07200543AE5 /* manifest.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26BD14F3A07200543AE5 /* manifest.ttl */; };
 		53BD26C814F3A07200543AE5 /* rt-instantiate.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26BF14F3A07200543AE5 /* rt-instantiate.ttl */; };
 		53BD26C914F3A07200543AE5 /* manifest.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26C214F3A07200543AE5 /* manifest.ttl */; };
-		53BD26CA14F3A07200543AE5 /* sine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BD26C314F3A07200543AE5 /* sine.cpp */; };
 		53BD26CB14F3A07200543AE5 /* sine.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26C414F3A07200543AE5 /* sine.ttl */; };
 		53C6B16314FC119A0087DDD6 /* libboost_thread.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53C6B16214FC119A0087DDD6 /* libboost_thread.a */; };
 		53C6B16F14FE28810087DDD6 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53C6B16E14FE28810087DDD6 /* main.cpp */; };
 		53C6B17114FE28810087DDD6 /* test_node.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 53C6B17014FE28810087DDD6 /* test_node.1 */; };
 		53C6B17514FE28AC0087DDD6 /* Node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53C6B16614FE24DF0087DDD6 /* Node.cpp */; };
 		53C6B17714FE28F30087DDD6 /* libboost_unit_test_framework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53C6B17614FE28F30087DDD6 /* libboost_unit_test_framework.a */; };
-		53ED31DF14869960003FF7C2 /* Manager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED31DD14869960003FF7C2 /* Manager.cpp */; };
-		53ED337C1487A825003FF7C2 /* Memory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED337A1487A825003FF7C2 /* Memory.cpp */; };
-		53ED35C4148A88D3003FF7C2 /* Node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35C2148A88D3003FF7C2 /* Node.cpp */; };
-		53ED35EA148A8D19003FF7C2 /* Group.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35E6148A8D19003FF7C2 /* Group.cpp */; };
-		53ED35EB148A8D19003FF7C2 /* Synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED35E8148A8D19003FF7C2 /* Synth.cpp */; };
-		53ED3606148A8EB1003FF7C2 /* AudioBus.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53ED3605148A8EB1003FF7C2 /* AudioBus.cpp */; };
 		A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = A15CFB1C0DE4A8C600FB5D08 /* icon.png */; };
 		A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */; };
 		A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */; };
@@ -142,6 +133,10 @@
 		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainWindow.xib; path = ../MainWindow.xib; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MescalineMobile_Prefix.pch; sourceTree = "<group>"; };
+		5383601C150790B90032BB86 /* liblilv.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = liblilv.a; path = "../build/iOS-Simulator/i386/liblilv.a"; sourceTree = "<group>"; };
+		5383601D150790B90032BB86 /* libserd.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libserd.a; path = "../build/iOS-Simulator/i386/libserd.a"; sourceTree = "<group>"; };
+		5383601E150790B90032BB86 /* libsord.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsord.a; path = "../build/iOS-Simulator/i386/libsord.a"; sourceTree = "<group>"; };
+		5383602215079B090032BB86 /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = "../build/iOS-Simulator/i386/libmescaline.a"; sourceTree = "<group>"; };
 		538A754E148FCF1E00C47BF1 /* scope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scope.cpp; sourceTree = "<group>"; };
 		538A754F148FCF1E00C47BF1 /* scope.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scope.hpp; sourceTree = "<group>"; };
 		538A756F148FD2A600C47BF1 /* Faust.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Faust.hpp; path = Mescaline/Faust.hpp; sourceTree = "<group>"; };
@@ -272,9 +267,10 @@
 				A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */,
 				538A7950149BB1C500C47BF1 /* libboost_system.a in Frameworks */,
 				53C6B16314FC119A0087DDD6 /* libboost_thread.a in Frameworks */,
-				53BD268D14EEF41D00543AE5 /* libsord.a in Frameworks */,
-				53BD268E14EEF42000543AE5 /* liblilv.a in Frameworks */,
-				53BD269614EEF5AE00543AE5 /* libserd.a in Frameworks */,
+				5383601F150790B90032BB86 /* liblilv.a in Frameworks */,
+				53836020150790B90032BB86 /* libserd.a in Frameworks */,
+				53836021150790B90032BB86 /* libsord.a in Frameworks */,
+				5383602315079B0A0032BB86 /* libmescaline.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -336,6 +332,10 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				5383602215079B090032BB86 /* libmescaline.a */,
+				5383601C150790B90032BB86 /* liblilv.a */,
+				5383601D150790B90032BB86 /* libserd.a */,
+				5383601E150790B90032BB86 /* libsord.a */,
 				53C6B17614FE28F30087DDD6 /* libboost_unit_test_framework.a */,
 				53C6B16214FC119A0087DDD6 /* libboost_thread.a */,
 				53BB9115148404AC002E3B51 /* external_libraries */,
@@ -879,6 +879,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Mescaline" */;
 			buildPhases = (
+				5383602415079C610032BB86 /* ShellScript */,
 				1D60588D0D05DD3D006BFB54 /* Resources */,
 				1D60588E0D05DD3D006BFB54 /* Sources */,
 				1D60588F0D05DD3D006BFB54 /* Frameworks */,
@@ -1020,6 +1021,22 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		5383602415079C610032BB86 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd .. && ./shake";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		1D60588E0D05DD3D006BFB54 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1030,17 +1047,7 @@
 				A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */,
 				F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */,
 				53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */,
-				53BB902E1481924B002E3B51 /* RemoteIODriver.cpp in Sources */,
-				53BB905714825BB7002E3B51 /* Engine.cpp in Sources */,
-				53ED31DF14869960003FF7C2 /* Manager.cpp in Sources */,
-				53ED337C1487A825003FF7C2 /* Memory.cpp in Sources */,
-				53ED35C4148A88D3003FF7C2 /* Node.cpp in Sources */,
-				53ED35EA148A8D19003FF7C2 /* Group.cpp in Sources */,
-				53ED35EB148A8D19003FF7C2 /* Synth.cpp in Sources */,
-				53ED3606148A8EB1003FF7C2 /* AudioBus.cpp in Sources */,
 				538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */,
-				53BD269B14F2622400543AE5 /* SynthDef.cpp in Sources */,
-				53BD26CA14F3A07200543AE5 /* sine.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1133,7 +1140,7 @@
 					../src,
 					../platform/ios,
 					../external_libraries,
-					../external_libraries/boost/include,
+					../external_libraries/boost/boost_1_48_0,
 					../external_libraries/boost_lockfree,
 					../external_libraries/faust/architecture,
 					"../external_libraries/lv2/lilv-0.5.0",
@@ -1149,6 +1156,10 @@
 					"\"$(SRCROOT)/../external_libraries/lv2/lilv-0.5.0/build\"",
 					"\"$(SRCROOT)/../external_libraries/lv2/serd-0.5.0/build\"",
 					"\"$(SRCROOT)/../external_libraries/lv2/sord-0.5.0/build\"",
+					"\"$(SRCROOT)/../build/i386/lilv\"",
+					"\"$(SRCROOT)/../build/i386/serd\"",
+					"\"$(SRCROOT)/../build/i386/sord\"",
+					"\"$(SRCROOT)/../build/iOS-Simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
 			};
@@ -1167,7 +1178,7 @@
 					../src,
 					../platform/ios,
 					../external_libraries,
-					../external_libraries/boost/include,
+					../external_libraries/boost/boost_1_48_0,
 					../external_libraries/boost_lockfree,
 					../external_libraries/faust/architecture,
 					"../external_libraries/lv2/lilv-0.5.0",
@@ -1183,6 +1194,10 @@
 					"\"$(SRCROOT)/../external_libraries/lv2/lilv-0.5.0/build\"",
 					"\"$(SRCROOT)/../external_libraries/lv2/serd-0.5.0/build\"",
 					"\"$(SRCROOT)/../external_libraries/lv2/sord-0.5.0/build\"",
+					"\"$(SRCROOT)/../build/i386/lilv\"",
+					"\"$(SRCROOT)/../build/i386/serd\"",
+					"\"$(SRCROOT)/../build/i386/sord\"",
+					"\"$(SRCROOT)/../build/iOS-Simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
 			};
@@ -1463,7 +1478,7 @@
 				HEADER_SEARCH_PATHS = (
 					../src,
 					../platform/ios,
-					../external_libraries/boost/include,
+					../external_libraries/boost/boost_1_48_0,
 					../external_libraries/boost_lockfree,
 					../external_libraries/faust/architecture,
 					"../external_libraries/lv2/lilv-0.5.0",
@@ -1496,7 +1511,7 @@
 				HEADER_SEARCH_PATHS = (
 					../src,
 					../platform/ios,
-					../external_libraries/boost/include,
+					../external_libraries/boost/boost_1_48_0,
 					../external_libraries/boost_lockfree,
 					../external_libraries/faust/architecture,
 					"../external_libraries/lv2/lilv-0.5.0",
@@ -1558,6 +1573,7 @@
 				53C6B17414FE28810087DDD6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "MescalineMobile" */ = {
 			isa = XCConfigurationList;

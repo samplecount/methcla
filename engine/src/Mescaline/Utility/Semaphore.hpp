@@ -9,7 +9,7 @@
 #ifndef MESCALINE_UTILITY_SEMAPHORE_HPP_INCLUDED
 #define MESCALINE_UTILITY_SEMAPHORE_HPP_INCLUDED
 
-#include <zix/sem.h>
+#include "zix/sem.h"
 
 namespace Mescaline { namespace Utility {
 
