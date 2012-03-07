@@ -236,18 +236,12 @@ namespace Mescaline { namespace Audio
         void removeResource(Resource& resource);
 
     private:
-//        void processMessages(MessageFIFO& fifo);
-//        void dispatchMessages(const LV2_Atom_Sequencet* bundle);
-
-    private:
         const size_t                m_sampleRate;
         const size_t                m_blockSize;
         RTMemoryManager             m_rtMem;
-//        SynthDefMap                 m_synthDefs;
         Plugin::Manager&            m_synthDefs;
         ResourceMap                 m_resources;
         Group*                      m_rootNode;
-//        NodeMap                     m_nodes;
         boost::ptr_vector<ExternalAudioBus> m_audioInputChannels;
         boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
         boost::ptr_vector<InternalAudioBus> m_audioBuses;
