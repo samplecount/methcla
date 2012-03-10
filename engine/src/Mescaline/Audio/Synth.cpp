@@ -3,22 +3,6 @@
 using namespace Mescaline::Audio;
 using namespace Mescaline::Memory;
 
-    // AudioInputConnection* audioInputConnections     = reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset);
-    // AudioOutputConnection* audioOutputConnections   = reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset);
-    // sample_t* controlBuffers                        = reinterpret_cast<sample_t*>(mem + controlBufferOffset);
-    // sample_t* audioBuffers                          = reinterpret_cast<sample_t*>(mem + audioBufferOffset);
-    // 
-    // // Initialize audio connections
-    // for (size_t i=0; i < numAudioInputs; i++) {
-    //     new (&audioInputConnections[i]) AudioInputConnection(i);
-    // }
-    // for (size_t i=0; i < numAudioOutputs; i++) {
-    //     new (&audioOutputConnections[i]) AudioOutputConnection(i);
-    // }
-    // 
-    // // Create plugin instance
-    // LV2_Handle synth = synthDef.construct(mem + sizeof(Synth), env.sampleRate());
-
 template <class T> T offset_cast(Synth* self, size_t offset)
 {
     return reinterpret_cast<T>(reinterpret_cast<char*>(self) + offset);
@@ -169,12 +153,6 @@ struct SortByBus
         return a.bus() < b.bus();
     }
 };
-
-// template <typename BusId, typename ConnType>
-// AudioInputConnection& conn connectionAt(size_t index)
-// {
-//     return find_if(m_audioInputConnections.begin(), m_audioInputConnections.end(), IfConnectionIndex(index));
-// }
 
 void Synth::mapInput(size_t index, const AudioBus::Handle& bus, InputConnectionType type)
 {
