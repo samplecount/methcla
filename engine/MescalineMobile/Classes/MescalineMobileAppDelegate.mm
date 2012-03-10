@@ -58,7 +58,7 @@ public:
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
         Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(env(), env().nextResourceId(), env().rootNode(), *def);
         env().rootNode()->addToTail(*synth);
-        synth->mapOutput(0, Mescaline::Audio::ResourceId(3), Mescaline::Audio::kOut);
+        synth->mapOutput(0, env().audioBus(Mescaline::Audio::ResourceId(3)), Mescaline::Audio::kOut);
 
 //        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
 //        Mescaline::Audio::Synth* scope = Mescaline::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);

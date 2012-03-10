@@ -25,7 +25,7 @@ enum OutputConnectionType
 
 class Synth;
 
-template <typename BusId, typename ConnectionType>
+template <typename Bus, typename ConnectionType>
 class Connection : public boost::noncopyable
                  , public boost::intrusive::list_base_hook<>
 {
@@ -35,15 +35,17 @@ public:
         , m_type(type)
     { }
 
+    typedef typename Bus::Handle BusHandle;
+
     size_t index() const { return m_index; }
-    const BusId& busId() const { return m_busId; }
+    BusHandle bus() const { return m_bus; }
     const ConnectionType& type() const { return m_type; }
 
-    bool connect(const BusId& busId, const ConnectionType& type)
+    bool connect(const BusHandle& bus, const ConnectionType& type)
     {
         bool changed = false;
-        if (busId != m_busId) {
-            m_busId = busId;
+        if (bus != m_bus) {
+            m_bus = bus;
             changed = true;
         }
         m_type = type;
@@ -52,24 +54,23 @@ public:
 
 private:
     size_t          m_index;
-    BusId           m_busId;
+    BusHandle       m_bus;
     ConnectionType  m_type;
 };
 
-class AudioInputConnection : public Connection<ResourceId, InputConnectionType>
+class AudioInputConnection : public Connection<AudioBus,InputConnectionType>
 {
 public:
     AudioInputConnection(size_t index)
-        : Connection<ResourceId,InputConnectionType>(index, kIn)
+        : Connection<AudioBus,InputConnectionType>(index, kIn)
     { }
 
     void read(Environment& env, size_t numFrames, sample_t* dst)
     {
-        if (busId()) {
-            AudioBus::Handle bus = env.audioBus(busId());
-            boost::shared_lock<AudioBus::Lock> lock(bus->lock());
-            if (bus->epoch() == env.epoch()) {
-                memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
+        if (bus()) {
+            boost::shared_lock<AudioBus::Lock> lock(bus()->lock());
+            if (bus()->epoch() == env.epoch()) {
+                memcpy(dst, bus()->data(), numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
@@ -79,21 +80,21 @@ public:
     }
 };
 
-class AudioOutputConnection : public Connection<ResourceId,OutputConnectionType>
+class AudioOutputConnection : public Connection<AudioBus,OutputConnectionType>
 {
 public:
     AudioOutputConnection(size_t index)
-        : Connection<ResourceId,OutputConnectionType>(index, kOut)
+        : Connection<AudioBus,OutputConnectionType>(index, kOut)
         , m_offset(0)
         , m_buffer(0)
     { }
 
-    bool connect(const ResourceId& busId, const OutputConnectionType& type, size_t offset, sample_t* buffer)
+    bool connect(const BusHandle& bus, const OutputConnectionType& type, size_t offset, sample_t* buffer)
     {
         BOOST_ASSERT((m_offset == 0) && (m_buffer == 0));
         m_offset = offset;
         m_buffer = buffer;
-        return Connection<ResourceId,OutputConnectionType>::connect(busId, type);
+        return Connection<AudioBus,OutputConnectionType>::connect(bus, type);
     }
 
     void release(Environment& env)
@@ -107,20 +108,19 @@ public:
 
     void write(Environment& env, size_t numFrames, const sample_t* src)
     {
-        if (busId()) {
-            AudioBus::Handle bus = env.audioBus(busId());
+        if (bus()) {
             const Epoch epoch = env.epoch();
-            boost::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if (bus->epoch() == epoch) {
+            boost::lock_guard<AudioBus::Lock> lock(bus()->lock());
+            if (bus()->epoch() == epoch) {
                 // Accumulate
-                sample_t* dst = bus->data();
+                sample_t* dst = bus()->data();
                 for (size_t i=0; i < numFrames; i++) {
                     dst[i] += src[i];
                 }
             } else {
                 // Copy
-                memcpy(bus->data(), src, numFrames * sizeof(sample_t));
-                bus->setEpoch(epoch);
+                memcpy(bus()->data(), src, numFrames * sizeof(sample_t));
+                bus()->setEpoch(epoch);
             }
         }
     }
@@ -164,12 +164,12 @@ public:
     /// Return number of inputs.
     size_t numAudioInputs() const { return m_synthDef.numAudioInputs(); }
     /// Map input to bus.
-    void mapInput(size_t input, const ResourceId& bus, InputConnectionType type);
+    void mapInput(size_t input, const AudioBus::Handle& bus, InputConnectionType type);
 
     // Return number of outputs.
     size_t numAudioOutputs() const { return m_synthDef.numAudioOutputs(); }
     // Map output to bus.
-    void mapOutput(size_t output, const ResourceId& bus, OutputConnectionType type);
+    void mapOutput(size_t output, const AudioBus::Handle& bus, OutputConnectionType type);
 
     typedef boost::intrusive::list<AudioInputConnection>  AudioInputConnections;
     typedef boost::intrusive::list<AudioOutputConnection> AudioOutputConnections;

@@ -146,27 +146,27 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
                     , audioBufferOffset );
 }
 
-template <typename BusId, typename ConnType>
+template <class Connection>
 struct IfConnectionIndex
 {
     IfConnectionIndex(size_t index)
         : m_index(index)
     { }
 
-    bool operator () (const Connection<BusId,ConnType>& conn)
+    bool operator () (const Connection& conn)
     {
         return conn.index() == m_index;
     }
-    
+
     size_t m_index;
 };
 
-template <typename BusId, typename ConnType>
-struct SortByBusId
+template <class Connection>
+struct SortByBus
 {
-    bool operator () (const Connection<BusId,ConnType>& a, const Connection<BusId,ConnType>& b)
+    bool operator () (const Connection& a, const Connection& b)
     {
-        return a.busId() < b.busId();
+        return a.bus() < b.bus();
     }
 };
 
@@ -176,12 +176,12 @@ struct SortByBusId
 //     return find_if(m_audioInputConnections.begin(), m_audioInputConnections.end(), IfConnectionIndex(index));
 // }
 
-void Synth::mapInput(size_t index, const ResourceId& bus, InputConnectionType type)
+void Synth::mapInput(size_t index, const AudioBus::Handle& bus, InputConnectionType type)
 {
     AudioInputConnections::iterator conn =
         find_if( m_audioInputConnections.begin()
                , m_audioInputConnections.end()
-               , IfConnectionIndex<ResourceId,InputConnectionType>(index) );
+               , IfConnectionIndex<AudioInputConnection>(index) );
     if (conn != m_audioInputConnections.end()) {
         if (conn->connect(bus, type)) {
             m_flags.set(kAudioInputConnectionsChanged);
@@ -189,14 +189,14 @@ void Synth::mapInput(size_t index, const ResourceId& bus, InputConnectionType ty
     }
 }
 
-void Synth::mapOutput(size_t index, const ResourceId& bus, OutputConnectionType type)
+void Synth::mapOutput(size_t index, const AudioBus::Handle& bus, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
     sample_t* buffer = offset > 0 ? env().rtMem().allocOf<sample_t>(offset) : 0;
     AudioOutputConnections::iterator conn =
         find_if( m_audioOutputConnections.begin()
                , m_audioOutputConnections.end()
-               , IfConnectionIndex<ResourceId,OutputConnectionType>(index) );
+               , IfConnectionIndex<AudioOutputConnection>(index) );
     if (conn != m_audioOutputConnections.end()) {
         conn->release(env());
         if (conn->connect(bus, type, offset, buffer)) {
@@ -209,11 +209,11 @@ void Synth::process(size_t numFrames)
 {
     // Sort connections by bus id (if necessary)
     if (m_flags.test(kAudioInputConnectionsChanged)) {
-        m_audioInputConnections.sort(SortByBusId<ResourceId,InputConnectionType>());
+        m_audioInputConnections.sort(SortByBus<AudioInputConnection>());
         m_flags.reset(kAudioInputConnectionsChanged);
     }
     if (m_flags.test(kAudioOutputConnectionsChanged)) {
-        m_audioOutputConnections.sort(SortByBusId<ResourceId,OutputConnectionType>());
+        m_audioOutputConnections.sort(SortByBus<AudioOutputConnection>());
         m_flags.reset(kAudioOutputConnectionsChanged);
     }
 
