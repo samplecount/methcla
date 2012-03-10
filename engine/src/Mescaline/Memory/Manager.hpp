@@ -39,15 +39,16 @@ template <class T, class Allocator, size_t align=kDefaultAlignment> class Alloca
     struct Chunk
     {
         Allocator*  alloc;
+        char        padding[MESCALINE_PADDING(align, sizeof(Allocator*))];
         char        data[];
     };
 
 protected:
     static void* alloc(Allocator& allocator, size_t size)
     {
-        // TODO: Alignment
-        Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
+        Chunk* chunk = static_cast<Chunk*>(allocator.allocAligned<align>(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
+        BOOST_ASSERT( MESCALINE_ISALIGNED(align, reinterpret_cast<size_t>(chunk->data)) );
         return chunk->data;
     }
     static void destroy(void* ptr)

@@ -114,9 +114,9 @@ Synth::~Synth()
 
 Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, const Plugin::Plugin& synthDef)
 {
-    const Alignment<kSIMDAlignment> bufferAlignment;
+    typedef Alignment<kSIMDAlignment> BufferAlignment;
 
-    BOOST_ASSERT_MSG( bufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
+    BOOST_ASSERT_MSG( BufferAlignment::isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be aligned to Alignment::SIMDAlignment" );
 
     const size_t numControlInputs           = synthDef.numControlInputs();
@@ -132,7 +132,7 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
     const size_t audioOutputAllocSize       = numAudioOutputs * sizeof(AudioOutputConnection);
     const size_t controlBufferOffset        = audioOutputOffset + audioOutputAllocSize;
     const size_t controlBufferAllocSize     = (numControlInputs + numControlOutputs) * sizeof(sample_t);
-    const size_t audioBufferOffset          = bufferAlignment.align(controlBufferOffset + controlBufferAllocSize);
+    const size_t audioBufferOffset          = BufferAlignment::align(controlBufferOffset + controlBufferAllocSize);
     const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
     const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize;
 

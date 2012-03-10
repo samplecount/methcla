@@ -5,22 +5,22 @@
 
 namespace Mescaline { namespace Memory {
 
+#define MESCALINE_ISALIGNED(alignment, size) (((size) & Mescaline::Memory::Alignment< alignment >::kMask) == (size))
+#define MESCALINE_ALIGN(alignment, size)     (((size) + (alignment)) & Mescaline::Memory::Alignment< alignment >::kMask)
+#define MESCALINE_PADDING(alignment, size)   (MESCALINE_ALIGN(alignment, size) - (size))
+
 template <size_t kAlignment> class Alignment
 {
 public:
-    Alignment()
-        : m_mask(~(alignment() - 1))
-    {
-        BOOST_STATIC_ASSERT_MSG((kAlignment & (kAlignment - 1)) == 0, "alignment must be a power of two");
-        BOOST_STATIC_ASSERT_MSG(kAlignment >= sizeof(void*), "alignment must be >= sizeof(void*)");
-    }
+    BOOST_STATIC_ASSERT_MSG( (kAlignment & (kAlignment - 1)) == 0, "alignment must be a power of two" );
+    BOOST_STATIC_ASSERT_MSG( kAlignment >= sizeof(void*), "alignment must be >= sizeof(void*)" );
 
-    size_t alignment() const            { return kAlignment; }
-    size_t align(size_t size) const     { return (size + alignment()) & m_mask; }
-    size_t isAligned(size_t size) const { return (size & m_mask) == size; }
+    static const size_t kMask = ~(kAlignment - 1);
 
-private:
-    size_t m_mask;
+    // C++0x generalized constant expressions (supported from gcc 4.6)
+    /* constexpr */ inline static size_t isAligned(size_t size) { return MESCALINE_ISALIGNED(kAlignment, size); }
+    /* constexpr */ inline static size_t align(size_t size)     { return MESCALINE_ALIGN(kAlignment, size); }
+    /* constexpr */ inline static size_t padding(size_t size)   { return MESCALINE_PADDING(kAlignment, size); }
 };
 
 static const size_t kDefaultAlignment = sizeof(void*);
@@ -46,7 +46,7 @@ template <size_t align> void* allocAligned(size_t numBytes)
     throw(MemoryAllocationFailure)
 {
     void* ptr;
-    int err = posix_memalign(&ptr, Alignment<align>().alignment(), numBytes);
+    int err = posix_memalign(&ptr, align, numBytes);
     if (err != 0)
         BOOST_THROW_EXCEPTION(Mescaline::MemoryAllocationFailure());
     return ptr;
