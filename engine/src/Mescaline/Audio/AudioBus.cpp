@@ -2,6 +2,7 @@
 #include <Mescaline/Audio/Engine.hpp>
 
 using namespace Mescaline::Audio;
+using namespace Mescaline::Memory;
 
 AudioBus::AudioBus(const ResourceId& id, size_t numFrames, sample_t* data, const Epoch& epoch)
     : Resource(id)
@@ -22,7 +23,7 @@ ExternalAudioBus::ExternalAudioBus(const ResourceId& id, size_t numFrames, const
 InternalAudioBus::InternalAudioBus(const ResourceId& id, size_t numFrames, const Epoch& epoch)
     : AudioBus( id
               , numFrames
-              , allocAligned<sample_t>(Alignment::SIMDAlignment(), numFrames)
+              , allocAlignedOf<sample_t,kSIMDAlignment>(numFrames)
               , epoch )
 {
 }

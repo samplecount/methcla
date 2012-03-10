@@ -1,7 +1,7 @@
 #ifndef MESCALINE_AUDIO_NODE_HPP_INCLUDED
 #define MESCALINE_AUDIO_NODE_HPP_INCLUDED
 
-#include <Mescaline/Audio.hpp>
+#include <Mescaline/Audio/Resource.hpp>
 #include <Mescaline/Memory/Manager.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
@@ -16,9 +16,12 @@ namespace Mescaline { namespace Audio {
     class Group;
 
     class Node : public Resource
-               , public Memory::AllocatedBase<Node, Memory::RTMemoryManager>
+               , public Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment>
                , public boost::intrusive::list_base_hook<>
     {
+    protected:
+        typedef Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment> allocated_super;
+
     public:
         Node(Environment& env, const ResourceId& id, Group* parent)
             : Resource(id)
@@ -34,9 +37,6 @@ namespace Mescaline { namespace Audio {
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
         bool isRootNode() const { return parent() == 0; }
-
-        /// Free the node.
-        virtual void free();
 
         // Process a number of frames.
         virtual void process(size_t numFrames) = 0;

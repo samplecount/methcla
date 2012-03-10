@@ -11,12 +11,7 @@ Node::~Node()
 //    environment().removeResource(*this);
 }
 
-void Node::free()
-{
-    delete this;
-}
-
 void Node::operator delete(void* ptr)
 {
-    Memory::AllocatedBase<Node, Memory::RTMemoryManager>::destroy(ptr);
+    allocated_super::destroy(ptr);
 }

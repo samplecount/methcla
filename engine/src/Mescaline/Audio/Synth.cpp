@@ -1,24 +1,50 @@
 #include <Mescaline/Audio/Synth.hpp>
 
 using namespace Mescaline::Audio;
+using namespace Mescaline::Memory;
+
+    // AudioInputConnection* audioInputConnections     = reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset);
+    // AudioOutputConnection* audioOutputConnections   = reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset);
+    // sample_t* controlBuffers                        = reinterpret_cast<sample_t*>(mem + controlBufferOffset);
+    // sample_t* audioBuffers                          = reinterpret_cast<sample_t*>(mem + audioBufferOffset);
+    // 
+    // // Initialize audio connections
+    // for (size_t i=0; i < numAudioInputs; i++) {
+    //     new (&audioInputConnections[i]) AudioInputConnection(i);
+    // }
+    // for (size_t i=0; i < numAudioOutputs; i++) {
+    //     new (&audioOutputConnections[i]) AudioOutputConnection(i);
+    // }
+    // 
+    // // Create plugin instance
+    // LV2_Handle synth = synthDef.construct(mem + sizeof(Synth), env.sampleRate());
+
+template <class T> T offset_cast(Synth* self, size_t offset)
+{
+    return reinterpret_cast<T>(reinterpret_cast<char*>(self) + offset);
+}
 
 Synth::Synth( Environment& env
             , const ResourceId& id
             , Group* parent
             , const Plugin::Plugin& synthDef
-            , LV2_Handle synth
-            , AudioInputConnection* audioInputConnections
-            , AudioOutputConnection* audioOutputConnections
-            , sample_t* controlBuffers
-            , sample_t* audioBuffers
+            , size_t synthOffset
+            , size_t audioInputOffset
+            , size_t audioOutputOffset
+            , size_t controlBufferOffset
+            , size_t audioBufferOffset
             )
     : Node(env, id, parent)
     , m_synthDef(synthDef)
-    , m_synth(synth)
-    , m_controlBuffers(controlBuffers)
-    , m_audioBuffers(audioBuffers)
+    , m_synth(synthDef.construct(offset_cast<void*>(this, synthOffset), env.sampleRate()))
+    , m_controlBuffers(offset_cast<sample_t*>(this, controlBufferOffset))
+    , m_audioBuffers(offset_cast<sample_t*>(this, audioBufferOffset))
 {
     const size_t blockSize = env.blockSize();
+    // Unitialized audio connection memory
+    AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
+    AudioOutputConnection* audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
+    // Audio buffer memory
     sample_t* audioInputBuffers = m_audioBuffers;
     sample_t* audioOutputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
 
@@ -43,12 +69,14 @@ Synth::Synth( Environment& env
         } else if (port.isa(Port::kAudio)) {
             // Connect audio ports
             if (port.isa(Port::kInput)) {
+                new (&audioInputConnections[port.index()]) AudioInputConnection(m_audioInputConnections.size());
                 m_audioInputConnections.push_back(audioInputConnections[port.index()]);
                 m_synthDef.connectPort( m_synth
                                       , i
                                       , audioInputBuffers + port.index() * blockSize );
 
             } else if (port.isa(Port::kOutput)) {
+                new (&audioOutputConnections[port.index()]) AudioOutputConnection(m_audioOutputConnections.size());
                 m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
                 m_synthDef.connectPort( m_synth
                                       , i
@@ -79,14 +107,14 @@ Synth::~Synth()
     m_synthDef.destroy(m_synth);
 }
 
-void* Synth::operator new(size_t, void* where)
-{
-    return where;
-}
+// void* Synth::operator new(size_t, void* where)
+// {
+//     return where;
+// }
 
 Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, const Plugin::Plugin& synthDef)
 {
-    const Alignment bufferAlignment(Alignment::SIMDAlignment());
+    const Alignment<kSIMDAlignment> bufferAlignment;
 
     BOOST_ASSERT_MSG( bufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be aligned to Alignment::SIMDAlignment" );
@@ -104,36 +132,22 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
     const size_t audioOutputAllocSize       = numAudioOutputs * sizeof(AudioOutputConnection);
     const size_t controlBufferOffset        = audioOutputOffset + audioOutputAllocSize;
     const size_t controlBufferAllocSize     = (numControlInputs + numControlOutputs) * sizeof(sample_t);
-    const size_t audioBufferDataOffset      = bufferAlignment.align(controlBufferOffset + controlBufferAllocSize);
-    const size_t audioBufferDataAllocSize   = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
-    const size_t allocSize                  = audioBufferDataOffset + audioBufferDataAllocSize;
+    const size_t audioBufferOffset          = bufferAlignment.align(controlBufferOffset + controlBufferAllocSize);
+    const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
+    const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize;
 
     // Need to align the allocated memory here so the audio buffer memory turns out aligned, too.
-    char* mem = env.rtMem().allocAligned<char>(bufferAlignment, allocSize);
-
-    AudioInputConnection* audioInputConnections     = reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset);
-    AudioOutputConnection* audioOutputConnections   = reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset);
-    sample_t* controlBuffers                        = reinterpret_cast<sample_t*>(mem + controlBufferOffset);
-    sample_t* audioBuffers                          = reinterpret_cast<sample_t*>(mem + audioBufferDataOffset);
-
-    // Initialize audio connections
-    for (size_t i=0; i < numAudioInputs; i++) {
-        new (&audioInputConnections[i]) AudioInputConnection(i);
-    }
-    for (size_t i=0; i < numAudioOutputs; i++) {
-        new (&audioOutputConnections[i]) AudioOutputConnection(i);
-    }
-
-    // Create plugin instance
-    LV2_Handle synth = synthDef.construct(mem + sizeof(Synth), env.sampleRate());
+    // char* mem = env.rtMem().allocAligned<char>(bufferAlignment, allocSize);
 
     // Initialize rest of synth
-    return new (mem) Synth( env, id, parent
-                          , synthDef, synth
-                          , audioInputConnections
-                          , audioOutputConnections
-                          , controlBuffers
-                          , audioBuffers );
+    return new (env.rtMem(), allocSize - sizeof(Synth))
+               Synth( env, id, parent
+                    , synthDef
+                    , sizeof(Synth)
+                    , audioInputOffset
+                    , audioOutputOffset
+                    , controlBufferOffset
+                    , audioBufferOffset );
 }
 
 template <typename BusId, typename ConnType>
@@ -182,7 +196,7 @@ void Synth::mapInput(size_t index, const ResourceId& bus, InputConnectionType ty
 void Synth::mapOutput(size_t index, const ResourceId& bus, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
-    sample_t* buffer = offset > 0 ? env().rtMem().alloc<sample_t>(offset) : 0;
+    sample_t* buffer = offset > 0 ? env().rtMem().allocOf<sample_t>(offset) : 0;
     AudioOutputConnections::iterator conn =
         find_if( m_audioOutputConnections.begin()
                , m_audioOutputConnections.end()

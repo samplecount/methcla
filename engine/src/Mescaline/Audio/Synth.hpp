@@ -66,10 +66,10 @@ public:
     void read(Environment& env, size_t numFrames, sample_t* dst)
     {
         if (busId()) {
-            AudioBus& bus = env.audioBus(busId());
-            boost::shared_lock<AudioBus::Lock> lock(bus.lock());
-            if (bus.epoch() == env.epoch()) {
-                memcpy(dst, bus.data(), numFrames * sizeof(sample_t));
+            AudioBus::Handle bus = env.audioBus(busId());
+            boost::shared_lock<AudioBus::Lock> lock(bus->lock());
+            if (bus->epoch() == env.epoch()) {
+                memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
@@ -108,19 +108,19 @@ public:
     void write(Environment& env, size_t numFrames, const sample_t* src)
     {
         if (busId()) {
-            AudioBus& bus = env.audioBus(busId());
+            AudioBus::Handle bus = env.audioBus(busId());
             const Epoch epoch = env.epoch();
-            boost::lock_guard<AudioBus::Lock> lock(bus.lock());
-            if (bus.epoch() == epoch) {
+            boost::lock_guard<AudioBus::Lock> lock(bus->lock());
+            if (bus->epoch() == epoch) {
                 // Accumulate
-                sample_t* dst = bus.data();
+                sample_t* dst = bus->data();
                 for (size_t i=0; i < numFrames; i++) {
                     dst[i] += src[i];
                 }
             } else {
                 // Copy
-                memcpy(bus.data(), src, numFrames * sizeof(sample_t));
-                bus.setEpoch(epoch);
+                memcpy(bus->data(), src, numFrames * sizeof(sample_t));
+                bus->setEpoch(epoch);
             }
         }
     }
@@ -147,11 +147,11 @@ protected:
          , const ResourceId& id
          , Group* parent
          , const Plugin::Plugin& synthDef
-         , LV2_Handle synth
-         , AudioInputConnection* audioInputConnections
-         , AudioOutputConnection* audioOutputConnections
-         , sample_t* controlBuffers
-         , sample_t* audioBuffers
+         , size_t synthOffset
+         , size_t audioInputConnectionsOffset
+         , size_t audioOutputConnectionsOffset
+         , size_t controlBufferOffset
+         , size_t audioBufferOffset
          );
     virtual ~Synth();
 
@@ -206,7 +206,7 @@ public:
     template <class T> T* synth() { return static_cast<T*>(m_synth); }
 
 protected:
-    void* operator new(size_t numBytes, void* where);
+    // void* operator new(size_t numBytes, void* where);
 
 private:
     const Plugin::Plugin&   m_synthDef;

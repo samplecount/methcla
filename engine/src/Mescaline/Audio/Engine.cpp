@@ -67,12 +67,6 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
         m_audioOutputChannels.push_back(bus);
         addResource(*bus);
     }
-
-    for (size_t i=0; i < options.maxNumAudioBuses; i++) {
-        InternalAudioBus* bus = new InternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
-        m_audioBuses.push_back(bus);
-        addResource(*bus);
-    }
 }
 
 Environment::~Environment()

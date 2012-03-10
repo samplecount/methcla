@@ -2,8 +2,7 @@
 #define MESCALINE_AUDIO_AUDIOBUS_HPP_INCLUDED
 
 #include <Mescaline/Audio.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/utility.hpp>
+#include <Mescaline/Audio/Resource.hpp>
 
 namespace Mescaline { namespace Audio {
 
@@ -21,6 +20,8 @@ public:
         bool try_lock_shared() { return true; }
         void unlock_shared() { }
     };
+
+    typedef boost::intrusive_ptr<AudioBus> Handle;
 
 public:
     AudioBus(const ResourceId& id, size_t numFrames, sample_t* data, const Epoch& epoch);

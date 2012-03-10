@@ -168,7 +168,8 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     m_CAInputBuffers->mNumberBuffers = m_numInputs;
     
     for (size_t i = 0; i < m_numInputs; i++) {
-        m_inputBuffers[i] = Mescaline::Memory::allocAligned<sample_t>(Mescaline::Memory::Alignment::SIMDAlignment(), m_bufferSize);
+        m_inputBuffers[i] =
+            Mescaline::Memory::allocAlignedOf<sample_t,Mescaline::Memory::kSIMDAlignment>(m_bufferSize);
         m_CAInputBuffers->mBuffers[i].mNumberChannels = 1;
         m_CAInputBuffers->mBuffers[i].mDataByteSize = m_bufferSize * sizeof(sample_t);
         m_CAInputBuffers->mBuffers[i].mData = m_inputBuffers[i];

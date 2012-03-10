@@ -25,8 +25,6 @@
 
 namespace Mescaline { namespace Audio
 {
-    using namespace Memory;
-
     // class ControlBus : boost::noncopyable
     // {
     // public:
@@ -63,56 +61,6 @@ namespace Mescaline { namespace Audio
 
     private:
         Nodes m_nodes;
-    };
-
-    class ResourceMap
-    {
-    public:
-        void insert(Resource& resource)
-        {
-            pair<Map::iterator,bool> result = m_map.insert(Map::value_type(resource.id(), &resource));
-            BOOST_ASSERT_MSG( result.second, "Duplicate resource" );
-        }
-
-        void remove(Resource& resource)
-        {
-            size_t n = m_map.erase(resource.id());
-            BOOST_ASSERT_MSG( n > 0, "Missing resource" );
-        }
-
-        bool includes(const ResourceId& id)
-        {
-            return includesId(id);
-        }
-
-        Resource& lookup(const ResourceId& id)
-        {
-            Map::iterator it = m_map.find(id);
-            BOOST_ASSERT( it != m_map.end() );
-            return *it->second;
-        }
-
-        ResourceId nextId()
-        {
-            const uint32_t invalid = ResourceId();
-            uint32_t id = m_map.size() + 1;
-//            uint32_t id0 = id;
-            while ((includesId(id) || id == invalid) /* && id != id0 */) {
-                id++;
-            }
-//            BOOST_ASSERT_MSG( id != id0, "No more free resource IDs" );
-            return ResourceId(id);
-        }
-
-    private:
-        bool includesId(uint32_t id)
-        {
-            return m_map.find(id) != m_map.end();
-        }
-
-    private:
-        typedef boost::unordered_map<uint32_t,Resource*> Map;
-        Map m_map;
     };
 
     class Environment;
@@ -153,6 +101,7 @@ namespace Mescaline { namespace Audio
     };
 
     class Group;
+    using Memory::RTMemoryManager;
 
     class Environment : public boost::noncopyable
     {
@@ -192,9 +141,9 @@ namespace Mescaline { namespace Audio
 
         ResourceId nextResourceId() { return m_resources.nextId(); }
 
-        AudioBus& audioBus(const ResourceId& busId)
+        AudioBus::Handle audioBus(const ResourceId& busId)
         {
-            return dynamic_cast<AudioBus&>(m_resources.lookup(busId));
+            return boost::dynamic_pointer_cast<AudioBus>(m_resources.lookup(busId));
         }
 
 //        {

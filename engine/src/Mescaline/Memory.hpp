@@ -5,43 +5,64 @@
 
 namespace Mescaline { namespace Memory {
 
-class Alignment
+template <size_t kAlignment> class Alignment
 {
 public:
-    explicit Alignment(size_t alignment)
-        : m_alignment(alignment)
-        , m_mask(~(alignment - 1))
+    Alignment()
+        : m_mask(~(alignment() - 1))
     {
-        BOOST_ASSERT_MSG((alignment & (alignment - 1)) == 0, "alignment must be a power of two");
-        BOOST_ASSERT_MSG(alignment >= sizeof(void*), "alignment must be >= sizeof(void*)");
+        BOOST_STATIC_ASSERT_MSG((kAlignment & (kAlignment - 1)) == 0, "alignment must be a power of two");
+        BOOST_STATIC_ASSERT_MSG(kAlignment >= sizeof(void*), "alignment must be >= sizeof(void*)");
     }
 
-    size_t alignment() const            { return m_alignment; }
-    size_t align(size_t size) const     { return (size + m_alignment) & m_mask; }
+    size_t alignment() const            { return kAlignment; }
+    size_t align(size_t size) const     { return (size + alignment()) & m_mask; }
     size_t isAligned(size_t size) const { return (size & m_mask) == size; }
 
-    /// Return the alignment needed for data accessed by SIMD instructions.
-    static Alignment SIMDAlignment() { return Alignment(16); }
-
 private:
-    size_t m_alignment;
     size_t m_mask;
 };
 
-// Primitives
-void* malloc(size_t numBytes) throw(MemoryAllocationFailure);
-void* memalign(const Alignment& alignment, size_t numBytes) throw(MemoryAllocationFailure);
-void free(void* ptr) throw(MemoryAllocationFailure);
+static const size_t kDefaultAlignment = sizeof(void*);
+/// Alignment needed for data accessed by SIMD instructions.
+static const size_t kSIMDAlignment = 16;
 
-// Wrappers
-template <typename T> T* alloc(size_t numElems=1) throw(MemoryAllocationFailure)
+// Primitives
+inline static void* alloc(size_t numBytes) throw(MemoryAllocationFailure)
 {
-    return static_cast<T*>(malloc(numElems * sizeof(T)));
+    void* ptr = ::malloc(numBytes);
+    if (ptr == 0)
+        BOOST_THROW_EXCEPTION(Mescaline::MemoryAllocationFailure());
+    return ptr;
 }
 
-template <typename T> T* allocAligned(const Alignment& alignment, size_t numElems=1) throw(MemoryAllocationFailure)
+inline static void free(void* ptr) throw(MemoryAllocationFailure)
 {
-    return static_cast<T*>(memalign(alignment, numElems * sizeof(T)));
+    if (ptr != 0)
+        ::free(ptr);
+}
+
+template <size_t align> void* allocAligned(size_t numBytes)
+    throw(MemoryAllocationFailure)
+{
+    void* ptr;
+    int err = posix_memalign(&ptr, Alignment<align>().alignment(), numBytes);
+    if (err != 0)
+        BOOST_THROW_EXCEPTION(Mescaline::MemoryAllocationFailure());
+    return ptr;
+}
+
+// Wrappers
+template <typename T> T* allocOf(size_t numElems=1)
+    throw(MemoryAllocationFailure)
+{
+    return static_cast<T*>(alloc(numElems * sizeof(T)));
+}
+
+template <typename T, size_t align> T* allocAlignedOf(size_t numElems=1)
+    throw(MemoryAllocationFailure)
+{
+    return static_cast<T*>(allocAligned<align>(numElems * sizeof(T)));
 }
 
 }; };
