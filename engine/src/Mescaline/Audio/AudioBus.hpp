@@ -24,7 +24,7 @@ public:
     typedef boost::intrusive_ptr<AudioBus> Handle;
 
 public:
-    AudioBus(const ResourceId& id, size_t numFrames, sample_t* data, const Epoch& epoch);
+    AudioBus(Environment& env, const ResourceId& id, size_t numFrames, sample_t* data, const Epoch& epoch);
     virtual ~AudioBus();
 
     sample_t* data() { return m_data; }
@@ -46,14 +46,14 @@ private:
 class ExternalAudioBus : public AudioBus
 {
 public:
-    ExternalAudioBus(const ResourceId& id, size_t numFrames, const Epoch& epoch);
+    ExternalAudioBus(Environment& env, const ResourceId& id, size_t numFrames, const Epoch& epoch);
     void setData(sample_t* data) { AudioBus::setData(data); }
 };
 
 class InternalAudioBus : public AudioBus
 {
 public:
-    InternalAudioBus(const ResourceId& id, size_t numFrames, const Epoch& epoch);
+    InternalAudioBus(Environment& env, const ResourceId& id, size_t numFrames, const Epoch& epoch);
     virtual ~InternalAudioBus();
 };
 

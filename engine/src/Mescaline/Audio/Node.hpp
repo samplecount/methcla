@@ -24,16 +24,11 @@ namespace Mescaline { namespace Audio {
 
     public:
         Node(Environment& env, const ResourceId& id, Group* parent)
-            : Resource(id)
-            , m_env(env)
+            : Resource(env, id)
             , m_parent(parent)
         { }
         virtual ~Node();
 
-        /// Return environment.
-        const Environment& env() const { return m_env; }
-        Environment& env() { return m_env; }
-        
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
         bool isRootNode() const { return parent() == 0; }
@@ -45,7 +40,6 @@ namespace Mescaline { namespace Audio {
         void operator delete(void* ptr);
 
     private:
-        Environment&    m_env;
         Group*          m_parent;
     };
 

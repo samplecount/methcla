@@ -58,12 +58,12 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     const Epoch prevEpoch = epoch() - 1;
 
     for (size_t i=0; i < options.numHardwareInputChannels; i++) {
-        ExternalAudioBus* bus = new ExternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
+        ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
         m_audioInputChannels.push_back(bus);
         addResource(*bus);
     }
     for (size_t i=0; i < options.numHardwareOutputChannels; i++) {
-        ExternalAudioBus* bus = new ExternalAudioBus(nextResourceId(), blockSize(), prevEpoch);
+        ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
         m_audioOutputChannels.push_back(bus);
         addResource(*bus);
     }

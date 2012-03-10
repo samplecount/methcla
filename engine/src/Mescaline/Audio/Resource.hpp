@@ -50,18 +50,28 @@ namespace Mescaline { namespace Audio
         uint32_t m_id;
     };
 
+    class Environment;
     using namespace boost::intrusive;
 
+    /// Resource class.
+    //
+    // Resources are /always/ created in the RT thread and can /only/
+    // be retained or released from the RT thread.
     class Resource : public unordered_set_base_hook<>
                    , public boost::noncopyable
     {
     public:
-        Resource(const ResourceId& id)
-            : m_id(id)
+        Resource(Environment& env, const ResourceId& id)
+            : m_env(env)
+            , m_id(id)
             , m_refCount(1)
         { }
         virtual ~Resource()
         { }
+
+        /// Return environment.
+        const Environment& env() const { return m_env; }
+        Environment& env() { return m_env; }
 
 //        virtual URID typeId() const = 0;
         const ResourceId& id() const { return m_id; }
@@ -75,7 +85,11 @@ namespace Mescaline { namespace Audio
         typedef boost::intrusive_ptr<Resource> Handle;
 
     protected:
-        /// Free the resource.
+        /// Free the resource. This is called when the resource's reference count
+        // drops to zero and should free the resource in the correct thread.
+        //
+        // For instance, Nodes are destroyed in the realtime thread, while AudioBuses
+        // defer their destruction to the non-realtime thread.
         virtual void free();
 
     protected:
@@ -100,8 +114,9 @@ namespace Mescaline { namespace Audio
         }
 
     private:
-        ResourceId  m_id;
-        RefCount    m_refCount;
+        Environment&    m_env;
+        ResourceId      m_id;
+        RefCount        m_refCount;
     };
 
     void intrusive_ptr_add_ref(Resource* x);
