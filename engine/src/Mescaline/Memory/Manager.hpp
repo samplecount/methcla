@@ -44,6 +44,8 @@ template <class T, class Allocator, size_t align=kDefaultAlignment> class Alloca
     };
 
 protected:
+    static const size_t kAlignment = align;
+
     static void* alloc(Allocator& allocator, size_t size)
     {
         Chunk* chunk = static_cast<Chunk*>(allocator.allocAligned<align>(sizeof(Chunk) + size));

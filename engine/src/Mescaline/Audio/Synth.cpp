@@ -116,6 +116,10 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
 {
     typedef Alignment<kSIMDAlignment> BufferAlignment;
 
+    BOOST_STATIC_ASSERT(   (allocated_super::kAlignment >= BufferAlignment::kAlignment)
+                        && ((allocated_super::kAlignment % BufferAlignment::kAlignment) == 0) );
+
+    // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( BufferAlignment::isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be aligned to Alignment::SIMDAlignment" );
 

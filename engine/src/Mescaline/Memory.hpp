@@ -5,17 +5,21 @@
 
 namespace Mescaline { namespace Memory {
 
-#define MESCALINE_ISALIGNED(alignment, size) (((size) & Mescaline::Memory::Alignment< alignment >::kMask) == (size))
-#define MESCALINE_ALIGN(alignment, size)     (((size) + (alignment)) & Mescaline::Memory::Alignment< alignment >::kMask)
-#define MESCALINE_PADDING(alignment, size)   (MESCALINE_ALIGN(alignment, size) - (size))
-
-template <size_t kAlignment> class Alignment
+template <size_t alignment> class Alignment
 {
 public:
-    BOOST_STATIC_ASSERT_MSG( (kAlignment & (kAlignment - 1)) == 0, "alignment must be a power of two" );
-    BOOST_STATIC_ASSERT_MSG( kAlignment >= sizeof(void*), "alignment must be >= sizeof(void*)" );
-
+    static const size_t kAlignment = alignment;
     static const size_t kMask = ~(kAlignment - 1);
+
+    BOOST_STATIC_ASSERT_MSG( (kAlignment & (kAlignment - 1)) == 0, "Alignment must be a power of two" );
+    BOOST_STATIC_ASSERT_MSG( kAlignment >= sizeof(void*), "Alignment must be >= sizeof(void*)" );
+
+#   define MESCALINE_ISALIGNED(alignment, size) \
+        (((size) & Mescaline::Memory::Alignment< alignment >::kMask) == (size))
+#   define MESCALINE_ALIGN(alignment, size) \
+        (((size) + (alignment)) & Mescaline::Memory::Alignment< alignment >::kMask)
+#   define MESCALINE_PADDING(alignment, size) \
+        (MESCALINE_ALIGN(alignment, size) - (size))
 
     // C++0x generalized constant expressions (supported from gcc 4.6)
     /* constexpr */ inline static size_t isAligned(size_t size) { return MESCALINE_ISALIGNED(kAlignment, size); }
@@ -23,6 +27,7 @@ public:
     /* constexpr */ inline static size_t padding(size_t size)   { return MESCALINE_PADDING(kAlignment, size); }
 };
 
+/// Default alignment, corresponding to the size of a pointer.
 static const size_t kDefaultAlignment = sizeof(void*);
 /// Alignment needed for data accessed by SIMD instructions.
 static const size_t kSIMDAlignment = 16;
