@@ -15,7 +15,11 @@ AudioBus::~AudioBus()
 {
 }
 
+void AudioBus::free()
 {
+    Command* cmd = new (env().rtMem()) DeferredDeleteCommand<AudioBus>(env(), this);
+    // FIXME: How to statically ensure that this can only be called from the RT thread?
+    env().enqueue(kRealtime, cmd);
 }
 
 ExternalAudioBus::ExternalAudioBus(Environment& env, const ResourceId& id, size_t numFrames, const Epoch& epoch)

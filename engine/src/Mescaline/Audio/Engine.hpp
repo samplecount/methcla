@@ -100,6 +100,35 @@ namespace Mescaline { namespace Audio
         LV2_Atom*    m_atom;
     };
 
+    class RTCommand : public Command
+                    , public Memory::Allocated<RTCommand, Memory::RTMemoryManager>
+    {
+    public:
+        RTCommand(Environment& env)
+            : Command(env, kRealtime)
+        { }
+    };
+
+    template <class T> class DeferredDeleteCommand : public RTCommand
+    {
+    public:
+        DeferredDeleteCommand(Environment& env, T* ptr)
+            : RTCommand(env)
+            , m_ptr(ptr)
+        { }
+
+        virtual void perform(Context context)
+        {
+            BOOST_ASSERT( context == kNonRealtime );
+            delete m_ptr;
+            m_ptr = 0;
+            env().free(context, this);
+        }
+
+    private:
+        T* m_ptr;
+    };
+
     class Group;
     using Memory::RTMemoryManager;
 
@@ -176,6 +205,7 @@ namespace Mescaline { namespace Audio
         void sendMessage(LV2_Atom* msg);
 
         // Commands
+        void enqueue(Context context, Command* cmd);
         void free(Context context, Command* cmd);
 
     protected:

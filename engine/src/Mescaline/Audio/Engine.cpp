@@ -88,6 +88,11 @@ void Environment::sendMessage(LV2_Atom* atom)
     m_commandChannel.enqueue(new LV2Command(*this, atom));
 }
 
+void Environment::enqueue(Context context, Command* cmd)
+{
+    m_commandEngine.enqueue(context, cmd);
+}
+
 void Environment::free(Context context, Command* cmd)
 {
     m_commandEngine.free(context, cmd);

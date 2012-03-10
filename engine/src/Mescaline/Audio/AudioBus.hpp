@@ -35,6 +35,7 @@ public:
     void setEpoch(const Epoch& epoch) { m_epoch = epoch; }
 
 protected:
+    virtual void free();
     void setData(sample_t* data) { m_data = data; }
 
 private:
