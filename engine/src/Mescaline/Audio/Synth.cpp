@@ -25,9 +25,11 @@ Synth::Synth( Environment& env
     , m_audioBuffers(offset_cast<sample_t*>(this, audioBufferOffset))
 {
     const size_t blockSize = env.blockSize();
+
     // Unitialized audio connection memory
     AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
     AudioOutputConnection* audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
+
     // Audio buffer memory
     sample_t* audioInputBuffers = m_audioBuffers;
     sample_t* audioOutputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
@@ -119,7 +121,7 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
     const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
     const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize;
 
-    // Initialize rest of synth
+    // Instantiate synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
                Synth( env, id, parent
                     , synthDef
