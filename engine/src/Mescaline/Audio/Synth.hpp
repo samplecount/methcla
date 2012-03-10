@@ -205,9 +205,6 @@ public:
 
     template <class T> T* synth() { return static_cast<T*>(m_synth); }
 
-protected:
-    // void* operator new(size_t numBytes, void* where);
-
 private:
     const Plugin::Plugin&   m_synthDef;
     std::bitset<32>         m_flags;

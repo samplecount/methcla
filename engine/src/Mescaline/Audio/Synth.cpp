@@ -107,11 +107,6 @@ Synth::~Synth()
     m_synthDef.destroy(m_synth);
 }
 
-// void* Synth::operator new(size_t, void* where)
-// {
-//     return where;
-// }
-
 Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, const Plugin::Plugin& synthDef)
 {
     typedef Alignment<kSIMDAlignment> BufferAlignment;
@@ -139,9 +134,6 @@ Synth* Synth::construct(Environment& env, const ResourceId& id, Group* parent, c
     const size_t audioBufferOffset          = BufferAlignment::align(controlBufferOffset + controlBufferAllocSize);
     const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
     const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize;
-
-    // Need to align the allocated memory here so the audio buffer memory turns out aligned, too.
-    // char* mem = env.rtMem().allocAligned<char>(bufferAlignment, allocSize);
 
     // Initialize rest of synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
