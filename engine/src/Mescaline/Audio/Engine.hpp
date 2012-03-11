@@ -159,8 +159,8 @@ namespace Mescaline { namespace Audio
         Environment(Plugin::Manager& pluginManager, const Options& options);
         ~Environment();
 
-        Plugin::Manager& pluginManager() { return m_synthDefs; }
-        const Plugin::Manager::PluginHandle& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
+        const Plugin::Manager& plugins() const { return m_plugins; }
+        Plugin::Manager& plugins() { return m_plugins; }
 
         Group* rootNode() { return m_rootNode; }
 
@@ -217,7 +217,7 @@ namespace Mescaline { namespace Audio
         const size_t                m_sampleRate;
         const size_t                m_blockSize;
         RTMemoryManager             m_rtMem;
-        Plugin::Manager&            m_synthDefs;
+        Plugin::Manager&            m_plugins;
         ResourceMap                 m_resources;
         Group*                      m_rootNode;
         boost::ptr_vector<ExternalAudioBus> m_audioInputChannels;

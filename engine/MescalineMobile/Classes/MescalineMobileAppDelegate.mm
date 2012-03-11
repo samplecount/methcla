@@ -54,7 +54,7 @@ public:
         Mescaline::Audio::Engine::configure(driver);
 
         // Create sine instance
-        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = env().lookupSynthDef(
+        const Mescaline::Audio::Plugin::Manager::PluginHandle& def = env().plugins().lookup(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
         Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(env(), env().nextResourceId(), env().rootNode(), *def);
         env().rootNode()->addToTail(*synth);
@@ -459,7 +459,7 @@ void cycleOscilloscopeLines()
         const size_t atomSize = sizeof(LV2_Atom_String) + strlen(*it) + 1;
         LV2_Atom* atom = (LV2_Atom*)malloc(lv2_atom_pad_size(atomSize));
         LV2_Atom_Forge forge;
-        lv2_atom_forge_init(&forge, m_engine->env().pluginManager().lv2UridMap());
+        lv2_atom_forge_init(&forge, m_engine->env().plugins().lv2UridMap());
         lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
         BOOST_ASSERT( lv2_atom_forge_string(&forge, (uint8_t*)(*it), strlen(*it)) != 0 );
         m_engine->env().sendRequest(atom);
