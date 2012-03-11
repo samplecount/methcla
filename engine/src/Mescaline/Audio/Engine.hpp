@@ -161,7 +161,6 @@ namespace Mescaline { namespace Audio
 
         Plugin::Manager& pluginManager() { return m_synthDefs; }
         const Plugin::Manager::PluginHandle& lookupSynthDef(const char* name) { return m_synthDefs.lookup(name); }
-        void registerSynthDef(SynthDef* synthDef) { /* m_synthDefs.insert(synthDef); */ }
 
         Group* rootNode() { return m_rootNode; }
 
