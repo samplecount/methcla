@@ -1,17 +1,19 @@
 {-# LANGUAGE TemplateHaskell #-}
-import Control.Applicative ((<$>))
-import Control.Monad
-import Development.Shake
-import Development.Shake.FilePath
-import Data.Lens.Common
-import Data.Lens.Template
-import Data.List (intersperse)
-import Data.List.Split
-import Data.Maybe
-import GHC.Conc (numCapabilities)
+import           Control.Applicative ((<$>))
+import           Control.Monad
+import           Development.Shake
+import           Development.Shake.FilePath
+import           Data.Lens.Common
+import           Data.Lens.Template
+import           Data.List (intersperse, isInfixOf, isSuffixOf)
+import           Data.List.Split
+import           Data.Maybe
+import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
 import           System.Console.CmdArgs.Explicit
-import System.Environment
+import           System.Directory (removeDirectoryRecursive)
+import           System.Environment
+import           System.FilePath.Find
 
 under :: FilePath -> [FilePath] -> [FilePath]
 under dir = map prepend
@@ -123,7 +125,8 @@ libBuildPath toolChain build lib = buildDir toolChain build </> libName lib
 
 staticLibrary :: CToolChain -> CBuild -> StaticLibrary -> Rules ()
 staticLibrary toolChain build lib = do
-    let objects = map (combine (libBuildDir toolChain build lib) . flip replaceExtension "o" . takeFileName) (sources lib)
+    let buildDir = libBuildDir toolChain build lib
+        objects = map (combine buildDir . flip replaceExtension "o") (sources lib)
     zipWithM_ (staticObject toolChain build) (sources lib) objects
     (== (libBuildPath toolChain build lib)) ?> do
         linkC toolChain (build { linkerFlags = linkerFlags build ++ ["-static"]}) objects
@@ -138,7 +141,7 @@ cToolChain = CToolChain {
 
 cBuild = CBuild {
     buildArch = "i386"
-  , buildPrefix = "build"
+  , buildPrefix = "./build"
   , systemIncludes = []
   , userIncludes = []
   , defines = []
@@ -196,6 +199,15 @@ lilv = StaticLibrary "lilv" $ under "external_libraries/lv2/lilv-0.5.0" [
   , "src/zix/tree.c"
   ]
 
+mkBoost = do
+    src <- find always
+             (extension ==? ".cpp" &&?
+              (not . isSuffixOf "win32") <$> directory &&?
+              (not . isSuffixOf "test/src") <$> directory &&?
+              (fileName /=? "utf8_codecvt_facet.cpp"))
+             "external_libraries/boost"
+    return $ StaticLibrary "boost" src
+
 mescalineBuild = cBuild {
     userIncludes = userIncludes cBuild
                       ++ ["."]
@@ -211,19 +223,19 @@ mescalineBuild = cBuild {
 }
 
 mescaline = StaticLibrary "mescaline" $
-    under "src" [
-        "Mescaline/Audio/AudioBus.cpp"
-      , "Mescaline/Audio/Engine.cpp"
-      , "Mescaline/Audio/Group.cpp"
-      , "Mescaline/Audio/Node.cpp"
-      , "Mescaline/Audio/Resource.cpp"
-      , "Mescaline/Audio/Synth.cpp"
-      , "Mescaline/Audio/SynthDef.cpp"
-      , "Mescaline/Memory/Manager.cpp"
-      , "Mescaline/Memory.cpp"
-      ]
- ++ under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
- ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
+        under "src" [
+            "Mescaline/Audio/AudioBus.cpp"
+          , "Mescaline/Audio/Engine.cpp"
+          , "Mescaline/Audio/Group.cpp"
+          , "Mescaline/Audio/Node.cpp"
+          , "Mescaline/Audio/Resource.cpp"
+          , "Mescaline/Audio/Synth.cpp"
+          , "Mescaline/Audio/SynthDef.cpp"
+          , "Mescaline/Memory/Manager.cpp"
+          , "Mescaline/Memory.cpp"
+          ]
+     ++ under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
+     ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
 
 getShakeOptions :: FilePath -> IO ShakeOptions
 getShakeOptions buildDir = do
@@ -239,6 +251,7 @@ data Options = Options {
   , _verbosity :: Verbosity
   , _jobs :: Int
   , _output :: FilePath
+  , _report :: Bool
   , _targets :: [String]
   } deriving (Show)
 -- data Options = Sample {hello :: String} deriving (Show, Data, Typeable)
@@ -248,6 +261,7 @@ defaultOptions = Options {
   , _verbosity = Normal
   , _jobs = 1
   , _output = "./build"
+  , _report = False
   , _targets = []
   }
 
@@ -261,6 +275,7 @@ arguments =
          , flagReq ["verbosity","v"] (upd verbosity . read) "VERBOSITY" "Verbosity"
          , flagOpt "1" ["jobs","j"] (upd jobs . read) "NUMBER" "Number of parallel jobs"
          , flagReq ["output", "o"] (upd output) "DIRECTORY" "Build products output directory"
+         , flagBool ["report", "r"] (setL report) "Generate build report"
          ]
           -- ++ flagsVerbosity (setL verbosity)
     where upd what x = Right . setL what x
@@ -268,33 +283,34 @@ arguments =
 optionsToShake opts = shakeOptions {
     shakeThreads = jobs ^$ opts
   , shakeVerbosity = verbosity ^$ opts
-  , shakeReport = Just $ (output ^$ opts) </> "report.html"
+  , shakeReport = if report ^$ opts
+                    then Just $ (output ^$ opts) </> "shake.html"
+                    else Nothing
   }
 
--- options buildDir = o {
---     shakeFiles = shakeFiles o &= C.help "Where to put the shake files"
---   , shakeThreads = shakeThreads o &= C.help "Number of parallel jobs"
---   , shakeReport = Just (buildDir </> "report.html") &= C.help "Where to store build report"
---   } &= C.summary "Shake v1"
---   where o = shakeOptions
-
--- main = print =<< cmdArgs sample
+processTargets shake build [] = return ()
+processTargets shake build (t:ts) = do
+    case t of
+        "clean" -> removeDirectoryRecursive (buildPrefix build)
+    processTargets shake build ts
 
 main = do
-    -- opts <- getShakeOptions (buildPrefix cBuild)
-    -- opts <- C.cmdArgs (options (buildPrefix cBuild))
-    -- targets <- getArgs
-    -- print targets
     opts <- processArgs arguments
+    let shakeIt = shake (optionsToShake opts)
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
-        else 
-            shake (optionsToShake opts) $ do
-                staticLibrary cToolChain serdBuild serd
-                staticLibrary cToolChain sordBuild sord
-                staticLibrary cToolChain lilvBuild lilv
-                staticLibrary cToolChain mescalineBuild mescaline
-                want [ libBuildPath cToolChain serdBuild serd
-                     , libBuildPath cToolChain sordBuild sord
-                     , libBuildPath cToolChain lilvBuild lilv
-                     , libBuildPath cToolChain mescalineBuild mescaline ]
+        else case targets ^$ opts of
+                [] -> do
+                    boost <- mkBoost
+                    shakeIt $ do
+                        staticLibrary cToolChain serdBuild serd
+                        staticLibrary cToolChain sordBuild sord
+                        staticLibrary cToolChain lilvBuild lilv
+                        staticLibrary cToolChain cBuild boost
+                        staticLibrary cToolChain mescalineBuild mescaline
+                        want [ libBuildPath cToolChain serdBuild serd
+                               , libBuildPath cToolChain sordBuild sord
+                               , libBuildPath cToolChain lilvBuild lilv
+                               , libBuildPath cToolChain cBuild boost
+                               , libBuildPath cToolChain mescalineBuild mescaline ]
+                ts -> processTargets shakeIt cBuild ts

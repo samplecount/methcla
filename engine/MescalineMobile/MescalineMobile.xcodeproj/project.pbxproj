@@ -18,7 +18,7 @@
 		53836021150790B90032BB86 /* libsord.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383601E150790B90032BB86 /* libsord.a */; };
 		5383602315079B0A0032BB86 /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5383602215079B090032BB86 /* libmescaline.a */; };
 		538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 538A754E148FCF1E00C47BF1 /* scope.cpp */; };
-		538A7950149BB1C500C47BF1 /* libboost_system.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 538A794F149BB1C500C47BF1 /* libboost_system.a */; };
+		53918013150CF338001F0BFF /* libboost.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53918012150CF337001F0BFF /* libboost.a */; };
 		53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB8E2E147EC774002E3B51 /* osc.cpp */; };
 		53BD23CA14EEE6F500543AE5 /* lilv.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD207F14EEE6F400543AE5 /* lilv.ttl */; };
 		53BD245214EEE6F500543AE5 /* COPYING in Resources */ = {isa = PBXBuildFile; fileRef = 53BD211514EEE6F400543AE5 /* COPYING */; };
@@ -73,7 +73,6 @@
 		53BD26C814F3A07200543AE5 /* rt-instantiate.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26BF14F3A07200543AE5 /* rt-instantiate.ttl */; };
 		53BD26C914F3A07200543AE5 /* manifest.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26C214F3A07200543AE5 /* manifest.ttl */; };
 		53BD26CB14F3A07200543AE5 /* sine.ttl in Resources */ = {isa = PBXBuildFile; fileRef = 53BD26C414F3A07200543AE5 /* sine.ttl */; };
-		53C6B16314FC119A0087DDD6 /* libboost_thread.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53C6B16214FC119A0087DDD6 /* libboost_thread.a */; };
 		53C6B16F14FE28810087DDD6 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53C6B16E14FE28810087DDD6 /* main.cpp */; };
 		53C6B17114FE28810087DDD6 /* test_node.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 53C6B17014FE28810087DDD6 /* test_node.1 */; };
 		53C6B17514FE28AC0087DDD6 /* Node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53C6B16614FE24DF0087DDD6 /* Node.cpp */; };
@@ -85,30 +84,6 @@
 		F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */; };
 		F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		53BD268F14EEF59E00543AE5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 53BD265614EEF10F00543AE5;
-			remoteInfo = lilv;
-		};
-		53BD269114EEF5A300543AE5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 53BD263014EEEE3700543AE5;
-			remoteInfo = serd;
-		};
-		53BD269314EEF5A500543AE5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 53BD264414EEF10800543AE5;
-			remoteInfo = sord;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		53C6B16914FE28810087DDD6 /* CopyFiles */ = {
@@ -143,6 +118,7 @@
 		538A7583148FD43500C47BF1 /* API.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = API.hpp; path = Plugin/API.hpp; sourceTree = "<group>"; };
 		538A761514911A8F00C47BF1 /* API.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = API.h; path = Plugin/API.h; sourceTree = "<group>"; };
 		538A794F149BB1C500C47BF1 /* libboost_system.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost_system.a; path = ../external_libraries/boost/lib/libboost_system.a; sourceTree = SOURCE_ROOT; };
+		53918012150CF337001F0BFF /* libboost.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libboost.a; path = "../build/iOS-Simulator/i386/libboost.a"; sourceTree = "<group>"; };
 		53BB8E2E147EC774002E3B51 /* osc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = osc.cpp; sourceTree = "<group>"; };
 		53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RemoteIODriver.cpp; path = ../platform/ios/Mescaline/Audio/IO/RemoteIODriver.cpp; sourceTree = SOURCE_ROOT; };
 		53BB902D1481924B002E3B51 /* RemoteIODriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteIODriver.hpp; sourceTree = "<group>"; };
@@ -265,8 +241,7 @@
 				F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */,
 				A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */,
 				A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */,
-				538A7950149BB1C500C47BF1 /* libboost_system.a in Frameworks */,
-				53C6B16314FC119A0087DDD6 /* libboost_thread.a in Frameworks */,
+				53918013150CF338001F0BFF /* libboost.a in Frameworks */,
 				5383601F150790B90032BB86 /* liblilv.a in Frameworks */,
 				53836020150790B90032BB86 /* libserd.a in Frameworks */,
 				53836021150790B90032BB86 /* libsord.a in Frameworks */,
@@ -332,6 +307,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				53918012150CF337001F0BFF /* libboost.a */,
 				5383602215079B090032BB86 /* libmescaline.a */,
 				5383601C150790B90032BB86 /* liblilv.a */,
 				5383601D150790B90032BB86 /* libserd.a */,
@@ -887,9 +863,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				53BD269014EEF59E00543AE5 /* PBXTargetDependency */,
-				53BD269214EEF5A300543AE5 /* PBXTargetDependency */,
-				53BD269414EEF5A500543AE5 /* PBXTargetDependency */,
 			);
 			name = Mescaline;
 			productName = aurioTouch;
@@ -1034,6 +1007,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cd .. && ./shake";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1105,24 +1079,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		53BD269014EEF59E00543AE5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 53BD265614EEF10F00543AE5 /* lilv */;
-			targetProxy = 53BD268F14EEF59E00543AE5 /* PBXContainerItemProxy */;
-		};
-		53BD269214EEF5A300543AE5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 53BD263014EEEE3700543AE5 /* serd */;
-			targetProxy = 53BD269114EEF5A300543AE5 /* PBXContainerItemProxy */;
-		};
-		53BD269414EEF5A500543AE5 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 53BD264414EEF10800543AE5 /* sord */;
-			targetProxy = 53BD269314EEF5A500543AE5 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1D6058940D05DD3E006BFB54 /* Debug */ = {
