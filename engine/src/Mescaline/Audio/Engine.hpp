@@ -11,6 +11,7 @@
 #include <Mescaline/Memory/Manager.hpp>
 
 #include <boost/cstdint.hpp>
+#include <boost/function.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
@@ -84,20 +85,19 @@ namespace Mescaline { namespace Audio
         Context         m_context;
     };
 
-    class LV2Command : public Command
+    class APIRequest : public Command
     {
     public:
-        LV2Command(Environment& env, LV2_Atom* atom)
-            : Command(env, kNonRealtime)
-            , m_atom(atom)
-        { }
-        virtual ~LV2Command()
-        { ::free(m_atom); }
+        typedef boost::function1<void, const LV2_Atom*> ResponseHandler;
+
+        APIRequest(Environment& env, LV2_Atom* atom, const ResponseHandler& handler=ResponseHandler());
+        virtual ~APIRequest();
 
         virtual void perform(Context context);
 
     private:
-        LV2_Atom*    m_atom;
+        LV2_Atom*       m_atom;
+        ResponseHandler m_responseHandler;
     };
 
     class RTCommand : public Command
@@ -202,7 +202,7 @@ namespace Mescaline { namespace Audio
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
 
-        void sendMessage(LV2_Atom* msg);
+        void sendRequest(LV2_Atom* msg);
 
         // Commands
         void enqueue(Context context, Command* cmd);

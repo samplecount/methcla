@@ -462,7 +462,7 @@ void cycleOscilloscopeLines()
         lv2_atom_forge_init(&forge, m_engine->env().pluginManager().lv2UridMap());
         lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
         BOOST_ASSERT( lv2_atom_forge_string(&forge, (uint8_t*)(*it), strlen(*it)) != 0 );
-        m_engine->env().sendMessage(atom);
+        m_engine->env().sendRequest(atom);
     }
 
 //    // If we are in a pinch event...

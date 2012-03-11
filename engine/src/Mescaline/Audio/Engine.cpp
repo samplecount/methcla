@@ -23,7 +23,18 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-void LV2Command::perform(Context context)
+APIRequest::APIRequest(Environment& env, LV2_Atom* atom, const ResponseHandler& handler)
+    : Command(env, kNonRealtime)
+    , m_atom(atom)
+    , m_responseHandler(handler)
+{ }
+
+APIRequest::~APIRequest()
+{
+    ::free(m_atom);
+}
+
+void APIRequest::perform(Context context)
 {
     BOOST_ASSERT( context == kRealtime );
     LV2_Atom* atom = m_atom;
@@ -83,9 +94,9 @@ public:
 };
 
 
-void Environment::sendMessage(LV2_Atom* atom)
+void Environment::sendRequest(LV2_Atom* atom)
 {
-    m_commandChannel.enqueue(new LV2Command(*this, atom));
+    m_commandChannel.enqueue(new APIRequest(*this, atom));
 }
 
 void Environment::enqueue(Context context, Command* cmd)
