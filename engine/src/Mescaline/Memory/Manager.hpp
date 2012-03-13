@@ -5,7 +5,7 @@
 #include <Mescaline/Memory.hpp>
 
 #include <boost/cstdint.hpp>
-#include <boost/lockfree/fifo.hpp>
+//#include <boost/lockfree/fifo.hpp>
 
 namespace Mescaline { namespace Memory {
 
