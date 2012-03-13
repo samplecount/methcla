@@ -33,6 +33,9 @@ flag f x = [f++x]
 flags :: String -> [String] -> [String]
 flags f = map (f++)
 
+(?=>) :: FilePath -> (FilePath -> Action ()) -> Rules ()
+f ?=> a = (==f) ?> a
+
 data CToolChain = CToolChain {
     platform :: String
   , platformPrefix :: FilePath
@@ -68,7 +71,7 @@ systemLoud cmd args = do
 
 dependencyFile :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 dependencyFile toolChain build input output = do
-    (==output) ?> \_ -> do
+    output ?=> \_ -> do
         need [input]
         systemLoud (tool compiler toolChain)
                 $  flag_ "-arch" (buildArch build)
@@ -85,10 +88,12 @@ staticObject :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 staticObject toolChain build input output = do
     let dep = replaceExtension output "d"
     dependencyFile toolChain build input dep
-    (==output) ?> \_ -> do
         need [input, dep]
         deps <- parseDependencies <$> readFile' dep
         need deps
+    output ?=> \_ ->  do
+        need [input]
+        need =<< parseDependencies <$> readFile' dep
         systemLoud (tool compiler toolChain)
                 $  flag_ "-arch" (buildArch build)
                 ++ flags "-I" (systemIncludes build)
