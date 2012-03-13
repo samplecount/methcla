@@ -12,6 +12,10 @@ void Mescaline::Audio::intrusive_ptr_release(Resource* x)
     x->release();
 }
 
+void Resource::handleRequest(const API::Request&)
+{
+}
+
 void Resource::free()
 {
     delete this;

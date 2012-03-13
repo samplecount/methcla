@@ -1,7 +1,10 @@
 #include <Mescaline/Audio/Engine.hpp>
 #include <Mescaline/Audio/Group.hpp>
+
 #include <boost/foreach.hpp>
 #include <cstdlib>
+
+#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 using namespace Mescaline;
 using namespace Mescaline::Audio;
@@ -22,21 +25,15 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-APIRequest::APIRequest(Environment& env, LV2_Atom* atom, const ResponseHandler& handler)
+APICommand::APICommand(Environment& env, LV2_Atom* atom, const API::ResponseHandler& handler)
     : Command(env, kNonRealtime)
-    , m_atom(atom)
-    , m_responseHandler(handler)
+    , API::Request(atom, handler)
 { }
 
-APIRequest::~APIRequest()
-{
-    ::free(m_atom);
-}
-
-void APIRequest::perform(Context context)
+void APICommand::perform(Context context)
 {
     BOOST_ASSERT( context == kRealtime );
-    LV2_Atom* atom = m_atom;
+    const LV2_Atom* atom = request();
     cout << "Message: " << atom << endl
          << "    atom size: " << atom->size << endl
          << "    atom type: " << atom->type << endl;
@@ -46,6 +43,11 @@ void APIRequest::perform(Context context)
     }
     env().free(context, this);
 }
+
+// void APICommand::respond(Context context, const LV2_Atom* atom)
+// {
+// 	
+// }
 
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
@@ -93,9 +95,15 @@ public:
 };
 
 
-void Environment::sendRequest(LV2_Atom* atom)
+void Environment::sendRequest(const LV2_Atom* atom, const API::ResponseHandler& handler)
 {
-    m_commandChannel.enqueue(new APIRequest(*this, atom));
+	const size_t atomStart = lv2_atom_pad_size(sizeof(APICommand));
+	const size_t atomSize = lv2_atom_total_size(atom);
+	void* mem = alloc(atomStart + atomSize);
+	LV2_Atom* atomCopy = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + atomStart);
+	memcpy(atomCopy, atom, atomSize);
+	APICommand* cmd = new (mem) APICommand(*this, atomCopy, handler);
+    m_commandChannel.enqueue(cmd);
 }
 
 void Environment::enqueue(Context context, Command* cmd)

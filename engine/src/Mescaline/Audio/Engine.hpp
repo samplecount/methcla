@@ -3,6 +3,7 @@
 
 #include <Mescaline/Audio.hpp>
 #include <Mescaline/Audio/AudioBus.hpp>
+#include <Mescaline/Audio/API.hpp>
 #include <Mescaline/Audio/CommandEngine.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/Node.hpp>
@@ -11,7 +12,6 @@
 #include <Mescaline/Memory/Manager.hpp>
 
 #include <boost/cstdint.hpp>
-#include <boost/function.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
@@ -22,7 +22,6 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 namespace Mescaline { namespace Audio
 {
@@ -85,19 +84,13 @@ namespace Mescaline { namespace Audio
         Context         m_context;
     };
 
-    class APIRequest : public Command
+    class APICommand : public Command
+					 , public API::Request
     {
     public:
-        typedef boost::function1<void, const LV2_Atom*> ResponseHandler;
-
-        APIRequest(Environment& env, LV2_Atom* atom, const ResponseHandler& handler=ResponseHandler());
-        virtual ~APIRequest();
-
+        APICommand(Environment& env, LV2_Atom* atom, const API::ResponseHandler& handler);
         virtual void perform(Context context);
-
-    private:
-        LV2_Atom*       m_atom;
-        ResponseHandler m_responseHandler;
+		// virtual void respond(Context context, const LV2_Atom* atom);
     };
 
     class RTCommand : public Command
@@ -201,7 +194,7 @@ namespace Mescaline { namespace Audio
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
 
-        void sendRequest(LV2_Atom* msg);
+        void sendRequest(const LV2_Atom* msg, const API::ResponseHandler& handler=API::ResponseHandler());
 
         // Commands
         void enqueue(Context context, Command* cmd);

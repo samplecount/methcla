@@ -1,6 +1,8 @@
 #ifndef Mescaline_Audio_Resource_hpp_included
 #define Mescaline_Audio_Resource_hpp_included
 
+#include <Mescaline/Audio/API.hpp>
+
 #include <boost/assert.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -83,6 +85,8 @@ namespace Mescaline { namespace Audio
             { return hash_value(x.id()); }
 
         typedef boost::intrusive_ptr<Resource> Handle;
+
+		virtual void handleRequest(const API::Request& request);
 
     protected:
         /// Free the resource. This is called when the resource's reference count
