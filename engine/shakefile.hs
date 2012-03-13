@@ -99,7 +99,7 @@ parseDependencies = drop 2 . words . filter (/= '\\')
 
 staticObject :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 staticObject toolChain build input output = do
-    let dep = input <.> "d"
+    let dep = output <.> "d"
     dependencyFile toolChain build input dep
     output ?=> \_ ->  do
         need [input]
@@ -142,7 +142,7 @@ staticLibrary :: CToolChain -> CBuild -> StaticLibrary -> Rules ()
 staticLibrary toolChain build lib = do
     let buildDir = libBuildDir toolChain build lib
     (build', src) <- sources lib build buildDir
-    let objects = map (combine buildDir . makeRelative buildDir . (<.>) "o") src
+    let objects = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
     zipWithM_ (staticObject toolChain build') src objects
     libBuildPath toolChain build lib ?=> do
         linkC toolChain (build' { linkerFlags = linkerFlags build ++ ["-static"]}) objects
