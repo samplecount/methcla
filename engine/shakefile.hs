@@ -79,7 +79,7 @@ dependencyFile toolChain build input output = do
                 ++ flags_ "-iquote" (userIncludes build)
                 ++ defineFlags build
                 ++ preprocessorFlags build
-                ++ ["-M", "-o", output, input]
+                ++ ["-MM", "-o", output, input]
 
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
