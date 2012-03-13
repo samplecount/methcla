@@ -5,9 +5,9 @@
 #include <boost/optional.hpp>
 #include <iostream>
 #include <limits>
-#include <serd/serd.h>
 #include <utility>
 
+#include "serd/serd.h"
 #include "lv2/lv2plug.in/ns/ext/reference/reference.h"
 
 using namespace boost;

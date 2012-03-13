@@ -155,8 +155,7 @@ serdBuild = cBuild {
     userIncludes = userIncludes cBuild
                 ++ under "external_libraries/lv2/serd-0.5.0" [ ".", "build" ]
   }
-
-serd = StaticLibrary "serd" $ under "external_libraries/lv2/serd-0.5.0/src" [
+serdLib = StaticLibrary "serd" $ under "external_libraries/lv2/serd-0.5.0/src" [
     "env.c"
   , "error.c"
   , "node.c"
@@ -164,27 +163,27 @@ serd = StaticLibrary "serd" $ under "external_libraries/lv2/serd-0.5.0/src" [
   , "uri.c"
   , "writer.c"
   ]
+serd = (serdBuild, serdLib)
 
 sordBuild = cBuild {
     userIncludes = userIncludes cBuild
                 ++ under "external_libraries/lv2"
                     (under "sord-0.5.0" [ ".", "build", "src" ] ++ [ "serd-0.5.0" ])
   }
-
-sord = StaticLibrary "sord" $ under "external_libraries/lv2/sord-0.5.0/src" [
+sordLib = StaticLibrary "sord" $ under "external_libraries/lv2/sord-0.5.0/src" [
     "sord.c"
   , "syntax.c"
   , "zix/hash.c"
   , "zix/tree.c"
   ]
+sord = (sordBuild, sordLib)
 
 lilvBuild = cBuild {
   userIncludes = userIncludes cBuild
               ++ under "external_libraries/lv2"
                   (under "lilv-0.5.0" [ ".", "build", "src" ] ++ [ "serd-0.5.0", "sord-0.5.0" ])
 }
-
-lilv = StaticLibrary "lilv" $ under "external_libraries/lv2/lilv-0.5.0" [
+lilvLib = StaticLibrary "lilv" $ under "external_libraries/lv2/lilv-0.5.0" [
     "src/collections.c"
   , "src/instance.c"
   , "src/node.c"
@@ -198,6 +197,14 @@ lilv = StaticLibrary "lilv" $ under "external_libraries/lv2/lilv-0.5.0" [
   , "src/world.c"
   , "src/zix/tree.c"
   ]
+lilv = (lilvBuild, lilvLib)
+
+boostDir = "external_libraries/boost"
+
+boostBuild = cBuild {
+    systemIncludes = systemIncludes cBuild
+        ++ [ boostDir ]
+  }
 
 mkBoost = do
     src <- find always
@@ -205,26 +212,27 @@ mkBoost = do
               (not . isSuffixOf "win32") <$> directory &&?
               (not . isSuffixOf "test/src") <$> directory &&?
               (fileName /=? "utf8_codecvt_facet.cpp"))
-             "external_libraries/boost"
-    return $ StaticLibrary "boost" src
+             boostDir
+    return (boostBuild, StaticLibrary "boost" src)
 
 mescalineBuild = cBuild {
     userIncludes = userIncludes cBuild
                       ++ ["."]
                       ++ [ "external_libraries" ]
                       ++ [ "/usr/local/include" ] -- Gnargh
+                      ++ under "external_libraries" (under "lv2" ["lilv-0.5.0", "serd-0.5.0", "sord-0.5.0"])
   , systemIncludes = systemIncludes cBuild
       ++ [ "platform/ios", "src" ]
-      ++ under "external_libraries" (concat [ [ "boost", "boost_lockfree" ]
-                                             , under "lv2" ["lilv-0.5.0", "serd-0.5.0", "sord-0.5.0"] ])
+      ++ [ boostDir, "external_libraries/boost_lockfree" ]
   , defines = defines cBuild ++ [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
   , preprocessorFlags = preprocessorFlags cBuild
       ++ [ "-isysroot", platformPrefix cToolChain </> "Developer/SDKs/iPhoneSimulator5.0.sdk" ]
 }
 
-mescaline = StaticLibrary "mescaline" $
+mescalineLib = StaticLibrary "mescaline" $
         under "src" [
             "Mescaline/Audio/AudioBus.cpp"
+          , "Mescaline/Audio/Client.cpp"
           , "Mescaline/Audio/Engine.cpp"
           , "Mescaline/Audio/Group.cpp"
           , "Mescaline/Audio/Node.cpp"
@@ -236,6 +244,8 @@ mescaline = StaticLibrary "mescaline" $
           ]
      ++ under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
      ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
+
+mescaline = (mescalineBuild, mescalineLib)
 
 getShakeOptions :: FilePath -> IO ShakeOptions
 getShakeOptions buildDir = do
@@ -303,14 +313,9 @@ main = do
                 [] -> do
                     boost <- mkBoost
                     shakeIt $ do
-                        staticLibrary cToolChain serdBuild serd
-                        staticLibrary cToolChain sordBuild sord
-                        staticLibrary cToolChain lilvBuild lilv
-                        staticLibrary cToolChain cBuild boost
-                        staticLibrary cToolChain mescalineBuild mescaline
-                        want [ libBuildPath cToolChain serdBuild serd
-                               , libBuildPath cToolChain sordBuild sord
-                               , libBuildPath cToolChain lilvBuild lilv
-                               , libBuildPath cToolChain cBuild boost
-                               , libBuildPath cToolChain mescalineBuild mescaline ]
+                        let libs = [ serd, sord, lilv, boost, mescaline ]
+                            lib = uncurry (staticLibrary cToolChain)
+                            libFile = uncurry (libBuildPath cToolChain)
+                        mapM_ lib libs
+                        want (map libFile libs)
                 ts -> processTargets shakeIt cBuild ts

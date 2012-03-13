@@ -14,9 +14,8 @@
 #include <string>
 #include <vector>
 
-#include <lilv/lilv.h>
+#include "lilv/lilv.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-
 #include "lv2/puesnada.es/ext/rt-instantiate/rt-instantiate.h"
 
 namespace Mescaline { namespace Audio {
