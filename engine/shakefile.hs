@@ -69,6 +69,19 @@ systemLoud cmd args = do
     putNormal $ unwords $ [cmd] ++ args
     system' cmd args
 
+sed :: String -> FilePath -> FilePath -> Action ()
+sed command input output = do
+    need [input]
+    (stdout, stderr) <- systemOutput "sed" ["-e", command, input]
+    writeFile' output stdout
+
+sourceTransform :: (FilePath -> FilePath) -> String -> FilePath -> Rules FilePath
+sourceTransform f cmd input = do
+    let output = f input
+    output ?=> sed cmd input
+    want [output]
+    return output
+
 dependencyFile :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 dependencyFile toolChain build input output = do
     output ?=> \_ -> do
