@@ -124,8 +124,10 @@ linkC toolChain build inputs output = do
 
 data StaticLibrary = StaticLibrary {
     name :: String
-  , sources :: [FilePath]
-  } deriving (Show)
+  , sources :: CBuild -> FilePath -> Rules (CBuild, [FilePath])
+  }
+
+files xs build _ = return (build, xs)
 
 libName :: StaticLibrary -> String
 libName = ("lib"++) . flip replaceExtension "a" . name
@@ -139,10 +141,11 @@ libBuildPath toolChain build lib = buildDir toolChain build </> libName lib
 staticLibrary :: CToolChain -> CBuild -> StaticLibrary -> Rules ()
 staticLibrary toolChain build lib = do
     let buildDir = libBuildDir toolChain build lib
-        objects = map (combine buildDir . flip replaceExtension "o") (sources lib)
-    zipWithM_ (staticObject toolChain build) (sources lib) objects
-    (== (libBuildPath toolChain build lib)) ?> do
-        linkC toolChain (build { linkerFlags = linkerFlags build ++ ["-static"]}) objects
+    (build', src) <- sources lib build buildDir
+    let objects = map (combine buildDir . makeRelative buildDir . (<.>) "o") src
+    zipWithM_ (staticObject toolChain build') src objects
+    libBuildPath toolChain build lib ?=> do
+        linkC toolChain (build' { linkerFlags = linkerFlags build ++ ["-static"]}) objects
 
 cToolChain = CToolChain {
     platform = "iOS-Simulator"
@@ -164,11 +167,13 @@ cBuild = CBuild {
   , linkerFlags = []
   }
 
+serdDir = "external_libraries/serd-0.5.0"
+
 serdBuild = cBuild {
-    userIncludes = userIncludes cBuild
-                ++ under "external_libraries/lv2/serd-0.5.0" [ ".", "build" ]
+    userIncludes = userIncludes cBuild ++ [ serdDir, "external_libraries" ]
   }
-serdLib = StaticLibrary "serd" $ under "external_libraries/lv2/serd-0.5.0/src" [
+
+serdLib = StaticLibrary "serd" $ files $ under (serdDir </> "src") [
     "env.c"
   , "error.c"
   , "node.c"
@@ -176,40 +181,59 @@ serdLib = StaticLibrary "serd" $ under "external_libraries/lv2/serd-0.5.0/src" [
   , "uri.c"
   , "writer.c"
   ]
+
 serd = (serdBuild, serdLib)
 
+sordDir = "external_libraries/sord-0.5.0"
+
 sordBuild = cBuild {
-    userIncludes = userIncludes cBuild
-                ++ under "external_libraries/lv2"
-                    (under "sord-0.5.0" [ ".", "build", "src" ] ++ [ "serd-0.5.0" ])
+    userIncludes = userIncludes cBuild ++ [ sordDir, sordDir </> "src", serdDir, "external_libraries" ]
   }
-sordLib = StaticLibrary "sord" $ under "external_libraries/lv2/sord-0.5.0/src" [
+
+-- sordLib = StaticLibrary "sord" $ \build buildDir -> do
+--     let transFiles = under (sordDir </> "src") [
+--                         "sord.c"
+--                      ,  "zix/tree.h"    
+--                      ,  "zix/tree.c" ]
+--         srcFiles = under (sordDir </> "src") [
+--                         "syntax.c"
+--                       , "zix/hash.c" ]
+--     -- FIXME: This is dependent on rule execution order!
+--     want [buildDir </> sordDir </> "src/zix/tree.h"]
+--     srcFiles' <- mapM (sourceTransform (combine buildDir) "s/zix_tree_/sord_zix_tree_/g") transFiles
+--     return ( build { userIncludes = userIncludes build ++ [buildDir </> sordDir </> "src"] }
+--            , srcFiles ++ (filter ((== ".c").takeExtension) srcFiles') )
+
+sordLib = StaticLibrary "sord" $ files $ under (sordDir </> "src") [
     "sord.c"
   , "syntax.c"
-  , "zix/hash.c"
   , "zix/tree.c"
+  , "zix/hash.c"
   ]
+
 sord = (sordBuild, sordLib)
 
+lilvDir = "external_libraries/lilv-0.5.0"
+
 lilvBuild = cBuild {
-  userIncludes = userIncludes cBuild
-              ++ under "external_libraries/lv2"
-                  (under "lilv-0.5.0" [ ".", "build", "src" ] ++ [ "serd-0.5.0", "sord-0.5.0" ])
-}
-lilvLib = StaticLibrary "lilv" $ under "external_libraries/lv2/lilv-0.5.0" [
-    "src/collections.c"
-  , "src/instance.c"
-  , "src/node.c"
-  , "src/plugin.c"
-  , "src/pluginclass.c"
-  , "src/port.c"
-  , "src/query.c"
-  , "src/scalepoint.c"
-  , "src/ui.c"
-  , "src/util.c"
-  , "src/world.c"
-  , "src/zix/tree.c"
+  userIncludes = userIncludes cBuild ++ [ lilvDir, lilvDir </> "src", serdDir, sordDir, "external_libraries" ]
+  }
+
+lilvLib = StaticLibrary "lilv" $ files $ under (lilvDir </> "src") [
+    "collections.c"
+  , "instance.c"
+  , "node.c"
+  , "plugin.c"
+  , "pluginclass.c"
+  , "port.c"
+  , "query.c"
+  , "scalepoint.c"
+  , "ui.c"
+  , "util.c"
+  , "world.c"
+  , "zix/tree.c"
   ]
+
 lilv = (lilvBuild, lilvLib)
 
 boostDir = "external_libraries/boost"
@@ -226,14 +250,14 @@ mkBoost = do
               (not . isSuffixOf "test/src") <$> directory &&?
               (fileName /=? "utf8_codecvt_facet.cpp"))
              boostDir
-    return (boostBuild, StaticLibrary "boost" src)
+    return (boostBuild, StaticLibrary "boost" $ files src)
 
 mescalineBuild = cBuild {
     userIncludes = userIncludes cBuild
                       ++ ["."]
                       ++ [ "external_libraries" ]
                       ++ [ "/usr/local/include" ] -- Gnargh
-                      ++ under "external_libraries" (under "lv2" ["lilv-0.5.0", "serd-0.5.0", "sord-0.5.0"])
+                      ++ [ lilvDir, serdDir, sordDir ]
   , systemIncludes = systemIncludes cBuild
       ++ [ "platform/ios", "src" ]
       ++ [ boostDir, "external_libraries/boost_lockfree" ]
@@ -243,7 +267,7 @@ mescalineBuild = cBuild {
 }
 
 mescalineLib = StaticLibrary "mescaline" $
-        under "src" [
+        files $ under "src" [
             "Mescaline/Audio/AudioBus.cpp"
           , "Mescaline/Audio/Client.cpp"
           , "Mescaline/Audio/Engine.cpp"
