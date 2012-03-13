@@ -86,11 +86,8 @@ parseDependencies = drop 2 . words . filter (/= '\\')
 
 staticObject :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 staticObject toolChain build input output = do
-    let dep = replaceExtension output "d"
+    let dep = input <.> "d"
     dependencyFile toolChain build input dep
-        need [input, dep]
-        deps <- parseDependencies <$> readFile' dep
-        need deps
     output ?=> \_ ->  do
         need [input]
         need =<< parseDependencies <$> readFile' dep
