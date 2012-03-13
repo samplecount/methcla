@@ -6,7 +6,6 @@ import           Development.Shake.FilePath
 import           Data.Lens.Common
 import           Data.Lens.Template
 import           Data.List (intersperse, isInfixOf, isSuffixOf)
-import           Data.List.Split
 import           Data.Maybe
 import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
@@ -80,8 +79,7 @@ dependencyFile toolChain build input output = do
                 ++ ["-M", "-o", output, input]
 
 parseDependencies :: String -> [FilePath]
-parseDependencies = map (normalise.rstrip) . filter (\s -> not (null s) && s /= "\\\n") . drop 2 . splitOn " "
-    where rstrip = reverse . dropWhile (=='\n') . reverse
+parseDependencies = drop 2 . words . filter (/= '\\')
 
 staticObject :: CToolChain -> CBuild -> FilePath -> FilePath -> Rules ()
 staticObject toolChain build input output = do
