@@ -2,6 +2,7 @@
 #include "drawbuffer.hpp"
 #include "scope.hpp"
 
+#include <Mescaline/Audio/Client.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/IO/RemoteIODriver.hpp>
 #include <Mescaline/Audio/Group.hpp>
