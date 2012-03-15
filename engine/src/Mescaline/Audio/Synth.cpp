@@ -22,6 +22,13 @@ Synth::Synth( Environment& env
     for (size_t i=0; i < numAudioOutputs(); i++) {
         m_audioOutputConnections.push_back(audioOutputConnections[i]);
     }
+    // Check for control input triggers
+    for (size_t i=0; i < numControlInputs(); i++) {
+        if (m_synthDef.controlInputSpec(i).flags & kMescalineControlTrigger) {
+            m_flags.set(kHasTriggerInput);
+            break;
+        }
+    }
 }
 
 Synth::~Synth()
@@ -175,5 +182,14 @@ void Synth::process(size_t numFrames)
         ; it++ )
     {
         it->write(env, numFrames, outputBuffers[it->index()]);
+    }
+
+    // Reset triggers
+    if (m_flags.test(kHasTriggerInput)) {
+        for (size_t i=0; i < numControlInputs(); i++) {
+            if (synthDef().controlInputSpec(i).flags & kMescalineControlTrigger) {
+                *controlInput(i) = 0.f;
+            }
+        }
     }
 }

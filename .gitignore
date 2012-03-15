@@ -1,3 +1,5 @@
+*.mode1v3
+*.pbxuser
 /engine/external_libraries/boost/include
 /engine/external_libraries/boost/lib
 /engine/MescalineMobile/build

@@ -27,13 +27,27 @@ public:
     size_t instanceSize      () const { return m_def->instanceSize;       }
     size_t instanceAlignment () const { return m_def->instanceAlignment;  }
     
-    size_t numAudioInputs    () const { return m_def-> numAudioInputs;    }
-    size_t numAudioOutputs   () const { return m_def-> numAudioOutputs;   }
-    size_t numControlInputs  () const { return m_def-> numControlInputs;  }
-    size_t numControlOutputs () const { return m_def-> numControlOutputs; }
-    
+    size_t numAudioInputs    () const { return m_def->numAudioInputs;    }
+    size_t numAudioOutputs   () const { return m_def->numAudioOutputs;   }
+    size_t numControlInputs  () const { return m_def->numControlInputs;  }
+    size_t numControlOutputs () const { return m_def->numControlOutputs; }
+
     void initialize() { (*m_def->fInitialize)(m_host, m_def); }
     void cleanup() { (*m_def->fCleanup)(m_host, m_def); }
+
+    const MescalineControlSpec& controlInputSpec(size_t index) const
+    {
+        const MescalineControlSpec* spec = MescalineSynthDefGetControlInputSpec(m_def, index);
+        BOOST_ASSERT( spec != 0 );
+        return *spec;
+    }
+
+    const MescalineControlSpec& controlOutputSpec(size_t index) const
+    {
+        const MescalineControlSpec* spec = MescalineSynthDefGetControlOutputSpec(m_def, index);
+        BOOST_ASSERT( spec != 0 );
+        return *spec;
+    }
 
     void construct(MescalineSynth* instance) const
     {
@@ -61,20 +75,20 @@ public:
 
     const SynthDef& lookup(const char* name) const
     {
-		// TODO: error handling
+        // TODO: error handling
         return *m_map.at(name);
     }
 
-	// TODO: Use reference count for SynthDefs and implement delete/overwrite
-	// TODO: Use 4-byte aligned symbols for faster lookups
+    // TODO: Use reference count for SynthDefs and implement delete/overwrite
+    // TODO: Use 4-byte aligned symbols for faster lookups
 
 private:
     typedef boost::unordered_map<
-				const char*
-			  , const SynthDef*
-			  , Mescaline::Utility::Hash::string_hash
-			  , Mescaline::Utility::Hash::string_equal_to >
-			Map;
+                const char*
+              , const SynthDef*
+              , Mescaline::Utility::Hash::string_hash
+              , Mescaline::Utility::Hash::string_equal_to >
+            Map;
     Map m_map;
 };
 

@@ -183,14 +183,10 @@ namespace Mescaline { namespace Audio
         }
 
     private:
-        static PluginInterface* cast(MescalineHost* self)
-            { return reinterpret_cast<PluginInterface*>(self); }
-        static const PluginInterface* cast_const(const MescalineHost* self)
-            { return reinterpret_cast<const PluginInterface*>(self); }
         static unsigned int GetSampleRate(const MescalineHost* self)
-            { return cast_const(self)->m_env.sampleRate(); }
+            { return static_cast<const PluginInterface*>(self)->m_env.sampleRate(); }
         static void RegisterSynthDef(MescalineHost* self, MescalineSynthDef* synthDef)
-            { cast(self)->m_env.registerSynthDef(new SynthDef(self, synthDef)); }
+            { static_cast<PluginInterface*>(self)->m_env.registerSynthDef(new SynthDef(self, synthDef)); }
 
     private:
         Environment& m_env;

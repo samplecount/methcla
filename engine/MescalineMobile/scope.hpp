@@ -27,7 +27,7 @@ namespace Mescaline { namespace Audio
     {
     public:
         ScopeSynthDef()
-            : Plugin::SynthDef<ScopeSynth>("scope", 1, 0, 0, 0)
+            : Plugin::SynthDef<ScopeSynth>("scope", 1, 0)
         { }
     };
 }; };
