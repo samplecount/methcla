@@ -6,6 +6,7 @@
 *.o
 *.pbxuser
 *.pyc
+/engine/.shake.database
 /engine/build
 /engine/external_libraries/boost/include
 /engine/external_libraries/boost/lib
