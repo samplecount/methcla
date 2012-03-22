@@ -40,3 +40,5 @@ See [IBM Inside memory management](http://www.ibm.com/developerworks/linux/libra
 Here's an implementation of an [AtomicDouble](http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/jsr166e/extra/AtomicDouble.java?view=markup) in Java by Doug Lea, useful as a synchronization primitive for control buses, where a spinlock would be overkill.
 
 Here's an [interesting document](http://download.intel.com/technology/itj/2007/v11i4/5-foundations/5-Foundations_for_Scalable_Multi-core_Software.pdf) about Intel's [Threading Building Blocks](http://threadingbuildingblocks.org/) (including a scalable memory allocator).
+
+Some [notes](http://stackoverflow.com/questions/3640853/performance-test-sem-t-v-s-dispatch-semaphore-t-and-pthread-once-t-v-s-dispat) about `sem_post` and `dispatch_semaphore` on osx, and the manual page for [`dispatch_semaphore_create`](http://developer.apple.com/library/mac/#documentation/Darwin/Reference/Manpages/man3/dispatch_semaphore_create.3.html).
