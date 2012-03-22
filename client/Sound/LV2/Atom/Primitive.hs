@@ -17,6 +17,7 @@ import           Foreign.ForeignPtr
 import           Foreign.Ptr
 import           Foreign.Storable (Storable)
 import qualified Foreign.Storable as S
+import           Sound.LV2.Atom.Class
 
 -- From Data.Serialize.Get (cereal)
 castByteString :: (Storable a) => Word32 -> ByteString -> a
@@ -26,7 +27,7 @@ castByteString n b =
         k p = S.peek (castPtr (p `plusPtr` o))
     in B.inlinePerformIO (withForeignPtr fp k)
 
-class Primitive a where
+class Atom a => Primitive a where
     sizeOf :: a -> Word32
     toBuilder :: a -> Builder
     fromByteString :: ByteString -> a

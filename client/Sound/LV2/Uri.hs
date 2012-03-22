@@ -1,14 +1,19 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving, OverloadedStrings, TypeSynonymInstances #-}
 module Sound.LV2.Uri (
     Uri
+  , fromText
   , Urid
   , Map(..)
+  , Unmap(..)
   , base
   , int32
   , int64
   , bool
   , float
   , double
+  , string
+  , path
+  , uri
   , tuple
   , vector
   -- , object
@@ -19,14 +24,21 @@ module Sound.LV2.Uri (
   , evalPureMap
 ) where
 
-import Control.Monad
-import Control.Monad.Trans.Class (MonadTrans)
-import Control.Monad.Trans.Control (MonadTransControl)
+import           Control.Monad
+import           Control.Monad.Trans.Class (MonadTrans)
+import           Control.Monad.Trans.Control (MonadTransControl)
 import qualified Data.Map as Map
-import Data.Word
+import           Data.String (IsString)
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           Data.Word
 import qualified Control.Monad.Trans.State.Strict as S
 
-type Uri = String
+newtype Uri = Uri { toText :: Text } deriving (Eq, IsString, Ord, Show)
+
+fromText :: Text -> Uri
+fromText = Uri
+
 type Urid = Word32
 
 class Monad m => Map m where
@@ -36,10 +48,10 @@ class Monad m => Unmap m where
     unmap :: Urid -> m (Maybe Uri)
 
 base :: Uri
-base = "http://lv2plug.in/ns/ext/atom"
+base = fromText "http://lv2plug.in/ns/ext/atom"
 
-prefix :: String -> Uri
-prefix s = base ++ "#" ++ s
+prefix :: Text -> Uri
+prefix s = fromText $ toText base `T.append` "#" `T.append` s
 
 int32, int64, bool, float, double :: Uri
 int32  = prefix "Int32"
@@ -47,6 +59,11 @@ int64  = prefix "Int64"
 bool   = prefix "Bool"
 float  = prefix "Float"
 double = prefix "Double"
+
+string, path, uri :: Uri
+string = prefix "String"
+path   = prefix "Path"
+uri    = prefix "URI"
 
 tuple, vector :: Uri
 tuple  = prefix "Tuple"

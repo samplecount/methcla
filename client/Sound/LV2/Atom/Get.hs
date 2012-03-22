@@ -11,7 +11,11 @@ import           Control.Monad.Trans.Class (lift)
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Binary as CB
+import qualified Data.Conduit.Text as CT
 import qualified Data.HashMap.Strict as H
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Traversable as T
 import           Data.Typeable (Typeable)
 -- import Data.Attoparsec.Binary
 import qualified Data.ByteString as B
@@ -20,12 +24,18 @@ import qualified Data.ByteString.Lazy as BL
 import           Data.Int (Int32, Int64)
 import qualified Data.Vector.Storable as V
 import           Data.Word
+import           Sound.LV2.Atom.Class
+import           Sound.LV2.Atom.Object (Object)
+import qualified Sound.LV2.Atom.Object as Object
 import           Sound.LV2.Atom.Primitive
 import           Sound.LV2.Atom.Util
 import           Sound.LV2.Uri (Uri, Urid)
 import qualified Sound.LV2.Uri as Uri
+import qualified Sound.LV2.Uri.Cache as Cache
 import           Foreign.ForeignPtr (castForeignPtr)
 import           Foreign.Storable (Storable)
+
+import Debug.Trace
 
 data ParseException = ParseException String
     deriving (Show, Typeable)
@@ -34,7 +44,7 @@ instance Exception ParseException
 
 type Get m a = C.Sink B.ByteString m a
 
-class Uri.Map m => FromAtom m a where
+class FromAtom m a where
     fromAtom :: Get m a
 
 -- | Get a number of bytes as a strict 'ByteString'.
@@ -46,8 +56,8 @@ bytes = liftM (B.concat . BL.toChunks) . CB.take . fromIntegral
 primitive_ :: forall m a . (Monad m, Primitive a) => Get m a
 primitive_ = liftM fromByteString (bytes (sizeOf (undefined::a)))
 
-word32_ :: Monad m => Get m Word32
-word32_ = primitive_
+word32 :: Monad m => Get m Word32
+word32 = primitive_
 
 atomBytes :: Monad m => Get m BL.ByteString
 atomBytes = do
@@ -60,84 +70,87 @@ atomBytes = do
 
 header :: Monad m => Get m (Urid, Word32)
 header = do
-    size <- word32_
-    urid <- word32_
+    size <- word32
+    urid <- word32
     return $! (urid, size)
 
+-- | Align to the next alignment boundary.
 align :: Monad m => Word32 -> Get m ()
 align n = CB.take (fromIntegral (padding n)) >> return ()
 
+-- | Throw an exception.
 throw :: C.MonadThrow m => Exception e => e -> Get m a
 throw = lift . C.monadThrow
 
-next :: (C.MonadThrow m, Uri.Map m) => (Urid -> Bool) -> (Word32 -> Get m a) -> Get m a
+next :: (C.MonadThrow m, Uri.Map m) => (Urid -> Bool) -> (Urid -> Word32 -> Get m a) -> Get m a
 next uriP f = do
     -- ui <- urid uri
-    (ui', sz) <- header
-    unless (uriP ui') $
+    (ui, sz) <- header
+    unless (uriP ui) $
         throw $ ParseException
-              $ "Invalid URID " ++ show ui'
-    a <- CB.isolate (fromIntegral sz) C.=$ f sz
+              $ "Invalid URID " ++ show ui
+    a <- CB.isolate (fromIntegral sz) C.=$ f ui sz
     align sz
     return a
-
--- primitiveBody :: forall m a . (C.MonadResource m, Primitive a) => Get m a
--- primitiveBody = do
---     a <- primitive_
---     align (sizeOf (undefined :: a))
---     return a
-
-primitive :: forall m a . (C.MonadThrow m, Uri.Map m, Primitive a) => Uri -> Get m a
-primitive uri = do
-    ui <- urid uri
-    next (==ui) $ \sz' -> do
-        let sz = fromIntegral (sizeOf (undefined :: a))
-        when (sz' /= sz) $
-            throw $ ParseException
-                  $ "Invalid size " ++ show sz' ++ ", expected " ++ show sz ++ " (" ++ uri ++ ")"
-        primitive_
-
--- primitive uri = do
---     ui <- urid uri
---     let sz = fromIntegral (sizeOf (undefined :: a))
---     (ui', sz') <- header
---     when (ui' /= ui) $
---         lift $ C.resourceThrow (ParseException $ "Invalid URID " ++ show ui' ++ ", expected " ++ show ui ++ " (" ++ uri ++ ")")
---     when (sz' /= sz) $
---         lift $ C.resourceThrow (ParseException $ "Invalid size " ++ show sz' ++ ", expected " ++ show sz ++ " (" ++ uri ++ ")")
---     primitiveBody
 
 urid :: Uri.Map m => Uri -> Get m Urid
 urid = lift . Uri.map
 
-int32 :: (C.MonadThrow m, Uri.Map m) => Get m Int32
-int32 = primitive Uri.int32
+primitive :: forall m a . (C.MonadThrow m, Uri.Map m, Primitive a) => Get m a
+primitive = do
+    ui <- urid (atomUri (undefined::a))
+    next (==ui) $ \_ sz' -> do
+        let sz = fromIntegral (sizeOf (undefined :: a))
+        when (sz' /= sz) $
+            throw $ ParseException
+                  $ "Invalid size " ++ show sz' ++ ", expected " ++ show sz -- ++ " (" ++ show uri ++ ")"
+        primitive_
 
-int64 :: (C.MonadThrow m, Uri.Map m) => Get m Int64
-int64 = primitive Uri.int64
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Int32 where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Int64 where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Word32 where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Word64 where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Bool where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Float where
+    fromAtom = primitive
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Double where
+    fromAtom = primitive
 
-bool :: (C.MonadThrow m, Uri.Map m) => Get m Bool
-bool = primitive Uri.bool
+stringOf :: (C.MonadThrow m, Uri.Map m) => Uri -> Get m Text
+stringOf uri = do
+    ui <- urid uri
+    next (==ui) $ \_ sz -> do
+        ts <- (CB.isolate (fromIntegral sz - 1) C.=$= CT.decode CT.utf8) C.=$ CL.consume
+        return $! traceShow (Text.concat ts) (Text.concat ts)
 
-float :: (C.MonadThrow m, Uri.Map m) => Get m Float
-float = primitive Uri.float
-
-double :: (C.MonadThrow m, Uri.Map m) => Get m Double
-double = primitive Uri.double
+instance (C.MonadThrow m, Uri.Map m) => FromAtom m Text where
+    fromAtom = stringOf Uri.string
 
 -- tuple :: (C.MonadThrow m, Uri.Map m) => Get m [Get m ()]
+instance (C.MonadThrow m, Uri.Map m, FromAtom m a1, FromAtom m a2) => FromAtom m (a1, a2) where
+    fromAtom = do
+        ui <- urid Uri.tuple
+        next (==ui) $ \_ _ -> do
+            a1 <- fromAtom
+            a2 <- fromAtom
+            return (a1, a2)
 
-vector :: forall m a . (C.MonadThrow m, Uri.Map m, Storable a, Primitive a) => Uri -> Get m (V.Vector a)
-vector uri = do
+vectorOf :: forall m a . (C.MonadThrow m, Uri.Map m, Atom a, Primitive a, Storable a) => a -> Get m (V.Vector a)
+vectorOf _ = do
     ui <- urid Uri.vector
-    next (==ui) $ \sz -> do
-        elSize' <- word32_
-        elType' <- word32_
+    next (==ui) $ \_ sz -> do
+        elSize' <- word32
+        elType' <- word32
 
-        elType <- urid uri
+        elType <- urid (atomUri (undefined :: a))
         when (elType' /= elType) $
             throw $ ParseException
-                  $ "Invalid vector element type " ++ show elType' ++ ", expected " ++ show elType ++ " (" ++ uri ++ ")"
+                  $ "Invalid vector element type " ++ show elType' ++ ", expected " ++ show elType -- ++ " (" ++ show uri ++ ")"
 
         let elSize = sizeOf (undefined :: a)
         when (elSize' /= elSize) $
@@ -150,71 +163,68 @@ vector uri = do
             (o, r) = fromIntegral bo `divMod` elSize
         if r == 0
             then if o == 0
-                 then return $! V.unsafeFromForeignPtr (castForeignPtr fp) (fromIntegral o) (fromIntegral n)
+                 then return $! V.unsafeFromForeignPtr0 (castForeignPtr fp) (fromIntegral n)
                  else return $! V.unsafeFromForeignPtr (castForeignPtr fp) (fromIntegral o) (fromIntegral n)
             else throw $ ParseException
                        $ "Whoops, unaligned vector offset, call your doctor"
 
-vectorFloat :: (C.MonadThrow m, Uri.Map m) => Get m (V.Vector Float)
-vectorFloat = vector Uri.float
+instance (C.MonadThrow m, Uri.Map m, Atom a, Primitive a, Storable a) => FromAtom m (V.Vector a) where
+    fromAtom = vectorOf (undefined::a)
+instance (C.MonadThrow m, Uri.Map m, Atom a, Primitive a, Storable a) => FromAtom m [a] where
+    fromAtom = liftM V.toList fromAtom
 
-vectorDouble :: (C.MonadThrow m, Uri.Map m) => Get m (V.Vector Double)
-vectorDouble = vector Uri.double
-
--- instance (C.MonadThrow m, Uri.Map m) => FromAtom m Int32 where
---     fromAtom = int32
--- instance (C.MonadThrow m, Uri.Map m) => FromAtom m Word32 where
---     fromAtom = int32
-
-data ObjectId = Blank Urid Urid | Resource Urid Urid
-
-data Object = Object {
-    objId :: ObjectId
-  , objProps :: H.HashMap (Maybe Urid, Urid) BL.ByteString
-  }
-
-(.:?) :: (Uri.Map m, FromAtom m a) => Object -> Uri -> Get m (Maybe a)
-obj .:? uri = do
-    ui <- urid uri
-    case H.lookup (Nothing, ui) (objProps obj) of
+(.:?) :: (Uri.Map m, FromAtom m a) => Object BL.ByteString -> Object.Key -> Get m (Maybe a)
+obj .:? key = do
+    case Object.lookup key obj of
         Nothing -> return Nothing
-        Just b -> liftM Just $ lift $ CL.sourceList (BL.toChunks b) C.$$ fromAtom
+        Just b -> liftM Just $ lift $ decode fromAtom b
 
-class Uri.Map m => FromObject m a where
-    fromObject :: Object -> Get m a
+class FromObject m a where
+    fromObject :: Object BL.ByteString -> Get m a
 
-propertyBody :: Monad m => Get m ((Maybe Urid, Urid), BL.ByteString)
+instance Monad m => FromObject m (Object BL.ByteString) where
+    fromObject = return
+
+propertyBody :: Monad m => Get m (Object.Key, BL.ByteString)
 propertyBody = do
-    c <- word32_
-    k <- word32_
+    c <- word32
+    k <- word32
     b <- atomBytes
-    return $! ((if c == 0 then Nothing else Just c, k), b)
+    return $! ((c, k), b)
 
 object :: (C.MonadThrow m, Uri.Map m, FromObject m a) => Get m a
 object = do
     resourceId <- urid Uri.resource
     blankId <- urid Uri.blank
-    next (\x -> x == resourceId || x == blankId) $ \sz -> do
-        id' <- word32_
-        otype' <- word32_
+    next (\x -> x == resourceId || x == blankId) $ \ui sz -> do
+        oid <- word32
+        otype <- word32
         let n = sz - 2 * sizeOf (undefined :: Word32)
         ps <- CB.isolate (fromIntegral n) C.=$ props []
-        return undefined
+        fromObject $! Object.fromList
+                    (if ui == resourceId then Object.Resource else Object.Blank)
+                    oid otype ps
     where
         props ps = do
             m <- CL.peek
             case m of
-                Nothing -> return ps
+                Nothing ->
+                    return $! ps
                 Just _ -> do
                     p <- propertyBody
-                    return $! p:ps
+                    props $! p:ps
 
-decode :: (C.MonadThrow m, Uri.Map m) => Get m a -> B.ByteString -> m a
--- decode p b = P.eitherResult $ P.feed (P.parse p b) ""
-decode a b = -- runST
-           -- $ runExceptionT
-            -- C.runResourceT
-           CL.sourceList [b]
-          C.$$ a
+objectOf :: (C.MonadThrow m, Uri.Map m, FromAtom m a) => a -> Get m (Object a)
+objectOf _ = object >>= T.mapM (lift . decode fromAtom)
 
--- Data.Conduit.runResourceT $ Uri.runPureMap $ (encode (toAtom [(pi::Double), 1, 2, 3])) >>= Sound.LV2.Atom.Get.decode (Sound.LV2.Atom.Get.vectorDouble)
+instance (C.MonadThrow m, Uri.Map m, FromAtom m a) => FromAtom m (Object a) where
+    fromAtom = objectOf (undefined :: a)
+
+decode :: Monad m => Get m a -> BL.ByteString -> m a
+decode a b = CL.sourceList (BL.toChunks b) C.$$ a
+
+decode' :: Monad m => Get m a -> B.ByteString -> m a
+decode' a b = CL.sourceList [b] C.$$ a
+
+-- Uri.evalPureMap $ (encode (toAtom [(pi::Double), 1, 2, 3])) >>= Sound.LV2.Atom.Get.decode (Sound.LV2.Atom.Get.vectorDouble)
+-- Uri.evalPureMap $ (encode (toAtom (Sound.LV2.Atom.Object.fromList Sound.LV2.Atom.Object.Blank 1 2 [((0,4), [pi::Float]),((0,5),[1.2])]))) >>= Sound.LV2.Atom.Get.decode' (Sound.LV2.Atom.Get.objectOf (undefined :: Float))
