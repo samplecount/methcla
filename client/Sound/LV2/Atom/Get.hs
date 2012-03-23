@@ -208,7 +208,7 @@ object = do
     next (\x -> x == resourceId || x == blankId) $ \ui sz -> do
         oid <- word32
         otype <- word32
-        let n = sz - 2 * sizeOf (undefined :: Word32)
+        let n = pad sz - 2 * sizeOf (undefined :: Word32)
         ps <- CB.isolate (fromIntegral n) C.=$ props []
         fromObject $! Object.fromList
                     (if ui == resourceId then Object.Resource else Object.Blank)
