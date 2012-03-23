@@ -162,7 +162,8 @@ vectorOf _ = do
             throw $ ParseException
                   $ "Invalid vector element size " ++ show elSize' ++ ", expected " ++ show elSize
 
-        b <- bytes sz
+        b <- bytes (sz - 2*sizeOf (undefined::Word32))
+        align sz
         let (fp, bo, _) = B.toForeignPtr b
             n = (sz - headerSize) `div` elSize
             (o, r) = fromIntegral bo `divMod` elSize
