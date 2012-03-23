@@ -49,14 +49,19 @@ class FromAtom m a where
 
 -- | Get a number of bytes as a strict 'ByteString'.
 -- FIXME: How to make the lazy to strict conversion more efficient?
-bytes :: Monad m => Word32 -> Get m B.ByteString
-bytes = liftM (B.concat . BL.toChunks) . CB.take . fromIntegral
+bytes :: C.MonadThrow m => Word32 -> Get m B.ByteString
+bytes n = do
+    b <- liftM (B.concat . BL.toChunks) . CB.take . fromIntegral $ n
+    unless (fromIntegral n == B.length b) $
+        throw $ ParseException
+              $ "Need " ++ show n ++ " bytes, got " ++ show (B.length b)
+    return b
 
 -- FIXME: How to solve this without ScopedTypeVariables?
-primitive_ :: forall m a . (Monad m, Primitive a) => Get m a
+primitive_ :: forall m a . (C.MonadThrow m, Primitive a) => Get m a
 primitive_ = liftM fromByteString (bytes (sizeOf (undefined::a)))
 
-word32 :: Monad m => Get m Word32
+word32 :: C.MonadThrow m => Get m Word32
 word32 = primitive_
 
 atomBytes :: Monad m => Get m BL.ByteString
@@ -64,11 +69,11 @@ atomBytes = do
     let n = sizeOf (undefined :: Word32)
     sizeBytes <- CB.take (fromIntegral n)
     let size = castByteString n (B.concat (BL.toChunks sizeBytes))
-    bytes <- CB.take (fromIntegral (sizeOf (undefined :: Urid) + size))
-    align (headerSize + size)
+    bytes <- CB.take (fromIntegral (sizeOf (undefined :: Urid) + pad size))
+    -- align (headerSize + size)
     return $! sizeBytes `BL.append` bytes
 
-header :: Monad m => Get m (Urid, Word32)
+header :: C.MonadThrow m => Get m (Urid, Word32)
 header = do
     size <- word32
     urid <- word32
@@ -185,7 +190,7 @@ class FromObject m a where
 instance Monad m => FromObject m (Object BL.ByteString) where
     fromObject = return
 
-propertyBody :: Monad m => Get m (Object.Key, BL.ByteString)
+propertyBody :: C.MonadThrow m => Get m (Object.Key, BL.ByteString)
 propertyBody = do
     c <- word32
     k <- word32
