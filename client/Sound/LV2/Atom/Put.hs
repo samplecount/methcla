@@ -63,13 +63,13 @@ putUrid = append . fromWord32host
 header :: Monad m => Urid -> Word32 -> Put m ()
 header urid size = append (fromWord32host size `mappend` fromWord32host urid)
 
-pad :: Monad m => Word32 -> Put m ()
-pad n = append (go n)
+zeroPad :: Monad m => Word32 -> Put m ()
+zeroPad n = append (go n)
     where go 0 = mempty
           go n = fromWrite (writeWord8 0) `mappend` go (n-1)
 
 build :: Monad m => Urid -> Word32 -> Builder -> Put m ()
-build urid size builder = header urid size >> append builder >> pad (padding size)
+build urid size builder = header urid size >> append builder >> zeroPad (padding size)
 
 build' :: Monad m => Urid -> Builder -> Put m ()
 build' urid builder = build urid n (fromLazyByteString b)

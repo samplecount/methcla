@@ -7,10 +7,14 @@ import Data.Word
 alignment :: Word32
 alignment = 8
 
+{-# INLINE pad #-}
+pad :: Word32 -> Word32
+pad size = (size + mask) .&. (complement mask)
+    where mask = alignment - 1
+
 {-# INLINE padding #-}
 padding :: Word32 -> Word32
-padding size = (size + mask) .&. (complement mask) - size
-    where mask = alignment - 1
+padding size = pad size - size
 
 headerSize :: Word32
 headerSize = 8
