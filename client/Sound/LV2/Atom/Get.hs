@@ -130,8 +130,11 @@ stringOf :: (C.MonadThrow m, Uri.Map m) => Uri -> Get m Text
 stringOf uri = do
     ui <- urid uri
     next (==ui) $ \_ sz -> do
+        let n = sz - 1
         ts <- (CB.isolate (fromIntegral sz - 1) C.=$= CT.decode CT.utf8) C.=$ CL.consume
-        return $! traceShow (Text.concat ts) (Text.concat ts)
+        CB.take 1
+        align sz
+        return $! Text.concat ts
 
 instance (C.MonadThrow m, Uri.Map m) => FromAtom m Text where
     fromAtom = stringOf Uri.string
