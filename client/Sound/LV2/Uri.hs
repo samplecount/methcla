@@ -1,8 +1,14 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving, OverloadedStrings, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances
+           , GeneralizedNewtypeDeriving
+           , MultiParamTypeClasses
+           , TypeSynonymInstances #-}
 module Sound.LV2.Uri (
     Uri
   , fromText
   , Urid
+  , fromWord32
+  , toWord32
+  , ToUrid(..)
   , Map(..)
   , Unmap(..)
   , base
@@ -27,19 +33,32 @@ module Sound.LV2.Uri (
 import           Control.Monad
 import           Control.Monad.Trans.Class (MonadTrans)
 import           Control.Monad.Trans.Control (MonadTransControl)
+import           Data.Hashable (Hashable)
 import qualified Data.Map as Map
 import           Data.String (IsString)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Word
 import qualified Control.Monad.Trans.State.Strict as S
+import           Prelude hiding (map)
 
-newtype Uri = Uri { toText :: Text } deriving (Eq, IsString, Ord, Show)
+newtype Uri = Uri { toText :: Text } deriving (Eq, Hashable, IsString, Ord, Show)
 
 fromText :: Text -> Uri
 fromText = Uri
 
-type Urid = Word32
+newtype Urid = Urid { toWord32 :: Word32 } deriving (Eq, Hashable, Ord, Show)
+
+fromWord32 :: Word32 -> Urid
+fromWord32 = Urid
+
+class Map m => ToUrid m a where
+    toUrid :: a -> m Urid
+
+instance Map m => ToUrid m Uri where
+    toUrid = map
+instance Map m => ToUrid m Urid where
+    toUrid = return
 
 class Monad m => Map m where
     map :: Uri -> m Urid
@@ -86,7 +105,7 @@ instance Monad m => Map (PureMap m) where
         case Map.lookup u mf of
             Just ui -> return ui
             Nothing -> do
-                let !ui = fromIntegral (Map.size mf) + 1
+                let !ui = fromWord32 $ fromIntegral (Map.size mf) + 1
                     !mf' = Map.insert u ui mf
                     !mt' = Map.insert ui u mt
                 S.put (mf', mt')

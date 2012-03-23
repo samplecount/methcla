@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 module Sound.LV2.Atom.Put where
 
-import           Blaze.ByteString.Builder
+import           Blaze.ByteString.Builder as Builder
 import           Blaze.ByteString.Builder.Char.Utf8
 import           Blaze.ByteString.Builder.Int
 import           Blaze.ByteString.Builder.Word
@@ -20,48 +20,32 @@ import           Data.Word
 import qualified Data.Vector.Storable as V
 import           Data.Text (Text)
 import qualified Data.Text as Text
--- import           Foreign.Storable (Storable, sizeOf)
+import qualified Data.Text.Encoding as Text
+import           Sound.LV2.Atom.Class
 import           Sound.LV2.Atom.Object (Object)
 import qualified Sound.LV2.Atom.Object as Object
 import           Sound.LV2.Atom.Primitive
--- import           Sound.LV2.Atom.Tuple (Tuple)
 import           Sound.LV2.Atom.Util
-import           Sound.LV2.Uri (Uri, Urid)
+import           Sound.LV2.Uri (Uri, Urid, ToUrid(..))
 import qualified Sound.LV2.Uri as Uri
 
-data Uris = Uris {
-    uri_Int32  :: Urid
-  , uri_Int64  :: Urid
-  , uri_Bool   :: Urid
-  , uri_Float  :: Urid
-  , uri_Double :: Urid
-  , uri_Tuple  :: Urid
-  , uri_Vector :: Urid
-  }
-
-type Put m a = S.StateT Builder m a
-
--- -- | The 'ToAtom' typeclass represents types that can be rendered
--- -- into valid atom syntax.
-
-newtype Atom m = Atom { unAtom :: Put m () }
+newtype Put m a = Put { runPut :: S.StateT Builder m a }
+                    deriving (Applicative, Functor, Monad, S.MonadTrans)
 
 class ToAtom m a where
-    toAtom :: a -> Atom m
+    toAtom :: a -> Put m ()
 
--- urid :: (Uris -> Urid) -> Put Urid
--- urid f = fmap f (gets uris)
-urid :: Uri.Map m => Uri -> Put m Urid
-urid = S.lift . Uri.map
+instance Uri.Map m => Uri.Map (Put m) where
+    map = S.lift . Uri.map
 
 append :: Monad m => Builder -> Put m ()
-append b = S.modify (`mappend` b)
+append b = Put $ S.modify (`mappend` b)
 
 putUrid :: Monad m => Urid -> Put m ()
-putUrid = append . fromWord32host
+putUrid = append . fromWord32host . Uri.toWord32
 
 header :: Monad m => Urid -> Word32 -> Put m ()
-header urid size = append (fromWord32host size `mappend` fromWord32host urid)
+header urid size = append (fromWord32host size `mappend` fromWord32host (Uri.toWord32 urid))
 
 zeroPad :: Monad m => Word32 -> Put m ()
 zeroPad n = append (go n)
@@ -77,77 +61,95 @@ build' urid builder = build urid n (fromLazyByteString b)
           n = int64ToWord32 (BL.length b) -- TODO: Error handling
 
 embed :: Monad m => Put m () -> Put m Builder
--- embed a = gets uris >>= \us -> return $ builder $ execState a (PutState us mempty)
-embed a = S.lift $ S.execStateT a mempty
+embed a = Put $ S.lift $ S.execStateT (runPut a) mempty
 
-encode :: Monad m => Atom m -> m B.ByteString
-encode a = do
-    s <- S.execStateT (unAtom a) mempty
-    return $! toByteString s
+encode :: Monad m => Put m () -> m B.ByteString
+encode a = liftM toByteString $ S.execStateT (runPut a) mempty
 
-primitive :: (Primitive a, Monad m) => Urid -> a -> Atom m
-primitive urid a = Atom $ build urid (sizeOf a) (toBuilder a)
-
-primitive_ :: (Uri.Map m, Primitive a) => Uri -> a -> Atom m
-primitive_ uri a = Atom $ urid uri >>= \ui -> unAtom $ primitive ui a
+primitive :: (Uri.Map m, Atom a, Primitive a) => a -> Put m ()
+primitive a = Uri.map (atomUri a) >>= \ui -> build ui (sizeOf a) (toBuilder a)
 
 instance Uri.Map m => ToAtom m Int32 where
-    toAtom = primitive_ Uri.int32
+    toAtom = primitive
 
 instance Uri.Map m => ToAtom m Int64 where
-    toAtom = primitive_ Uri.int64
+    toAtom = primitive
+
+instance Uri.Map m => ToAtom m Word32 where
+    toAtom = toAtom . toInt32
+        where toInt32 :: Word32 -> Int32
+              toInt32 = fromIntegral
 
 instance Uri.Map m => ToAtom m Bool where
-    toAtom = primitive_ Uri.bool
+    toAtom = primitive
 
 instance Uri.Map m => ToAtom m Float where
-    toAtom = primitive_ Uri.float
+    toAtom = primitive
 
 instance Uri.Map m => ToAtom m Double where
-    toAtom = primitive_ Uri.double
+    toAtom = primitive
 
 -- putText :: Monad m => Text -> Put m ()
 -- putText = append . fromText
 
-stringOf :: Uri.Map m => Uri -> Text -> Atom m
-stringOf uri t = Atom $ urid uri >>= \ui -> build ui (fromIntegral (Text.length t + 1)) (fromText t `mappend` fromWrite (writeWord8 0))
+stringOf :: Uri.Map m => Uri -> Text -> Put m ()
+stringOf uri t = Uri.map uri >>= \ui -> build ui (fromIntegral (Text.length t + 1)) (Builder.fromByteString (Text.encodeUtf8 t) `mappend` fromWrite (writeWord8 0))
 
 instance Uri.Map m => ToAtom m Text where
     toAtom = stringOf Uri.string
 
--- urid :: Urid -> Put Atom
--- string :: Text -> Put Atom
-
 int64ToWord32 :: Int64 -> Word32
 int64ToWord32 n = assert (n < fromIntegral (maxBound :: Word32)) (fromIntegral n)
 
-newtype Property m = Property { putProperty :: Put m () }
-
-property :: (Monad m, ToAtom m a) => Urid -> Urid -> a -> Property m
-property c k v = Property $ do
+putProperty :: (Monad m, ToAtom m a) => Urid -> Urid -> a -> Put m ()
+putProperty c k v = do
     putUrid c
     putUrid k
-    unAtom (toAtom v)
+    toAtom v
 
-object :: Uri.Map m => Object (Property m) -> Atom m
-object obj = Atom $ do
+putObject :: Uri.Map m => Object (Put m ()) -> Put m ()
+putObject obj = do
     b <- embed $ do
         putUrid (Object.resourceId obj)
         putUrid (Object.rdfType obj)
-        mapM_ putProperty (Object.elems obj)
-    urid <- case Object.uri obj of
-                Object.Blank -> urid Uri.blank
-                Object.Resource -> urid Uri.resource
-    build' urid b
-
-tuple :: Uri.Map m => [Atom m] -> Atom m
-tuple as = Atom $ do
-    ui <- urid Uri.tuple
-    b <- embed (mapM_ unAtom as)
+        sequence_ (Object.elems obj)
+    ui <- case Object.uri obj of
+            Object.Blank -> Uri.map Uri.blank
+            Object.Resource -> Uri.map Uri.resource
     build' ui b
 
+instance Uri.Map m => ToAtom m (Object (Put m ())) where
+    toAtom = putObject
+instance (Uri.Map m, ToAtom m a) => ToAtom m (Object a) where
+    toAtom = putObject . Object.mapWithKey (uncurry putProperty)
+
+newtype PutObject m a = PutObject (Put m a)
+                            deriving (Monad, Uri.Map)
+
+property :: (Uri.Map m, ToUrid (Put m) c, ToUrid (Put m) k, ToAtom m a) => c -> k -> a -> PutObject m ()
+property c k a = PutObject $ do
+    uc <- toUrid c
+    uk <- toUrid k
+    putProperty uc uk a
+
+object :: (Uri.Map m, ToUrid (Put m) r, ToUrid (Put m) t) => Object.ObjectUri -> r -> t -> PutObject m () -> Put m ()
+object u r t (PutObject props) = do
+    b <- embed $ do
+        putUrid =<< toUrid r
+        putUrid =<< toUrid t
+        props
+    ui <- case u of
+            Object.Blank -> Uri.map Uri.blank
+            Object.Resource -> Uri.map Uri.resource
+    build' ui b
+
+tuple :: Uri.Map m => [Put m ()] -> Put m ()
+tuple as = do
+    ui <- Uri.map Uri.tuple
+    build' ui =<< embed (sequence_ as)
+
 -- Tuple
-instance (Uri.Map m) => ToAtom m [Atom m] where
+instance (Uri.Map m) => ToAtom m [Put m ()] where
     toAtom = tuple
 instance (Uri.Map m, ToAtom m a1, ToAtom m a2) => ToAtom m (a1, a2) where
     toAtom (a1, a2) = tuple [toAtom a1, toAtom a2]
@@ -157,9 +159,9 @@ instance (Uri.Map m, ToAtom m a1, ToAtom m a2, ToAtom m a3) => ToAtom m (a1, a2,
 -- Vector
 instance (Uri.Map m, Primitive a, ToAtom m a) => ToAtom m [a] where
     toAtom [] = error "empty list"
-    toAtom (a:as) = Atom $ do
+    toAtom (a:as) = do
         -- Get bytestring for first atom
-        b <- liftM toLazyByteString $ embed (unAtom (toAtom a))
+        b <- liftM toLazyByteString $ embed (toAtom a)
         let na = headerSize + sizeOf a
             -- Bytestring without padding:
             -- element_size <> element_type <> element_data[0]
@@ -167,12 +169,5 @@ instance (Uri.Map m, Primitive a, ToAtom m a) => ToAtom m [a] where
             -- element_data[1..]
             bas = toLazyByteString (mconcat (map toBuilder as))
         let n = na + int64ToWord32 (BL.length bas)
-        ui <- urid Uri.vector
+        ui <- Uri.map Uri.vector
         build ui n (fromLazyByteString ba `mappend` fromLazyByteString bas)
-
--- Object
-instance (Uri.Map m) => ToAtom m (Object (Property m)) where
-    toAtom = object
-
-instance (Uri.Map m, ToAtom m a) => ToAtom m (Object a) where
-    toAtom = object . Object.mapWithKey (uncurry property)
