@@ -110,7 +110,7 @@ instance Uri.Map m => ToAtom m Double where
 -- putText = append . fromText
 
 stringOf :: Uri.Map m => Uri -> Text -> Atom m
-stringOf uri t = Atom $ urid uri >>= \ui -> build ui (fromIntegral (Text.length t + 1)) (fromText t)
+stringOf uri t = Atom $ urid uri >>= \ui -> build ui (fromIntegral (Text.length t + 1)) (fromText t `mappend` fromWrite (writeWord8 0))
 
 instance Uri.Map m => ToAtom m Text where
     toAtom = stringOf Uri.string
