@@ -353,7 +353,6 @@ data Options = Options {
   , _report :: Bool
   , _targets :: [String]
   } deriving (Show)
--- data Options = Sample {hello :: String} deriving (Show, Data, Typeable)
 
 defaultOptions = Options {
     _help = False
