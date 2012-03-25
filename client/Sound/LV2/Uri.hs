@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances
            , GeneralizedNewtypeDeriving
            , MultiParamTypeClasses
+           , OverloadedStrings
            , TypeSynonymInstances #-}
 module Sound.LV2.Uri (
     Uri
