@@ -15,10 +15,10 @@
 
 #include <iostream>
 
-#include <lilv/lilv.h>
-#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
-#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
-#include <lv2/lv2plug.in/ns/ext/atom/util.h>
+#include "lilv/lilv.h"
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
+#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
 MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
