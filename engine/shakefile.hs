@@ -33,36 +33,69 @@ flag f x = [f++x]
 flags :: String -> [String] -> [String]
 flags f = map (f++)
 
+appendL :: Lens a [b] -> [b] -> a -> a
+appendL l bs a = setL l (getL l a ++ bs) a
+
+combineL :: Lens a FilePath -> FilePath -> a -> FilePath
+combineL l p a = getL l a </> p
+
 (?=>) :: FilePath -> (FilePath -> Action ()) -> Rules ()
 f ?=> a = (==f) ?> a
 
 data CToolChain = CToolChain {
-    platform :: String
-  , platformPrefix :: FilePath
-  , prefix :: FilePath
-  , compiler :: String
-  , linker :: String
+    _platform :: String
+  , _platformPrefix :: FilePath
+  , _prefix :: FilePath
+  , _compiler :: String
+  , _linker :: String
   } deriving (Show)
 
-tool :: (CToolChain -> String) -> CToolChain -> FilePath
-tool f toolChain =  platformPrefix toolChain </> prefix toolChain </> "bin" </> f toolChain
+$( makeLenses [''CToolChain] )
+
+mkCToolChain :: String -> CToolChain
+mkCToolChain platform =
+    CToolChain {
+        _platform = platform
+      , _platformPrefix = "/"
+      , _prefix = "/"
+      , _compiler = "gcc"
+      , _linker = "ld"
+      }
+
+tool :: (Lens CToolChain String) -> CToolChain -> FilePath
+tool f toolChain = (platformPrefix ^$ toolChain) </> (prefix ^$ toolChain) </> "bin" </> (f ^$ toolChain)
 
 data CBuild = CBuild {
-    buildArch :: String
-  , buildPrefix :: String
-  , systemIncludes :: [FilePath]
-  , userIncludes :: [FilePath]
-  , defines :: [(String, Maybe String)]
-  , preprocessorFlags :: [String]
-  , compilerFlags :: [String]
-  , linkerFlags :: [String]
+    _buildArch :: String
+  , _buildPrefix :: String
+  , _systemIncludes :: [FilePath]
+  , _userIncludes :: [FilePath]
+  , _defines :: [(String, Maybe String)]
+  , _preprocessorFlags :: [String]
+  , _compilerFlags :: [String]
+  , _linkerFlags :: [String]
   } deriving (Show)
 
+$( makeLenses [''CBuild] )
+
+mkCBuild :: String -> CBuild
+mkCBuild arch =
+    CBuild {
+        _buildArch = arch
+      , _buildPrefix = "./build"
+      , _systemIncludes = []
+      , _userIncludes = []
+      , _defines = []
+      , _preprocessorFlags = []
+      , _compilerFlags = []
+      , _linkerFlags = []
+      }
+
 defineFlags :: CBuild -> [String]
-defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . defines
+defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . getL defines
 
 buildDir :: CToolChain -> CBuild -> FilePath
-buildDir toolChain build = buildPrefix build </> platform toolChain </> buildArch build
+buildDir toolChain build = (buildPrefix ^$ build) </> (platform ^$ toolChain) </> (buildArch ^$ build)
 
 systemLoud :: FilePath -> [String] -> Action ()
 systemLoud cmd args = do
@@ -87,11 +120,11 @@ dependencyFile toolChain build input output = do
     output ?=> \_ -> do
         need [input]
         systemLoud (tool compiler toolChain)
-                $  flag_ "-arch" (buildArch build)
-                ++ flags "-I" (systemIncludes build)
-                ++ flags_ "-iquote" (userIncludes build)
-                ++ defineFlags build
-                ++ preprocessorFlags build
+                $  flag_ "-arch" (buildArch ^$ build)
+                ++ flags "-I" (systemIncludes ^$ build)
+                ++ flags_ "-iquote" (userIncludes ^$ build)
+                ++ (defineFlags build)
+                ++ (preprocessorFlags ^$ build)
                 ++ ["-MM", "-o", output, input]
 
 parseDependencies :: String -> [FilePath]
@@ -105,20 +138,20 @@ staticObject toolChain build input output = do
         need [input]
         need =<< parseDependencies <$> readFile' dep
         systemLoud (tool compiler toolChain)
-                $  flag_ "-arch" (buildArch build)
-                ++ flags "-I" (systemIncludes build)
-                ++ flags_ "-iquote" (userIncludes build)
-                ++ defineFlags build
-                ++ preprocessorFlags build
-                ++ compilerFlags build
+                $  flag_ "-arch" (buildArch ^$ build)
+                ++ flags "-I" (systemIncludes ^$ build)
+                ++ flags_ "-iquote" (userIncludes ^$ build)
+                ++ (defineFlags build)
+                ++ (preprocessorFlags ^$ build)
+                ++ (compilerFlags ^$ build)
                 ++ ["-c", "-o", output, input]
 
 linkC :: CToolChain -> CBuild -> [FilePath] -> FilePath -> Action ()
 linkC toolChain build inputs output = do
     need inputs
     systemLoud (tool linker toolChain)
-          $  flag_ "-arch_only" (buildArch build)
-          ++ linkerFlags build
+          $  flag_ "-arch_only" (buildArch ^$ build)
+          ++ linkerFlags `getL` build
           ++ flag_ "-o" output
           ++ inputs
 
@@ -145,33 +178,81 @@ staticLibrary toolChain build lib = do
     let objects = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
     zipWithM_ (staticObject toolChain build') src objects
     libBuildPath toolChain build lib ?=> do
-        linkC toolChain (build' { linkerFlags = linkerFlags build ++ ["-static"]}) objects
+        linkC toolChain (linkerFlags `appendL` ["-static"] $ build') objects
 
-cToolChain = CToolChain {
-    platform = "iOS-Simulator"
-  , platformPrefix = "/Developer/Platforms/iPhoneSimulator.platform"
-  , prefix = "Developer/usr"
-  , compiler = "clang"
-  , linker = "libtool"
+-- ====================================================================
+-- Target and build settings
+
+cToolChain_IOS_Simulator =
+    platformPrefix ^= "/Developer/Platforms/iPhoneSimulator.platform"
+  $ prefix ^= "Developer/usr"
+  $ compiler ^= "clang"
+  $ linker ^= "libtool"
+  $ mkCToolChain "iOS-Simulator"
+
+cToolChain_MacOSX = CToolChain {
+    _platform = "macosx"
+  , _platformPrefix = "/Developer/Platforms/MacOSX.platform"
+  , _prefix = "/usr"
+  , _compiler = "clang"
+  , _linker = "libtool"
   }
 
-cBuild = CBuild {
-    buildArch = "i386"
-  , buildPrefix = "./build"
-  , systemIncludes = []
-  , userIncludes = []
-  , defines = []
-  , preprocessorFlags = []
-  , compilerFlags = flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
+cBuild_IOS_Simulator = CBuild {
+    _buildArch = "i386"
+  , _buildPrefix = "./build"
+  , _systemIncludes = []
+  , _userIncludes = []
+  , _defines = [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
+  , _preprocessorFlags = [ "-isysroot", platformPrefix `combineL` "Developer/SDKs/iPhoneSimulator5.0.sdk" $ cToolChain_IOS_Simulator ]
+  , _compilerFlags = flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
                  ++ flag "-g" "dwarf-2"
-  , linkerFlags = []
+  , _linkerFlags = []
   }
+
+cBuild_MacOSX = CBuild {
+    _buildArch = "x86_64"
+  , _buildPrefix = "./build"
+  , _systemIncludes = []
+  , _userIncludes = []
+  , _defines = []
+  , _preprocessorFlags = []
+  , _compilerFlags = flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
+                 ++ flag "-g" "dwarf-2"
+  , _linkerFlags = []
+  }
+
+data Target =
+    IOS
+  | IOS_Simulator
+  | MacOSX
+  deriving (Eq, Show)
+
+buildTarget :: Target
+buildTarget = IOS_Simulator
+
+target :: Target -> a -> a -> a
+target t a1 a2 =
+    if buildTarget == t
+    then a1
+    else a2
+
+cToolChain =
+    case buildTarget of
+        IOS_Simulator -> cToolChain_IOS_Simulator
+        MacOSX -> cToolChain_MacOSX
+
+cBuild =
+    case buildTarget of
+        IOS_Simulator -> cBuild_IOS_Simulator
+        MacOSX -> cBuild_MacOSX
+
+-- ====================================================================
+-- serd
 
 serdDir = "external_libraries/serd-0.5.0"
 
-serdBuild = cBuild {
-    userIncludes = userIncludes cBuild ++ [ serdDir, "external_libraries" ]
-  }
+serdBuild = userIncludes `appendL` [ serdDir, "external_libraries" ] $ cBuild
 
 serdLib = StaticLibrary "serd" $ files $ under (serdDir </> "src") [
     "env.c"
@@ -186,9 +267,7 @@ serd = (serdBuild, serdLib)
 
 sordDir = "external_libraries/sord-0.5.0"
 
-sordBuild = cBuild {
-    userIncludes = userIncludes cBuild ++ [ sordDir, sordDir </> "src", serdDir, "external_libraries" ]
-  }
+sordBuild = userIncludes `appendL` [ sordDir, sordDir </> "src", serdDir, "external_libraries" ] $ cBuild
 
 -- sordLib = StaticLibrary "sord" $ \build buildDir -> do
 --     let transFiles = under (sordDir </> "src") [
@@ -215,9 +294,7 @@ sord = (sordBuild, sordLib)
 
 lilvDir = "external_libraries/lilv-0.5.0"
 
-lilvBuild = cBuild {
-  userIncludes = userIncludes cBuild ++ [ lilvDir, lilvDir </> "src", serdDir, sordDir, "external_libraries" ]
-  }
+lilvBuild = userIncludes `appendL` [ lilvDir, lilvDir </> "src", serdDir, sordDir, "external_libraries" ] $ cBuild
 
 lilvLib = StaticLibrary "lilv" $ files $ under (lilvDir </> "src") [
     "collections.c"
@@ -238,10 +315,7 @@ lilv = (lilvBuild, lilvLib)
 
 boostDir = "external_libraries/boost"
 
-boostBuild = cBuild {
-    systemIncludes = systemIncludes cBuild
-        ++ [ boostDir ]
-  }
+boostBuild = systemIncludes `appendL` [ boostDir ] $ cBuild
 
 mkBoost = do
     src <- find always
@@ -252,19 +326,20 @@ mkBoost = do
              boostDir
     return (boostBuild, StaticLibrary "boost" $ files src)
 
-mescalineBuild = cBuild {
-    userIncludes = userIncludes cBuild
-                      ++ ["."]
-                      ++ [ "external_libraries" ]
-                      ++ [ "/usr/local/include" ] -- Gnargh
-                      ++ [ lilvDir, serdDir, sordDir ]
-  , systemIncludes = systemIncludes cBuild
-      ++ [ "platform/ios", "src" ]
-      ++ [ boostDir, "external_libraries/boost_lockfree" ]
-  , defines = defines cBuild ++ [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  , preprocessorFlags = preprocessorFlags cBuild
-      ++ [ "-isysroot", platformPrefix cToolChain </> "Developer/SDKs/iPhoneSimulator5.0.sdk" ]
-}
+mescalineBuild =
+    userIncludes `appendL`
+      ( ["."]
+     ++ [ "external_libraries" ]
+     ++ case buildTarget of
+            IOS           -> [ "platform/ios" ]
+            IOS_Simulator -> [ "platform/ios" ]
+            _             -> []
+     ++ [ "/usr/local/include" ] -- Gnargh
+     ++ [ lilvDir, serdDir, sordDir ] )
+  $ systemIncludes `appendL`
+       ( [ "src" ]
+      ++ [ boostDir, "external_libraries/boost_lockfree" ] )
+  $ cBuild
 
 mescalineLib = StaticLibrary "mescaline" $
         files $ under "src" [
@@ -279,8 +354,10 @@ mescalineLib = StaticLibrary "mescaline" $
           , "Mescaline/Memory/Manager.cpp"
           , "Mescaline/Memory.cpp"
           ]
-     ++ under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
      ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
+     ++ (if buildTarget `elem` [IOS, IOS_Simulator]
+         then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
+         else [])
 
 mescaline = (mescalineBuild, mescalineLib)
 
@@ -338,7 +415,7 @@ optionsToShake opts = shakeOptions {
 processTargets shake build [] = return ()
 processTargets shake build (t:ts) = do
     case t of
-        "clean" -> removeDirectoryRecursive (buildPrefix build)
+        "clean" -> removeDirectoryRecursive (buildPrefix ^$ build)
     processTargets shake build ts
 
 main = do
