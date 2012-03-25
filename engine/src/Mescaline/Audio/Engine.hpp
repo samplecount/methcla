@@ -191,6 +191,9 @@ namespace Mescaline { namespace Audio
         };
 
         // URIs and messages
+		URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
+		const char* unmapUri(URID urid) const { return plugins().uriMap().unmap(urid); }
+
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
 

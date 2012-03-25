@@ -316,11 +316,11 @@ LV2_URID UriMap::insert(const char* uri)
     return urid;
 }
 
-LV2_URID UriMap::map(const char* uri) const
+LV2_URID UriMap::map(const char* uri)
 {
     UriToId::const_iterator it = m_uriToId.find(uri);
     return it == m_uriToId.end()
-            ? const_cast<UriMap*>(this)->insert(uri)
+            ? insert(uri)
             : it->second;
 }
 

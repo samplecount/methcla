@@ -278,7 +278,7 @@ class UriMap
 public:
     UriMap();
 
-    LV2_URID map(const char* uri) const;
+    LV2_URID map(const char* uri);
     const char* unmap(LV2_URID urid) const;
 
 private:
@@ -323,6 +323,8 @@ public:
 
     // Uri mapping
     const UriMap& uriMap() const { return m_uriMap; }
+	UriMap& uriMap() { return m_uriMap; }
+
     LV2_URID_Map* lv2UridMap();
     LV2_URID_Unmap* lv2UridUnmap();
 
