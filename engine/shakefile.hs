@@ -157,27 +157,27 @@ parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
 staticObject :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
-staticObject env toolChain build input deps output = do
+staticObject env toolChain buildFlags input deps output = do
     let depFile = output <.> "d"
-    dependencyFile env toolChain build input depFile
+    dependencyFile env toolChain buildFlags input depFile
     output ?=> \_ ->  do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         systemLoud (tool compiler toolChain)
                 $  flag_ "-arch" (buildArch ^$ env)
-                ++ flags "-I" (systemIncludes ^$ build)
-                ++ flags_ "-iquote" (userIncludes ^$ build)
-                ++ (defineFlags build)
-                ++ (preprocessorFlags ^$ build)
-                ++ (compilerFlags ^$ build)
+                ++ flags "-I" (systemIncludes ^$ buildFlags)
+                ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
+                ++ (defineFlags buildFlags)
+                ++ (preprocessorFlags ^$ buildFlags)
+                ++ (compilerFlags ^$ buildFlags)
                 ++ ["-c", "-o", output, input]
 
 linkC :: CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
-linkC env toolChain build inputs output = do
+linkC env toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linker toolChain)
           $  flag_ "-arch_only" (buildArch ^$ env)
-          ++ linkerFlags `getL` build
+          ++ linkerFlags `getL` buildFlags
           ++ flag_ "-o" output
           ++ inputs
 
@@ -195,8 +195,8 @@ data StaticLibrary = StaticLibrary {
   , sources :: CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
   }
 
-files :: [FilePath] -> CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
-files xs build _ = return (build, [SourceTree id (sourceFiles xs)])
+-- files :: [FilePath] -> CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
+-- files xs build _ = return (build, [SourceTree id (sourceFiles xs)])
 
 libName :: StaticLibrary -> String
 libName = ("lib"++) . flip replaceExtension "a" . name
@@ -208,17 +208,20 @@ libBuildPath :: Env -> CTarget -> StaticLibrary -> FilePath
 libBuildPath env target lib = buildDir env target </> libName lib
 
 staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> StaticLibrary -> Rules ()
-staticLibrary env target toolChain build lib = do
+staticLibrary env target toolChain buildFlags lib = do
     let buildDir = libBuildDir env target lib
-    (build', srcTrees) <- sources lib build buildDir
+    (buildFlags', srcTrees) <- sources lib buildFlags buildDir
     objects <- forM srcTrees $ \(SourceTree mapBuildFlags srcTree) -> do
         let src = map fst srcTree
             dep = map snd srcTree
             obj = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
-        zipWithM_ ($) (zipWith (staticObject target toolChain (mapBuildFlags build')) src dep) obj
+        zipWithM_ ($) (zipWith (staticObject target toolChain (mapBuildFlags buildFlags')) src dep) obj
         return obj
     libBuildPath env target lib ?=> do
-        linkC target toolChain (linkerFlags `appendL` ["-static"] $ build') (concat objects)
+        linkC target
+              toolChain
+              (linkerFlags `appendL` ["-static"] $ buildFlags')
+              (concat objects)
 
 -- ====================================================================
 -- Target and build settings
@@ -256,23 +259,44 @@ cBuildFlags_MacOSX =
 -- ====================================================================
 -- Library
 
+externalLibraries :: FilePath
+externalLibraries = "external_libraries"
+
+externalLibrary :: FilePath -> FilePath
+externalLibrary = combine externalLibraries
+
+lv2Dir :: FilePath
+lv2Dir = externalLibrary "lv2"
+
 serdDir :: FilePath
-serdDir = "external_libraries/serd-0.5.0"
+serdDir = externalLibrary "serd-0.5.0"
+
 sordDir :: FilePath
-sordDir = "external_libraries/sord-0.5.0"
+sordDir = externalLibrary "sord-0.5.0"
+
 lilvDir :: FilePath
-lilvDir = "external_libraries/lilv-0.5.0"
+lilvDir = externalLibrary "lilv-0.5.0"
+
 boostDir :: FilePath
-boostDir = "external_libraries/boost"
+boostDir = externalLibrary "boost"
 
 serdBuildFlags :: CBuildFlags -> CBuildFlags
-serdBuildFlags = appendL userIncludes [ serdDir, serdDir </> "src" ]
+serdBuildFlags = appendL userIncludes
+                    [ serdDir, serdDir </> "src" ]
 
 sordBuildFlags :: CBuildFlags -> CBuildFlags
-sordBuildFlags = appendL userIncludes [ sordDir, sordDir </> "src", serdDir ]
+sordBuildFlags = appendL userIncludes
+                    [ sordDir, sordDir </> "src"
+                    , serdDir
+                    , externalLibraries ]
 
 lilvBuildFlags :: CBuildFlags -> CBuildFlags
-lilvBuildFlags = appendL userIncludes [ lilvDir, lilvDir </> "src", sordDir ]
+lilvBuildFlags = appendL userIncludes
+                    [ lilvDir, lilvDir </> "src"
+                    , serdDir
+                    , sordDir
+                    , externalLibraries
+                    , lv2Dir ]
 
 boostBuildFlags :: CBuildFlags -> CBuildFlags
 boostBuildFlags = appendL systemIncludes [ boostDir ]
@@ -293,9 +317,6 @@ engineBuildFlags target buildFlags =
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
   $ buildFlags
-
-mescalineBuildFlags :: CBuildFlags
-mescalineBuildFlags = defaultCBuildFlags
 
 mescalineLib :: CTarget -> IO StaticLibrary
 mescalineLib target = do
@@ -364,11 +385,6 @@ mescalineLib target = do
                 else [])
         ])
 
-libMescaline :: CTarget -> CBuildFlags -> IO (CBuildFlags, StaticLibrary)
-libMescaline env buildFlags = do
-    lib <- mescalineLib env
-    return (mescalineBuildFlags, lib)
-
 -- ====================================================================
 -- Commandline options
 
@@ -435,11 +451,11 @@ targetSpecs = [
         let target = mkCTarget IOS_Simulator "i386"
             toolChain = cToolChain_IOS_Simulator
             buildFlags = cBuildFlags_IOS_Simulator
-        mescaline <- libMescaline target buildFlags
+        libmescaline <- mescalineLib target
         shake $ do
-            let libs = [ mescaline ]
-                lib = uncurry (staticLibrary env target toolChain)
-                libFile = libBuildPath env target . snd
+            let libs = [ libmescaline ]
+                lib = staticLibrary env target toolChain buildFlags
+                libFile = libBuildPath env target
             mapM_ lib libs
             want (map libFile libs)
     )
@@ -448,11 +464,11 @@ targetSpecs = [
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX
             buildFlags = cBuildFlags_MacOSX
-        mescaline <- libMescaline target buildFlags
+        libmescaline <- mescalineLib target
         shake $ do
-            let libs = [ mescaline ]
-                lib = uncurry (staticLibrary env target toolChain)
-                libFile = libBuildPath env target . snd
+            let libs = [ libmescaline ]
+                lib = staticLibrary env target toolChain buildFlags
+                libFile = libBuildPath env target
             mapM_ lib libs
             want (map libFile libs)
     )
