@@ -7,3 +7,6 @@
 [submodule "engine/external_libraries/oscpp"]
 	path = engine/external_libraries/oscpp
 	url = git://github.com/kaoskorobase/oscpp.git
+[submodule "engine/external_libraries/lv2"]
+	path = engine/external_libraries/lv2
+	url = https://github.com/kaoskorobase/lv2.git
