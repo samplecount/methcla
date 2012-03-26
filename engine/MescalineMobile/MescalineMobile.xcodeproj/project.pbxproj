@@ -751,7 +751,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd .. && ./shake";
+			shellScript = "cd .. && ./shake ios-simulator";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -788,6 +788,7 @@
 					../external_libraries,
 					../external_libraries/boost,
 					../external_libraries/boost_lockfree,
+					../external_libraries/lv2,
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
@@ -813,6 +814,7 @@
 					../external_libraries,
 					../external_libraries/boost,
 					../external_libraries/boost_lockfree,
+					../external_libraries/lv2,
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
