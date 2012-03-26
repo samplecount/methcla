@@ -156,13 +156,13 @@ dependencyFile env toolChain build input output = do
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
-staticObject :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
-staticObject env toolChain build input output = do
-    let dep = output <.> "d"
-    dependencyFile env toolChain build input dep
+staticObject :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
+staticObject env toolChain build input deps output = do
+    let depFile = output <.> "d"
+    dependencyFile env toolChain build input depFile
     output ?=> \_ ->  do
-        need [input]
-        need =<< parseDependencies <$> readFile' dep
+        deps' <- parseDependencies <$> readFile' depFile
+        need $ [input] ++ deps ++ deps'
         systemLoud (tool compiler toolChain)
                 $  flag_ "-arch" (buildArch ^$ env)
                 ++ flags "-I" (systemIncludes ^$ build)
@@ -181,12 +181,22 @@ linkC env toolChain build inputs output = do
           ++ flag_ "-o" output
           ++ inputs
 
+
+data SourceTree b = SourceTree (b -> b) [(FilePath, [FilePath])]
+
+sourceTree :: (b -> b) -> [(FilePath, [FilePath])] -> SourceTree b
+sourceTree = SourceTree
+
+sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
+sourceFiles = map (flip (,) [])
+
 data StaticLibrary = StaticLibrary {
     name :: String
-  , sources :: CBuildFlags -> FilePath -> Rules (CBuildFlags, [FilePath])
+  , sources :: CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
   }
 
-files xs build _ = return (build, xs)
+files :: [FilePath] -> CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
+files xs build _ = return (build, [SourceTree id (sourceFiles xs)])
 
 libName :: StaticLibrary -> String
 libName = ("lib"++) . flip replaceExtension "a" . name
@@ -200,11 +210,15 @@ libBuildPath env target lib = buildDir env target </> libName lib
 staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> StaticLibrary -> Rules ()
 staticLibrary env target toolChain build lib = do
     let buildDir = libBuildDir env target lib
-    (build', src) <- sources lib build buildDir
-    let objects = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
-    zipWithM_ (staticObject target toolChain build') src objects
+    (build', srcTrees) <- sources lib build buildDir
+    objects <- forM srcTrees $ \(SourceTree mapBuildFlags srcTree) -> do
+        let src = map fst srcTree
+            dep = map snd srcTree
+            obj = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
+        zipWithM_ ($) (zipWith (staticObject target toolChain (mapBuildFlags build')) src dep) obj
+        return obj
     libBuildPath env target lib ?=> do
-        linkC target toolChain (linkerFlags `appendL` ["-static"] $ build') objects
+        linkC target toolChain (linkerFlags `appendL` ["-static"] $ build') (concat objects)
 
 -- ====================================================================
 -- Target and build settings
@@ -238,93 +252,121 @@ cBuildFlags_MacOSX =
 -- ====================================================================
 -- Library
 
+serdDir :: FilePath
 serdDir = "external_libraries/serd-0.5.0"
+sordDir :: FilePath
 sordDir = "external_libraries/sord-0.5.0"
+lilvDir :: FilePath
 lilvDir = "external_libraries/lilv-0.5.0"
+boostDir :: FilePath
 boostDir = "external_libraries/boost"
 
-mescalineBuildFlags env buildFlags =
+serdBuildFlags :: CBuildFlags -> CBuildFlags
+serdBuildFlags = appendL userIncludes [ serdDir, serdDir </> "src" ]
+
+sordBuildFlags :: CBuildFlags -> CBuildFlags
+sordBuildFlags = appendL userIncludes [ sordDir, sordDir </> "src", serdDir ]
+
+lilvBuildFlags :: CBuildFlags -> CBuildFlags
+lilvBuildFlags = appendL userIncludes [ lilvDir, lilvDir </> "src", sordDir ]
+
+boostBuildFlags :: CBuildFlags -> CBuildFlags
+boostBuildFlags = appendL systemIncludes [ boostDir ]
+
+engineBuildFlags :: CTarget -> CBuildFlags -> CBuildFlags
+engineBuildFlags target buildFlags =
     userIncludes `appendL`
       ( ["."]
      ++ [ "external_libraries" ]
      ++ [ "external_libraries/lv2" ]
-     ++ case buildTarget ^$ env of
+     ++ case buildTarget ^$ target of
             IOS           -> [ "platform/ios" ]
             IOS_Simulator -> [ "platform/ios" ]
             _             -> []
-     ++ [ serdDir, sordDir, sordDir </> "src", lilvDir, lilvDir </> "src" ] )
+     ++ [ serdDir, sordDir, lilvDir ] )
   $ systemIncludes `appendL`
        ( [ "src" ]
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
   $ buildFlags
 
+mescalineBuildFlags :: CBuildFlags
+mescalineBuildFlags = defaultCBuildFlags
+
 mescalineLib :: CTarget -> IO StaticLibrary
-mescalineLib env = do
+mescalineLib target = do
     boostSrc <- find always
                     (extension ==? ".cpp" &&?
                      (not . isSuffixOf "win32") <$> directory &&?
                      (not . isSuffixOf "test/src") <$> directory &&?
                      (fileName /=? "utf8_codecvt_facet.cpp"))
                     boostDir
-    return $ StaticLibrary "mescaline" $ files $
+    return $ StaticLibrary "mescaline" $ \buildFlags _ -> return (buildFlags, [
         -- serd
-        under (serdDir </> "src") [
-            "env.c"
-          , "error.c"
-          , "node.c"
-          , "reader.c"
-          , "uri.c"
-          , "writer.c"
-          ]
+        sourceTree serdBuildFlags $ sourceFiles $
+            under (serdDir </> "src") [
+                "env.c"
+              , "error.c"
+              , "node.c"
+              , "reader.c"
+              , "uri.c"
+              , "writer.c"
+              ]
         -- sord
-     ++ under (sordDir </> "src") [
-            "sord.c"
-          , "syntax.c"
-          , "zix/tree.c"
-          , "zix/hash.c"
-          ]
+      , sourceTree sordBuildFlags $ sourceFiles $
+            under (sordDir </> "src") [
+                "sord.c"
+              , "syntax.c"
+              , "zix/tree.c"
+              , "zix/hash.c"
+              ]
         -- lilv
-     ++ under (lilvDir </> "src") [
-            "collections.c"
-          , "instance.c"
-          , "node.c"
-          , "plugin.c"
-          , "pluginclass.c"
-          , "port.c"
-          , "query.c"
-          , "scalepoint.c"
-          , "ui.c"
-          , "util.c"
-          , "world.c"
-          , "zix/tree.c"
-          ]
+      , sourceTree lilvBuildFlags $ sourceFiles $
+            under (lilvDir </> "src") [
+                "collections.c"
+              , "instance.c"
+              , "node.c"
+              , "plugin.c"
+              , "pluginclass.c"
+              , "port.c"
+              , "query.c"
+              , "scalepoint.c"
+              , "ui.c"
+              , "util.c"
+              , "world.c"
+              , "zix/tree.c"
+              ]
         -- boost
-     ++ boostSrc
+      , sourceTree boostBuildFlags $ sourceFiles boostSrc
         -- engine
-     ++ under "src" [
-            "Mescaline/Audio/AudioBus.cpp"
-          , "Mescaline/Audio/Client.cpp"
-          , "Mescaline/Audio/Engine.cpp"
-          , "Mescaline/Audio/Group.cpp"
-          , "Mescaline/Audio/Node.cpp"
-          , "Mescaline/Audio/Resource.cpp"
-          , "Mescaline/Audio/Synth.cpp"
-          , "Mescaline/Audio/SynthDef.cpp"
-          , "Mescaline/Memory/Manager.cpp"
-          , "Mescaline/Memory.cpp"
-          ]
-        -- plugins
-     ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
-        -- platform dependent
-     ++ (if (buildTarget ^$ env) `elem` [IOS, IOS_Simulator]
-         then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
-         else [])
+      , sourceTree (engineBuildFlags target) $ sourceFiles $
+            under "src" [
+                "Mescaline/Audio/AudioBus.cpp"
+              , "Mescaline/Audio/Client.cpp"
+              , "Mescaline/Audio/Engine.cpp"
+              , "Mescaline/Audio/Group.cpp"
+              , "Mescaline/Audio/Node.cpp"
+              , "Mescaline/Audio/Resource.cpp"
+              , "Mescaline/Audio/Synth.cpp"
+              , "Mescaline/Audio/SynthDef.cpp"
+              , "Mescaline/Memory/Manager.cpp"
+              , "Mescaline/Memory.cpp"
+              ]
+            -- plugins
+            ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
+            -- platform dependent
+            ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
+                then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
+                else [])
+        ])
 
 libMescaline :: CTarget -> CBuildFlags -> IO (CBuildFlags, StaticLibrary)
 libMescaline env buildFlags = do
     lib <- mescalineLib env
-    return (mescalineBuildFlags env buildFlags, lib)
+    return (mescalineBuildFlags, lib)
+
+-- ====================================================================
+-- Commandline options
 
 getShakeOptions :: FilePath -> IO ShakeOptions
 getShakeOptions buildDir = do
@@ -376,39 +418,57 @@ optionsToShake opts = shakeOptions {
                     else Nothing
   }
 
+-- ====================================================================
+-- Commandline targets
+
+targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
+targetSpecs = [
+    ( "clean", const (removeDirectoryRecursive . getL buildPrefix) )
+  , ( "ios-simulator",
+    \shake env -> do
+        let target = mkCTarget IOS_Simulator "i386"
+            toolChain = cToolChain_IOS_Simulator
+            buildFlags = cBuildFlags_IOS_Simulator
+        mescaline <- libMescaline target buildFlags
+        shake $ do
+            let libs = [ mescaline ]
+                lib = uncurry (staticLibrary env target toolChain)
+                libFile = libBuildPath env target . snd
+            mapM_ lib libs
+            want (map libFile libs)
+    )
+  , ( "macosx",
+    \shake env -> do
+        let target = mkCTarget MacOSX "x86_64"
+            toolChain = cToolChain_MacOSX
+            buildFlags = cBuildFlags_MacOSX
+        mescaline <- libMescaline target buildFlags
+        shake $ do
+            let libs = [ mescaline ]
+                lib = uncurry (staticLibrary env target toolChain)
+                libFile = libBuildPath env target . snd
+            mapM_ lib libs
+            want (map libFile libs)
+    )
+  ]
+
+processTargets :: (Rules () -> IO ()) -> Env -> [String] -> IO ()
 processTargets shake env = mapM_ processTarget where
     processTarget t =
-        case t of
-            "clean" -> removeDirectoryRecursive (buildPrefix ^$ env)
-            "ios-simulator" -> do
-                let target = mkCTarget IOS_Simulator "i386"
-                    toolChain = cToolChain_IOS_Simulator
-                    buildFlags = cBuildFlags_IOS_Simulator
-                mescaline <- libMescaline target buildFlags
-                shake $ do
-                    let libs = [ mescaline ]
-                        lib = uncurry (staticLibrary env target toolChain)
-                        libFile = libBuildPath env target . snd
-                    mapM_ lib libs
-                    want (map libFile libs)
-            "macosx" -> do
-                let target = mkCTarget MacOSX "x86_64"
-                    toolChain = cToolChain_MacOSX
-                    buildFlags = cBuildFlags_MacOSX
-                mescaline <- libMescaline target buildFlags
-                shake $ do
-                    let libs = [ mescaline ]
-                        lib = uncurry (staticLibrary env target toolChain)
-                        libFile = libBuildPath env target . snd
-                    mapM_ lib libs
-                    want (map libFile libs)
+        case lookup t targetSpecs of
+            Nothing -> putStrLn $ "Warning: Target " ++ t ++ " not found"
+            Just f -> f shake env
 
+main :: IO ()
 main = do
     opts <- processArgs arguments
     let shakeIt = shake (optionsToShake opts)
+        env = mkEnv (output ^$ opts)
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else case targets ^$ opts of
                 [] -> do
-                    putStrLn "Please chose a target"
-                ts -> processTargets shakeIt (mkEnv (output ^$ opts)) ts
+                    -- TODO: integrate this with option processing
+                    putStrLn $ "Please chose a target:"
+                    mapM_ (putStrLn . ("\t"++) . fst) targetSpecs
+                ts -> processTargets shakeIt env ts
