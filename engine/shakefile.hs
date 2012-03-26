@@ -223,6 +223,7 @@ staticLibrary env target toolChain build lib = do
 -- ====================================================================
 -- Target and build settings
 
+cToolChain_IOS_Simulator :: CToolChain
 cToolChain_IOS_Simulator =
     platformPrefix ^= "/Developer/Platforms/iPhoneSimulator.platform"
   $ prefix ^= "Developer/usr"
@@ -230,6 +231,7 @@ cToolChain_IOS_Simulator =
   $ linker ^= "libtool"
   $ defaultCToolChain
 
+cToolChain_MacOSX :: CToolChain
 cToolChain_MacOSX =
     platformPrefix ^= "/Developer/Platforms/MacOSX.platform"
   $ prefix ^= "/usr"
@@ -237,6 +239,7 @@ cToolChain_MacOSX =
   $ linker ^= "libtool"
   $ defaultCToolChain
 
+cBuildFlags_IOS_Simulator :: CBuildFlags
 cBuildFlags_IOS_Simulator =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
   $ appendL preprocessorFlags [ "-isysroot", platformPrefix `combineL` "Developer/SDKs/iPhoneSimulator5.0.sdk" $ cToolChain_IOS_Simulator ]
@@ -244,6 +247,7 @@ cBuildFlags_IOS_Simulator =
                             ++ flag "-g" "dwarf-2")
   $ defaultCBuildFlags
 
+cBuildFlags_MacOSX :: CBuildFlags
 cBuildFlags_MacOSX =
     appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
                             ++ flag "-g" "dwarf-2")
