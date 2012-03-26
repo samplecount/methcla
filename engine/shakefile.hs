@@ -390,6 +390,7 @@ data Options = Options {
   , _targets :: [String]
   } deriving (Show)
 
+defaultOptions :: Options
 defaultOptions = Options {
     _help = False
   , _verbosity = Normal
@@ -414,6 +415,7 @@ arguments =
           -- ++ flagsVerbosity (setL verbosity)
     where upd what x = Right . setL what x
 
+optionsToShake :: Options -> ShakeOptions
 optionsToShake opts = shakeOptions {
     shakeThreads = jobs ^$ opts
   , shakeVerbosity = verbosity ^$ opts
