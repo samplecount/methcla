@@ -1,5 +1,12 @@
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
-module Sound.LV2.Atom.Put where
+module Sound.LV2.Atom.Put (
+    Put
+  , ToAtom(..)
+  , PutObject
+  , object, blank, resource
+  , property, property_
+  , encode
+) where
 
 import           Blaze.ByteString.Builder as Builder
 import           Blaze.ByteString.Builder.Char.Utf8
@@ -126,12 +133,6 @@ instance (Uri.Map m, ToAtom m a) => ToAtom m (Object a) where
 newtype PutObject m a = PutObject (Put m a)
                             deriving (Monad, Uri.Map)
 
-property :: (Uri.Map m, ToUrid (Put m) c, ToUrid (Put m) k, ToAtom m a) => c -> k -> a -> PutObject m ()
-property c k a = PutObject $ do
-    uc <- toUrid c
-    uk <- toUrid k
-    putProperty uc uk a
-
 object :: (Uri.Map m, ToUrid (Put m) r, ToUrid (Put m) t) => Object.ObjectUri -> r -> t -> PutObject m () -> Put m ()
 object u r t (PutObject props) = do
     b <- embed $ do
@@ -142,6 +143,21 @@ object u r t (PutObject props) = do
             Object.Blank -> Uri.map Uri.blank
             Object.Resource -> Uri.map Uri.resource
     build' ui b
+
+blank :: (Uri.Map m, ToUrid (Put m) r, ToUrid (Put m) t) => r -> t -> PutObject m () -> Put m ()
+blank = object Object.Blank
+
+resource :: (Uri.Map m, ToUrid (Put m) r, ToUrid (Put m) t) => r -> t -> PutObject m () -> Put m ()
+resource = object Object.Resource
+
+property :: (Uri.Map m, ToUrid (Put m) c, ToUrid (Put m) k, ToAtom m a) => c -> k -> a -> PutObject m ()
+property c k a = PutObject $ do
+    uc <- toUrid c
+    uk <- toUrid k
+    putProperty uc uk a
+
+property_ :: (Uri.Map m, ToUrid (Put m) k, ToAtom m a) => k -> a -> PutObject m ()
+property_ = property (Uri.fromWord32 0)
 
 tuple :: Uri.Map m => [Put m ()] -> Put m ()
 tuple as = do

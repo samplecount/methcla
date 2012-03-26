@@ -1,4 +1,9 @@
-module Sound.LV2.Atom.Util where
+module Sound.LV2.Atom.Util (
+    alignment
+  , pad
+  , padding
+  , headerSize
+) where
 
 import Data.Bits
 import Data.Word
@@ -16,5 +21,6 @@ pad size = (size + mask) .&. (complement mask)
 padding :: Word32 -> Word32
 padding size = pad size - size
 
+{-# INLINE headerSize #-}
 headerSize :: Word32
 headerSize = 8

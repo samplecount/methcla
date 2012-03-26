@@ -64,31 +64,29 @@ data FooBlah = FooBlah {
   , fooBlahD :: (Int32, Int32)
   } deriving (Show)
 
+uri_fooBlahA = Uri.fromText "fooBlahA"
+uri_fooBlahB = Uri.fromText "fooBlahB"
+uri_fooBlahC = Uri.fromText "fooBlahC"
+uri_fooBlahD = Uri.fromText "fooBlahD"
+
 fooBlah = FooBlah 127 "Hell yeah" 1.1234 (1000, 2000)
 
 instance Uri.Map m => ToAtom m FooBlah where
-    toAtom f = Put.object Blank (Uri.fromText "Yo") (Uri.fromText "Blah") $ do
-        property (Uri.fromWord32 0) (Uri.fromText "fooBlahA") (fooBlahA f)
-        property (Uri.fromWord32 0) (Uri.fromText "fooBlahB") (fooBlahB f)
-        property (Uri.fromWord32 0) (Uri.fromText "fooBlahC") (fooBlahC f)
-        property (Uri.fromWord32 0) (Uri.fromText "fooBlahD") (fooBlahD f)
-        -- toAtom $ Object.fromList Blank 10 20
-        --     [ property 0 u_fooBlahA (fooBlahA f)
-        --     , property 0 u_fooBlahB (fooBlahB f)
-        --     , property 0 u_fooBlahC (fooBlahC f)
-        --     , property 0 u_fooBlahD (fooBlahD f) 
-        --     ]
+    toAtom f = Put.resource (Uri.fromText "Yo") (Uri.fromText "Blah") $ do
+        property_ uri_fooBlahA (fooBlahA f)
+        property_ uri_fooBlahB (fooBlahB f)
+        property_ uri_fooBlahC (fooBlahC f)
+        property_ uri_fooBlahD (fooBlahD f)
 
 instance (Applicative m, MonadThrow m, Uri.Map m) => FromObject m FooBlah where
-    fromObject o = FooBlah <$> o .: (Uri.fromText "fooBlahA")
-                           <*> o .: (Uri.fromText "fooBlahB")
-                           <*> o .: (Uri.fromText "fooBlahC")
-                           <*> o .: (Uri.fromText "fooBlahD")
+    fromObject o = FooBlah <$> o .: uri_fooBlahA
+                           <*> o .: uri_fooBlahB
+                           <*> o .: uri_fooBlahC
+                           <*> o .: uri_fooBlahD
 
 instance (Applicative m, MonadThrow m, Uri.Map m) => FromAtom m FooBlah where
-    fromAtom = getObject >>= fromObject
+    fromAtom = Get.object
 
 testFooBlah :: IO FooBlah
 testFooBlah = Uri.evalPureMap $
                 encodeShow (toAtom fooBlah) >>= decode fromAtom
-

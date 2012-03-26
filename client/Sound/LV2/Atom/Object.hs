@@ -1,11 +1,23 @@
-module Sound.LV2.Atom.Object where
+module Sound.LV2.Atom.Object (
+    Object
+  , ObjectUri(..)
+  , Key
+  , Properties
+  , uri, resourceId, rdfType, properties
+  , fromList, blank, resource
+  , lookup
+  , elems
+  , traverseWithKey
+  , mapWithKey
+) where
 
 import           Control.Applicative
 import qualified Data.HashMap.Strict as H
 import           Data.Maybe (fromJust)
 import qualified Data.Foldable as F
 import qualified Data.Traversable as T
-import           Sound.LV2.Uri
+import           Prelude hiding (lookup)
+import           Sound.LV2.Uri (Urid)
 
 data ObjectUri = Blank | Resource deriving (Eq, Show)
 type Key = (Urid, Urid)
@@ -20,6 +32,12 @@ data Object a = Object {
 
 fromList :: ObjectUri -> Urid -> Urid -> [(Key, a)] -> Object a
 fromList ui ri rt = Object ui ri rt . H.fromList
+
+blank :: Urid -> Urid -> [(Key, a)] -> Object a
+blank = fromList Blank
+
+resource :: Urid -> Urid -> [(Key, a)] -> Object a
+resource = fromList Resource
 
 modify :: (Properties a -> Properties b) -> Object a -> Object b
 modify f obj = obj { properties = f (properties obj) }

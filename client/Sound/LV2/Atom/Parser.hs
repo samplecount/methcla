@@ -1,5 +1,18 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
-module Sound.LV2.Atom.Parser where
+module Sound.LV2.Atom.Parser (
+    Parser
+  , ParseException(..)
+  , parse
+  , take
+  , takeUtf8
+  , atEnd
+  , peek
+  , drop
+  , align
+  , isolate
+  , takeStorable
+  , peekStorable
+) where
 
 import           Control.Applicative (Applicative)
 import           Control.Exception (Exception(..), SomeException, assert)
@@ -7,12 +20,11 @@ import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO(..))
 import           Control.Monad.Trans.Class (MonadTrans(..))
 import qualified Control.Monad.Trans.Class as S
-import           Control.Monad.Trans.Error
+import           Control.Monad.Trans.Resource (MonadThrow(..))
 import qualified Control.Monad.Trans.State.Strict as S
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
-import           Data.Conduit (MonadThrow(..))
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import           Data.Typeable (Typeable)
@@ -21,7 +33,7 @@ import           Foreign.ForeignPtr
 import           Foreign.Ptr
 import           Foreign.Storable (Storable)
 import qualified Foreign.Storable as S
-import           Prelude hiding (take)
+import           Prelude hiding (drop, take)
 import qualified Sound.LV2.Uri as Uri
 
 data State = State {
@@ -37,85 +49,94 @@ data ParseException =
 
 instance Exception ParseException
 
-instance Error ParseException where
-    noMsg = UnknownException
-    strMsg = ParseError
-
-newtype Parser m a = Parser { runParser :: ErrorT ParseException (S.StateT State m) a }
+newtype Parser m a = Parser { runParser :: S.StateT State m a }
                         deriving (Applicative, Functor, Monad, MonadIO)
 
 instance S.MonadTrans Parser where
-    lift = Parser . S.lift . S.lift
+    lift = Parser . S.lift
+
+toParseException :: Exception e => e -> Maybe ParseException
+toParseException = fromException . toException
+
+instance MonadThrow m => MonadThrow (Parser m) where
+    monadThrow e = S.lift $ monadThrow (maybe (toException e) toException (toParseException e))
 
 instance Uri.Map m => Uri.Map (Parser m) where
     map = lift . Uri.map
 
-run :: MonadThrow m => Parser m a -> B.ByteString -> m (a, State)
-run p b = do
-    (a, s) <- S.runStateT (runErrorT (runParser p)) (State b 0)
-    case a of
-        Left e -> monadThrow e
-        Right a -> return (a, s)
+parse :: MonadThrow m => Parser m a -> B.ByteString -> m (a, B.ByteString)
+parse p b = do
+    (a, s) <- S.runStateT (runParser p) (State b 0)
+    return (a, input s)
 
-parse :: MonadThrow m => Parser m a -> B.ByteString -> m a
-parse p = liftM fst . run p
+parseError :: MonadThrow m => String -> Parser m a
+parseError = monadThrow . ParseError
 
-throw :: Monad m => ParseException -> Parser m a
-throw = Parser . throwError
+parseErrorAt :: MonadThrow m => String -> Parser m a
+parseErrorAt s = do
+    n <- gets consumed
+    parseError (s ++ " (at byte " ++ show n ++ ")")
+
+bufferUnderrun :: MonadThrow m => Parser m a
+bufferUnderrun = parseErrorAt "Buffer underrun"
+
+-- Private API
 
 get :: Monad m => Parser m State
 {-# INLINE get #-}
-get = Parser $ S.lift S.get
+get = Parser $ S.get
 
 gets :: Monad m => (State -> a) -> Parser m a
 {-# INLINE gets #-}
-gets = Parser . S.lift . S.gets
+gets = Parser . S.gets
 
 put :: Monad m => State -> Parser m ()
 {-# INLINE put #-}
-put = Parser . S.lift . S.put
+put = Parser . S.put
 
-take :: Monad m => Word32 -> Parser m ByteString
+-- Public API
+
+take :: MonadThrow m => Word32 -> Parser m ByteString
 take n = do
     s <- get
     let ni = fromIntegral n
         (b, b') = B.splitAt ni (input s)
     unless (B.length b == ni)
-        $ throw $ ParseError "Buffer underrun"
+        bufferUnderrun
     put $ s { input = b'
             , consumed = consumed s + n }
     return b
 
-takeUtf8 :: Monad m => Word32 -> Parser m Text
+takeUtf8 :: MonadThrow m => Word32 -> Parser m Text
 takeUtf8 n = do
     b <- take n
     case T.decodeUtf8' b of
-        Left e -> throw $ ParseException $ toException e
+        Left e -> monadThrow $ ParseException $ toException e
         Right t -> return t
 
-peek :: Monad m => Word32 -> Parser m ByteString
+atEnd :: Monad m => Parser m Bool
+atEnd = liftM ((==0).B.length) $ gets input
+
+peek :: MonadThrow m => Word32 -> Parser m ByteString
 peek n = do
     s <- get
     let ni = fromIntegral n
         (b, b') = B.splitAt ni (input s)
     unless (B.length b == ni)
-        $ throw $ ParseError "Buffer underrun"
+        bufferUnderrun
     return b
 
-atEnd :: Monad m => Parser m Bool
-atEnd = liftM ((==0).B.length) $ gets input
-
-drop :: Monad m => Word32 -> Parser m ()
+drop :: MonadThrow m => Word32 -> Parser m ()
 drop n = do
     s <- get
     let ni = fromIntegral n
         b  = input s
     unless (B.length b >= ni)
-        $ throw $ ParseError "Buffer underrun"
+        bufferUnderrun
     put $ s { input = B.drop ni b
             , consumed = consumed s + n }
 
-align :: Monad m => (Word32 -> Word32) -> Parser m ()
+align :: MonadThrow m => (Word32 -> Word32) -> Parser m ()
 align f = do
     s <- get
     let c = consumed s
@@ -123,19 +144,19 @@ align f = do
         c' = f c
         n = c' - c
         ni = fromIntegral n
-    unless (c' >= c)
-        $ throw $ ParseError "Invalid alignment"
+    unless (n >= 0)
+        $ parseErrorAt $ "Invalid alignment: " ++ show n
     unless (B.length b >= ni)
-        $ throw $ ParseError "Buffer underrun"
+        bufferUnderrun
     put $ s { input = B.drop ni b
             , consumed = c' }
 
 isolate :: MonadThrow m => Word32 -> Parser m a -> Parser m a
 isolate n p = do
     b <- take n
-    (a, s) <- lift $ run p b
-    unless (B.null (input s))
-        $ throw $ ParseError $ "isolate: left-over " ++ show (B.length (input s))
+    (a, b') <- lift $ parse p b
+    unless (B.null b')
+        $ parseErrorAt $ "Left-over " ++ show (B.length b') ++ " of " ++ show (B.length b) ++ " bytes"
     return a
 
 -- From Data.Serialize.Get (cereal)
@@ -146,12 +167,12 @@ castByteString _ b =
         k p = S.peek (castPtr (p `plusPtr` o))
     in B.inlinePerformIO (withForeignPtr fp k)
 
-takeStorable :: (Monad m, Storable a) => Parser m a
+takeStorable :: (MonadThrow m, Storable a) => Parser m a
 takeStorable = do
     a <- return undefined
     liftM (castByteString a) (take (fromIntegral (S.sizeOf a)))
 
-peekStorable :: (Monad m, Storable a) => Parser m a
+peekStorable :: (MonadThrow m, Storable a) => Parser m a
 peekStorable = do
     a <- return undefined
     liftM (castByteString a) (peek (fromIntegral (S.sizeOf a)))

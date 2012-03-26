@@ -1,4 +1,5 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts
+           , RankNTypes #-}
 module Sound.LV2.Atom.Primitive (
     Primitive(..)
 ) where
@@ -7,19 +8,21 @@ import           Blaze.ByteString.Builder
 import           Blaze.ByteString.Builder.Int (fromInt32host, fromInt64host)
 import           Blaze.ByteString.Builder.Word (fromWord32host, fromWord64host)
 import           Control.Exception (assert)
+import           Control.Failure (Failure)
 import           Control.Monad
+import           Control.Monad.Trans.Resource (MonadThrow)
 import           Data.Binary.IEEE754 (doubleToWord, floatToWord)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int32, Int64)
 import           Data.Word (Word32, Word64)
 import           Sound.LV2.Atom.Class
-import           Sound.LV2.Atom.Parser (Parser)
+import           Sound.LV2.Atom.Parser (Parser, ParseException)
 import qualified Sound.LV2.Atom.Parser as P
 
 class Atom a => Primitive a where
     sizeOf :: a -> Word32
     toBuilder :: a -> Builder
-    toParser :: forall m . Monad m => Parser m a
+    toParser :: forall m . MonadThrow m => Parser m a
 
 instance Primitive Int32 where
     sizeOf _ = 4
