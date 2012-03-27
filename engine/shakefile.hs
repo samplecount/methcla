@@ -25,11 +25,11 @@ under dir = map prepend
 flag_ :: String -> String -> [String]
 flag_ o x = [o, x]
 
+flag :: String -> [String]
+flag f = [f]
+
 flags_ :: String -> [String] -> [String]
 flags_ o = concat . map (flag_ o)
-
-flag :: String -> String -> [String]
-flag f x = [f++x]
 
 flags :: String -> [String] -> [String]
 flags f = map (f++)
@@ -187,7 +187,7 @@ staticObject target toolChain buildFlags input deps output = do
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags (flag "-f" "PIC")
+sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags (flag "-fPIC")
 
 type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
 
@@ -278,21 +278,29 @@ cBuildFlags_IOS_Simulator :: CBuildFlags
 cBuildFlags_IOS_Simulator =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
   $ appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_IOS_Simulator ]
-  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"])
+  $ appendL compilerFlags (flag "-fvisibility=hidden")
   $ defaultCBuildFlags
 
-cToolChain_MacOSX :: CToolChain
-cToolChain_MacOSX =
+cToolChain_MacOSX_clang :: CToolChain
+cToolChain_MacOSX_clang =
     platformPrefix ^= "/Developer/SDKs/MacOSX10.6.sdk"
   $ prefix ^= "/usr"
   $ compiler ^= "clang"
   $ linker ^= "clang++"
   $ defaultCToolChain
 
+cToolChain_MacOSX_gcc :: CToolChain
+cToolChain_MacOSX_gcc =
+    platformPrefix ^= (platformPrefix ^$ cToolChain_MacOSX_clang)
+  $ prefix ^= (prefix ^$ cToolChain_MacOSX_clang)
+  $ compiler ^= "gcc"
+  $ linker ^= "g++"
+  $ defaultCToolChain
+
 cBuildFlags_MacOSX :: CBuildFlags
 cBuildFlags_MacOSX =
-    appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX ]
-  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"])
+    appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX_clang ]
+  $ appendL compilerFlags (flag "-std=c99" ++ flag "-fvisibility=hidden")
   $ defaultCBuildFlags
 
 -- ====================================================================
@@ -450,8 +458,8 @@ applyBuildConfiguration env = applyConfiguration (buildConfiguration ^$ env)
 
 configurations :: [Configuration]
 configurations = [
-    ("release", appendL compilerFlags (flag "-O" "2"))
-  , ("debug", appendL compilerFlags (flag "-g" "dwarf-2"))
+    ("release", appendL compilerFlags (flag "-O2"))
+  , ("debug", appendL compilerFlags (flag "-gdwarf-2"))
   ]
 
 -- ====================================================================
@@ -540,7 +548,7 @@ targetSpecs = [
   , ( "macosx",
     \shake env -> do
         let target = mkCTarget MacOSX "x86_64"
-            toolChain = cToolChain_MacOSX
+            toolChain = cToolChain_MacOSX_gcc
             buildFlags = mescalineBuildFlags (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
         libmescaline <- mescalineLib target
         shake $ do
