@@ -18,7 +18,7 @@ typedef boost::error_info<struct tag_OSStatus,OSStatus> OSStatusInfo;
     } while (false);
 
 RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
-    : m_client(client)
+    : Driver(client)
     , m_numInputs(2)
     , m_numOutputs(2)
     , m_inputBuffers(0)
@@ -176,7 +176,7 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     }
     
     // Initialize client
-    client->configure(*this);
+    client()->configure(*this);
 }
 
 RemoteIODriver::~RemoteIODriver() throw (IO::Exception)
@@ -236,7 +236,7 @@ OSStatus RemoteIODriver::RenderCallback(
     }
 
     // Run DSP graph
-    self->m_client->process(inNumberFrames, self->m_inputBuffers, self->m_outputBuffers);
+    self->client()->process(inNumberFrames, self->m_inputBuffers, self->m_outputBuffers);
 
     return noErr;
 }

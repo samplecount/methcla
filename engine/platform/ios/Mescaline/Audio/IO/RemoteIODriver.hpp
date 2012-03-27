@@ -37,7 +37,6 @@ namespace Mescaline { namespace Audio { namespace IO
                                        AudioBufferList              *ioData);
     
     private:
-        Client*             m_client;
         double              m_sampleRate;
         size_t              m_numInputs;
         size_t              m_numOutputs;

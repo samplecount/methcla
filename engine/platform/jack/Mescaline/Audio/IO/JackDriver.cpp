@@ -6,7 +6,7 @@ struct tag_jack_status_t { };
 typedef boost::error_info<tag_jack_status_t,jack_status_t> OSStatusInfo;
 
 JackDriver::JackDriver(Client* client) throw (IO::Exception)
-    : m_client(client)
+    : Driver(client)
 {
     // 
     jack_status_t status;
