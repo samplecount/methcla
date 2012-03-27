@@ -1,7 +1,6 @@
 #ifndef MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 #define MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 
-#include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Utility/Hash.hpp>
 
 #include <boost/filesystem.hpp>

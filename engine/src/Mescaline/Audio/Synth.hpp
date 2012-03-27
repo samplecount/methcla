@@ -3,7 +3,6 @@
 
 #include <Mescaline/Audio/AudioBus.hpp>
 #include <Mescaline/Audio/Engine.hpp>
-#include <Mescaline/Audio/Plugin/API.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/thread/locks.hpp>

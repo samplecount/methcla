@@ -1,0 +1,30 @@
+Name:                   bindings-sc3
+Version:                0.0.0
+Synopsis:               Bindings to the SuperCollider synthesis engine library.
+Description:            This library provides low level bindings to the SuperCollider synthesis engine library (@libscsynth@). If you are looking for a higher level Haskell interface, please use the hsc3-process package (<http://hackage.haskell.org/package/hsc3-process>).
+License:                GPL
+License-File:           LICENSE
+Category:               Sound
+Copyright:              Copyright (c) Stefan Kersten 2010
+Author:                 Stefan Kersten <sk@k-hornz.de>
+Maintainer:             Stefan Kersten <sk@k-hornz.de>
+Stability:              experimental
+Homepage:               http://space.k-hornz.de/software/hsc3-process/
+Tested-With:            GHC == 6.12
+Build-Type:             Simple
+Cabal-Version:          >= 1.6
+
+Data-Files:
+    README.md
+
+Library
+    Extensions:         ForeignFunctionInterface
+    Exposed-Modules:    Bindings.Sound.Mescaline
+    -- C-Sources:            cbits/helper_functions.c
+    Build-Depends:      base >= 3 && < 5
+                      , bindings-DSL >= 1.0 && < 1.1
+    -- Extra-Libraries:    scsynth
+
+Source-Repository head
+    Type:               git
+    Location:           git://github.com/kaoskorobase/hsc3-process.git

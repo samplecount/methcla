@@ -1,10 +1,10 @@
-#ifndef MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
-#define MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
+#ifndef Mescaline_Audio_IO_RemoteIODriver_hpp
+#define Mescaline_Audio_IO_RemoteIODriver_hpp
 
-#include <Mescaline/Audio/IO/Client.hpp>
-#include <Mescaline/Audio/IO/Driver.hpp>
-#include <Mescaline/Audio/Plugin/Types.h>
-#include <Mescaline/Memory.hpp>
+#include "Mescaline/Audio/IO/Client.hpp"
+#include "Mescaline/Audio/IO/Driver.hpp"
+#include "Mescaline/Audio/Plugin/Types.h"
+#include "Mescaline/Memory.hpp"
 
 #include <AudioUnit/AudioUnit.h>
 
@@ -49,4 +49,4 @@ namespace Mescaline { namespace Audio { namespace IO
     };
 }; }; };
 
-#endif // MESCALINE_AUDIO_IO_REMOTEIODRIVER_H_INCLUDED
+#endif // Mescaline_Audio_IO_RemoteIODriver_hpp

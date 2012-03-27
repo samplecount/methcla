@@ -14,6 +14,7 @@ import           System.Console.CmdArgs.Explicit
 import           System.Directory (removeDirectoryRecursive)
 import           System.Environment
 import           System.FilePath.Find
+import           System.Process (readProcess)
 
 under :: FilePath -> [FilePath] -> [FilePath]
 under dir = map prepend
@@ -357,7 +358,8 @@ engineBuildFlags target buildFlags =
      ++ case buildTarget ^$ target of
             IOS           -> [ "platform/ios" ]
             IOS_Simulator -> [ "platform/ios" ]
-            _             -> []
+            MacOSX        -> [ "platform/jack" ]
+            -- _             -> []
      ++ [ serdDir, sordDir, lilvDir ] )
   $ systemIncludes `appendL`
        ( [ "src" ]
@@ -439,7 +441,10 @@ mescalineLib target = do
             -- platform dependent
             ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
                 then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
-                else [])
+                else if (buildTarget ^$ target) `elem` [MacOSX]
+                     then under "platform/jack" [ "Mescaline/API.cpp"
+                                                , "Mescaline/Audio/IO/JackDriver.cpp" ]
+                     else [])
         ]
 
 -- ====================================================================
@@ -461,6 +466,20 @@ configurations = [
     ("release", appendL compilerFlags (flag "-O2"))
   , ("debug", appendL compilerFlags (flag "-gdwarf-2"))
   ]
+
+-- ====================================================================
+-- PkgConfig
+
+pkgConfig :: String -> IO (CBuildFlags -> CBuildFlags)
+pkgConfig pkg = do
+    cflags <- parseFlags <$> readProcess "pkg-config" ["--cflags", pkg] ""
+    lflags <- parseFlags <$> readProcess "pkg-config" ["--libs", pkg] ""
+    return $ appendL compilerFlags cflags . appendL linkerFlags lflags
+    where
+        parseFlags = map (dropSuffix "\\") . words . head . lines
+        dropSuffix s x = if s `isSuffixOf` x
+                         then reverse (drop (length s) (reverse x))
+                         else x
 
 -- ====================================================================
 -- Commandline options
@@ -547,9 +566,12 @@ targetSpecs = [
     )
   , ( "macosx",
     \shake env -> do
+        jackBuildFlags <- pkgConfig "jack"
+        print (jackBuildFlags cBuildFlags_MacOSX)
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX_gcc
-            buildFlags = mescalineBuildFlags (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
+            buildFlags = (mescalineBuildFlags.jackBuildFlags)
+                         (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
