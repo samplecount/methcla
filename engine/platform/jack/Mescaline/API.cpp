@@ -23,7 +23,12 @@ public:
     MyLoader()
         : Mescaline::Audio::Plugin::StaticLoader(descriptorFunctions())
     {
-        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
+        const char* bundlePath = getenv("MESCALINE_LV2_PATH");
+        if (bundlePath) {
+            setenv("LV2_PATH", bundlePath, 1);
+        } else {
+            setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
+        }
     }
 
     static Mescaline::Audio::Plugin::StaticLoader::DescriptorFunctionMap descriptorFunctions()
