@@ -567,7 +567,6 @@ targetSpecs = [
   , ( "macosx",
     \shake env -> do
         jackBuildFlags <- pkgConfig "jack"
-        print (jackBuildFlags cBuildFlags_MacOSX)
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX_gcc
             buildFlags = (mescalineBuildFlags.jackBuildFlags)
