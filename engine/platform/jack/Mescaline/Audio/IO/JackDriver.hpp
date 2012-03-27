@@ -28,6 +28,10 @@ namespace Mescaline { namespace Audio { namespace IO
         virtual void stop();
 
     private:
+        static int sampleRateCallback(jack_nframes_t nframes, void* arg);
+        static int bufferSizeCallback(jack_nframes_t nframes, void* arg);
+        static int processCallback(jack_nframes_t nframes, void* arg);
+
         // static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
         // static OSStatus RenderCallback(void                         *inRefCon, 
         //                                AudioUnitRenderActionFlags   *ioActionFlags, 
@@ -42,8 +46,8 @@ namespace Mescaline { namespace Audio { namespace IO
         size_t              m_numOutputs;
         size_t              m_bufferSize;
         jack_client_t*      m_jackClient;
-        // jack_port_t*        input_port;
-        // jack_port_t*        output_port;
+        jack_port_t**       m_jackInputPorts;
+        jack_port_t**       m_jackOutputPorts;
         sample_t**          m_inputBuffers;
         sample_t**          m_outputBuffers;
         // AudioBufferList*    m_CAInputBuffers;
