@@ -290,6 +290,12 @@ cToolChain_MacOSX_clang =
   $ linker ^= "clang++"
   $ defaultCToolChain
 
+cBuildFlags_MacOSX_clang :: CBuildFlags
+cBuildFlags_MacOSX_clang =
+    appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX_clang ]
+  $ appendL compilerFlags (flag "-fvisibility=hidden")
+  $ defaultCBuildFlags
+
 cToolChain_MacOSX_gcc :: CToolChain
 cToolChain_MacOSX_gcc =
     platformPrefix ^= (platformPrefix ^$ cToolChain_MacOSX_clang)
@@ -298,8 +304,8 @@ cToolChain_MacOSX_gcc =
   $ linker ^= "g++"
   $ defaultCToolChain
 
-cBuildFlags_MacOSX :: CBuildFlags
-cBuildFlags_MacOSX =
+cBuildFlags_MacOSX_gcc :: CBuildFlags
+cBuildFlags_MacOSX_gcc =
     appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX_clang ]
   $ appendL compilerFlags (flag "-std=c99" ++ flag "-fvisibility=hidden")
   $ defaultCBuildFlags
@@ -568,9 +574,9 @@ targetSpecs = [
     \shake env -> do
         jackBuildFlags <- pkgConfig "jack"
         let target = mkCTarget MacOSX "x86_64"
-            toolChain = cToolChain_MacOSX_gcc
+            toolChain = cToolChain_MacOSX_clang
             buildFlags = (mescalineBuildFlags.jackBuildFlags)
-                         (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
+                         (applyBuildConfiguration env configurations cBuildFlags_MacOSX_clang)
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
