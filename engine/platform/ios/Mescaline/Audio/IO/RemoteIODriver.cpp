@@ -176,7 +176,7 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     }
     
     // Initialize client
-    client()->configure(*this);
+    client->configure(*this);
 }
 
 RemoteIODriver::~RemoteIODriver() throw (IO::Exception)
