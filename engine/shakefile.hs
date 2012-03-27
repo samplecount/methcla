@@ -95,7 +95,7 @@ defaultCToolChain =
       }
 
 tool :: (Lens CToolChain String) -> CToolChain -> FilePath
-tool f toolChain = (platformPrefix ^$ toolChain) </> (prefix ^$ toolChain) </> "bin" </> (f ^$ toolChain)
+tool f toolChain = (prefix ^$ toolChain) </> "bin" </> (f ^$ toolChain)
 
 
 data CBuildFlags = CBuildFlags {
@@ -104,6 +104,8 @@ data CBuildFlags = CBuildFlags {
   , _defines :: [(String, Maybe String)]
   , _preprocessorFlags :: [String]
   , _compilerFlags :: [String]
+  , _libraryPath :: [FilePath]
+  , _libraries :: [String]
   , _linkerFlags :: [String]
   } deriving (Show)
 
@@ -117,6 +119,8 @@ defaultCBuildFlags =
       , _defines = []
       , _preprocessorFlags = []
       , _compilerFlags = []
+      , _libraryPath = []
+      , _libraries = []
       , _linkerFlags = []
       }
 
@@ -142,11 +146,11 @@ sourceTransform f cmd input = do
     return output
 
 dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
-dependencyFile env toolChain build input output = do
+dependencyFile target toolChain build input output = do
     output ?=> \_ -> do
         need [input]
         systemLoud (tool compiler toolChain)
-                $  flag_ "-arch" (buildArch ^$ env)
+                $  flag_ "-arch" (buildArch ^$ target)
                 ++ flags "-I" (systemIncludes ^$ build)
                 ++ flags_ "-iquote" (userIncludes ^$ build)
                 ++ (defineFlags build)
@@ -156,15 +160,17 @@ dependencyFile env toolChain build input output = do
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
-staticObject :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
-staticObject env toolChain buildFlags input deps output = do
+type ObjectRule = CTarget -> CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
+
+staticObject :: ObjectRule
+staticObject target toolChain buildFlags input deps output = do
     let depFile = output <.> "d"
-    dependencyFile env toolChain buildFlags input depFile
+    dependencyFile target toolChain buildFlags input depFile
     output ?=> \_ ->  do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         systemLoud (tool compiler toolChain)
-                $  flag_ "-arch" (buildArch ^$ env)
+                $  flag_ "-arch" (buildArch ^$ target)
                 ++ flags "-I" (systemIncludes ^$ buildFlags)
                 ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
                 ++ (defineFlags buildFlags)
@@ -172,15 +178,30 @@ staticObject env toolChain buildFlags input deps output = do
                 ++ (compilerFlags ^$ buildFlags)
                 ++ ["-c", "-o", output, input]
 
-linkC :: CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
-linkC env toolChain buildFlags inputs output = do
+sharedObject :: ObjectRule
+sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags (flag "-f" "PIC")
+
+type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
+
+link :: Linker
+link target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linker toolChain)
-          $  flag_ "-arch_only" (buildArch ^$ env)
+          $  flag_ "-arch_only" (buildArch ^$ target)
           ++ linkerFlags `getL` buildFlags
+          ++ flags "-L" (libraryPath ^$ buildFlags)
+          ++ flags "-l" (libraries ^$ buildFlags)
           ++ flag_ "-o" output
           ++ inputs
 
+linkStaticLibrary :: Linker
+linkStaticLibrary target toolChain = link target toolChain . appendL linkerFlags [ "-static" ]
+
+linkSharedLibrary :: Linker
+linkSharedLibrary target toolChain = link target toolChain . appendL linkerFlags [ "-shared" ]
+
+linkSharedLibrary_MacOSX :: Linker
+linkSharedLibrary_MacOSX target toolChain = link target toolChain . appendL linkerFlags [ "-dynamiclib" ]
 
 data SourceTree b = SourceTree (b -> b) [(FilePath, [FilePath])]
 
@@ -190,54 +211,57 @@ sourceTree = SourceTree
 sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
 sourceFiles = map (flip (,) [])
 
-data StaticLibrary = StaticLibrary {
-    name :: String
-  , sources :: CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
+data LinkType = Static | Shared deriving (Show)
+
+data Library = Library {
+    libName :: String
+  , libSources :: [SourceTree CBuildFlags]
   }
 
--- files :: [FilePath] -> CBuildFlags -> FilePath -> Rules (CBuildFlags, [SourceTree CBuildFlags])
--- files xs build _ = return (build, [SourceTree id (sourceFiles xs)])
+staticLibFileName :: String -> FilePath
+staticLibFileName = ("lib"++) . (<.> "a")
 
-libName :: StaticLibrary -> String
-libName = ("lib"++) . flip replaceExtension "a" . name
+sharedLibFileName :: String -> FilePath
+sharedLibFileName = ("lib"++) . (<.> "dylib")
 
-libBuildDir :: Env -> CTarget -> StaticLibrary -> FilePath
-libBuildDir env target lib = buildDir env target </> name lib
+libBuildDir :: Env -> CTarget -> FilePath -> FilePath
+libBuildDir env target libFileName = buildDir env target </> map tr (libFileName)
+    where tr '.' = '_'
+          tr x   = x
 
-libBuildPath :: Env -> CTarget -> StaticLibrary -> FilePath
-libBuildPath env target lib = buildDir env target </> libName lib
+libBuildPath :: Env -> CTarget -> FilePath -> FilePath
+libBuildPath env target libFileName = buildDir env target </> libFileName
 
-staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> StaticLibrary -> Rules ()
-staticLibrary env target toolChain buildFlags lib = do
-    let buildDir = libBuildDir env target lib
-    (buildFlags', srcTrees) <- sources lib buildFlags buildDir
-    objects <- forM srcTrees $ \(SourceTree mapBuildFlags srcTree) -> do
+cLibrary :: ObjectRule -> Linker -> (Library -> FilePath)
+         -> Env -> CTarget -> CToolChain -> CBuildFlags
+         -> Library
+         -> Rules FilePath
+cLibrary object link libFileName env target toolChain buildFlags lib = do
+    let libFile = libFileName lib
+        libPath = libBuildPath env target libFile
+        buildDir = libBuildDir env target libFile
+    objects <- forM (libSources lib) $ \(SourceTree mapBuildFlags srcTree) -> do
         let src = map fst srcTree
             dep = map snd srcTree
             obj = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
-        zipWithM_ ($) (zipWith (staticObject target toolChain (mapBuildFlags buildFlags')) src dep) obj
+        zipWithM_ ($) (zipWith (object target toolChain (mapBuildFlags buildFlags)) src dep) obj
         return obj
-    libBuildPath env target lib ?=> do
-        linkC target
-              toolChain
-              (linkerFlags `appendL` ["-static"] $ buildFlags')
-              (concat objects)
+    libPath ?=> link target toolChain buildFlags (concat objects)
+    return libPath
+
+staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+staticLibrary = cLibrary staticObject linkStaticLibrary (staticLibFileName . libName)
+
+sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+sharedLibrary = cLibrary sharedObject linkSharedLibrary_MacOSX (sharedLibFileName . libName)
 
 -- ====================================================================
 -- Target and build settings
 
 cToolChain_IOS_Simulator :: CToolChain
 cToolChain_IOS_Simulator =
-    platformPrefix ^= "/Developer/Platforms/iPhoneSimulator.platform"
-  $ prefix ^= "Developer/usr"
-  $ compiler ^= "clang"
-  $ linker ^= "libtool"
-  $ defaultCToolChain
-
-cToolChain_MacOSX :: CToolChain
-cToolChain_MacOSX =
-    platformPrefix ^= "/Developer/Platforms/MacOSX.platform"
-  $ prefix ^= "/usr"
+    platformPrefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.0.sdk"
+  $ prefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
   $ compiler ^= "clang"
   $ linker ^= "libtool"
   $ defaultCToolChain
@@ -245,14 +269,23 @@ cToolChain_MacOSX =
 cBuildFlags_IOS_Simulator :: CBuildFlags
 cBuildFlags_IOS_Simulator =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  $ appendL preprocessorFlags [ "-isysroot", platformPrefix `combineL` "Developer/SDKs/iPhoneSimulator5.0.sdk" $ cToolChain_IOS_Simulator ]
+  $ appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_IOS_Simulator ]
   $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
                             ++ flag "-g" "dwarf-2")
   $ defaultCBuildFlags
 
+cToolChain_MacOSX :: CToolChain
+cToolChain_MacOSX =
+    platformPrefix ^= "/Developer/SDKs/MacOSX10.6.sdk"
+  $ prefix ^= "/usr"
+  $ compiler ^= "clang"
+  $ linker ^= "clang++"
+  $ defaultCToolChain
+
 cBuildFlags_MacOSX :: CBuildFlags
 cBuildFlags_MacOSX =
-    appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
+    appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX ]
+  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
                             ++ flag "-g" "dwarf-2")
   $ defaultCBuildFlags
 
@@ -318,15 +351,25 @@ engineBuildFlags target buildFlags =
          , "external_libraries/boost_lockfree" ] )
   $ buildFlags
 
-mescalineLib :: CTarget -> IO StaticLibrary
+mescalineBuildFlags = libraries ^= [ "m" ]
+
+mescalineLib :: CTarget -> IO Library
 mescalineLib target = do
     boostSrc <- find always
-                    (extension ==? ".cpp" &&?
-                     (not . isSuffixOf "win32") <$> directory &&?
-                     (not . isSuffixOf "test/src") <$> directory &&?
-                     (fileName /=? "utf8_codecvt_facet.cpp"))
+                    (    extension ==? ".cpp"
+                     &&? (not . isSuffixOf "win32") <$> directory
+                     &&? (not . isSuffixOf "test/src") <$> directory
+                     -- FIXME: linking `filesystem' into a shared library fails with:
+                     --     Undefined symbols for architecture x86_64:
+                     --       "vtable for boost::filesystem::detail::utf8_codecvt_facet", referenced from:
+                     --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in v2_path.cpp.o
+                     --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in path.cpp.o
+                     --       NOTE: a missing vtable usually means the first non-inline virtual member function has no definition.
+                     &&? (not . elem "filesystem/" . splitPath) <$> filePath
+                     &&? (fileName /=? "utf8_codecvt_facet.cpp")
+                    )
                     boostDir
-    return $ StaticLibrary "mescaline" $ \buildFlags _ -> return (buildFlags, [
+    return $ Library "mescaline" $ [
         -- serd
         sourceTree serdBuildFlags $ sourceFiles $
             under (serdDir </> "src") [
@@ -383,7 +426,7 @@ mescalineLib target = do
             ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
                 then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
                 else [])
-        ])
+        ]
 
 -- ====================================================================
 -- Commandline options
@@ -456,21 +499,19 @@ targetSpecs = [
             let libs = [ libmescaline ]
                 lib = staticLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
-            mapM_ lib libs
-            want (map libFile libs)
+            want =<< mapM lib libs
     )
   , ( "macosx",
     \shake env -> do
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX
-            buildFlags = cBuildFlags_MacOSX
+            buildFlags = mescalineBuildFlags cBuildFlags_MacOSX
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
-                lib = staticLibrary env target toolChain buildFlags
+                lib = sharedLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
-            mapM_ lib libs
-            want (map libFile libs)
+            want =<< mapM lib libs
     )
   ]
 
