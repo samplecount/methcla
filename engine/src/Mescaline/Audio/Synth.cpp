@@ -182,7 +182,7 @@ void Synth::mapOutput(size_t index, const AudioBus::Handle& bus, OutputConnectio
         if (conn->connect(bus, type, offset, buffer)) {
             m_flags.set(kAudioOutputConnectionsChanged);
         }
-    }    
+    }
 }
 
 void Synth::process(size_t numFrames)
