@@ -44,12 +44,13 @@ combineL l p a = getL l a </> p
 f ?=> a = (==f) ?> a
 
 data Env = Env {
-    _buildPrefix :: FilePath
+    _buildConfiguration :: String
+  , _buildPrefix :: FilePath
   } deriving (Show)
 
 $( makeLens ''Env )
 
-mkEnv :: FilePath -> Env
+mkEnv :: String -> FilePath -> Env
 mkEnv = Env
 
 data Target =
@@ -73,7 +74,10 @@ mkCTarget :: Target -> String -> CTarget
 mkCTarget target arch = CTarget target arch
 
 buildDir :: Env -> CTarget -> FilePath
-buildDir env target = (buildPrefix ^$ env) </> (targetString (buildTarget ^$ target)) </> (buildArch ^$ target)
+buildDir env target = (buildPrefix ^$ env)
+                  </> map toLower (buildConfiguration ^$ env)
+                  </> (targetString (buildTarget ^$ target))
+                  </> (buildArch ^$ target)
 
 
 data CToolChain = CToolChain {
@@ -126,6 +130,10 @@ defaultCBuildFlags =
 
 defineFlags :: CBuildFlags -> [String]
 defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . getL defines
+
+
+type CBuildEnv = (CToolChain, CBuildFlags)
+
 
 systemLoud :: FilePath -> [String] -> Action ()
 systemLoud cmd args = do
@@ -270,8 +278,7 @@ cBuildFlags_IOS_Simulator :: CBuildFlags
 cBuildFlags_IOS_Simulator =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
   $ appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_IOS_Simulator ]
-  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
-                            ++ flag "-g" "dwarf-2")
+  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"])
   $ defaultCBuildFlags
 
 cToolChain_MacOSX :: CToolChain
@@ -285,8 +292,7 @@ cToolChain_MacOSX =
 cBuildFlags_MacOSX :: CBuildFlags
 cBuildFlags_MacOSX =
     appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX ]
-  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"]
-                            ++ flag "-g" "dwarf-2")
+  $ appendL compilerFlags (flags "-f" ["visibility=hidden", "visibility-inlines-hidden"])
   $ defaultCBuildFlags
 
 -- ====================================================================
@@ -429,6 +435,26 @@ mescalineLib target = do
         ]
 
 -- ====================================================================
+-- Configurations
+
+type Configuration = (String, CBuildFlags -> CBuildFlags)
+
+applyConfiguration :: String -> [Configuration] -> CBuildFlags -> CBuildFlags
+applyConfiguration c cs =
+    case lookup c cs of
+        Nothing -> id
+        Just f  -> f
+
+applyBuildConfiguration :: Env -> [Configuration] -> CBuildFlags -> CBuildFlags
+applyBuildConfiguration env = applyConfiguration (buildConfiguration ^$ env)
+
+configurations :: [Configuration]
+configurations = [
+    ("release", appendL compilerFlags (flag "-O" "2"))
+  , ("debug", appendL compilerFlags (flag "-g" "dwarf-2"))
+  ]
+
+-- ====================================================================
 -- Commandline options
 
 getShakeOptions :: FilePath -> IO ShakeOptions
@@ -446,33 +472,43 @@ data Options = Options {
   , _jobs :: Int
   , _output :: FilePath
   , _report :: Bool
+  , _configuration :: String
   , _targets :: [String]
   } deriving (Show)
 
-defaultOptions :: Options
-defaultOptions = Options {
+defaultOptions :: String -> Options
+defaultOptions defaultConfig = Options {
     _help = False
   , _verbosity = Normal
   , _jobs = 1
   , _output = "./build"
   , _report = False
+  , _configuration = defaultConfig
   , _targets = []
   }
 
 $( makeLenses [''Options] )
  
-arguments :: Mode Options
-arguments =
-    mode "shake" defaultOptions "Shake build system"
-         (flagArg (\t -> Right . modL targets (++[t])) "TARGET..") $
+arguments :: [String] -> [String] -> Mode Options
+arguments cs ts =
+    mode "shake" (defaultOptions "debug") "Shake build system"
+         (flagArg (updList ts targets) "TARGET..") $
          [ flagHelpSimple (setL help True)
          , flagReq ["verbosity","v"] (upd verbosity . read) "VERBOSITY" "Verbosity"
          , flagOpt "1" ["jobs","j"] (upd jobs . read) "NUMBER" "Number of parallel jobs"
          , flagReq ["output", "o"] (upd output) "DIRECTORY" "Build products output directory"
          , flagBool ["report", "r"] (setL report) "Generate build report"
+         , flagReq ["config", "c"] (updEnum cs configuration) "CONFIGURATION" "Configuration"
          ]
           -- ++ flagsVerbosity (setL verbosity)
-    where upd what x = Right . setL what x
+    where
+        upd what x = Right . setL what x
+        updList xs what x = if x `elem` xs
+                            then Right . modL what (++[x])
+                            else const $ Left $ show x ++ " not in " ++ show xs
+        updEnum xs what x = if x `elem` xs
+                            then Right . setL what x
+                            else const $ Left $ show x ++ " not in " ++ show xs
 
 optionsToShake :: Options -> ShakeOptions
 optionsToShake opts = shakeOptions {
@@ -493,7 +529,7 @@ targetSpecs = [
     \shake env -> do
         let target = mkCTarget IOS_Simulator "i386"
             toolChain = cToolChain_IOS_Simulator
-            buildFlags = cBuildFlags_IOS_Simulator
+            buildFlags = applyBuildConfiguration env configurations cBuildFlags_IOS_Simulator
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -505,7 +541,7 @@ targetSpecs = [
     \shake env -> do
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX
-            buildFlags = mescalineBuildFlags cBuildFlags_MacOSX
+            buildFlags = mescalineBuildFlags (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -524,11 +560,12 @@ processTargets shake env = mapM_ processTarget where
 
 main :: IO ()
 main = do
-    opts <- processArgs arguments
+    let args = arguments (map fst configurations) (map fst targetSpecs)
+    opts <- processArgs args
     let shakeIt = shake (optionsToShake opts)
-        env = mkEnv (output ^$ opts)
+        env = mkEnv (configuration ^$ opts) (output ^$ opts)
     if help ^$ opts
-        then print $ helpText [] HelpFormatDefault arguments
+        then print $ helpText [] HelpFormatDefault args
         else case targets ^$ opts of
                 [] -> do
                     -- TODO: integrate this with option processing
