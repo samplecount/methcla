@@ -1,7 +1,10 @@
 .PHONY: all clean shake-dependencies
 
+NCPU := $(shell sysctl -n hw.ncpu)
+DEFAULT_TARGET := macosx
+
 all:
-	./shake -j2
+	./shake -j$(NCPU) macosx
 
 clean:
 	./shake clean
