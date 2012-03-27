@@ -1,21 +1,21 @@
-Name:                   bindings-sc3
+Name:                   bindings-mescaline
 Version:                0.0.0
-Synopsis:               Bindings to the SuperCollider synthesis engine library.
-Description:            This library provides low level bindings to the SuperCollider synthesis engine library (@libscsynth@). If you are looking for a higher level Haskell interface, please use the hsc3-process package (<http://hackage.haskell.org/package/hsc3-process>).
+Synopsis:               Bindings to the Mescaline synthesis engine.
+Description:            This library provides low level bindings to the Mescaline synthesis engine.
 License:                GPL
-License-File:           LICENSE
+-- License-File:           LICENSE
 Category:               Sound
-Copyright:              Copyright (c) Stefan Kersten 2010
-Author:                 Stefan Kersten <sk@k-hornz.de>
-Maintainer:             Stefan Kersten <sk@k-hornz.de>
+Copyright:              Copyright (c) Stefan Kersten 2012
+Author:                 Stefan Kersten <sk@puesnada.es>
+Maintainer:             Stefan Kersten <sk@puesnada.es>
 Stability:              experimental
-Homepage:               http://space.k-hornz.de/software/hsc3-process/
-Tested-With:            GHC == 6.12
+Homepage:               http://mescaline.puesnada.es
+Tested-With:            GHC == 7.0.3
 Build-Type:             Simple
 Cabal-Version:          >= 1.6
 
-Data-Files:
-    README.md
+-- Data-Files:
+--     README.md
 
 Library
     Extensions:         ForeignFunctionInterface
@@ -25,6 +25,6 @@ Library
                       , bindings-DSL >= 1.0 && < 1.1
     -- Extra-Libraries:    scsynth
 
-Source-Repository head
-    Type:               git
-    Location:           git://github.com/kaoskorobase/hsc3-process.git
+-- Source-Repository head
+--     Type:               git
+--     Location:           git://github.com/kaoskorobase/hsc3-process.git
