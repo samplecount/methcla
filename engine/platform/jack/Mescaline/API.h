@@ -1,6 +1,8 @@
 #ifndef Mescaline_API_h
 #define Mescaline_API_h
 
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+
 #if defined(__cplusplus)
 #   define MESCALINE_C_LINKAGE extern "C"
 #else
@@ -38,5 +40,8 @@ MESCALINE_EXPORT void Mescaline_Engine_free(Engine* engine);
 
 MESCALINE_EXPORT void Mescaline_Engine_start(Engine* engine);
 MESCALINE_EXPORT void Mescaline_Engine_stop(Engine* engine);
+
+MESCALINE_EXPORT LV2_URID Mescaline_Engine_mapUri(Engine* engine, const char* uri);
+MESCALINE_EXPORT const char* Mescaline_Engine_unmapUri(Engine* engine, LV2_URID urid);
 
 #endif /* Mescaline_API_h */

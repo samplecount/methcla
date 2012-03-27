@@ -103,3 +103,13 @@ void Mescaline_Engine_stop(Engine* engine)
     cout << "Mescaline_Engine_stop" << endl;
     engine->m_audioDriver->stop();
 }
+
+LV2_URID Mescaline_Engine_mapUri(Engine* engine, const char* uri)
+{
+	return engine->m_engine->env().mapUri(uri);
+}
+
+const char* Mescaline_Engine_unmapUri(Engine* engine, LV2_URID urid)
+{
+	return engine->m_engine->env().unmapUri(urid);
+}
