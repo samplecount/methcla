@@ -14,7 +14,7 @@
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
 		538A7550148FCF1E00C47BF1 /* scope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 538A754E148FCF1E00C47BF1 /* scope.cpp */; };
-		53A6DC961520F47D0069A07A /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A6DC951520F47D0069A07A /* libmescaline.a */; };
+		53A6DCAC1522486B0069A07A /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A6DCAB1522486B0069A07A /* libmescaline.a */; };
 		53BB8E2F147EC774002E3B51 /* osc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53BB8E2E147EC774002E3B51 /* osc.cpp */; };
 		A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = A15CFB1C0DE4A8C600FB5D08 /* icon.png */; };
 		A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */; };
@@ -34,13 +34,12 @@
 		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainWindow.xib; path = ../MainWindow.xib; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MescalineMobile_Prefix.pch; sourceTree = "<group>"; };
-		5383602215079B090032BB86 /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = "../build/iOS-Simulator/i386/libmescaline.a"; sourceTree = "<group>"; };
 		538A754E148FCF1E00C47BF1 /* scope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scope.cpp; sourceTree = "<group>"; };
 		538A754F148FCF1E00C47BF1 /* scope.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scope.hpp; sourceTree = "<group>"; };
 		538A756F148FD2A600C47BF1 /* Faust.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Faust.hpp; path = Mescaline/Faust.hpp; sourceTree = "<group>"; };
 		538A7583148FD43500C47BF1 /* API.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = API.hpp; path = Plugin/API.hpp; sourceTree = "<group>"; };
 		538A761514911A8F00C47BF1 /* API.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = API.h; path = Plugin/API.h; sourceTree = "<group>"; };
-		53A6DC951520F47D0069A07A /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = ../build/ios_simulator/i386/libmescaline.a; sourceTree = "<group>"; };
+		53A6DCAB1522486B0069A07A /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = ../build/debug/ios_simulator/i386/libmescaline.a; sourceTree = "<group>"; };
 		53BB8E2E147EC774002E3B51 /* osc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = osc.cpp; sourceTree = "<group>"; };
 		53BB902C1481924B002E3B51 /* RemoteIODriver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RemoteIODriver.cpp; path = ../platform/ios/Mescaline/Audio/IO/RemoteIODriver.cpp; sourceTree = SOURCE_ROOT; };
 		53BB902D1481924B002E3B51 /* RemoteIODriver.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteIODriver.hpp; sourceTree = "<group>"; };
@@ -157,7 +156,7 @@
 				F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */,
 				A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */,
 				A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */,
-				53A6DC961520F47D0069A07A /* libmescaline.a in Frameworks */,
+				53A6DCAC1522486B0069A07A /* libmescaline.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,8 +185,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
-				53A6DC951520F47D0069A07A /* libmescaline.a */,
-				5383602215079B090032BB86 /* libmescaline.a */,
+				53A6DCAB1522486B0069A07A /* libmescaline.a */,
 				53BB9115148404AC002E3B51 /* external_libraries */,
 				53ED34511487F9B8003FF7C2 /* faust */,
 				53BD26B614F3A07100543AE5 /* lv2 */,
@@ -753,7 +751,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd .. && ./shake ios-simulator";
+			shellScript = "cd .. && ./shake -j`sysctl -n hw.ncpu` ios-simulator";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -796,8 +794,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../build/iOS-Simulator/i386\"",
-					"\"$(SRCROOT)/../build/ios_simulator/i386\"",
+					"\"$(SRCROOT)/../build/debug/ios_simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
 				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv-0.5.0";
@@ -823,8 +820,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 4.2;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../build/iOS-Simulator/i386\"",
-					"\"$(SRCROOT)/../build/ios_simulator/i386\"",
+					"\"$(SRCROOT)/../build/release/ios_simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
 				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv-0.5.0";
