@@ -179,7 +179,7 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
     client->configure(*this);
 }
 
-RemoteIODriver::~RemoteIODriver() throw (IO::Exception)
+RemoteIODriver::~RemoteIODriver()
 {
     // Free input buffer memory
     for (size_t i=0; i < m_numInputs; i++) {

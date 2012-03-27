@@ -17,7 +17,7 @@ namespace Mescaline { namespace Audio { namespace IO
     {
     public:
         RemoteIODriver(Client* client) throw (IO::Exception);
-        virtual ~RemoteIODriver() throw (IO::Exception);
+        virtual ~RemoteIODriver();
 
         virtual double sampleRate() const { return m_sampleRate; }
         virtual size_t numInputs() const { return m_numInputs; }
