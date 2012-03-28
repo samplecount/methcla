@@ -35,8 +35,12 @@ flags_ o = concat . map (flag_ o)
 flags :: String -> [String] -> [String]
 flags f = map (f++)
 
+-- Lens utils
 appendL :: Lens a [b] -> [b] -> a -> a
 appendL l bs a = setL l (getL l a ++ bs) a
+
+prependL :: Lens a [b] -> [b] -> a -> a
+prependL l bs a = setL l (bs ++ getL l a) a
 
 combineL :: Lens a FilePath -> FilePath -> a -> FilePath
 combineL l p a = getL l a </> p
@@ -81,20 +85,35 @@ buildDir env target = (buildPrefix ^$ env)
                   </> (buildArch ^$ target)
 
 
+data CLanguage = C | Cpp | ObjC | ObjCpp
+                 deriving (Enum, Eq, Show)
+
+data LinkType = Static | Shared | Dynamic deriving (Show)
+
+defaultCLanguageMap :: [(String, CLanguage)]
+defaultCLanguageMap = concatMap f [
+    ([".c"], C)
+  , ([".cc", ".cpp", ".C"], Cpp)
+  , ([".m"], ObjC)
+  , ([".mm"], ObjCpp)
+  ]
+  where f (es, l) = map (flip (,) l) es
+
+languageOf :: FilePath -> Maybe CLanguage
+languageOf = flip lookup defaultCLanguageMap . takeExtension
+
 data CToolChain = CToolChain {
-    _platformPrefix :: FilePath -- Apple-specific?
-  , _prefix :: FilePath
+    _prefix :: FilePath
   , _compiler :: String
   , _linker :: String
-  } deriving (Show)
+  }
 
 $( makeLenses [''CToolChain] )
 
 defaultCToolChain :: CToolChain
 defaultCToolChain =
     CToolChain {
-        _platformPrefix = "/"
-      , _prefix = "/"
+        _prefix = "/usr"
       , _compiler = "gcc"
       , _linker = "ld"
       }
@@ -108,7 +127,7 @@ data CBuildFlags = CBuildFlags {
   , _userIncludes :: [FilePath]
   , _defines :: [(String, Maybe String)]
   , _preprocessorFlags :: [String]
-  , _compilerFlags :: [String]
+  , _compilerFlags :: [(Maybe CLanguage, [String])]
   , _libraryPath :: [FilePath]
   , _libraries :: [String]
   , _linkerFlags :: [String]
@@ -154,6 +173,15 @@ sourceTransform f cmd input = do
     want [output]
     return output
 
+compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
+compilerFlagsFor lang = concat
+                      . maybe (map snd . filter (isNothing.fst))
+                              (mapMaybe . f) lang
+                      . getL compilerFlags
+    where f l (Nothing, x) = Just x
+          f l (Just l', x) | l == l' = Just x
+          f l _ = Nothing
+
 dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
 dependencyFile target toolChain build input output = do
     output ?=> \_ -> do
@@ -184,11 +212,11 @@ staticObject target toolChain buildFlags input deps output = do
                 ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
                 ++ (defineFlags buildFlags)
                 ++ (preprocessorFlags ^$ buildFlags)
-                ++ (compilerFlags ^$ buildFlags)
+                ++ (compilerFlagsFor (languageOf input) buildFlags)
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags (flag "-fPIC")
+sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags [(Nothing, flag "-fPIC")]
 
 type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
 
@@ -219,8 +247,6 @@ sourceTree = SourceTree
 
 sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
 sourceFiles = map (flip (,) [])
-
-data LinkType = Static | Shared deriving (Show)
 
 data Library = Library {
     libName :: String
@@ -269,8 +295,7 @@ sharedLibrary = cLibrary sharedObject linkSharedLibrary_MacOSX (sharedLibFileNam
 
 cToolChain_IOS_Simulator :: CToolChain
 cToolChain_IOS_Simulator =
-    platformPrefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.0.sdk"
-  $ prefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
+    prefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
   $ compiler ^= "clang"
   $ linker ^= "libtool"
   $ defaultCToolChain
@@ -278,30 +303,27 @@ cToolChain_IOS_Simulator =
 cBuildFlags_IOS_Simulator :: CBuildFlags
 cBuildFlags_IOS_Simulator =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  $ appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_IOS_Simulator ]
-  $ appendL compilerFlags (flag "-fvisibility=hidden")
+  $ appendL preprocessorFlags [ "-isysroot", "/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.0.sdk" ]
   $ defaultCBuildFlags
 
 cToolChain_MacOSX_clang :: CToolChain
 cToolChain_MacOSX_clang =
-    platformPrefix ^= "/Developer/SDKs/MacOSX10.6.sdk"
-  $ prefix ^= "/usr"
+    prefix ^= "/usr"
   $ compiler ^= "clang"
   $ linker ^= "clang++"
   $ defaultCToolChain
 
 cToolChain_MacOSX_gcc :: CToolChain
 cToolChain_MacOSX_gcc =
-    platformPrefix ^= (platformPrefix ^$ cToolChain_MacOSX_clang)
-  $ prefix ^= (prefix ^$ cToolChain_MacOSX_clang)
+    prefix ^= (prefix ^$ cToolChain_MacOSX_clang)
   $ compiler ^= "gcc"
   $ linker ^= "g++"
   $ defaultCToolChain
 
-cBuildFlags_MacOSX :: CBuildFlags
-cBuildFlags_MacOSX =
-    appendL preprocessorFlags [ "-isysroot", platformPrefix ^$ cToolChain_MacOSX_clang ]
-  $ appendL compilerFlags (flag "-std=c99" ++ flag "-fvisibility=hidden")
+cBuildFlags_MacOSX :: String -> CBuildFlags
+cBuildFlags_MacOSX sdkVersion =
+    appendL preprocessorFlags [ "-isysroot", "/Developer/SDKs/MacOSX" ++ sdkVersion ++ ".sdk" ]
+  $ appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
   $ defaultCBuildFlags
 
 -- ====================================================================
@@ -367,7 +389,21 @@ engineBuildFlags target buildFlags =
          , "external_libraries/boost_lockfree" ] )
   $ buildFlags
 
-mescalineBuildFlags = libraries ^= [ "m" ]
+-- | Build flags common to all targets
+mescalineCommonBuildFlags :: CBuildFlags -> CBuildFlags
+mescalineCommonBuildFlags = appendL compilerFlags [
+    (Just C, flag "-std=c99")
+  , (Nothing, flag "-fvisibility=hidden")
+  , (Just Cpp, flag "-fvisibility-inlines-hidden")
+  ]
+
+-- | Build flags for static library
+mescalineStaticBuidFlags :: CBuildFlags -> CBuildFlags
+mescalineStaticBuidFlags = id
+
+-- | Build flags for shared library
+mescalineSharedBuildFlags :: CBuildFlags -> CBuildFlags
+mescalineSharedBuildFlags = libraries ^= [ "m" ]
 
 mescalineLib :: CTarget -> IO Library
 mescalineLib target = do
@@ -463,8 +499,8 @@ applyBuildConfiguration env = applyConfiguration (buildConfiguration ^$ env)
 
 configurations :: [Configuration]
 configurations = [
-    ("release", appendL compilerFlags (flag "-O2"))
-  , ("debug", appendL compilerFlags (flag "-gdwarf-2"))
+    ("release", appendL compilerFlags [(Nothing, flag "-O2")])
+  , ("debug", appendL compilerFlags [(Nothing, flag "-gdwarf-2")])
   ]
 
 -- ====================================================================
@@ -474,7 +510,7 @@ pkgConfig :: String -> IO (CBuildFlags -> CBuildFlags)
 pkgConfig pkg = do
     cflags <- parseFlags <$> readProcess "pkg-config" ["--cflags", pkg] ""
     lflags <- parseFlags <$> readProcess "pkg-config" ["--libs", pkg] ""
-    return $ appendL compilerFlags cflags . appendL linkerFlags lflags
+    return $ appendL compilerFlags [(Nothing, cflags)] . appendL linkerFlags lflags
     where
         parseFlags = map (dropSuffix "\\") . words . head . lines
         dropSuffix s x = if s `isSuffixOf` x
@@ -556,7 +592,10 @@ targetSpecs = [
     \shake env -> do
         let target = mkCTarget IOS_Simulator "i386"
             toolChain = cToolChain_IOS_Simulator
-            buildFlags = applyBuildConfiguration env configurations cBuildFlags_IOS_Simulator
+            buildFlags = applyBuildConfiguration env configurations
+                       . mescalineStaticBuidFlags
+                       . mescalineCommonBuildFlags
+                       $ cBuildFlags_IOS_Simulator
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -569,8 +608,11 @@ targetSpecs = [
         jackBuildFlags <- pkgConfig "jack"
         let target = mkCTarget MacOSX "x86_64"
             toolChain = cToolChain_MacOSX_gcc
-            buildFlags = (mescalineBuildFlags.jackBuildFlags)
-                         (applyBuildConfiguration env configurations cBuildFlags_MacOSX)
+            buildFlags = applyBuildConfiguration env configurations
+                       . jackBuildFlags
+                       . mescalineSharedBuildFlags
+                       . mescalineCommonBuildFlags
+                       $ cBuildFlags_MacOSX "10.6"
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
