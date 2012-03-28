@@ -153,6 +153,14 @@ defaultCBuildFlags =
 defineFlags :: CBuildFlags -> [String]
 defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . getL defines
 
+compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
+compilerFlagsFor lang = concat
+                      . maybe (map snd . filter (isNothing.fst))
+                              (mapMaybe . f) lang
+                      . getL compilerFlags
+    where f l (Nothing, x) = Just x
+          f l (Just l', x) | l == l' = Just x
+          f l _ = Nothing
 
 type CBuildEnv = (CToolChain, CBuildFlags)
 
@@ -174,15 +182,6 @@ sourceTransform f cmd input = do
     output ?=> sed cmd input
     want [output]
     return output
-
-compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
-compilerFlagsFor lang = concat
-                      . maybe (map snd . filter (isNothing.fst))
-                              (mapMaybe . f) lang
-                      . getL compilerFlags
-    where f l (Nothing, x) = Just x
-          f l (Just l', x) | l == l' = Just x
-          f l _ = Nothing
 
 dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
 dependencyFile target toolChain build input output = do
