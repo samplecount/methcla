@@ -103,7 +103,7 @@ languageOf :: FilePath -> Maybe CLanguage
 languageOf = flip lookup defaultCLanguageMap . takeExtension
 
 data CToolChain = CToolChain {
-    _prefix :: FilePath
+    _prefix :: Maybe FilePath
   , _compiler :: String
   , _linker :: String
   }
@@ -113,13 +113,15 @@ $( makeLenses [''CToolChain] )
 defaultCToolChain :: CToolChain
 defaultCToolChain =
     CToolChain {
-        _prefix = "/usr"
+        _prefix = Nothing
       , _compiler = "gcc"
       , _linker = "ld"
       }
 
 tool :: (Lens CToolChain String) -> CToolChain -> FilePath
-tool f toolChain = (prefix ^$ toolChain) </> "bin" </> (f ^$ toolChain)
+tool f toolChain = maybe cmd (flip combine ("bin" </> cmd))
+                         (prefix ^$ toolChain)
+    where cmd = f ^$ toolChain
 
 
 data CBuildFlags = CBuildFlags {
@@ -295,7 +297,7 @@ sharedLibrary = cLibrary sharedObject linkSharedLibrary_MacOSX (sharedLibFileNam
 
 cToolChain_IOS_Simulator :: CToolChain
 cToolChain_IOS_Simulator =
-    prefix ^= "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
+    prefix ^= Just "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
   $ compiler ^= "clang"
   $ linker ^= "libtool"
   $ defaultCToolChain
@@ -308,7 +310,7 @@ cBuildFlags_IOS_Simulator =
 
 cToolChain_MacOSX_clang :: CToolChain
 cToolChain_MacOSX_clang =
-    prefix ^= "/usr"
+    prefix ^= Just "/usr"
   $ compiler ^= "clang"
   $ linker ^= "clang++"
   $ defaultCToolChain
