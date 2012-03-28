@@ -501,7 +501,7 @@ applyBuildConfiguration env = applyConfiguration (buildConfiguration ^$ env)
 configurations :: [Configuration]
 configurations = [
     ("release", appendL compilerFlags [(Nothing, flag "-O2")])
-  , ("debug", appendL compilerFlags [(Nothing, flag "-gdwarf-2")])
+  , ("debug", appendL compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")])
   ]
 
 -- ====================================================================
