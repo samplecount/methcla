@@ -10,8 +10,6 @@
 #include <cstring>
 #include <iostream>
 
-// #include <boost/thread.hpp>
-
 #include "lilv/lilv.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
@@ -102,4 +100,9 @@ void Mescaline_Engine_stop(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_stop" << endl;
     engine->m_audioDriver->stop();
+}
+
+void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData)
+{
+    engine->m_engine->env().request(request, handler, handlerData);
 }

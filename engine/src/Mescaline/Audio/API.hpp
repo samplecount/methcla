@@ -6,22 +6,32 @@
 
 namespace Mescaline { namespace Audio { namespace API {
 
-    typedef boost::function1<void, const LV2_Atom*> ResponseHandler;
+    // typedef boost::function2<void, LV2_Atom*, const LV2_Atom*> HandleResponse;
+    typedef void (*HandleResponse)(void* data, LV2_Atom* request, const LV2_Atom* response);
 
 	class Request
 	{
 	public:
-		Request(LV2_Atom* atom, const ResponseHandler& handler)
-			: m_atom(atom)
-			, m_responseHandler(handler)
+		Request(LV2_Atom* msg, const HandleResponse& handler, void* handlerData)
+			: m_request(msg)
+			, m_handler(handler)
+			, m_handlerData(handlerData)
 		{ }
+        virtual ~Request() { }
 
-		const LV2_Atom* request() { return m_atom; }
-		void respond(const LV2_Atom* atom) { m_responseHandler(atom); }
+		const LV2_Atom* request()
+		{
+		    return m_request;
+		}
+		virtual void respond(const LV2_Atom* msg)
+		{
+		    m_handler(m_handlerData, m_request, msg);
+		}
 
 	private:
-		LV2_Atom*		m_atom;
-	    ResponseHandler m_responseHandler;
+		LV2_Atom*		m_request;
+        HandleResponse  m_handler;
+        void*           m_handlerData;
 	};
 
 }; }; };

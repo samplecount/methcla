@@ -1,6 +1,8 @@
 #ifndef Mescaline_API_h
 #define Mescaline_API_h
 
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+
 #if defined(__cplusplus)
 #   define MESCALINE_C_LINKAGE extern "C"
 #else
@@ -39,6 +41,8 @@ MESCALINE_EXPORT void Mescaline_Engine_free(Mescaline_Engine* engine);
 MESCALINE_EXPORT void Mescaline_Engine_start(Mescaline_Engine* engine);
 MESCALINE_EXPORT void Mescaline_Engine_stop(Mescaline_Engine* engine);
 
+typedef void (*Mescaline_HandleResponse)(void* data, LV2_Atom* request, const LV2_Atom* response);
 
+MESCALINE_EXPORT void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData);
 
 #endif /* Mescaline_API_h */

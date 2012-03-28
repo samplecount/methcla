@@ -25,9 +25,9 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-APICommand::APICommand(Environment& env, LV2_Atom* atom, const API::ResponseHandler& handler)
+APICommand::APICommand(Environment& env, LV2_Atom* request, const API::HandleResponse& handler, void* handlerData)
     : Command(env, kNonRealtime)
-    , API::Request(atom, handler)
+    , API::Request(request, handler, handlerData)
 { }
 
 void APICommand::perform(Context context)
@@ -44,10 +44,12 @@ void APICommand::perform(Context context)
     env().free(context, this);
 }
 
-// void APICommand::respond(Context context, const LV2_Atom* atom)
-// {
-// 	
-// }
+void APICommand::respond(Context context, const LV2_Atom* msg)
+{
+    BOOST_ASSERT( context == kNonRealtime );
+    API::Request::respond(msg);
+    env().free(context, this);
+}
 
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
@@ -55,9 +57,9 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_plugins(pluginManager)
     , m_rootNode(0)
 //    , m_nodes(options.maxNumNodes)
-    , m_audioBuses(options.maxNumAudioBuses)
     , m_audioInputChannels(options.numHardwareInputChannels)
     , m_audioOutputChannels(options.numHardwareOutputChannels)
+    , m_audioBuses(options.maxNumAudioBuses)
     , m_epoch(0)
     , m_commandChannel(8192)
     , m_commandEngine(8192)
@@ -95,14 +97,15 @@ public:
 };
 
 
-void Environment::sendRequest(const LV2_Atom* atom, const API::ResponseHandler& handler)
+void Environment::request(LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData)
 {
-	const size_t atomStart = lv2_atom_pad_size(sizeof(APICommand));
-	const size_t atomSize = lv2_atom_total_size(atom);
-	void* mem = alloc(atomStart + atomSize);
-	LV2_Atom* atomCopy = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + atomStart);
-	memcpy(atomCopy, atom, atomSize);
-	APICommand* cmd = new (mem) APICommand(*this, atomCopy, handler);
+    // const size_t atomStart = lv2_atom_pad_size(sizeof(APICommand));
+    // const size_t atomSize = lv2_atom_total_size(atom);
+    // void* mem = alloc(atomStart + atomSize);
+    // LV2_Atom* atomCopy = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + atomStart);
+    // memcpy(atomCopy, atom, atomSize);
+    // APICommand* cmd = new (mem) APICommand(*this, atomCopy, handler);
+    APICommand* cmd = new APICommand(*this, atom, handler, handlerData);
     m_commandChannel.enqueue(cmd);
 }
 

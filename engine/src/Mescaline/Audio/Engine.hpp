@@ -88,9 +88,9 @@ namespace Mescaline { namespace Audio
 					 , public API::Request
     {
     public:
-        APICommand(Environment& env, LV2_Atom* atom, const API::ResponseHandler& handler);
+        APICommand(Environment& env, LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData);
         virtual void perform(Context context);
-		// virtual void respond(Context context, const LV2_Atom* atom);
+        virtual void respond(Context context, const LV2_Atom* atom);
     };
 
     class RTCommand : public Command
@@ -197,7 +197,7 @@ namespace Mescaline { namespace Audio
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
 
-        void sendRequest(const LV2_Atom* msg, const API::ResponseHandler& handler=API::ResponseHandler());
+        void request(LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData=0);
 
         // Commands
         void enqueue(Context context, Command* cmd);
