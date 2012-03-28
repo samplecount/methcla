@@ -31,12 +31,14 @@
 
 #define MESCALINE_EXPORT MESCALINE_C_LINKAGE MESCALINE_VISIBLE
 
-typedef struct Engine Engine;
+typedef struct Mescaline_Engine Mescaline_Engine;
 
-MESCALINE_EXPORT Engine* Mescaline_Engine_new();
-MESCALINE_EXPORT void Mescaline_Engine_free(Engine* engine);
+MESCALINE_EXPORT Mescaline_Engine* Mescaline_Engine_new();
+MESCALINE_EXPORT void Mescaline_Engine_free(Mescaline_Engine* engine);
 
-MESCALINE_EXPORT void Mescaline_Engine_start(Engine* engine);
-MESCALINE_EXPORT void Mescaline_Engine_stop(Engine* engine);
+MESCALINE_EXPORT void Mescaline_Engine_start(Mescaline_Engine* engine);
+MESCALINE_EXPORT void Mescaline_Engine_stop(Mescaline_Engine* engine);
+
+
 
 #endif /* Mescaline_API_h */

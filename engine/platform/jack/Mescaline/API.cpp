@@ -68,22 +68,22 @@ public:
 
 using namespace std;
 
-struct Engine
+struct Mescaline_Engine
 {
     Mescaline::Audio::Engine*     m_engine;
     Mescaline::Audio::IO::Driver* m_audioDriver;
 };
 
-Engine* Mescaline_Engine_new()
+Mescaline_Engine* Mescaline_Engine_new()
 {
     cout << "Mescaline_Engine_new" << endl;
-    Engine* engine = new Engine;
+    Mescaline_Engine* engine = new Mescaline_Engine;
     engine->m_engine = new MyEngine(new MyLoader());
     engine->m_audioDriver = new Mescaline::Audio::IO::JackDriver(engine->m_engine);
     return engine;
 }
 
-void Mescaline_Engine_free(Engine* engine)
+void Mescaline_Engine_free(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_free" << endl;
     Mescaline_Engine_stop(engine);
@@ -92,13 +92,13 @@ void Mescaline_Engine_free(Engine* engine)
     delete engine;
 }
 
-void Mescaline_Engine_start(Engine* engine)
+void Mescaline_Engine_start(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_start" << endl;
     engine->m_audioDriver->start();
 }
 
-void Mescaline_Engine_stop(Engine* engine)
+void Mescaline_Engine_stop(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_stop" << endl;
     engine->m_audioDriver->stop();
