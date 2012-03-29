@@ -350,8 +350,8 @@ Manager::Manager(Loader& loader)
     : m_loader(loader)
 {
     m_world = lilv_world_new();
-    // TODO: Error handling
-    BOOST_ASSERT_MSG(m_world != 0, "lilv_world_new() failed");
+    if (m_world == 0)
+		BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("`lilv_world_new' failed"));
     
     // Initialize features
 
