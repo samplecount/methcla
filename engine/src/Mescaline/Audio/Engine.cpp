@@ -57,9 +57,7 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_plugins(pluginManager)
     , m_rootNode(0)
 //    , m_nodes(options.maxNumNodes)
-    , m_audioInputChannels(options.numHardwareInputChannels)
-    , m_audioOutputChannels(options.numHardwareOutputChannels)
-    , m_audioBuses(options.maxNumAudioBuses)
+    // , m_audioBuses(options.maxNumAudioBuses)
     , m_epoch(0)
     , m_commandChannel(8192)
     , m_commandEngine(8192)
@@ -71,15 +69,18 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
 
     const Epoch prevEpoch = epoch() - 1;
 
+    m_audioInputChannels.reserve(options.numHardwareInputChannels);
     for (size_t i=0; i < options.numHardwareInputChannels; i++) {
         ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
-        m_audioInputChannels.push_back(bus);
         addResource(*bus);
+        m_audioInputChannels.push_back(bus);
     }
+
+    m_audioOutputChannels.reserve(options.numHardwareOutputChannels);
     for (size_t i=0; i < options.numHardwareOutputChannels; i++) {
         ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
-        m_audioOutputChannels.push_back(bus);
         addResource(*bus);
+        m_audioOutputChannels.push_back(bus);
     }
 }
 
@@ -132,11 +133,11 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
 
     // Connect input and output buses
     for (size_t i=0; i < numInputs; i++) {
-        m_audioInputChannels[i].setData(inputs[i]);
-        m_audioInputChannels[i].setEpoch(epoch());
+        m_audioInputChannels[i]->setData(inputs[i]);
+        m_audioInputChannels[i]->setEpoch(epoch());
     }
     for (size_t i=0; i < numOutputs; i++) {
-        m_audioOutputChannels[i].setData(outputs[i]);
+        m_audioOutputChannels[i]->setData(outputs[i]);
     }
     
     // Run DSP graph
@@ -144,7 +145,7 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     
     // Zero outputs that haven't been written to
     for (size_t i=0; i < numOutputs; i++) {
-        if (m_audioOutputChannels[i].epoch() != epoch()) {
+        if (m_audioOutputChannels[i]->epoch() != epoch()) {
             memset(outputs[i], 0, numFrames * sizeof(sample_t));
         }
     }

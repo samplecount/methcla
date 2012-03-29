@@ -217,20 +217,20 @@ namespace Mescaline { namespace Audio
         void removeResource(Resource& resource);
 
     private:
-        const size_t                m_sampleRate;
-        const size_t                m_blockSize;
-        RTMemoryManager             m_rtMem;
-        Plugin::Manager&            m_plugins;
-        ResourceMap                 m_resources;
-        Group*                      m_rootNode;
-        boost::ptr_vector<ExternalAudioBus> m_audioInputChannels;
-        boost::ptr_vector<ExternalAudioBus> m_audioOutputChannels;
-        boost::ptr_vector<InternalAudioBus> m_audioBuses;
-        Epoch                       m_epoch;
-        CommandChannel<Command>     m_commandChannel;
-        CommandEngine<Command>      m_commandEngine;
-        Uris                        m_uris;
-        LV2_Atom_Forge              m_forge;
+        const size_t                    m_sampleRate;
+        const size_t                    m_blockSize;
+        RTMemoryManager                 m_rtMem;
+        Plugin::Manager&                m_plugins;
+        ResourceMap                     m_resources;
+        Group*                          m_rootNode;
+        std::vector<ExternalAudioBus*>  m_audioInputChannels;
+        std::vector<ExternalAudioBus*>  m_audioOutputChannels;
+        // boost::ptr_vector<InternalAudioBus> m_audioBuses;
+        Epoch                           m_epoch;
+        CommandChannel<Command>         m_commandChannel;
+        CommandEngine<Command>          m_commandEngine;
+        Uris                            m_uris;
+        LV2_Atom_Forge                  m_forge;
     };
     
     class Engine : public IO::Client
