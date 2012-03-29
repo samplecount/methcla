@@ -58,6 +58,16 @@ module Bindings.Sound.Mescaline where
 #ccall Mescaline_Engine_start           , Ptr <Mescaline_Engine> -> IO ()
 #ccall Mescaline_Engine_stop            , Ptr <Mescaline_Engine> -> IO ()
 
+#integral_t LV2_URID
+#opaque_t LV2_Atom
+
+#ccall Mescaline_Engine_mapUri          , Ptr <Mescaline_Engine> -> Ptr CChar -> IO <LV2_URID>
+#ccall Mescaline_Engine_unmapUri        , Ptr <Mescaline_Engine> -> <LV2_URID> -> IO (Ptr CChar)
+
+-- #callback ReplyFunc , Ptr <ReplyAddress> -> Ptr CChar -> CInt -> IO ()
+
+#callback Mescaline_HandleResponse      , Ptr () -> Ptr <LV2_Atom> -> Ptr <LV2_Atom>
+
 -- #ccall World_NonRealTimeSynthesis   , Ptr <World> -> Ptr <WorldOptions> -> IO ()
 -- #ccall World_OpenUDP                , Ptr <World> -> CInt -> IO CInt
 -- #ccall World_OpenTCP                , Ptr <World> -> CInt -> CInt -> CInt -> IO CInt
