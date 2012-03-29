@@ -34,24 +34,19 @@
 
 #define MESCALINE_EXPORT MESCALINE_C_LINKAGE MESCALINE_VISIBLE
 
-typedef struct Engine Engine;
+typedef struct Mescaline_Engine Mescaline_Engine;
 
-MESCALINE_EXPORT Engine* Mescaline_Engine_new();
-MESCALINE_EXPORT void Mescaline_Engine_free(Engine* engine);
+MESCALINE_EXPORT Mescaline_Engine* Mescaline_Engine_new();
+MESCALINE_EXPORT void Mescaline_Engine_free(Mescaline_Engine* engine);
 
-MESCALINE_EXPORT void Mescaline_Engine_start(Engine* engine);
-MESCALINE_EXPORT void Mescaline_Engine_stop(Engine* engine);
+MESCALINE_EXPORT void Mescaline_Engine_start(Mescaline_Engine* engine);
+MESCALINE_EXPORT void Mescaline_Engine_stop(Mescaline_Engine* engine);
 
-MESCALINE_EXPORT LV2_URID Mescaline_Engine_mapUri(Engine* engine, const char* uri);
-MESCALINE_EXPORT const char* Mescaline_Engine_unmapUri(Engine* engine, LV2_URID urid);
+typedef void (*Mescaline_HandleResponse)(void* data, LV2_Atom* request, const LV2_Atom* response);
 
-typedef void (*MescalineResponseHandler)(const LV2_Atom* response, void* data);
+MESCALINE_EXPORT void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData);
 
-MESCALINE_EXPORT
-void Mescaline_Engine_send(
-	Engine* engine
-  , const LV2_Atom* request
-  , MescalineResponseHandler responseHandler
-  , void* responseHandlerData);
+MESCALINE_EXPORT LV2_URID Mescaline_Engine_mapUri(Mescaline_Engine* engine, const char* uri);
+MESCALINE_EXPORT const char* Mescaline_Engine_unmapUri(Mescaline_Engine* engine, LV2_URID urid);
 
 #endif /* Mescaline_API_h */

@@ -10,8 +10,6 @@
 #include <cstring>
 #include <iostream>
 
-// #include <boost/thread.hpp>
-
 #include "lilv/lilv.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
@@ -68,22 +66,22 @@ public:
 
 using namespace std;
 
-struct Engine
+struct Mescaline_Engine
 {
     Mescaline::Audio::Engine*     m_engine;
     Mescaline::Audio::IO::Driver* m_audioDriver;
 };
 
-Engine* Mescaline_Engine_new()
+Mescaline_Engine* Mescaline_Engine_new()
 {
     cout << "Mescaline_Engine_new" << endl;
-    Engine* engine = new Engine;
+    Mescaline_Engine* engine = new Mescaline_Engine;
     engine->m_engine = new MyEngine(new MyLoader());
     engine->m_audioDriver = new Mescaline::Audio::IO::JackDriver(engine->m_engine);
     return engine;
 }
 
-void Mescaline_Engine_free(Engine* engine)
+void Mescaline_Engine_free(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_free" << endl;
     Mescaline_Engine_stop(engine);
@@ -92,24 +90,29 @@ void Mescaline_Engine_free(Engine* engine)
     delete engine;
 }
 
-void Mescaline_Engine_start(Engine* engine)
+void Mescaline_Engine_start(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_start" << endl;
     engine->m_audioDriver->start();
 }
 
-void Mescaline_Engine_stop(Engine* engine)
+void Mescaline_Engine_stop(Mescaline_Engine* engine)
 {
     cout << "Mescaline_Engine_stop" << endl;
     engine->m_audioDriver->stop();
 }
 
-LV2_URID Mescaline_Engine_mapUri(Engine* engine, const char* uri)
+LV2_URID Mescaline_Engine_mapUri(Mescaline_Engine* engine, const char* uri)
 {
 	return engine->m_engine->env().mapUri(uri);
 }
 
-const char* Mescaline_Engine_unmapUri(Engine* engine, LV2_URID urid)
+const char* Mescaline_Engine_unmapUri(Mescaline_Engine* engine, LV2_URID urid)
 {
 	return engine->m_engine->env().unmapUri(urid);
+}
+
+void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData)
+{
+    engine->m_engine->env().request(request, handler, handlerData);
 }
