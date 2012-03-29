@@ -215,7 +215,6 @@ class Plugin : boost::noncopyable
 {
 public:
     Plugin(Manager& manager, const LilvPlugin* plugin);
-    ~Plugin();
 
     const char* uri() const;
     const char* name() const;

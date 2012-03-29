@@ -264,11 +264,6 @@ Plugin::Plugin(Manager& manager, const LilvPlugin* plugin)
     }
 }
 
-Plugin::~Plugin()
-{
-    delete m_descriptor;
-}
-
 const char* Plugin::uri() const
 {
     return lilv_node_as_uri(lilv_plugin_get_uri(m_plugin));
