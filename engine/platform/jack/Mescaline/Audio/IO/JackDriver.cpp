@@ -1,5 +1,6 @@
 #include "Mescaline/Audio/IO/JackDriver.hpp"
 
+#include <boost/assert.hpp>
 #include <sstream>
 
 using namespace Mescaline::Audio::IO;
@@ -62,11 +63,21 @@ JackDriver::JackDriver(Client* client) throw (IO::Exception)
 
 JackDriver::~JackDriver()
 {
-    jack_client_close(m_jackClient);
+    BOOST_VERIFY(jack_deactivate(m_jackClient) == 0);
     delete [] m_inputBuffers;
     delete [] m_outputBuffers;
+
+    for (size_t i=0; i < numInputs(); i++) {
+        BOOST_VERIFY(jack_port_unregister(m_jackClient, m_jackInputPorts[i]) == 0);
+    }
     delete [] m_jackInputPorts;
+
+    for (size_t i=0; i < numOutputs(); i++) {
+        BOOST_VERIFY(jack_port_unregister(m_jackClient, m_jackOutputPorts[i]) == 0);
+    }
     delete [] m_jackOutputPorts;
+
+    BOOST_VERIFY(jack_client_close(m_jackClient) == 0);
 }
 
 int JackDriver::sampleRateCallback(jack_nframes_t nframes, void* arg)
