@@ -300,8 +300,8 @@ UriMap::UriMap()
 LV2_URID UriMap::insert(const char* uri)
 {
     LV2_URID urid = m_uriToId.size() + 1;
-	if (urid == 0)
-		BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("No more URIDs left"));
+    if (urid == 0)
+        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("No more URIDs left"));
     m_uriToId[uri] = urid;
     m_idToUri[urid] = uri;
     return urid;
@@ -346,7 +346,7 @@ Manager::Manager(Loader& loader)
 {
     m_world = lilv_world_new();
     if (m_world == 0)
-		BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("`lilv_world_new' failed"));
+        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("`lilv_world_new' failed"));
     
     // Initialize features
 

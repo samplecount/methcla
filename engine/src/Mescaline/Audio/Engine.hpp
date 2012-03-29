@@ -85,7 +85,7 @@ namespace Mescaline { namespace Audio
     };
 
     class APICommand : public Command
-					 , public API::Request
+                     , public API::Request
     {
     public:
         APICommand(Environment& env, LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData);
@@ -187,12 +187,19 @@ namespace Mescaline { namespace Audio
 
         struct Uris
         {
-            LV2_URID atom_String;
+            // atom
+            LV2_URID atom_Blank;
+            LV2_URID atom_Resource;
+            LV2_URID atom_Sequence;
+            // patch
+            LV2_URID patch_Insert;
+            LV2_URID patch_subject;
+            LV2_URID patch_body;
         };
 
         // URIs and messages
-		URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
-		const char* unmapUri(URID urid) const { return plugins().uriMap().unmap(urid); }
+        URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
+        const char* unmapUri(URID urid) const { return plugins().uriMap().unmap(urid); }
 
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
