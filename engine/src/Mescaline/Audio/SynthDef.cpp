@@ -1,4 +1,5 @@
-#include <Mescaline/Audio/SynthDef.hpp>
+#include "Mescaline/Exception.hpp"
+#include "Mescaline/Audio/SynthDef.hpp"
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/foreach.hpp>
@@ -8,7 +9,6 @@
 #include <utility>
 
 #include "serd/serd.h"
-#include "lv2/lv2plug.in/ns/ext/reference/reference.h"
 
 using namespace boost;
 // using namespace Mescaline::Audio;
@@ -300,17 +300,13 @@ LV2_Handle Plugin::construct(void* location, double sampleRate) const
 //}
 
 UriMap::UriMap()
-{
-    const char* reference = LV2_REFERENCE_URI "#Reference";
-    insert(reference);
-    BOOST_ASSERT(   map(reference) == 0
-                 && unmap(0) != 0
-                 && strcmp(unmap(0), reference) == 0 );
-}
+{ }
 
 LV2_URID UriMap::insert(const char* uri)
 {
-    LV2_URID urid = m_uriToId.size();
+    LV2_URID urid = m_uriToId.size() + 1;
+	if (urid == 0)
+		BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("No more URIDs left"));
     m_uriToId[uri] = urid;
     m_idToUri[urid] = uri;
     return urid;
