@@ -16,6 +16,8 @@ public:
     Driver(Client* client)
         : m_client(client)
     { }
+    virtual ~Driver()
+    { }
 
     Client* client() { return m_client; }
 
