@@ -5,7 +5,7 @@ module Bindings.Sound.Mescaline where
 
 #strict_import
 
-#opaque_t Engine
+#opaque_t Mescaline_Engine
 
 -- #starttype struct WorldOptions
 --  #field mPassword                         , CString
@@ -53,10 +53,10 @@ module Bindings.Sound.Mescaline where
 -- #ccall ReplyAddress_ReplyData       , Ptr <ReplyAddress> -> IO (Ptr ())
 
 -- | Create a new world.
-#ccall Mescaline_Engine_new             , IO (Ptr <Engine>)
-#ccall Mescaline_Engine_free            , Ptr <Engine> -> IO ()
-#ccall Mescaline_Engine_start           , Ptr <Engine> -> IO ()
-#ccall Mescaline_Engine_stop            , Ptr <Engine> -> IO ()
+#ccall Mescaline_Engine_new             , IO (Ptr <Mescaline_Engine>)
+#ccall Mescaline_Engine_free            , Ptr <Mescaline_Engine> -> IO ()
+#ccall Mescaline_Engine_start           , Ptr <Mescaline_Engine> -> IO ()
+#ccall Mescaline_Engine_stop            , Ptr <Mescaline_Engine> -> IO ()
 
 -- #ccall World_NonRealTimeSynthesis   , Ptr <World> -> Ptr <WorldOptions> -> IO ()
 -- #ccall World_OpenUDP                , Ptr <World> -> CInt -> IO CInt
