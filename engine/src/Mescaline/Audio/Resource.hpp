@@ -53,13 +53,12 @@ namespace Mescaline { namespace Audio
     };
 
     class Environment;
-    using namespace boost::intrusive;
 
     /// Resource class.
     //
     // Resources are /always/ created in the RT thread and can /only/
     // be retained or released from the RT thread.
-    class Resource : public unordered_set_base_hook<>
+    class Resource : public boost::intrusive::unordered_set_base_hook<>
                    , public boost::noncopyable
     {
     public:
@@ -176,9 +175,9 @@ namespace Mescaline { namespace Audio
         }
 
     private:
-        typedef unordered_set<Resource>::bucket_type    bucket_type;
-        typedef unordered_set<Resource>::bucket_traits  bucket_traits;
-        typedef unordered_set<Resource, power_2_buckets<true> > Map;
+        typedef boost::intrusive::unordered_set<Resource>::bucket_type bucket_type;
+        typedef boost::intrusive::unordered_set<Resource>::bucket_traits bucket_traits;
+        typedef boost::intrusive::unordered_set<Resource, boost::intrusive::power_2_buckets<true> > Map;
 
         typedef boost::hash<ResourceId> KeyHasher;
         struct KeyValueEqual

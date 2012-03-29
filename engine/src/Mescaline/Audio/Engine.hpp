@@ -123,7 +123,6 @@ namespace Mescaline { namespace Audio
     };
 
     class Group;
-    using Memory::RTMemoryManager;
 
     class Environment : public boost::noncopyable
     {
@@ -179,7 +178,7 @@ namespace Mescaline { namespace Audio
 //            BOOST_THROW_EXCEPTION(InvalidInput());
 //        }
 
-        RTMemoryManager& rtMem() { return m_rtMem; }
+        Memory::RTMemoryManager& rtMem() { return m_rtMem; }
 
         const Epoch& epoch() const { return m_epoch; }
 
@@ -219,13 +218,12 @@ namespace Mescaline { namespace Audio
     private:
         const size_t                    m_sampleRate;
         const size_t                    m_blockSize;
-        RTMemoryManager                 m_rtMem;
+        Memory::RTMemoryManager         m_rtMem;
         Plugin::Manager&                m_plugins;
         ResourceMap                     m_resources;
         Group*                          m_rootNode;
         std::vector<ExternalAudioBus*>  m_audioInputChannels;
         std::vector<ExternalAudioBus*>  m_audioOutputChannels;
-        // boost::ptr_vector<InternalAudioBus> m_audioBuses;
         Epoch                           m_epoch;
         CommandChannel<Command>         m_commandChannel;
         CommandEngine<Command>          m_commandEngine;

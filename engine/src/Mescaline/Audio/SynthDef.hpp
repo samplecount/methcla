@@ -4,7 +4,6 @@
 #include <Mescaline/Utility/Hash.hpp>
 
 #include <boost/filesystem.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
@@ -18,9 +17,6 @@
 #include "lv2/puesnada.es/ext/rt-instantiate/rt-instantiate.h"
 
 namespace Mescaline { namespace Audio {
-
-using namespace boost::filesystem;
-using namespace std;
 
 class Port
 {
@@ -49,7 +45,7 @@ public:
 private:
     Type        m_type;
     uint32_t    m_index;
-    string      m_symbol;
+    std::string m_symbol;
 };
 
 class FloatPort : public Port
@@ -264,7 +260,7 @@ private:
     const char*                         m_bundlePath;
     const LV2_Feature* const*           m_features;
     const LV2_RT_Instantiate_Interface* m_constructor;
-    vector<FloatPort>                   m_ports;
+    std::vector<FloatPort>              m_ports;
     uint32_t                            m_numAudioInputs;
     uint32_t                            m_numAudioOutputs;
     uint32_t                            m_numControlInputs;

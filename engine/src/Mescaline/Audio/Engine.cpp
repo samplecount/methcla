@@ -3,12 +3,14 @@
 
 #include <boost/foreach.hpp>
 #include <cstdlib>
+#include <iostream>
 
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 using namespace Mescaline;
 using namespace Mescaline::Audio;
 using namespace Mescaline::Memory;
+using namespace std;
 
 void NodeMap::insert(Node* node)
 {
@@ -56,8 +58,6 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_blockSize(options.blockSize)
     , m_plugins(pluginManager)
     , m_rootNode(0)
-//    , m_nodes(options.maxNumNodes)
-    // , m_audioBuses(options.maxNumAudioBuses)
     , m_epoch(0)
     , m_commandChannel(8192)
     , m_commandEngine(8192)

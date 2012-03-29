@@ -9,8 +9,6 @@
 
 namespace Mescaline { namespace Memory {
 
-using namespace std;
-
 class RTMemoryManager
 {
 public:
@@ -55,7 +53,6 @@ protected:
     }
     static void destroy(void* ptr)
     {
-        cout << "AllocatedBase::free" << endl;
         Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
         BOOST_ASSERT( chunk->data == ptr );
         static_cast<T*>(ptr)->~T();

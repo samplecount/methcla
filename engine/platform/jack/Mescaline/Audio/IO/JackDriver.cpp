@@ -73,7 +73,9 @@ int JackDriver::sampleRateCallback(jack_nframes_t nframes, void* arg)
 {
     JackDriver* self = static_cast<JackDriver*>(arg);
     self->m_sampleRate = nframes;
-    cout << "the sample rate is now " << nframes << endl;
+#ifndef NDEBUG
+    std::cout << "Mescaline::Audio::IO::JackDriver: the sample rate is now " << nframes << std::endl;
+#endif
     return 0;
 }
 
@@ -81,7 +83,9 @@ int JackDriver::bufferSizeCallback(jack_nframes_t nframes, void* arg)
 {
     JackDriver* self = static_cast<JackDriver*>(arg);
     self->m_bufferSize = nframes;
-    cout << "the buffer size is now " << nframes << endl;
+#ifndef NDEBUG
+    std::cout << "Mescaline::Audio::IO::JackDriver: the buffer size is now " << nframes << std::endl;
+#endif
     return 0;
 }
 
