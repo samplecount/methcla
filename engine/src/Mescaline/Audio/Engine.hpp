@@ -210,6 +210,13 @@ namespace Mescaline { namespace Audio
         void free(Context context, Command* cmd);
 
     protected:
+        friend class APICommand;
+        
+        void performRequest(API::Request* request);
+        void performMessage(API::Request* request, const LV2_Atom_Object* msg);
+        void performBundle(API::Request* request, const LV2_Atom_Sequence* bdl);
+
+    protected:
         friend class Resource;
 
         void addResource(Resource& resource);

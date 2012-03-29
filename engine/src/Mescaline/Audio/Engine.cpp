@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 using namespace Mescaline;
@@ -35,15 +36,12 @@ APICommand::APICommand(Environment& env, LV2_Atom* request, const API::HandleRes
 void APICommand::perform(Context context)
 {
     BOOST_ASSERT( context == kRealtime );
-    const LV2_Atom* atom = request();
-    cout << "Message: " << atom << endl
-         << "    atom size: " << atom->size << endl
-         << "    atom type: " << atom->type << endl;
-    if (atom->type == env().uris().atom_String) {
-        const char* str = (const char*)LV2_ATOM_BODY(atom);
-        cout << "    string: " << str << endl;
-    }
-    env().free(context, this);
+    // if (atom->type == env().uris().atom_String) {
+    //     const char* str = (const char*)LV2_ATOM_BODY(atom);
+    //     cout << "    string: " << str << endl;
+    // }
+    // env().free(context, this);
+    env().performRequest(this);
 }
 
 void APICommand::respond(Context context, const LV2_Atom* msg)
@@ -63,7 +61,12 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_commandEngine(8192)
 {
     lv2_atom_forge_init(&m_forge, pluginManager.lv2UridMap());
-    m_uris.atom_String = pluginManager.uriMap().map(LV2_ATOM__String);
+    m_uris.atom_Blank = mapUri(LV2_ATOM__Blank);
+    m_uris.atom_Resource = mapUri(LV2_ATOM__Resource);
+    m_uris.atom_Sequence = mapUri(LV2_ATOM__Sequence);
+    m_uris.patch_Insert = mapUri(LV2_PATCH_PREFIX "Insert");
+    m_uris.patch_subject = mapUri(LV2_PATCH__subject);
+    m_uris.patch_body = mapUri(LV2_PATCH__body);
 
     m_rootNode = Group::construct(*this, nextResourceId(), 0);
 
@@ -161,6 +164,29 @@ void Environment::addResource(Resource& resource)
 void Environment::removeResource(Resource& resource)
 {
     m_resources.remove(resource);
+}
+
+void Environment::performRequest(API::Request* request)
+{
+    const LV2_Atom* atom = request->request();
+    cout << "Message: " << atom << endl
+         << "    atom size: " << atom->size << endl
+         << "    atom type: " << atom->type << endl;
+    if (   (atom->type == uris().atom_Blank)
+        || (atom->type == uris().atom_Resource))
+        performMessage(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
+    else if (atom->type == uris().atom_Sequence)
+        performBundle(request, reinterpret_cast<const LV2_Atom_Sequence*>(atom));
+    else
+        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("Invalid request type"));
+}
+
+void Environment::performMessage(API::Request* request, const LV2_Atom_Object* msg)
+{
+}
+
+void Environment::performBundle(API::Request* request, const LV2_Atom_Sequence* bdl)
+{
 }
 
 Engine::Engine(Plugin::Loader* pluginLoader)
