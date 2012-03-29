@@ -6,6 +6,9 @@
 module Sound.LV2.Uri (
     Uri
   , fromText
+  , fromString
+  , toText
+  , toString
   , Urid
   , fromWord32
   , toWord32
@@ -47,6 +50,12 @@ newtype Uri = Uri { toText :: Text } deriving (Eq, Hashable, IsString, Ord, Show
 
 fromText :: Text -> Uri
 fromText = Uri
+
+fromString :: String -> Uri
+fromString = fromText . T.pack
+
+toString :: Uri -> String
+toString = T.unpack . toText
 
 newtype Urid = Urid { toWord32 :: Word32 } deriving (Eq, Hashable, Ord, Show)
 
