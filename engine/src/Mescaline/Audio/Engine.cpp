@@ -101,6 +101,7 @@ public:
 
 void Environment::request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
 {
+    // std::cout << "Environment::request " << msg << " " << handler << " " << handlerData << "\n";
     const size_t start = lv2_atom_pad_size(sizeof(APICommand));
     const size_t size = lv2_atom_total_size(msg);
     void* mem = alloc(start + size);
@@ -169,7 +170,8 @@ void Environment::performRequest(API::Request* request)
     const LV2_Atom* atom = request->request();
     cout << "Message: " << atom << endl
          << "    atom size: " << atom->size << endl
-         << "    atom type: " << atom->type << endl;
+         << "    atom type: " << atom->type << endl
+         << "    atom uri:  " << unmapUri(atom->type) << endl;
     if (   (atom->type == uris().atom_Blank)
         || (atom->type == uris().atom_Resource))
         performMessage(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
@@ -181,6 +183,17 @@ void Environment::performRequest(API::Request* request)
 
 void Environment::performMessage(API::Request* request, const LV2_Atom_Object* msg)
 {
+    const char* atom_type = unmapUri(msg->atom.type);
+    const char* uri_type = unmapUri(msg->body.otype);
+    if (msg->atom.type == uris().atom_Blank) {
+        cout << atom_type << " " << msg->body.id << " " << uri_type << endl;
+    } else {
+        const char* uri_id = unmapUri(msg->body.id);
+        cout << atom_type << " " << uri_id << " " << uri_type << endl;
+    }
+    LV2_OBJECT_FOREACH(msg, prop) {
+        cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
+    }
 }
 
 void Environment::performBundle(API::Request* request, const LV2_Atom_Sequence* bdl)
