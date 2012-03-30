@@ -17,12 +17,15 @@ import           Control.Monad.IO.Class (MonadIO(..))
 import           Control.Monad.Trans.Class (MonadTrans(..))
 import           Control.Monad.Trans.Resource (MonadResource(..), MonadThrow(..))
 import qualified Control.Monad.Trans.State.Strict as S
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Internal as B
 import qualified Data.Text as Text
+import           Data.Word (Word32)
 import           Foreign.C
 import           Foreign.ForeignPtr
 import           Foreign.Ptr
 import           Foreign.StablePtr
+import           Foreign.Storable
 import           Sound.LV2.Atom (FromAtom(..), ToAtom(..), encode, decode)
 import qualified Sound.LV2.Uri as Uri
 
@@ -60,8 +63,17 @@ free e = do
     freeHaskellFunPtr (c'handler e)
 
 handleResponse :: Ptr C'LV2_Atom -> Ptr () -> IO ()
-handleResponse _ _ = return ()
+handleResponse msgPtr dataPtr = do
+    -- Get response atom size
+    size <- peek (p'LV2_Atom'size msgPtr)
+    -- Create ByteString from response atom
+    b <- B.packCStringLen (castPtr msgPtr, fromIntegral size)
+    -- Get response MVar from data pointer
+    m <- deRefStablePtr (castPtrToStablePtr dataPtr)
+    -- Put ByteString to reponse MVar
+    putMVar m b
 
+-- | Run an EngineT computation.
 runEngineT :: (MonadIO m, MonadResource m) => EngineT m a -> m a
 runEngineT a = do
     s <- liftIO $ do
@@ -74,9 +86,11 @@ runEngineT a = do
 c'lift1 :: MonadIO m => (Ptr C'Mescaline_Engine -> IO a) -> EngineT m a
 c'lift1 f = gets c'engine >>= liftIO . f
 
+-- | Start the engine.
 start :: MonadIO m => EngineT m ()
 start = c'lift1 c'Mescaline_Engine_start
 
+-- | Stop the engine.
 stop :: MonadIO m => EngineT m ()
 stop = c'lift1 c'Mescaline_Engine_stop
 
@@ -92,13 +106,23 @@ request_ a = do
 -- | Synchronous request.
 request :: (MonadIO m, MonadThrow m, ToAtom (EngineT m) a, FromAtom (EngineT m) b) => a -> EngineT m b
 request a = do
+    -- Convert a to ByteString
     ba <- encode (toAtom a)
     Engine e h <- get
-    liftIO $ do
+    -- Get response ByteString
+    bb <- liftIO $ do
+        -- Create destination MVar
         m <- newEmptyMVar
+        -- Wrap MVar in StablePtr
         c'm <- newStablePtr m
+        -- Get ByteString pointer
         let (fp, o, _) = B.toForeignPtr ba
+        -- Pass request to engine
         withForeignPtr fp $ \p -> c'Mescaline_Engine_request e (castPtr p) h (castStablePtrToPtr c'm)
+        -- Take response ByteString from MVar
         b <- takeMVar m
+        -- Free MVar StablePointer
         freeStablePtr c'm
         return b
+    -- Decode response ByteString
+    decode fromAtom bb
