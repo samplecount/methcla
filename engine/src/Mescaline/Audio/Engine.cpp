@@ -28,9 +28,12 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-APICommand::APICommand(Environment& env, LV2_Atom* request, const API::HandleResponse& handler, void* handlerData)
+APICommand::APICommand(Environment& env, const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
     : Command(env, kNonRealtime)
-    , API::Request(request, handler, handlerData)
+    , API::Request(msg, handler, handlerData)
+{ }
+
+APICommand::~APICommand()
 { }
 
 void APICommand::perform(Context context)
@@ -96,15 +99,15 @@ public:
 };
 
 
-void Environment::request(LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData)
+void Environment::request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
 {
-    // const size_t atomStart = lv2_atom_pad_size(sizeof(APICommand));
-    // const size_t atomSize = lv2_atom_total_size(atom);
-    // void* mem = alloc(atomStart + atomSize);
-    // LV2_Atom* atomCopy = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + atomStart);
-    // memcpy(atomCopy, atom, atomSize);
-    // APICommand* cmd = new (mem) APICommand(*this, atomCopy, handler);
-    APICommand* cmd = new APICommand(*this, atom, handler, handlerData);
+    const size_t start = lv2_atom_pad_size(sizeof(APICommand));
+    const size_t size = lv2_atom_total_size(msg);
+    void* mem = alloc(start + size);
+    LV2_Atom* atom = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + start);
+    memcpy(atom, msg, size);
+    APICommand* cmd = new (mem) APICommand(*this, atom, handler, handlerData);
+    // APICommand* cmd = new APICommand(*this, msg, handler, handlerData);
     m_commandChannel.enqueue(cmd);
 }
 

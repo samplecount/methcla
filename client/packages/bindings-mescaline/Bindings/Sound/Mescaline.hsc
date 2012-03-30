@@ -66,7 +66,8 @@ module Bindings.Sound.Mescaline where
 
 -- #callback ReplyFunc , Ptr <ReplyAddress> -> Ptr CChar -> CInt -> IO ()
 
-#callback Mescaline_HandleResponse      , Ptr () -> Ptr <LV2_Atom> -> Ptr <LV2_Atom>
+#callback Mescaline_HandleResponse      , Ptr <LV2_Atom> -> Ptr () -> IO ()
+#ccall Mescaline_Engine_request         , Ptr <LV2_Atom> -> <Mescaline_HandleResponse> -> Ptr () -> IO ()
 
 -- #ccall World_NonRealTimeSynthesis   , Ptr <World> -> Ptr <WorldOptions> -> IO ()
 -- #ccall World_OpenUDP                , Ptr <World> -> CInt -> IO CInt

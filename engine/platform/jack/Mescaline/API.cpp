@@ -112,7 +112,7 @@ const char* Mescaline_Engine_unmapUri(Mescaline_Engine* engine, LV2_URID urid)
 	return engine->m_engine->env().unmapUri(urid);
 }
 
-void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData)
+void Mescaline_Engine_request(Mescaline_Engine* engine, const LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData)
 {
     engine->m_engine->env().request(request, handler, handlerData);
 }
