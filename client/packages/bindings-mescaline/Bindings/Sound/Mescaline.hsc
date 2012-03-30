@@ -3,46 +3,12 @@
 
 module Bindings.Sound.Mescaline where
 
+import Data.Word (Word32)
+
 #strict_import
 
 #opaque_t Mescaline_Engine
 
--- #starttype struct WorldOptions
---  #field mPassword                         , CString
---  #field mNumBuffers                       , CUInt
---  #field mMaxLogins                        , CUInt
---  #field mMaxNodes                         , CUInt
---  #field mMaxGraphDefs                     , CUInt
---  #field mMaxWireBufs                      , CUInt
---  #field mNumAudioBusChannels              , CUInt
---  #field mNumInputBusChannels              , CUInt
---  #field mNumOutputBusChannels             , CUInt
---  #field mNumControlBusChannels            , CUInt
---  #field mBufLength                        , CUInt
---  #field mRealTimeMemorySize               , CUInt
---  #field mNumSharedControls                , CInt
---  #field mSharedControls                   , Ptr CFloat
---  #field mRealTime                         , CInt
---  #field mMemoryLocking                    , CInt
---  #field mNonRealTimeCmdFilename           , CString
---  #field mNonRealTimeInputFilename         , CString
---  #field mNonRealTimeOutputFilename        , CString
---  #field mNonRealTimeOutputHeaderFormat    , CString
---  #field mNonRealTimeOutputSampleFormat    , CString
---  #field mPreferredSampleRate              , CUInt
---  #field mNumRGens                         , CUInt
---  #field mPreferredHardwareBufferFrameSize , CUInt
---  #field mLoadGraphDefs                    , CUInt
---  #field mInputStreamsEnabled              , CString
---  #field mOutputStreamsEnabled             , CString
---  #field mInDeviceName                     , CString
---  #field mVerbosity                        , CInt
---  #field mRendezvous                       , CInt
---  #field mUGensPluginPath                  , CString
---  #field mOutDeviceName                    , CString
---  #field mRestrictedPath                   , CString
--- #stoptype
--- 
 -- #cinline kDefaultWorldOptions , IO (Ptr <struct WorldOptions>)
 
 -- #opaque_t struct ReplyAddress
@@ -59,7 +25,11 @@ module Bindings.Sound.Mescaline where
 #ccall Mescaline_Engine_stop            , Ptr <Mescaline_Engine> -> IO ()
 
 #integral_t LV2_URID
-#opaque_t LV2_Atom
+
+#starttype LV2_Atom
+  #field size , Word32
+  #field type , Word32
+#stoptype
 
 #ccall Mescaline_Engine_mapUri          , Ptr <Mescaline_Engine> -> Ptr CChar -> IO <LV2_URID>
 #ccall Mescaline_Engine_unmapUri        , Ptr <Mescaline_Engine> -> <LV2_URID> -> IO (Ptr CChar)
