@@ -109,9 +109,9 @@ int64ToWord32 :: Int64 -> Word32
 int64ToWord32 n = assert (n < fromIntegral (maxBound :: Word32)) (fromIntegral n)
 
 putProperty :: (Monad m, ToAtom m a) => Urid -> Urid -> a -> Put m ()
-putProperty c k v = do
-    putUrid c
+putProperty k c v = do
     putUrid k
+    putUrid c
     toAtom v
 
 putObject :: Uri.Map m => Object (Put m ()) -> Put m ()
@@ -150,14 +150,14 @@ blank = object Object.Blank
 resource :: (Uri.Map m, ToUrid (Put m) r, ToUrid (Put m) t) => r -> t -> PutObject m () -> Put m ()
 resource = object Object.Resource
 
-property :: (Uri.Map m, ToUrid (Put m) c, ToUrid (Put m) k, ToAtom m a) => c -> k -> a -> PutObject m ()
-property c k a = PutObject $ do
-    uc <- toUrid c
+property :: (Uri.Map m, ToUrid (Put m) k, ToUrid (Put m) c, ToAtom m a) => k -> c -> a -> PutObject m ()
+property k c a = PutObject $ do
     uk <- toUrid k
-    putProperty uc uk a
+    uc <- toUrid c
+    putProperty uk uc a
 
 property_ :: (Uri.Map m, ToUrid (Put m) k, ToAtom m a) => k -> a -> PutObject m ()
-property_ = property (Uri.fromWord32 0)
+property_ k = property k (Uri.fromWord32 0)
 
 tuple :: Uri.Map m => [Put m ()] -> Put m ()
 tuple as = do
