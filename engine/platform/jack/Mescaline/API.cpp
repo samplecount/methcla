@@ -74,7 +74,7 @@ struct Mescaline_Engine
 
 Mescaline_Engine* Mescaline_Engine_new()
 {
-    cout << "Mescaline_Engine_new" << endl;
+    // cout << "Mescaline_Engine_new" << endl;
     Mescaline_Engine* engine = new Mescaline_Engine;
     engine->m_engine = new MyEngine(new MyLoader());
     engine->m_audioDriver = new Mescaline::Audio::IO::JackDriver(engine->m_engine);
@@ -83,7 +83,7 @@ Mescaline_Engine* Mescaline_Engine_new()
 
 void Mescaline_Engine_free(Mescaline_Engine* engine)
 {
-    cout << "Mescaline_Engine_free" << endl;
+    // cout << "Mescaline_Engine_free" << endl;
     Mescaline_Engine_stop(engine);
     delete engine->m_engine;
     delete engine->m_audioDriver;
@@ -92,13 +92,13 @@ void Mescaline_Engine_free(Mescaline_Engine* engine)
 
 void Mescaline_Engine_start(Mescaline_Engine* engine)
 {
-    cout << "Mescaline_Engine_start" << endl;
+    // cout << "Mescaline_Engine_start" << endl;
     engine->m_audioDriver->start();
 }
 
 void Mescaline_Engine_stop(Mescaline_Engine* engine)
 {
-    cout << "Mescaline_Engine_stop" << endl;
+    // cout << "Mescaline_Engine_stop" << endl;
     engine->m_audioDriver->stop();
 }
 
