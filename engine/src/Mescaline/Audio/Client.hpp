@@ -22,15 +22,15 @@ private:
 class Engine
 {
 public:
-	typedef boost::unordered_map<string,Port> PortMap;
+	typedef boost::unordered_map<std::string,Port> PortMap;
 
 	Engine(Mescaline::Audio::Engine& engine);
 
 	const PortMap& hwAudioPorts() const { return m_hwAudioPorts; }
 
 private:
-	Mescaline::Audio::Engine&		  m_engine;
-	boost::unordered_map<string,Port> m_hwAudioPorts;
+	Mescaline::Audio::Engine&	m_engine;
+	PortMap                     m_hwAudioPorts;
 };
 	
 }; }; }; };
