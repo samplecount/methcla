@@ -35,18 +35,13 @@ APICommand::APICommand(Environment& env, LV2_Atom* request, const API::HandleRes
 
 void APICommand::perform(Context context)
 {
-    BOOST_ASSERT( context == kRealtime );
-    // if (atom->type == env().uris().atom_String) {
-    //     const char* str = (const char*)LV2_ATOM_BODY(atom);
-    //     cout << "    string: " << str << endl;
-    // }
-    // env().free(context, this);
+    BOOST_ASSERT_MSG( context == kRealtime, "APICommand::perform should only be called in the RT context" );
     env().performRequest(this);
 }
 
 void APICommand::respond(Context context, const LV2_Atom* msg)
 {
-    BOOST_ASSERT( context == kNonRealtime );
+    BOOST_ASSERT_MSG( context == kNonRealtime, "APICommand::respond should only be called in the NRT context" );
     API::Request::respond(msg);
     env().free(context, this);
 }
