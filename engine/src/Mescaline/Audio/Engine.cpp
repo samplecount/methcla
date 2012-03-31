@@ -28,25 +28,23 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-APICommand::APICommand(Environment& env, LV2_Atom* request, const API::HandleResponse& handler, void* handlerData)
+APICommand::APICommand(Environment& env, const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
     : Command(env, kNonRealtime)
-    , API::Request(request, handler, handlerData)
+    , API::Request(msg, handler, handlerData)
+{ }
+
+APICommand::~APICommand()
 { }
 
 void APICommand::perform(Context context)
 {
-    BOOST_ASSERT( context == kRealtime );
-    // if (atom->type == env().uris().atom_String) {
-    //     const char* str = (const char*)LV2_ATOM_BODY(atom);
-    //     cout << "    string: " << str << endl;
-    // }
-    // env().free(context, this);
+    BOOST_ASSERT_MSG( context == kRealtime, "APICommand::perform should only be called in the RT context" );
     env().performRequest(this);
 }
 
 void APICommand::respond(Context context, const LV2_Atom* msg)
 {
-    BOOST_ASSERT( context == kNonRealtime );
+    BOOST_ASSERT_MSG( context == kNonRealtime, "APICommand::respond should only be called in the NRT context" );
     API::Request::respond(msg);
     env().free(context, this);
 }
@@ -101,15 +99,16 @@ public:
 };
 
 
-void Environment::request(LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData)
+void Environment::request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
 {
-    // const size_t atomStart = lv2_atom_pad_size(sizeof(APICommand));
-    // const size_t atomSize = lv2_atom_total_size(atom);
-    // void* mem = alloc(atomStart + atomSize);
-    // LV2_Atom* atomCopy = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + atomStart);
-    // memcpy(atomCopy, atom, atomSize);
-    // APICommand* cmd = new (mem) APICommand(*this, atomCopy, handler);
-    APICommand* cmd = new APICommand(*this, atom, handler, handlerData);
+    // std::cout << "Environment::request " << msg << " " << handler << " " << handlerData << "\n";
+    const size_t start = lv2_atom_pad_size(sizeof(APICommand));
+    const size_t size = lv2_atom_total_size(msg);
+    void* mem = alloc(start + size);
+    LV2_Atom* atom = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + start);
+    memcpy(atom, msg, size);
+    APICommand* cmd = new (mem) APICommand(*this, atom, handler, handlerData);
+    // APICommand* cmd = new APICommand(*this, msg, handler, handlerData);
     m_commandChannel.enqueue(cmd);
 }
 
@@ -171,7 +170,8 @@ void Environment::performRequest(API::Request* request)
     const LV2_Atom* atom = request->request();
     cout << "Message: " << atom << endl
          << "    atom size: " << atom->size << endl
-         << "    atom type: " << atom->type << endl;
+         << "    atom type: " << atom->type << endl
+         << "    atom uri:  " << unmapUri(atom->type) << endl;
     if (   (atom->type == uris().atom_Blank)
         || (atom->type == uris().atom_Resource))
         performMessage(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
@@ -183,6 +183,17 @@ void Environment::performRequest(API::Request* request)
 
 void Environment::performMessage(API::Request* request, const LV2_Atom_Object* msg)
 {
+    const char* atom_type = unmapUri(msg->atom.type);
+    const char* uri_type = unmapUri(msg->body.otype);
+    if (msg->atom.type == uris().atom_Blank) {
+        cout << atom_type << " " << msg->body.id << " " << uri_type << endl;
+    } else {
+        const char* uri_id = unmapUri(msg->body.id);
+        cout << atom_type << " " << uri_id << " " << uri_type << endl;
+    }
+    LV2_OBJECT_FOREACH(msg, prop) {
+        cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
+    }
 }
 
 void Environment::performBundle(API::Request* request, const LV2_Atom_Sequence* bdl)

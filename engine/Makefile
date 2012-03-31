@@ -1,11 +1,16 @@
-.PHONY: all clean shake-dependencies
+.PHONY: all clean debug release shake-dependencies
 
 NCPU := $(shell sysctl -n hw.ncpu)
-DEFAULT_TARGET := macosx
+TARGET := macosx
+SHAKE_FLAGS = -j$(NCPU)
 
-all:
-	./shake -j$(NCPU) macosx
+all: debug
 
+debug:
+	./shake $(SHAKE_FLAGS) -c debug $(TARGET)
+
+release:
+	./shake $(SHAKE_FLAGS) -c release $(TARGET)
 clean:
 	./shake clean
 

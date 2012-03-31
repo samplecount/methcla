@@ -169,7 +169,7 @@ newtype GetObject = GetObject { toObject :: Object.Object B.ByteString }
 (.:?) :: (MonadThrow m, Uri.Map m, Uri.ToUrid (Get m) u, FromAtom m a) => GetObject -> u -> Get m (Maybe a)
 obj .:? key = do
     u <- Uri.toUrid key
-    case Object.lookup (Uri.fromWord32 0, u) (toObject obj) of
+    case Object.lookup (u, Uri.fromWord32 0) (toObject obj) of
         Nothing -> return Nothing
         Just b -> liftM Just $ lift $ decode fromAtom b
 
@@ -188,10 +188,10 @@ class FromObject m a where
 
 propertyBody :: MonadThrow m => Get m (Object.Key, B.ByteString)
 propertyBody = do
-    c <- urid
     k <- urid
+    c <- urid
     b <- atomBytes
-    return $! ((c, k), b)
+    return $! ((k, c), b)
 
 getObject :: (MonadThrow m, Uri.Map m) => Get m GetObject
 getObject = do

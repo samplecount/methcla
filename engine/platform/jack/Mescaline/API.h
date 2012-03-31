@@ -45,7 +45,7 @@ MESCALINE_EXPORT void Mescaline_Engine_stop(Mescaline_Engine* engine);
 MESCALINE_EXPORT LV2_URID Mescaline_Engine_mapUri(Mescaline_Engine* engine, const char* uri);
 MESCALINE_EXPORT const char* Mescaline_Engine_unmapUri(Mescaline_Engine* engine, LV2_URID urid);
 
-typedef void (*Mescaline_HandleResponse)(void* data, LV2_Atom* request, const LV2_Atom* response);
-MESCALINE_EXPORT void Mescaline_Engine_request(Mescaline_Engine* engine, LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData);
+typedef void (*Mescaline_HandleResponse)(const LV2_Atom* response, void* data);
+MESCALINE_EXPORT void Mescaline_Engine_request(Mescaline_Engine* engine, const LV2_Atom* request, Mescaline_HandleResponse handler, void* handlerData);
 
 #endif /* Mescaline_API_h */
