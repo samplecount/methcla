@@ -101,7 +101,8 @@ request_ a = do
     ba <- encode (toAtom a)
     liftIO $ do
         let (fp, o, _) = B.toForeignPtr ba
-        withForeignPtr fp $ \p -> c'Mescaline_Engine_request e (castPtr p) nullFunPtr nullPtr
+        withForeignPtr fp $ \p ->
+            c'Mescaline_Engine_request e (castPtr p) nullFunPtr nullPtr
 
 -- | Synchronous request.
 request :: (MonadIO m, MonadThrow m, ToAtom (EngineT m) a, FromAtom (EngineT m) b) => a -> EngineT m b
@@ -118,7 +119,8 @@ request a = do
         -- Get ByteString pointer
         let (fp, o, _) = B.toForeignPtr ba
         -- Pass request to engine
-        withForeignPtr fp $ \p -> c'Mescaline_Engine_request e (castPtr p) h (castStablePtrToPtr c'm)
+        withForeignPtr fp $ \p ->
+            c'Mescaline_Engine_request e (castPtr p) h (castStablePtrToPtr c'm)
         -- Take response ByteString from MVar
         b <- takeMVar m
         -- Free MVar StablePointer
