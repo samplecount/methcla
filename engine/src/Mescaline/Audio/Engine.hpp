@@ -12,12 +12,9 @@
 #include <Mescaline/Memory/Manager.hpp>
 
 #include <boost/cstdint.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
-#include <bitset>
-#include <string>
 #include <vector>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
