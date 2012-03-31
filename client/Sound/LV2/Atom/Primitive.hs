@@ -1,17 +1,13 @@
-{-# LANGUAGE FlexibleContexts
-           , RankNTypes #-}
+{-# LANGUAGE RankNTypes #-}
 module Sound.LV2.Atom.Primitive (
     Primitive(..)
 ) where
 
-import           Blaze.ByteString.Builder
-import           Blaze.ByteString.Builder.Int (fromInt32host, fromInt64host)
-import           Blaze.ByteString.Builder.Word (fromWord32host, fromWord64host)
+import           Blaze.ByteString.Builder (Builder)
+import qualified Blaze.ByteString.Builder as B
 import           Control.Exception (assert)
-import           Control.Failure (Failure)
 import           Control.Monad
 import           Control.Monad.Trans.Resource (MonadThrow)
-import           Data.Binary.IEEE754 (doubleToWord, floatToWord)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int32, Int64)
 import           Data.Word (Word32, Word64)
@@ -26,22 +22,22 @@ class Atom a => Primitive a where
 
 instance Primitive Int32 where
     sizeOf _ = 4
-    toBuilder = fromInt32host
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
 
 instance Primitive Word32 where
     sizeOf _ = 4
-    toBuilder = fromWord32host
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
 
 instance Primitive Int64 where
     sizeOf _ = 8
-    toBuilder = fromInt64host
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
 
 instance Primitive Word64 where
     sizeOf _ = 8
-    toBuilder = fromWord64host
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
 
 instance Primitive Bool where
@@ -59,10 +55,10 @@ instance Primitive Bool where
 
 instance Primitive Float where
     sizeOf _ = 4
-    toBuilder = fromWord32host . floatToWord
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
 
 instance Primitive Double where
     sizeOf _ = 8
-    toBuilder = fromWord64host . doubleToWord
+    toBuilder = B.fromStorable
     toParser = P.takeStorable
