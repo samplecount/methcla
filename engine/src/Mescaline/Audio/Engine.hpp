@@ -11,10 +11,10 @@
 #include <Mescaline/Exception.hpp>
 #include <Mescaline/Memory/Manager.hpp>
 
-#include <boost/cstdint.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
+#include <cstddef>
 #include <vector>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
@@ -32,6 +32,8 @@ namespace Mescaline { namespace Audio
     //     Epoch       m_epoch;
     //     ValueType   m_data;
     // };
+
+    using std::size_t;
 
     struct EngineException : virtual Mescaline::Exception { };
     struct InvalidNodeId : virtual EngineException { };
