@@ -99,12 +99,10 @@ connect_port(LV2_Handle instance,
 static void
 run(LV2_Handle instance, uint32_t numFrames)
 {
-    Sine* sine = (Sine*)instance;
+    Scope* self = (Scope*)instance;
 
-    const float  freq     = *(sine->freq);
-    double phase          = sine->phase;
-    const double phaseInc = freq * sine->freqToPhaseInc;
-    float* const output   = sine->output;
+    float* const input = self->input;
+    (LV2_Atom_Sequence*)self->output->data
 
     for (uint32_t k = 0; k < numFrames; k++) {
         output[k] = sinf(phase);
