@@ -11,7 +11,7 @@ import           Data.Maybe
 import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
 import           System.Console.CmdArgs.Explicit
-import           System.Directory (removeDirectoryRecursive, removeFile)
+import qualified System.Directory as Dir
 import           System.Environment
 import           System.FilePath.Find
 import           System.Process (readProcess)
@@ -642,7 +642,7 @@ optionsToShake opts = shakeOptions {
 
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
-    ( "clean", const (removeDirectoryRecursive . getL buildPrefix) )
+    ( "clean", const (Dir.removeDirectoryRecursive . getL buildPrefix) )
   , ( "ios-simulator",
     \shake env -> do
         let target = mkCTarget IOS_Simulator "i386"
@@ -680,7 +680,7 @@ targetSpecs = [
         let and a b = do { as <- a; bs <- b; return $! as ++ bs }
             files clause dir = find always clause dir
             sourceFiles = files (extension ~~? ".h*" ||? extension ~~? ".c*")
-            tagFile = "../tmtags"
+            tagFile = "../tags"
             tagFiles = "../tagfiles"
         shake $ do
             tagFile ?=> \output -> do
@@ -701,11 +701,11 @@ targetSpecs = [
                 need fs
                 writeFileLines tagFiles fs
                 systemLoud "ctags" $
-                    (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q")
+                    (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
                  ++ flag_ "-f" output
                  ++ flag_ "-L" tagFiles
                 -- FIXME: How to use bracket in the Action monad?
-                liftIO $ removeFile tagFiles
+                liftIO $ Dir.removeFile tagFiles
             want [ tagFile ]
     )
   ]
