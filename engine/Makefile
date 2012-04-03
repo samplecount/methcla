@@ -3,16 +3,21 @@
 NCPU := $(shell sysctl -n hw.ncpu)
 TARGET := macosx
 SHAKE_FLAGS = -j$(NCPU)
+SHAKE = ./shake $(SHAKE_FLAGS)
 
 all: debug
 
 debug:
-	./shake $(SHAKE_FLAGS) -c debug $(TARGET)
+	$(SHAKE) -c debug $(TARGET)
 
 release:
-	./shake $(SHAKE_FLAGS) -c release $(TARGET)
+	$(SHAKE) -c release $(TARGET)
 clean:
-	./shake clean
+	$(SHAKE) clean
 
 shake-dependencies:
 	cabal install cmdargs data-lens-template filemanip shake
+
+.PHONY: tags
+tags:
+	$(SHAKE) tags

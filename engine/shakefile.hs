@@ -11,7 +11,7 @@ import           Data.Maybe
 import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
 import           System.Console.CmdArgs.Explicit
-import           System.Directory (removeDirectoryRecursive)
+import           System.Directory (removeDirectoryRecursive, removeFile)
 import           System.Environment
 import           System.FilePath.Find
 import           System.Process (readProcess)
@@ -674,6 +674,39 @@ targetSpecs = [
                 lib = sharedLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
             want =<< mapM lib libs
+    )
+  , ( "tags",
+    \shake env -> do
+        let and a b = do { as <- a; bs <- b; return $! as ++ bs }
+            files clause dir = find always clause dir
+            sourceFiles = files (extension ~~? ".h*" ||? extension ~~? ".c*")
+            tagFile = "../tmtags"
+            tagFiles = "../tagfiles"
+        shake $ do
+            tagFile ?=> \output -> do
+                fs <- liftIO $
+                    find (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
+                        `and`
+                    files (extension ==? ".hpp") (externalLibraries </> "boost_lockfree")
+                        `and`
+                    files (extension ==? ".h") (lilvDir </> "lilv")
+                        `and`
+                    files (extension ==? ".h") (lv2Dir </> "lv2")
+                        `and`
+                    files (extension ==? ".h") (serdDir </> "serd")
+                        `and`
+                    files (extension ==? ".h") (sordDir </> "sord")
+                        `and`
+                    sourceFiles "lv2" `and` sourceFiles "platform" `and` sourceFiles "src"
+                need fs
+                writeFileLines tagFiles fs
+                systemLoud "ctags" $
+                    (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q")
+                 ++ flag_ "-f" output
+                 ++ flag_ "-L" tagFiles
+                -- FIXME: How to use bracket in the Action monad?
+                liftIO $ removeFile tagFiles
+            want [ tagFile ]
     )
   ]
 
