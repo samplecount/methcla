@@ -47,7 +47,7 @@ combineL l p a = getL l a </> p
 
 -- Shake utils
 (?=>) :: FilePath -> (FilePath -> Action ()) -> Rules ()
-f ?=> a = (==f) ?> a
+f ?=> a = (equalFilePath f) ?> a
 
 systemLoud :: FilePath -> [String] -> Action ()
 systemLoud cmd args = do
