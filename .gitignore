@@ -6,8 +6,10 @@
 *.o
 *.pbxuser
 *.pyc
-/engine/build
-/engine/MescalineMobile/build
+tags
+tmtags
+build/
+dist/
 .shake.database
 .shake.journal
 .virthualenv/
