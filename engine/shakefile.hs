@@ -598,7 +598,7 @@ data Options = Options {
 defaultOptions :: String -> Options
 defaultOptions defaultConfig = Options {
     _help = False
-  , _verbosity = Normal
+  , _verbosity = Quiet
   , _jobs = 1
   , _output = "./build"
   , _report = False
