@@ -52,7 +52,7 @@ f ?=> a = (equalFilePath f) ?> a
 
 systemLoud :: FilePath -> [String] -> Action ()
 systemLoud cmd args = do
-    putNormal $ unwords $ [cmd] ++ args
+    putQuiet $ unwords $ [cmd] ++ args
     system' cmd args
 
 data Env = Env {
