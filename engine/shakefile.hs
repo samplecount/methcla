@@ -14,6 +14,7 @@ import           System.Console.CmdArgs.Explicit
 import qualified System.Directory as Dir
 import           System.Environment
 import           System.FilePath.Find
+import           System.IO
 import           System.Process (readProcess)
 
 under :: FilePath -> [FilePath] -> [FilePath]
@@ -717,6 +718,11 @@ processTargets shake env = mapM_ processTarget where
             Nothing -> putStrLn $ "Warning: Target " ++ t ++ " not found"
             Just f -> f shake env
 
+setLineBuffering :: IO ()
+setLineBuffering = do
+    hSetBuffering stdout LineBuffering
+    hSetBuffering stderr LineBuffering
+
 main :: IO ()
 main = do
     let args = arguments (map fst configurations) (map fst targetSpecs)
@@ -730,4 +736,5 @@ main = do
                     -- TODO: integrate this with option processing
                     putStrLn $ "Please chose a target:"
                     mapM_ (putStrLn . ("\t"++) . fst) targetSpecs
-                ts -> processTargets shakeIt env ts
+                ts -> setLineBuffering >> processTargets shakeIt env ts
+
