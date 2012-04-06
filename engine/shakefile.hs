@@ -11,9 +11,10 @@ import           Data.Maybe
 import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
 import           System.Console.CmdArgs.Explicit
-import           System.Directory (removeDirectoryRecursive)
+import qualified System.Directory as Dir
 import           System.Environment
 import           System.FilePath.Find
+import           System.IO
 import           System.Process (readProcess)
 
 under :: FilePath -> [FilePath] -> [FilePath]
@@ -47,11 +48,11 @@ combineL l p a = getL l a </> p
 
 -- Shake utils
 (?=>) :: FilePath -> (FilePath -> Action ()) -> Rules ()
-f ?=> a = (==f) ?> a
+f ?=> a = (equalFilePath f) ?> a
 
 systemLoud :: FilePath -> [String] -> Action ()
 systemLoud cmd args = do
-    putNormal $ unwords $ [cmd] ++ args
+    putQuiet $ unwords $ [cmd] ++ args
     system' cmd args
 
 data Env = Env {
@@ -597,7 +598,7 @@ data Options = Options {
 defaultOptions :: String -> Options
 defaultOptions defaultConfig = Options {
     _help = False
-  , _verbosity = Normal
+  , _verbosity = Quiet
   , _jobs = 1
   , _output = "./build"
   , _report = False
@@ -642,7 +643,7 @@ optionsToShake opts = shakeOptions {
 
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
-    ( "clean", const (removeDirectoryRecursive . getL buildPrefix) )
+    ( "clean", const (Dir.removeDirectoryRecursive . getL buildPrefix) )
   , ( "ios-simulator",
     \shake env -> do
         let target = mkCTarget IOS_Simulator "i386"
@@ -675,6 +676,39 @@ targetSpecs = [
                 libFile = libBuildPath env target
             want =<< mapM lib libs
     )
+  , ( "tags",
+    \shake env -> do
+        let and a b = do { as <- a; bs <- b; return $! as ++ bs }
+            files clause dir = find always clause dir
+            sourceFiles = files (extension ~~? ".h*" ||? extension ~~? ".c*")
+            tagFile = "../tags"
+            tagFiles = "../tagfiles"
+        shake $ do
+            tagFile ?=> \output -> do
+                fs <- liftIO $
+                    find (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
+                        `and`
+                    files (extension ==? ".hpp") (externalLibraries </> "boost_lockfree")
+                        `and`
+                    files (extension ==? ".h") (lilvDir </> "lilv")
+                        `and`
+                    files (extension ==? ".h") (lv2Dir </> "lv2")
+                        `and`
+                    files (extension ==? ".h") (serdDir </> "serd")
+                        `and`
+                    files (extension ==? ".h") (sordDir </> "sord")
+                        `and`
+                    sourceFiles "lv2" `and` sourceFiles "platform" `and` sourceFiles "src"
+                need fs
+                writeFileLines tagFiles fs
+                systemLoud "ctags" $
+                    (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
+                 ++ flag_ "-f" output
+                 ++ flag_ "-L" tagFiles
+                -- FIXME: How to use bracket in the Action monad?
+                liftIO $ Dir.removeFile tagFiles
+            want [ tagFile ]
+    )
   ]
 
 processTargets :: (Rules () -> IO ()) -> Env -> [String] -> IO ()
@@ -683,6 +717,11 @@ processTargets shake env = mapM_ processTarget where
         case lookup t targetSpecs of
             Nothing -> putStrLn $ "Warning: Target " ++ t ++ " not found"
             Just f -> f shake env
+
+setLineBuffering :: IO ()
+setLineBuffering = do
+    hSetBuffering stdout LineBuffering
+    hSetBuffering stderr LineBuffering
 
 main :: IO ()
 main = do
@@ -697,4 +736,5 @@ main = do
                     -- TODO: integrate this with option processing
                     putStrLn $ "Please chose a target:"
                     mapM_ (putStrLn . ("\t"++) . fst) targetSpecs
-                ts -> processTargets shakeIt env ts
+                ts -> setLineBuffering >> processTargets shakeIt env ts
+

@@ -5,9 +5,13 @@ if [ -f "$HOME/.profile" ]; then
 elif [ -f "$HOME/.bash_login" ]; then
 	source "$HOME/.bash_login"
 fi
-	
+
+if [ -z "$VIRTHUALENV" -a -f "../.virthualenv/bin/activate" ]; then
+    source "../.virthualenv/bin/activate"
+fi
+
 ncpu=`sysctl -n hw.ncpu`
 rtsopts="+RTS -N -RTS"
 
 ghc --make -rtsopts -threaded -o shakefile.exe shakefile.hs || exit 1
-./shakefile.exe $rtsopts "$@" || exit 1
+./shakefile.exe $rtsopts "$@" 2>&1 | tee errors.err || exit 1

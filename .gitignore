@@ -6,10 +6,11 @@
 *.o
 *.pbxuser
 *.pyc
-/engine/build
-/engine/external_libraries/boost/include
-/engine/external_libraries/boost/lib
-/engine/MescalineMobile/build
+errors.err
+tags
+tmtags
+build/
+dist/
 .shake.database
 .shake.journal
 .virthualenv/
