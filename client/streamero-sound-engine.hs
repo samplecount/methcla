@@ -119,9 +119,9 @@ arguments =
         upd what x = Right . setL what x
 
 type SessionId = String
-type SourceId = Int
+type LocationId = Int
 type SoundId = Int
-data Point = Point { x :: Double, y :: Double, z :: Double } deriving (Eq, Show)
+data Coord = Coord { latitude :: Double, longitude :: Double } deriving (Eq, Show)
 
 data Sound =
     SoundFile {
@@ -131,33 +131,30 @@ data Sound =
     deriving (Show)
 
 data Listener = Listener {
-    position :: Point
+    listenerPosition :: Coord
   } deriving (Show)
 
-data Source = Source {
-    sourcePosition :: Point
-  , sourceRadius :: Double
-  , sourceSound :: Maybe SoundId
+data Location = Location {
+    position :: Coord
+  , radius :: Double
+  , locationSounds :: [SoundId]
   } deriving (Show)
 
 data Request =
-    AddListener SessionId Point
+    AddListener SessionId Coord
   | RemoveListener SessionId
   | UpdateListener SessionId (Listener -> Listener)
   | AddSound SoundId Sound
-  | AddSource SourceId Point Double
-  | UpdateSource SourceId (Source -> Source)
+  | AddLocation LocationId Coord Double [SoundId]
+  | UpdateLocation LocationId (Location -> Location)
 
-instance FromJSON Point where
-    parseJSON (Object v) = Point <$>
-                              v .: "x" <*>
-                              v .: "y" <*>
-                              v .: "z"
-    parseJSON _ = mzero
+instance FromJSON Coord where
+    parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
+    parseJSON _          = mzero
 
 instance FromJSON Sound where
     parseJSON (Object v) = SoundFile <$> v .: "path" <*> v .: "loop"
-    parseJSON _ = mzero
+    parseJSON _          = mzero
 
 instance FromJSON Request where
     parseJSON (Object v) = do
@@ -165,13 +162,13 @@ instance FromJSON Request where
         case t of
             "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position"
             "RemoveListener" -> RemoveListener <$> v .: "id"
-            "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { position = p }) <$> v .:? "position")
+            "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> v .: "sound"
-            "AddSource"      -> AddSource <$> v .: "id" <*> v .: "position" <*> v .: "radius"
-            "UpdateSource"   -> UpdateSource <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
-                                                                [ maybe id (\x s -> s { sourcePosition = x }) <$> v .:? "position"
-                                                                , maybe id (\x s -> s { sourceRadius = x }) <$> v .:? "radius"
-                                                                , maybe id (\x s -> s { sourceSound = Just x }) <$> v .:? "sound" ]
+            "AddLocation"    -> AddLocation <$> v .: "id" <*> v .: "position" <*> v .: "radius" <*> v .: "sounds"
+            "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
+                                                                    [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
+                                                                    , maybe id (\x s -> s { radius = x })   <$> v .:? "radius"
+                                                                    , maybe id (\x s -> s { locationSounds = x })   <$> v .:? "sounds" ]
             _                -> mzero
     parseJSON _ = mzero
 
@@ -183,7 +180,7 @@ instance ToJSON Response where
 
 data State = State {
     _sounds    :: H.HashMap SoundId Sound
-  , _sources   :: H.HashMap SourceId Source
+  , _locations :: H.HashMap LocationId Location
   , _listeners :: H.HashMap SessionId Listener
   } deriving (Show)
 
@@ -199,12 +196,12 @@ app request = do
         AddSound id sound -> do
             S.modify (modL sounds (H.insert id sound))
             return Ok
-        AddSource id pos radius -> do
-            let s = Source pos radius Nothing
-            S.modify (modL sources (H.insert id s))
+        AddLocation id pos radius sounds -> do
+            let x = Location pos radius sounds
+            S.modify (modL locations (H.insert id x))
             return Ok
-        UpdateSource id f -> do
-            S.modify (modL sources (H.adjust f id))
+        UpdateLocation id f -> do
+            S.modify (modL locations (H.adjust f id))
             return Ok
         AddListener id pos -> do
             let l = Listener pos
