@@ -213,7 +213,7 @@ app request = do
         UpdateListener id f -> do
             S.modify (modL listeners (H.adjust f id))
             return Ok
-    S.get >>= liftIO . print
+    S.get >>= liftIO . hPutStrLn stderr . show
     return response
 
 appC :: MonadIO m => Int -> State -> C.Conduit Request m Response
