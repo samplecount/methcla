@@ -1,0 +1,32 @@
+Name:               streamero-sound-engine
+Version:            0.1
+Homepage:           http://mescaline.puesnada.es
+License:            GPL-2
+-- License-file:       LICENSE
+Author:             Stefan Kersten
+Maintainer:         sk@puesnada.es
+Category:           Sound
+Build-type:         Simple
+Cabal-version:      >=1.2
+
+Executable streamero-sound-engine
+  Main-is:          streamero-sound-engine.hs
+  Build-depends:    base >= 3 && < 5
+                  , aeson >= 0.6
+                  , attoparsec >= 0.10
+                  , attoparsec-conduit >= 0.4
+                  , bytestring >= 0.9
+                  , cmdargs >= 0.9
+                  , cereal >= 0.3
+                  , cereal-conduit >= 0.0
+                  , conduit >= 0.4
+                  , data-lens >= 2.0
+                  , data-lens-template >= 2.0
+                  , network >= 2.3
+                  , network-conduit >= 0.4
+                  , hsc3-process >= 0.7
+                  , hsc3-server >= 0.4
+                  , text >= 0.11
+                  , transformers >= 0.3
+                  , unordered-containers >= 0.2
+  Extra-Libraries:  scsynth

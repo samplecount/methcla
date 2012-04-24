@@ -16,12 +16,18 @@ import qualified Data.ByteString as BS
 import           Data.Conduit (($$), ($=), (=$), (=$=))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.Attoparsec as C
-import qualified Data.Conduit.Binary as C
-import qualified Data.Conduit.List as C
+import qualified Data.Conduit.Binary as CB
+import qualified Data.Conduit.Cereal as C
+import qualified Data.Conduit.List as CL
+import qualified Data.Conduit.Network as C
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
 import           Data.Lens.Template
+import           Data.Maybe (fromJust, isNothing)
+import           Data.Serialize.Get (getWord32be)
+import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
+import qualified Network.Socket as N
 import qualified Sound.SC3.Server.Process as SC
 import qualified Sound.SC3.Server.Process.Monad as SC
 import           System.Console.CmdArgs.Explicit
@@ -61,8 +67,9 @@ conduitParser p0 = C.conduitState newParser push close
 
 {-bytesToJSON = C.sequence (C.sinkParser json)-}
 {-bytesToJSON = conduitParser json-}
-bytesToJSON = fromJsonOrWhite
-jsonSource = C.sourceHandle stdin $= bytesToJSON
+{-bytesToJSON = fromJsonOrWhite-}
+{-jsonSource = CB.sourceHandle stdin $= bytesToJSON-}
+jsonSource s = C.sourceSocket s $= bytesToJSON
 
 fromJsonC :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
 fromJsonC = do
@@ -75,8 +82,21 @@ fromJsonC = do
                 J.Error e   -> lift $ C.monadThrow (C.ParseError [] e)
             fromJsonC
 
-toJson = C.map (BS.concat . BL.toChunks . flip BC.snoc '\n' . J.encode)
-jsonSink = toJson =$ C.sinkHandle stdout
+fromJsonC' :: (C.MonadThrow m, FromJSON a) => C.Conduit BS.ByteString m (Maybe a)
+fromJsonC' = C.sequence $ do
+    l <- C.sinkGet getWord32be
+    case l of
+        Left e -> lift $ C.monadThrow $ C.ParseError [] e
+        Right n -> do
+            b <- CB.take (fromIntegral n)
+            return $! J.decode' b
+
+{-toJson = C.map (BS.concat . BL.toChunks . flip BC.snoc '\n' . J.encode)-}
+toJson :: (MonadIO m, ToJSON a) => C.Conduit a m BS.ByteString
+toJson = CL.map $ \a -> let b = J.encode a
+                        in runPut $ putWord32be (fromIntegral (BC.length b)) >> putLazyByteString b
+{-jsonSink = toJson =$ CB.sinkHandle stdout-}
+jsonSink s = toJson =$ C.sinkSocket s
 
 jsonOrWhite :: A.Parser (Maybe J.Value)
 jsonOrWhite = (Just <$> json) <|> (A.many1 A.space >> return Nothing)
@@ -92,8 +112,11 @@ catMaybes = do
 fromJsonOrWhite :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 fromJsonOrWhite = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
 
+bytesToJSON = fromJsonC' =$= catMaybes
+
 data Options = Options {
     _help :: Bool
+  , _socket :: Maybe FilePath
   , _audioDevice :: Maybe String
   , _maxNumListeners :: Int
   } deriving (Show)
@@ -101,6 +124,7 @@ data Options = Options {
 defaultOptions :: Options
 defaultOptions = Options {
     _help = False
+  , _socket = Nothing
   , _audioDevice = Nothing
   , _maxNumListeners = 1
   }
@@ -110,7 +134,7 @@ $( makeLenses [''Options] )
 arguments :: Mode Options
 arguments =
     mode "streamero-sound-engine" defaultOptions "Streamero Sound Engine v0.1"
-         (flagArg (const . Left) "") $
+         (flagArg (upd socket . Just) "SOCKET") $
          [ flagHelpSimple (setL help True)
          , flagReq ["audio-device", "d"] (upd audioDevice . Just) "STRING" "Audio device"
          , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
@@ -121,7 +145,12 @@ arguments =
 type SessionId = String
 type LocationId = Int
 type SoundId = Int
+
 data Coord = Coord { latitude :: Double, longitude :: Double } deriving (Eq, Show)
+
+instance FromJSON Coord where
+    parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
+    parseJSON _          = mzero
 
 data Sound =
     SoundFile {
@@ -129,6 +158,14 @@ data Sound =
       , loop :: Bool
     }
     deriving (Show)
+
+instance FromJSON Sound where
+    parseJSON (Object v) = do
+        t <- v .: "type" :: J.Parser Text
+        case t of
+            "sample" -> SoundFile <$> v .: "path" <*> v .: "loop"
+            _        -> mzero
+    parseJSON _          = mzero
 
 data Listener = Listener {
     listenerPosition :: Coord
@@ -148,22 +185,14 @@ data Request =
   | AddLocation LocationId Coord Double [SoundId]
   | UpdateLocation LocationId (Location -> Location)
 
-instance FromJSON Coord where
-    parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
-    parseJSON _          = mzero
-
-instance FromJSON Sound where
-    parseJSON (Object v) = SoundFile <$> v .: "path" <*> v .: "loop"
-    parseJSON _          = mzero
-
 instance FromJSON Request where
-    parseJSON (Object v) = do
-        t <- v .: "type" :: J.Parser Text
+    parseJSON o@(Object v) = do
+        t <- v .: "request" :: J.Parser Text
         case t of
             "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position"
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
-            "AddSound"       -> AddSound <$> v .: "id" <*> v .: "sound"
+            "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
             "AddLocation"    -> AddLocation <$> v .: "id" <*> v .: "position" <*> v .: "radius" <*> v .: "sounds"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
                                                                     [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
@@ -175,8 +204,8 @@ instance FromJSON Request where
 data Response = Ok | Error String
 
 instance ToJSON Response where
-    toJSON Ok = object [ "type" .= ("Ok" :: Text) ]
-    toJSON (Error e) = object [ "type" .= ("Error" :: Text), "message" .= e ]
+    toJSON Ok = object [ "response" .= ("Ok" :: Text) ]
+    toJSON (Error e) = object [ "response" .= ("Error" :: Text), "message" .= e ]
 
 data State = State {
     _sounds    :: H.HashMap SoundId Sound
@@ -235,9 +264,14 @@ main = do
     {-hSetBuffering stdin LineBuffering-}
     {-hSetBuffering stdout LineBuffering-}
     opts <- processArgs arguments
-    if help ^$ opts
+    if isNothing (socket ^$ opts) || (help ^$ opts)
         then print $ helpText [] HelpFormatDefault arguments
-        else withSC opts $ C.runResourceT ((jsonSource $= fromJsonC) $= (appC (maxNumListeners ^$ opts) makeState) $$ jsonSink)
+        else do
+            let socketFile = fromJust (socket ^$ opts)
+            print socketFile
+            s <- N.socket N.AF_UNIX N.Stream 0
+            N.connect s (N.SockAddrUnix socketFile)
+            withSC opts $ C.runResourceT ((jsonSource s $= fromJsonC) $= (appC (maxNumListeners ^$ opts) makeState) $$ jsonSink s)
 
 -- [1] https://github.com/boothead/conduit/blob/90161072b3bb80317016b4ba565eb521f6d6dfb4/attoparsec-conduit/Data/Conduit/Attoparsec.hs
 
