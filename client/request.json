@@ -2,6 +2,6 @@
 {"type":"RemoveListener","id":"0"}
 
 {"type":"AddSound","id":0,"sound":{"path":"/blah/blup.wav","loop":true}}
-{"type":"AddLocation","id":0,"position":{"latitude":1.2,"longitude":3.4},"radius":10.2,"sound":(0|null)}
+{"type":"AddLocation","id":0,"position":{"latitude":1.2,"longitude":3.4},"radius":10.2,"sounds":[0,1,5]}
 {"type":"RemoveLocation","id":0}
-{"type":"UpdateLocation","id":0,"radius":12,"sound":1}
+{"type":"UpdateLocation","id":0,"radius":12,"sounds":[]}
