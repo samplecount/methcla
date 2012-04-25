@@ -1,3 +1,5 @@
+{"request":"Quit"}
+
 {"request":"AddListener","id":"0","position":{"latitude":12.2,"longitude":3.5}}
 {"request":"RemoveListener","id":"0"}
 

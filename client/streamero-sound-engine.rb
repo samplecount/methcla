@@ -31,16 +31,26 @@ end
 
 io = server.accept
 
-begin
-  read_terminal { |msg|
+def write_msg(io, msg)
     io << [msg.size].pack("N")
     io << msg
+    io.flush
+end
+
+def read_msg(io)
     n = io.read(4).unpack("N")[0]
-    $stdout << io.read(n)
+    io.read(n)
+end
+
+begin
+  read_terminal { |msg|
+    write_msg(io, msg)
+    $stdout << read_msg(io) << "\n"
   }
 ensure
+  write_msg(io, '{"request":"Quit"')
   io.close
   server.close
+  Process.waitpid(pid)
   FileUtils.rm_f(socket_path)
-  # Process.waitpid(pid)
 end

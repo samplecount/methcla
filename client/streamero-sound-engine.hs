@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 import           Control.Applicative
+import           Control.Exception
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
@@ -178,7 +179,8 @@ data Location = Location {
   } deriving (Show)
 
 data Request =
-    AddListener SessionId Coord
+    Quit
+  | AddListener SessionId Coord
   | RemoveListener SessionId
   | UpdateListener SessionId (Listener -> Listener)
   | AddSound SoundId Sound
@@ -189,6 +191,7 @@ instance FromJSON Request where
     parseJSON o@(Object v) = do
         t <- v .: "request" :: J.Parser Text
         case t of
+            "Quit"           -> pure Quit
             "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position"
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
@@ -219,7 +222,8 @@ makeState = State H.empty H.empty H.empty
 
 type AppT = S.RWST Int () State
 
-app :: MonadIO m => Request -> AppT m Response
+app :: MonadIO m => Request -> AppT m (Maybe Response)
+app Quit = return Nothing
 app request = do
     response <- case request of
         AddSound id sound -> do
@@ -243,14 +247,16 @@ app request = do
             S.modify (modL listeners (H.adjust f id))
             return Ok
     S.get >>= liftIO . hPutStrLn stderr . show
-    return response
+    return $! Just response
 
 appC :: MonadIO m => Int -> State -> C.Conduit Request m Response
 appC r s = C.conduitState
             s
             (\s i -> do
-                (a, s', _) <- S.runRWST (app i) r s
-                return $! C.StateProducing s' [a])
+                (r, s', _) <- S.runRWST (app i) r s
+                case r of
+                    Nothing -> return $ C.StateFinished Nothing []
+                    Just a  -> return $ C.StateProducing s' [a])
             (\_ -> return [])
 
 withSC opts =
@@ -260,6 +266,13 @@ withSC opts =
             SC.hardwareDeviceName = audioDevice ^$ opts }
         SC.defaultOutputHandler
 
+withUnixSocket file = bracket
+    (do { s <- N.socket N.AF_UNIX N.Stream 0
+        ; N.connect s (N.SockAddrUnix file)
+        ; return s
+        })
+    N.sClose
+
 main = do
     {-hSetBuffering stdin LineBuffering-}
     {-hSetBuffering stdout LineBuffering-}
@@ -268,10 +281,8 @@ main = do
         then print $ helpText [] HelpFormatDefault arguments
         else do
             let socketFile = fromJust (socket ^$ opts)
-            print socketFile
-            s <- N.socket N.AF_UNIX N.Stream 0
-            N.connect s (N.SockAddrUnix socketFile)
-            withSC opts $ C.runResourceT ((jsonSource s $= fromJsonC) $= (appC (maxNumListeners ^$ opts) makeState) $$ jsonSink s)
+            withUnixSocket socketFile $ \s ->
+                withSC opts $ (jsonSource s $= fromJsonC) $= (appC (maxNumListeners ^$ opts) makeState) $$ jsonSink s
 
 -- [1] https://github.com/boothead/conduit/blob/90161072b3bb80317016b4ba565eb521f6d6dfb4/attoparsec-conduit/Data/Conduit/Attoparsec.hs
 
