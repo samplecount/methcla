@@ -17,6 +17,11 @@ Create a local Haskell sandbox in `$PWD/.virthualenv` with
 
     $ virthualenv
 
+Now, before building the libraries and executables, activate the `virthualenv`
+configuration:
+
+    $ source .virthualenv/bin/activate
+
 ### Building the sound engine
 
 Need to document this
