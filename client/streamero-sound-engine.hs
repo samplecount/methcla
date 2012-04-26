@@ -5,17 +5,15 @@ import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
 import qualified Control.Monad.Trans.RWS.Strict as S
-import           Data.Aeson (encode, json)
 import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), object)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import qualified Data.Attoparsec.Combinator as A
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BC
-import           Data.Conduit (($$), ($=), (=$), (=$=))
+import           Data.Conduit (($$), (=$=))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.Attoparsec as C
 import qualified Data.Conduit.Binary as CB
@@ -25,11 +23,11 @@ import qualified Data.Conduit.Network as C
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
 import           Data.Lens.Template
-import           Data.Maybe (fromJust, isNothing)
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
 import qualified Network.Socket as N
+import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Process as SC
 import qualified Sound.SC3.Server.Process.Monad as SC
 import           Streamero.Readline (sourceReadline)
@@ -49,8 +47,8 @@ catMaybes = do
 -- | Chunk input into messages delimited by 32 bit integer byte counts.
 message :: C.MonadThrow m => C.Conduit BS.ByteString m BC.ByteString
 message = C.sequence $ do
-    l <- C.sinkGet getWord32be
-    case l of
+    w <- C.sinkGet getWord32be
+    case w of
         Left e -> lift . C.monadThrow . C.ParseError [] $ e
         Right n -> CB.take (fromIntegral n)
 
@@ -58,6 +56,7 @@ message = C.sequence $ do
 unmessage :: Monad m => C.Conduit BC.ByteString m BS.ByteString
 unmessage = CL.map $ \b -> runPut $ putWord32be (fromIntegral (BC.length b)) >> putLazyByteString b
 
+-- | Flatten messages into lines in the output stream.
 unlines :: Monad m => C.Conduit BC.ByteString m BS.ByteString
 unlines = CL.map (BS.concat . BL.toChunks . flip BC.snoc '\n')
 
@@ -65,8 +64,8 @@ unlines = CL.map (BS.concat . BL.toChunks . flip BC.snoc '\n')
 fromJson :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
 fromJson = loop where
     loop = do
-        v <- C.await
-        case v of
+        next <- C.await
+        case next of
             Nothing -> return ()
             Just v -> case J.fromJSON v of
                         J.Success a -> C.yield a >> loop
@@ -80,14 +79,15 @@ toJson = CL.map J.encode
 parseJsonMessage :: C.MonadThrow m => C.Conduit BC.ByteString m J.Value
 parseJsonMessage = loop where
     loop = do
-        v <- C.await
-        case v of
+        next <- C.await
+        case next of
             Nothing -> return ()
             Just b -> case A.parse J.json (BS.concat $ BC.toChunks $ b) of
-                        A.Done _ x    -> C.yield x >> loop
+                        A.Done _ v    -> C.yield v >> loop
                         A.Fail _ cs e -> lift . C.monadThrow . C.ParseError cs $ e
                         A.Partial _   -> lift $ C.monadThrow C.DivergentParser
 
+-- | Parse JSON or whitespace.
 jsonOrWhite :: A.Parser (Maybe J.Value)
 jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 
@@ -170,13 +170,15 @@ data State = State {
 
 $( makeLenses [''State] )
 
+makeState :: State
 makeState = State H.empty H.empty H.empty
 
 type AppT = S.RWST Int () State
 
-app :: MonadIO m => Request -> AppT m (Maybe Response)
-app Quit = return Nothing
-app request = do
+-- | Engine state machine.
+engine :: MonadIO m => Request -> AppT m (Maybe Response)
+engine Quit = return Nothing
+engine request = do
     response <- case request of
         AddSound id sound -> do
             S.modify (modL sounds (H.insert id sound))
@@ -198,14 +200,16 @@ app request = do
         UpdateListener id f -> do
             S.modify (modL listeners (H.adjust f id))
             return Ok
+        Quit -> error "BUG"
     S.get >>= liftIO . hPutStrLn stderr . show
     return $! Just response
 
-appC :: MonadIO m => Int -> State -> C.Conduit Request m Response
-appC r s = C.conduitState
+-- | Engine conduit mapping requests to responses.
+engineC :: MonadIO m => Int -> State -> C.Conduit Request m Response
+engineC r s = C.conduitState
             s
             (\s i -> do
-                (r, s', _) <- S.runRWST (app i) r s
+                (r, s', _) <- S.runRWST (engine i) r s
                 case r of
                     Nothing -> return $ C.StateFinished Nothing []
                     Just a  -> return $ C.StateProducing s' [a])
@@ -239,6 +243,7 @@ arguments =
     where
         upd what x = Right . setL what x
 
+withSC :: Options -> SC.Server a -> IO a
 withSC opts =
     SC.withInternal
         SC.defaultServerOptions
@@ -246,6 +251,7 @@ withSC opts =
             SC.hardwareDeviceName = audioDevice ^$ opts }
         SC.defaultOutputHandler
 
+withUnixSocket :: String -> (N.Socket -> IO a) -> IO a
 withUnixSocket file = bracket
     (do { s <- N.socket N.AF_UNIX N.Stream 0
         ; N.connect s (N.SockAddrUnix file)
@@ -253,19 +259,25 @@ withUnixSocket file = bracket
         })
     N.sClose
 
+main :: IO ()
 main = do
     opts <- processArgs arguments
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else do
-            let app = appC (maxNumListeners ^$ opts) makeState
+            let run source sink = withSC opts $
+                                    source
+                                    =$= engineC (maxNumListeners ^$ opts) makeState
+                                    $$ sink
             case socket ^$ opts of
-                Nothing -> do
-                    let source = sourceReadline "> " $= CL.map BS8.pack $= parseJsonStream $= fromJson
-                        sink = toJson =$ unlines =$ CB.sinkHandle stdout
-                    withSC opts $ source $= app $$ sink
+                Nothing ->
+                    -- Readline interface
+                    let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
+                        sink = toJson =$= unlines =$= CB.sinkHandle stdout
+                    in run source sink
                 Just socketFile -> 
-                    withUnixSocket socketFile $ \s -> do
-                        let source = C.sourceSocket s $= message $= parseJsonMessage $= fromJson
-                            sink = toJson =$ unmessage =$ C.sinkSocket s
-                        withSC opts $ source $= app $$ sink
+                    -- Socket interface
+                    withUnixSocket socketFile $ \s ->
+                        let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
+                            sink = toJson =$= unmessage =$= C.sinkSocket s
+                        in run source sink
