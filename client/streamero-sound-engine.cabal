@@ -11,6 +11,7 @@ Cabal-version:      >=1.2
 
 Executable streamero-sound-engine
   Main-is:          streamero-sound-engine.hs
+  Other-Modules:    Streamero.Readline
   GHC-Options:      -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
                   , aeson >= 0.6
@@ -27,6 +28,7 @@ Executable streamero-sound-engine
                   , network-conduit >= 0.4
                   , hsc3-process >= 0.7
                   , hsc3-server >= 0.4
+                  , readline >= 1.0
                   , text >= 0.11
                   , transformers >= 0.3
                   , unordered-containers >= 0.2

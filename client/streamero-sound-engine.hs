@@ -11,9 +11,10 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Attoparsec.Combinator as A
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BC
-import qualified Data.ByteString as BS
 import           Data.Conduit (($$), ($=), (=$), (=$=))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.Attoparsec as C
@@ -31,6 +32,7 @@ import           Data.Text (Text)
 import qualified Network.Socket as N
 import qualified Sound.SC3.Server.Process as SC
 import qualified Sound.SC3.Server.Process.Monad as SC
+import           Streamero.Readline (sourceReadline)
 import           System.Console.CmdArgs.Explicit
 import           System.IO
 
@@ -45,16 +47,21 @@ catMaybes = do
         Just (Just a) -> C.yield a >> catMaybes
 
 -- | Chunk input into messages delimited by 32 bit integer byte counts.
-message :: (C.MonadThrow m) => C.Conduit BS.ByteString m BC.ByteString
+message :: C.MonadThrow m => C.Conduit BS.ByteString m BC.ByteString
 message = C.sequence $ do
     l <- C.sinkGet getWord32be
     case l of
         Left e -> lift . C.monadThrow . C.ParseError [] $ e
         Right n -> CB.take (fromIntegral n)
 
-unmessage :: (Monad m) => C.Conduit BC.ByteString m BS.ByteString
+-- | Flatten messages into the output stream, prepending them with a 32 bit integer byte count.
+unmessage :: Monad m => C.Conduit BC.ByteString m BS.ByteString
 unmessage = CL.map $ \b -> runPut $ putWord32be (fromIntegral (BC.length b)) >> putLazyByteString b
 
+unlines :: Monad m => C.Conduit BC.ByteString m BS.ByteString
+unlines = CL.map (BS.concat . BL.toChunks . flip BC.snoc '\n')
+
+-- | Convert JSON values to Haskell values.
 fromJson :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
 fromJson = loop where
     loop = do
@@ -65,10 +72,11 @@ fromJson = loop where
                         J.Success a -> C.yield a >> loop
                         J.Error e   -> lift . C.monadThrow . C.ParseError [] $ e
 
-{-toJson = C.map (BS.concat . BL.toChunks . flip BC.snoc '\n' . J.encode)-}
+-- | Convert Haskell values to JSON values.
 toJson :: (MonadIO m, ToJSON a) => C.Conduit a m BC.ByteString
 toJson = CL.map J.encode
 
+-- | Parse JSON messages into JSON values.
 parseJsonMessage :: C.MonadThrow m => C.Conduit BC.ByteString m J.Value
 parseJsonMessage = loop where
     loop = do
@@ -83,36 +91,9 @@ parseJsonMessage = loop where
 jsonOrWhite :: A.Parser (Maybe J.Value)
 jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 
+-- | Parse a stream of JSON messages into JSON values.
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
-
-data Options = Options {
-    _help :: Bool
-  , _socket :: Maybe FilePath
-  , _audioDevice :: Maybe String
-  , _maxNumListeners :: Int
-  } deriving (Show)
-
-defaultOptions :: Options
-defaultOptions = Options {
-    _help = False
-  , _socket = Nothing
-  , _audioDevice = Nothing
-  , _maxNumListeners = 1
-  }
-
-$( makeLenses [''Options] )
- 
-arguments :: Mode Options
-arguments =
-    mode "streamero-sound-engine" defaultOptions "Streamero Sound Engine v0.1"
-         (flagArg (upd socket . Just) "SOCKET") $
-         [ flagHelpSimple (setL help True)
-         , flagReq ["audio-device", "d"] (upd audioDevice . Just) "STRING" "Audio device"
-         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
-         ]
-    where
-        upd what x = Right . setL what x
 
 type SessionId = String
 type LocationId = Int
@@ -230,6 +211,34 @@ appC r s = C.conduitState
                     Just a  -> return $ C.StateProducing s' [a])
             (\_ -> return [])
 
+data Options = Options {
+    _help :: Bool
+  , _socket :: Maybe FilePath
+  , _audioDevice :: Maybe String
+  , _maxNumListeners :: Int
+  } deriving (Show)
+
+defaultOptions :: Options
+defaultOptions = Options {
+    _help = False
+  , _socket = Nothing
+  , _audioDevice = Nothing
+  , _maxNumListeners = 1
+  }
+
+$( makeLenses [''Options] )
+ 
+arguments :: Mode Options
+arguments =
+    mode "streamero-sound-engine" defaultOptions "Streamero Sound Engine v0.1"
+         (flagArg (upd socket . Just) "SOCKET") $
+         [ flagHelpSimple (setL help True)
+         , flagReq ["audio-device", "d"] (upd audioDevice . Just) "STRING" "Audio device"
+         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
+         ]
+    where
+        upd what x = Right . setL what x
+
 withSC opts =
     SC.withInternal
         SC.defaultServerOptions
@@ -246,12 +255,17 @@ withUnixSocket file = bracket
 
 main = do
     opts <- processArgs arguments
-    if isNothing (socket ^$ opts) || (help ^$ opts)
+    if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else do
-            let socketFile = fromJust (socket ^$ opts)
-            withUnixSocket socketFile $ \s -> do
-                let source = C.sourceSocket s $= message $= parseJsonMessage $= fromJson
-                    sink = toJson =$ unmessage =$ C.sinkSocket s
-                withSC opts $ source $= (appC (maxNumListeners ^$ opts) makeState) $$ sink
-
+            let app = appC (maxNumListeners ^$ opts) makeState
+            case socket ^$ opts of
+                Nothing -> do
+                    let source = sourceReadline "> " $= CL.map BS8.pack $= parseJsonStream $= fromJson
+                        sink = toJson =$ unlines =$ CB.sinkHandle stdout
+                    withSC opts $ source $= app $$ sink
+                Just socketFile -> 
+                    withUnixSocket socketFile $ \s -> do
+                        let source = C.sourceSocket s $= message $= parseJsonMessage $= fromJson
+                            sink = toJson =$ unmessage =$ C.sinkSocket s
+                        withSC opts $ source $= app $$ sink
