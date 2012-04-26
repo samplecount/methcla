@@ -48,7 +48,7 @@ begin
     $stdout << read_msg(io) << "\n"
   }
 ensure
-  write_msg(io, '{"request":"Quit"')
+  write_msg(io, { "request" => "Quit" }.to_json)
   io.close
   server.close
   Process.waitpid(pid)
