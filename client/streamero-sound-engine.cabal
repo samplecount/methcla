@@ -24,11 +24,11 @@ Executable streamero-sound-engine
                   , conduit >= 0.4
                   , data-lens >= 2.0
                   , data-lens-template >= 2.0
+                  , editline >= 0.2
                   , network >= 2.3
                   , network-conduit >= 0.4
                   , hsc3-process >= 0.7
                   , hsc3-server >= 0.4
-                  , readline >= 1.0
                   , text >= 0.11
                   , transformers >= 0.3
                   , unordered-containers >= 0.2

@@ -4,7 +4,7 @@ module Streamero.Readline (
 
 import           Control.Monad.IO.Class (MonadIO(..))
 import qualified Data.Conduit as C
-import qualified System.Console.Readline as R
+import qualified System.Console.Editline.Readline as R
 
 sourceReadline :: MonadIO m => String -> C.Source m String
 sourceReadline prompt = C.sourceState () $ \() -> do
