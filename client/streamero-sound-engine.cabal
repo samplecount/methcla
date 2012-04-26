@@ -12,7 +12,7 @@ Cabal-version:      >=1.2
 Executable streamero-sound-engine
   Main-is:          streamero-sound-engine.hs
   Other-Modules:    Streamero.Readline
-  GHC-Options:      -rtsopts -threaded
+  GHC-Options:      -Wall -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
                   , aeson >= 0.6
                   , attoparsec >= 0.10
