@@ -36,72 +36,6 @@ import           System.IO
 
 import Debug.Trace
 
--- Adapted from [1]
-conduitParser :: (C.MonadThrow m) =>
-                        A.Parser b
-                     -> C.Conduit BS.ByteString m b
-conduitParser p0 = C.conduitState newParser push close
-  where
-    newParser = A.parse (A.many1 p0)
-    push parser c
-        | BS.null c = return $ C.StateFinished Nothing []
-    push parser c = do
-        case A.feed (parser c) BS.empty of
-            A.Done leftover xs
-                | BS.null leftover ->
-                    return $ C.StateProducing newParser xs
-                | otherwise ->
-                    return $ C.StateProducing (newParser . BS.append leftover) xs
-            A.Fail _ contexts msg -> C.monadThrow $ C.ParseError contexts msg
-            A.Partial p -> return $ C.StateProducing p []
-    close parser =
-        case parser BS.empty of
-            A.Done _leftover xs -> return xs
-            A.Fail _ contexts msg -> C.monadThrow $ C.ParseError contexts msg
-            A.Partial _ -> return [] -- A partial parse when closing is not an error
-
-{-fromJson' :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value-}
-{-fromJson' = C.sequence $ do-}
-    {-x <- C.sinkParser json-}
-    {-C.dropWhile (== 10)-}
-    {-return x-}
-
-{-bytesToJSON = C.sequence (C.sinkParser json)-}
-{-bytesToJSON = conduitParser json-}
-{-bytesToJSON = fromJsonOrWhite-}
-{-jsonSource = CB.sourceHandle stdin $= bytesToJSON-}
-jsonSource s = C.sourceSocket s $= bytesToJSON
-
-fromJsonC :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
-fromJsonC = do
-    v <- C.await
-    case v of
-        Nothing -> return ()
-        Just v -> do
-            case J.fromJSON v of
-                J.Success a -> C.yield a
-                J.Error e   -> lift $ C.monadThrow (C.ParseError [] e)
-            fromJsonC
-
-fromJsonC' :: (C.MonadThrow m, FromJSON a) => C.Conduit BS.ByteString m (Maybe a)
-fromJsonC' = C.sequence $ do
-    l <- C.sinkGet getWord32be
-    case l of
-        Left e -> lift $ C.monadThrow $ C.ParseError [] e
-        Right n -> do
-            b <- CB.take (fromIntegral n)
-            return $! J.decode' b
-
-{-toJson = C.map (BS.concat . BL.toChunks . flip BC.snoc '\n' . J.encode)-}
-toJson :: (MonadIO m, ToJSON a) => C.Conduit a m BS.ByteString
-toJson = CL.map $ \a -> let b = J.encode a
-                        in runPut $ putWord32be (fromIntegral (BC.length b)) >> putLazyByteString b
-{-jsonSink = toJson =$ CB.sinkHandle stdout-}
-jsonSink s = toJson =$ C.sinkSocket s
-
-jsonOrWhite :: A.Parser (Maybe J.Value)
-jsonOrWhite = (Just <$> json) <|> (A.many1 A.space >> return Nothing)
-
 catMaybes :: Monad m => C.Conduit (Maybe a) m a
 catMaybes = do
     v <- C.await
@@ -110,10 +44,47 @@ catMaybes = do
         Just Nothing -> catMaybes
         Just (Just a) -> C.yield a >> catMaybes
 
-fromJsonOrWhite :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
-fromJsonOrWhite = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
+-- | Chunk input into messages delimited by 32 bit integer byte counts.
+message :: (C.MonadThrow m) => C.Conduit BS.ByteString m BC.ByteString
+message = C.sequence $ do
+    l <- C.sinkGet getWord32be
+    case l of
+        Left e -> lift . C.monadThrow . C.ParseError [] $ e
+        Right n -> CB.take (fromIntegral n)
 
-bytesToJSON = fromJsonC' =$= catMaybes
+unmessage :: (Monad m) => C.Conduit BC.ByteString m BS.ByteString
+unmessage = CL.map $ \b -> runPut $ putWord32be (fromIntegral (BC.length b)) >> putLazyByteString b
+
+fromJson :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
+fromJson = loop where
+    loop = do
+        v <- C.await
+        case v of
+            Nothing -> return ()
+            Just v -> case J.fromJSON v of
+                        J.Success a -> C.yield a >> loop
+                        J.Error e   -> lift . C.monadThrow . C.ParseError [] $ e
+
+{-toJson = C.map (BS.concat . BL.toChunks . flip BC.snoc '\n' . J.encode)-}
+toJson :: (MonadIO m, ToJSON a) => C.Conduit a m BC.ByteString
+toJson = CL.map J.encode
+
+parseJsonMessage :: C.MonadThrow m => C.Conduit BC.ByteString m J.Value
+parseJsonMessage = loop where
+    loop = do
+        v <- C.await
+        case v of
+            Nothing -> return ()
+            Just b -> case A.parse J.json (BS.concat $ BC.toChunks $ b) of
+                        A.Done _ x    -> C.yield x >> loop
+                        A.Fail _ cs e -> lift . C.monadThrow . C.ParseError cs $ e
+                        A.Partial _   -> lift $ C.monadThrow C.DivergentParser
+
+jsonOrWhite :: A.Parser (Maybe J.Value)
+jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
+
+parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
+parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
 
 data Options = Options {
     _help :: Bool
@@ -274,15 +245,13 @@ withUnixSocket file = bracket
     N.sClose
 
 main = do
-    {-hSetBuffering stdin LineBuffering-}
-    {-hSetBuffering stdout LineBuffering-}
     opts <- processArgs arguments
     if isNothing (socket ^$ opts) || (help ^$ opts)
         then print $ helpText [] HelpFormatDefault arguments
         else do
             let socketFile = fromJust (socket ^$ opts)
-            withUnixSocket socketFile $ \s ->
-                withSC opts $ (jsonSource s $= fromJsonC) $= (appC (maxNumListeners ^$ opts) makeState) $$ jsonSink s
-
--- [1] https://github.com/boothead/conduit/blob/90161072b3bb80317016b4ba565eb521f6d6dfb4/attoparsec-conduit/Data/Conduit/Attoparsec.hs
+            withUnixSocket socketFile $ \s -> do
+                let source = C.sourceSocket s $= message $= parseJsonMessage $= fromJson
+                    sink = toJson =$ unmessage =$ C.sinkSocket s
+                withSC opts $ source $= (appC (maxNumListeners ^$ opts) makeState) $$ sink
 
