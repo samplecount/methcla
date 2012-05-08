@@ -2,6 +2,7 @@ module Streamero.Readline (
     sourceReadline
 ) where
 
+import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO(..))
 import qualified Data.Conduit as C
 import qualified System.Console.Editline.Readline as R
@@ -12,5 +13,5 @@ sourceReadline prompt = C.sourceState () $ \() -> do
     case maybeLine of
         Nothing     -> return C.StateClosed
         Just "exit" -> return C.StateClosed
-        Just line   -> do liftIO $ R.addHistory line
+        Just line   -> do unless (null line) $ liftIO $ R.addHistory line
                           return $ C.StateOpen () line
