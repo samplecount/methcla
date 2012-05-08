@@ -4,6 +4,7 @@ import           Control.Exception
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
+import qualified Control.Monad.Trans.Resource as Resource
 import qualified Control.Monad.Trans.RWS.Strict as S
 import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), object)
 import qualified Data.Aeson as J
@@ -26,13 +27,22 @@ import           Data.Lens.Template
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
+import qualified Filesystem as FS
+import qualified Filesystem.Path.CurrentOS as FS
 import qualified Network.Socket as N
 import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Process as SC
-import qualified Sound.SC3.Server.Process.Monad as SC
+import qualified Sound.SC3.Server.Process.Monad as SCM
 import           Streamero.Readline (sourceReadline)
+{-import qualified Streamero.Process as SProc-}
+import qualified Streamero.Jack as SJack
 import           System.Console.CmdArgs.Explicit
 import           System.IO
+import           System.Posix.Env (getEnv, setEnv, unsetEnv)
+{-import qualified System.Process as Proc-}
+import           System.Unix.Directory (withTemporaryDirectory)
 
 import Debug.Trace
 
@@ -162,18 +172,23 @@ instance ToJSON Response where
     toJSON Ok = object [ "response" .= ("Ok" :: Text) ]
     toJSON (Error e) = object [ "response" .= ("Error" :: Text), "message" .= e ]
 
+data Environment = Env {
+    _maxNumListeners :: Int
+  , _jackServerName :: String
+  } deriving (Show)
+
 data State = State {
     _sounds    :: H.HashMap SoundId Sound
   , _locations :: H.HashMap LocationId Location
   , _listeners :: H.HashMap SessionId Listener
   } deriving (Show)
 
-$( makeLenses [''State] )
+$( makeLenses [''Environment, ''State] )
 
 makeState :: State
 makeState = State H.empty H.empty H.empty
 
-type AppT = S.RWST Int () State
+type AppT = S.RWST Environment () State
 
 -- | Engine state machine.
 engine :: MonadIO m => Request -> AppT m (Maybe Response)
@@ -205,7 +220,7 @@ engine request = do
     return $! Just response
 
 -- | Engine conduit mapping requests to responses.
-engineC :: MonadIO m => Int -> State -> C.Conduit Request m Response
+engineC :: MonadIO m => Environment -> State -> C.Conduit Request m Response
 engineC r s = C.conduitState
             s
             (\s i -> do
@@ -219,7 +234,7 @@ data Options = Options {
     _help :: Bool
   , _socket :: Maybe FilePath
   , _audioDevice :: Maybe String
-  , _maxNumListeners :: Int
+  , _opt_maxNumListeners :: Int
   } deriving (Show)
 
 defaultOptions :: Options
@@ -227,29 +242,35 @@ defaultOptions = Options {
     _help = False
   , _socket = Nothing
   , _audioDevice = Nothing
-  , _maxNumListeners = 1
+  , _opt_maxNumListeners = 1
   }
 
 $( makeLenses [''Options] )
- 
+
+makeEnv :: Options -> String -> Environment
+makeEnv opts = Env (opt_maxNumListeners ^$ opts)
+
 arguments :: Mode Options
 arguments =
     mode "streamero-sound-engine" defaultOptions "Streamero Sound Engine v0.1"
          (flagArg (upd socket . Just) "SOCKET") $
          [ flagHelpSimple (setL help True)
          , flagReq ["audio-device", "d"] (upd audioDevice . Just) "STRING" "Audio device"
-         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
+         , flagReq ["max-num-listeners", "n"] (upd opt_maxNumListeners . read) "NUMBER" "Maximum number of listeners"
          ]
     where
         upd what x = Right . setL what x
 
-withSC :: Options -> SC.Server a -> IO a
-withSC opts =
-    SC.withInternal
-        SC.defaultServerOptions
+withSC :: Environment -> SC.Server a -> IO a
+withSC env =
+    SCM.withSynth
+        SC.defaultServerOptions {
+            SC.numberOfInputBusChannels = 2
+          , SC.numberOfOutputBusChannels = 2 * (maxNumListeners ^$ env) }
         SC.defaultRTOptions {
-            SC.hardwareDeviceName = audioDevice ^$ opts }
-        SC.defaultOutputHandler
+            SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":supercollider" }
+        SC.defaultOutputHandler { SC.onPutString = logStrLn "SC"
+                                , SC.onPutError = logStrLn "SC" }
 
 withUnixSocket :: String -> (N.Socket -> IO a) -> IO a
 withUnixSocket file = bracket
@@ -259,25 +280,45 @@ withUnixSocket file = bracket
         })
     N.sClose
 
+logStrLn :: String -> String -> IO ()
+logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
+
+logLn :: String -> IO ()
+logLn = logStrLn "ENGINE"
+
 main :: IO ()
 main = do
     opts <- processArgs arguments
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else do
-            let run source sink = withSC opts $
-                                    source
-                                    =$= engineC (maxNumListeners ^$ opts) makeState
-                                    $$ sink
-            case socket ^$ opts of
-                Nothing ->
-                    -- Readline interface
-                    let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
-                        sink = toJson =$= unlines =$= CB.sinkHandle stdout
-                    in run source sink
-                Just socketFile -> 
-                    -- Socket interface
-                    withUnixSocket socketFile $ \s ->
-                        let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
-                            sink = toJson =$= unmessage =$= C.sinkSocket s
+            withTemporaryDirectory "streamero-" $ \tmpDir_ -> do
+                -- Set HOME directory for jack to find its config file
+                setEnv "HOME" tmpDir_ True
+                let tmpDir = FS.decodeString tmpDir_
+                    jackServerName = FS.encodeString $ FS.basename tmpDir
+                    jackOptions = (SJack.defaultOptions jackServerName) { SJack.driver = "coreaudio" }
+                    env = makeEnv opts jackServerName
+                FS.writeTextFile (FS.append tmpDir ".jackdrc") (Text.unwords . map Text.pack $ ["/usr/local/bin/jackdmp"] ++ SJack.optionList jackOptions)
+                unsetEnv "JACK_NO_START_SERVER"
+                setEnv "JACK_START_SERVER" "1" True
+                setEnv "JACK_DEFAULT_SERVER" jackServerName True
+                FS.readTextFile (FS.append tmpDir ".jackdrc") >>= Text.putStrLn
+                {-jackHandle <- SProc.createProcess (SJack.createProcess "jackdmp" ((SJack.defaultOptions "streamero") { SJack.driver = "coreaudio" })) stdout-}
+                logLn $ "Starting with temporary directory " ++ tmpDir_
+                logLn $ "Jack server name: " ++ jackServerName
+                let run source sink = withSC env $ Resource.runResourceT $ do
+                                        Resource.allocate (SJack.openPatchBay jackServerName "patchbay" []) SJack.closePatchBay
+                                        source =$= engineC env makeState $$ sink
+                case socket ^$ opts of
+                    Nothing ->
+                        -- Readline interface
+                        let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
+                            sink = toJson =$= unlines =$= CB.sinkHandle stdout
                         in run source sink
+                    Just socketFile ->
+                        -- Socket interface
+                        withUnixSocket socketFile $ \s ->
+                            let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
+                                sink = toJson =$= unmessage =$= C.sinkSocket s
+                            in run source sink
