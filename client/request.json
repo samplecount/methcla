@@ -2,8 +2,10 @@
 
 {"request":"AddListener","id":"0","position":{"latitude":12.2,"longitude":3.5}}
 {"request":"RemoveListener","id":"0"}
+{"request":"UpdateListener","id":"0","position":{"latitude":18.9,"longitude":7.2}}
 
 {"request":"AddSound","id":0,"type":"sample","path":"/blah/blup.wav","loop":true}
+
 {"request":"AddLocation","id":0,"position":{"latitude":1.2,"longitude":3.4},"radius":10.2,"sounds":[0,1,5]}
 {"request":"RemoveLocation","id":0}
 {"request":"UpdateLocation","id":0,"radius":12,"sounds":[]}
