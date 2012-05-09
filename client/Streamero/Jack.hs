@@ -4,20 +4,22 @@ module Streamero.Jack (
   , defaultOptions
   , optionList
   , createProcess
-  , openPatchBay
-  , closePatchBay
+  , withJack
+  , withPatchBay
 ) where
 
 {-import           Data.ByteString (ByteString)-}
 {-import           Data.Conduit.Process-}
 {-import qualified Data.Conduit as C-}
 import           Control.Applicative
-import           Control.Concurrent (forkIO)
+import           Control.Concurrent (forkIO, threadDelay)
 import           Control.Concurrent.MVar
+import           Control.Monad (forever, replicateM_, void)
+import qualified Control.Monad.Exception.Synchronous as E
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.Trans.Class as Trans
 import           Data.Word (Word32)
-import           System.Process (CreateProcess, proc)
+import           System.Process (CreateProcess)
 import qualified Data.HashMap.Strict as Map
 import qualified Data.HashSet as Set
 import           Data.List.Split (splitOn)
@@ -25,6 +27,10 @@ import           Foreign.C
 import           Foreign.Ptr
 import qualified Reactive.Banana as R
 import qualified Sound.JACK as JACK
+import qualified Sound.JACK.Exception as JACK
+import qualified Streamero.Process as P
+import           System.Posix (setEnv)
+import           System.Timeout (timeout)
 
 data Options = Options {
     name :: String
@@ -55,7 +61,13 @@ optionList opts = concat [ [ "--name", name opts ]
                          ]
 
 createProcess :: String -> Options -> CreateProcess
-createProcess program = proc program . optionList
+createProcess program = P.proc program . optionList
+
+withJack :: P.OutputHandler -> String -> Options -> (String -> IO a) -> IO a
+withJack handleOutput program opts action = P.withProcess handleOutput (createProcess program opts) $ do
+    setEnv "JACK_NO_START_SERVER" "1" True
+    setEnv "JACK_DEFAULT_SERVER" (name opts) True
+    action (name opts)
 
 {-sourceJack :: String -> Options -> C.Source m ByteString-}
 {-sourceJack program opts = sourceProcess (createProcess program opts)-}
@@ -114,13 +126,14 @@ connectPorts :: JACK.Client -> (String, String) -> (String, String) -> IO ()
 connectPorts client (c1, p1) (c2, p2) =
     JACK.handleExceptions $ JACK.connect client (mkPortName c1 p1) (mkPortName c2 p2)
 
-data PatchBay = PatchBay { quit :: MVar () }
+data PatchBay = PatchBay { quit :: MVar (), result :: MVar Bool }
 
-openPatchBay :: String -> String -> Connections -> IO PatchBay
-openPatchBay serverName clientName connectionSpecs = do
-    patchBay <- PatchBay <$> newEmptyMVar
-    forkIO $ JACK.handleExceptions $
-        JACK.withClient serverName clientName $ \client -> do
+withPatchBay :: String -> String -> Connections -> (JACK.Client -> E.ExceptionalT (JACK.Status (JACK.PortRegister (JACK.PortMismatch Errno))) IO a) -> IO ()
+withPatchBay serverName clientName connectionSpecs action = do
+    {-patchBay <- PatchBay <$> newEmptyMVar-}
+    -- FIXME: Implement connection timeout correctly
+    replicateM_ 20 $ do
+        JACK.handleExceptions $ JACK.withClient serverName clientName $ \client -> do
             let networkDescription :: forall t . R.NetworkDescription t ()
                 networkDescription = do
                     (clientEvt, clientSink) <- R.newEvent
@@ -138,8 +151,8 @@ openPatchBay serverName clientName connectionSpecs = do
                     connections <- liftIO $ mapM (portGetConnections client) ports
                     let portMap = mkPortMap ports
                         connectionMap = mkConnectionMap connections
-                    liftIO $ print portMap
-                    liftIO $ print connectionMap
+                    {-liftIO $ print portMap-}
+                    {-liftIO $ print connectionMap-}
                     let portsChanged = R.accumE (False, portMap) (R.union ((\(c, b) (_, p) -> if b then (False, addClient c p) else (False, removeClient c p)) <$> clientEvt)
                                                                           ((\(c, p, b) (_, pm) -> if b then (True, addPort c p pm) else (False, removePort c p pm)) <$> portEvt))
                         connectPortsE = R.filterJust $ R.apply (flip ($) <$> connectionsB) (R.spill $ (\(portAdded, pm) -> if portAdded then map (connect pm) connectionSpecs else []) <$> portsChanged)
@@ -152,15 +165,16 @@ openPatchBay serverName clientName connectionSpecs = do
                                         ((\(p1, p2, b) -> if b then addConnection p1 p2 else removeConnection p1 p2)
                                          <$> connEvt `R.union` ((\(a, b) -> (a, b, True)) <$> connectPortsE))
                     {-R.reactimate $ R.apply ((const . print) <$> portsB) (R.union (const () <$> clientEvt) (const () <$> portEvt))-}
-                    R.reactimate $ print <$> portsChanged
-                    R.reactimate $ print <$> connEvt
-                    R.reactimate $ (R.apply (((\cm e -> print (cm, e))) <$> connectionsB) connectPortsE)
+                    {-R.reactimate $ print <$> portsChanged-}
+                    {-R.reactimate $ print <$> connEvt-}
+                    {-R.reactimate $ (R.apply (((\cm e -> print (cm, e))) <$> connectionsB) connectPortsE)-}
                     R.reactimate $ uncurry (connectPorts client) <$> connectPortsE
             Trans.lift $ R.compile networkDescription >>= R.actuate
-            JACK.withActivation client $ Trans.lift $ do
-                putStrLn $ "Patchbay started ..."
-                takeMVar $ quit patchBay
-    return patchBay
+            JACK.withActivation client $ void $ action client -- Trans.lift $ do
+                {-putStrLn $ "Patchbay started ..."-}
+                {-takeMVar $ quit patchBay-}
+                {-action-}
+        threadDelay (truncate $ 0.5e6)
 
 closePatchBay :: PatchBay -> IO ()
 closePatchBay = flip putMVar () . quit
@@ -176,7 +190,6 @@ portRegistration sink client portId register _ = do
     s <- JACK.portName port
     let (cn:pn:_) = splitOn ":" s
     sink (cn, pn, (register /= 0))
-
 
 portConnect :: (((String, String), (String, String), Bool) -> IO ()) -> JACK.Client -> JACK.PortId -> JACK.PortId -> CInt -> Ptr JACK.CallbackArg -> IO ()
 portConnect sink client outPort inPort connect _ = do

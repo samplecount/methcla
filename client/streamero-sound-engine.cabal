@@ -11,7 +11,10 @@ Cabal-version:      >=1.2
 
 Executable streamero-sound-engine
   Main-is:          streamero-sound-engine.hs
-  Other-Modules:    Streamero.Readline
+  Other-Modules:    Streamero.Darkice
+                    Streamero.Jack
+                    Streamero.Process
+                    Streamero.Readline
   GHC-Options:      -Wall -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
                   , aeson >= 0.6
@@ -25,9 +28,11 @@ Executable streamero-sound-engine
                   , data-lens >= 2.0
                   , data-lens-template >= 2.0
                   , editline >= 0.2
+                  , explicit-exception >= 0.1
                   , hsc3-process >= 0.7
                   , hsc3-server >= 0.4
                   , jack >= 0.6
+                  , lifted-base >= 0.1
                   , network >= 2.3
                   , network-conduit >= 0.4
                   , process >= 1.1

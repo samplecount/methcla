@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 import           Control.Applicative
-import           Control.Exception
+import           Control.Concurrent (readMVar)
+import           Control.Exception.Lifted
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
@@ -35,13 +36,15 @@ import qualified Network.Socket as N
 import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Process as SC
 import qualified Sound.SC3.Server.Process.Monad as SCM
+import qualified Streamero.Darkice as Darkice
 import           Streamero.Readline (sourceReadline)
-{-import qualified Streamero.Process as SProc-}
+import qualified Streamero.Process as SProc
 import qualified Streamero.Jack as SJack
 import           System.Console.CmdArgs.Explicit
+import           System.Exit (ExitCode(..), exitWith)
 import           System.IO
 import           System.Posix.Env (getEnv, setEnv, unsetEnv)
-{-import qualified System.Process as Proc-}
+import qualified System.Process as Proc
 import           System.Unix.Directory (withTemporaryDirectory)
 
 import Debug.Trace
@@ -261,14 +264,14 @@ arguments =
     where
         upd what x = Right . setL what x
 
-withSC :: Environment -> SC.Server a -> IO a
-withSC env =
+withSC :: Environment -> String -> SC.Server a -> IO a
+withSC env clientName =
     SCM.withSynth
         SC.defaultServerOptions {
             SC.numberOfInputBusChannels = 2
           , SC.numberOfOutputBusChannels = 2 * (maxNumListeners ^$ env) }
         SC.defaultRTOptions {
-            SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":supercollider" }
+            SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":" ++ clientName }
         SC.defaultOutputHandler { SC.onPutString = logStrLn "SC"
                                 , SC.onPutError = logStrLn "SC" }
 
@@ -286,39 +289,55 @@ logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
 logLn :: String -> IO ()
 logLn = logStrLn "ENGINE"
 
+someException :: SomeException -> SomeException
+someException = id
+
 main :: IO ()
 main = do
     opts <- processArgs arguments
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else do
-            withTemporaryDirectory "streamero-" $ \tmpDir_ -> do
-                -- Set HOME directory for jack to find its config file
-                setEnv "HOME" tmpDir_ True
+            e <- try $ withTemporaryDirectory "streamero_" $ \tmpDir_ -> do
                 let tmpDir = FS.decodeString tmpDir_
-                    jackServerName = FS.encodeString $ FS.basename tmpDir
-                    jackOptions = (SJack.defaultOptions jackServerName) { SJack.driver = "coreaudio" }
-                    env = makeEnv opts jackServerName
-                FS.writeTextFile (FS.append tmpDir ".jackdrc") (Text.unwords . map Text.pack $ ["/usr/local/bin/jackdmp"] ++ SJack.optionList jackOptions)
-                unsetEnv "JACK_NO_START_SERVER"
-                setEnv "JACK_START_SERVER" "1" True
-                setEnv "JACK_DEFAULT_SERVER" jackServerName True
-                FS.readTextFile (FS.append tmpDir ".jackdrc") >>= Text.putStrLn
-                {-jackHandle <- SProc.createProcess (SJack.createProcess "jackdmp" ((SJack.defaultOptions "streamero") { SJack.driver = "coreaudio" })) stdout-}
+                    jackOptions = (SJack.defaultOptions (FS.encodeString $ FS.basename tmpDir)) { SJack.driver = "coreaudio" }
+                -- Set HOME directory for jack to find its config file
+                {-setEnv "HOME" tmpDir_ True-}
+                {-FS.writeTextFile (FS.append tmpDir ".jackdrc") (Text.unwords . map Text.pack $ ["/usr/local/bin/jackd"] ++ SJack.optionList jackOptions)-}
+                {-FS.readTextFile (FS.append tmpDir ".jackdrc") >>= Text.putStrLn-}
+                {-unsetEnv "JACK_NO_START_SERVER"-}
+                {-setEnv "JACK_START_SERVER" "1" True-}
                 logLn $ "Starting with temporary directory " ++ tmpDir_
-                logLn $ "Jack server name: " ++ jackServerName
-                let run source sink = withSC env $ Resource.runResourceT $ do
-                                        Resource.allocate (SJack.openPatchBay jackServerName "patchbay" []) SJack.closePatchBay
+                SJack.withJack (logStrLn "JACK") "jackdmp" jackOptions $ \jackServerName -> do
+                    logLn $ "Jack server name: " ++ jackServerName
+                    void $ SJack.withPatchBay jackServerName "patchbay" [(("supercollider","out_1"),("darkice","left")),(("supercollider","out_2"),("darkice","right"))] $ do
+                        let env = makeEnv opts jackServerName
+                            run source sink = withSC env "supercollider" $ do
+                                let darkiceCfgFile = FS.append tmpDir "darkice.cfg"
+                                    darkiceCfg = Darkice.defaultConfig {
+                                                    Darkice.jackClientName = Just "darkice"
+                                                  , Darkice.mountPoint = "soundscape" }
+                                    darkiceOpts = Darkice.defaultOptions {
+                                                    Darkice.configFile = Just darkiceCfgFile }
+                                liftIO $ do
+                                    FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
+                                    SProc.withProcess (logStrLn "STREAMER") (Darkice.createProcess "darkice" darkiceOpts) $
                                         source =$= engineC env makeState $$ sink
-                case socket ^$ opts of
-                    Nothing ->
-                        -- Readline interface
-                        let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
-                            sink = toJson =$= unlines =$= CB.sinkHandle stdout
-                        in run source sink
-                    Just socketFile ->
-                        -- Socket interface
-                        withUnixSocket socketFile $ \s ->
-                            let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
-                                sink = toJson =$= unmessage =$= C.sinkSocket s
-                            in run source sink
+                        const $ lift $ case socket ^$ opts of
+                            Nothing ->
+                                -- Readline interface
+                                let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
+                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
+                                in run source sink
+                            Just socketFile ->
+                                -- Socket interface
+                                withUnixSocket socketFile $ \s ->
+                                    let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
+                                        sink = toJson =$= unmessage =$= C.sinkSocket s
+                                    in run source sink
+            case e of
+                Left exc -> do
+                    putStrLn $ "Exception caught: " ++ show (someException exc)
+                    exitWith $ ExitFailure 1
+                Right _ ->
+                    exitWith ExitSuccess
