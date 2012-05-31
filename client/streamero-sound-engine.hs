@@ -6,6 +6,7 @@
            , TypeSynonymInstances #-}
 import           Control.Applicative
 import           Control.Concurrent (forkIO, myThreadId, threadDelay)
+import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.Chan as Chan
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TMChan as STM
@@ -606,6 +607,28 @@ newTimer = do
             fire t
             loop chan
 
+conduitTVar :: MonadIO m => STM.TVar input -> STM.TVar output -> C.Conduit input m output
+conduitTVar inputVar outputVar = do
+    x <- C.await
+    case x of
+        Nothing -> return ()
+        Just input -> do
+            liftIO . STM.atomically . STM.writeTVar inputVar $ input
+            output <- liftIO . STM.atomically . STM.readTVar $ outputVar
+            C.yield output
+            conduitTVar inputVar outputVar
+
+conduitIO :: MonadIO m => (input -> IO ()) -> (IO output) -> C.Conduit input m output
+conduitIO inputFunc outputFunc = do
+    x <- C.await
+    case x of
+        Nothing -> return ()
+        Just input -> do
+            liftIO $ inputFunc input
+            output <- liftIO outputFunc
+            C.yield output
+            conduitIO inputFunc outputFunc
+
 main :: IO ()
 main = do
     opts <- processArgs arguments
@@ -633,10 +656,11 @@ main = do
                         let env = makeEnv opts jackServerName
                             run source sink = do
                                 (scLoop, scSink) <- newChan
-                                fromEngine <- STM.newTMChanIO
-                                let send = STM.atomically . STM.writeTMChan fromEngine
-                                    close = scSink QuitServer >> STM.atomically (STM.closeTMChan fromEngine)
-                                newBreakHandler $ close
+                                {-fromEngine <- STM.newTMChanIO-}
+                                fromEngine <- MVar.newEmptyMVar
+                                let send = MVar.putMVar fromEngine
+                                    close = scSink QuitServer -- >> STM.atomically (STM.closeTMChan fromEngine)
+                                newBreakHandler close
                                 withSC env "supercollider" $ do
                                     {-source =$= engineC env makeState $$ sink-}
                                     mainThread <- liftIO $ myThreadId
@@ -688,11 +712,12 @@ main = do
 
                                         -- Set up connections to and from JSON I/O network
                                         -- NOTE: Event network needs to be set up already!
-                                        R.liftIOLater $ void $ forkIO $ do
+                                        liftIO $ void $ forkIO $ do
                                             -- FIXME: Why is this necessary?
-                                            threadDelay (truncate 1e6)
-                                            void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)
-                                            void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))
+                                            {-threadDelay (truncate 1e6)-}
+                                            {-void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)-}
+                                            {-void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))-}
+                                            void $ forkIO $ source =$= conduitIO (requestToEvent eventSinks) (MVar.takeMVar fromEngine) $$ sink
 
                                     liftIO $ R.actuate =<< R.compile networkDescription
                                     {-S.runRWST loop env makeState-}
