@@ -1,3 +1,4 @@
+{"request":"Init","soundscape":"aksjdh","streaming":{"server":"178.156.14.2","port":8000,"sampleRate":44100,"bitrate":128}}
 {"request":"Quit"}
 
 {"request":"AddListener","id":"0","position":{"latitude":12.2,"longitude":3.5}}
