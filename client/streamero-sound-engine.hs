@@ -712,9 +712,9 @@ main = do
 
                                         -- Set up connections to and from JSON I/O network
                                         -- NOTE: Event network needs to be set up already!
-                                        liftIO $ void $ forkIO $ do
+                                        R.liftIOLater $ void $ forkIO $ do
                                             -- FIXME: Why is this necessary?
-                                            {-threadDelay (truncate 1e6)-}
+                                            threadDelay (truncate 1e6)
                                             {-void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)-}
                                             {-void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))-}
                                             void $ forkIO $ source =$= conduitIO (requestToEvent eventSinks) (MVar.takeMVar fromEngine) $$ sink
