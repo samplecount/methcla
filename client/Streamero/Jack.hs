@@ -5,6 +5,7 @@ module Streamero.Jack (
   , optionList
   , createProcess
   , withJack
+  , Connections
   , withPatchBay
 ) where
 

@@ -30,6 +30,7 @@ Executable streamero-sound-engine
                   , data-lens-template >= 2.0
                   , editline >= 0.2
                   , explicit-exception >= 0.1
+                  , failure >= 0.2
                   , hosc >= 0.11
                   , hsc3 >= 0.11
                   , hsc3-process >= 0.7

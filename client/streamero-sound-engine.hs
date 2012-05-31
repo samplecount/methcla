@@ -11,6 +11,7 @@ import qualified Control.Concurrent.Chan as Chan
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TMChan as STM
 import           Control.Exception.Lifted
+import           Control.Failure (Failure, failure)
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
@@ -36,6 +37,7 @@ import qualified Data.Conduit.TMChan as C
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
 import           Data.Lens.Template
+import qualified Data.List as List
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
@@ -50,6 +52,7 @@ import qualified Reactive.Banana as R
 import           Sound.OpenSoundControl (immediately)
 import qualified Sound.OpenSoundControl as OSC
 import qualified Sound.SC3.UGen as SC
+import qualified Sound.SC3.Server.Allocator as SC
 import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Monad.Command as SC
 import qualified Sound.SC3.Server.Monad.Request as SC
@@ -231,6 +234,7 @@ instance ToJSON Response where
 
 data Environment = Env {
     _maxNumListeners :: Int
+  , _temporaryDirectory :: FS.FilePath
   , _jackServerName :: String
   } deriving (Show)
 
@@ -349,7 +353,7 @@ defaultOptions = Options {
 
 $( makeLenses [''Options] )
 
-makeEnv :: Options -> String -> Environment
+makeEnv :: Options -> FS.FilePath -> String -> Environment
 makeEnv opts = Env (opt_maxNumListeners ^$ opts)
 
 arguments :: Mode Options
@@ -444,32 +448,14 @@ sinkVoid sink = C.sinkState () push close
           -- TODO: close needs to send a close notification to the sink!
           close _ = return ()
 
-{- Darkice shtuff
-let darkiceCfgFile = FS.append tmpDir "darkice.cfg"
-    darkiceCfg = Darkice.defaultConfig {
-                    Darkice.jackClientName = Just "darkice"
-                  , Darkice.mountPoint = "soundscape" }
-    darkiceOpts = Darkice.defaultOptions {
-                    Darkice.configFile = Just darkiceCfgFile }
-{-FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg-}
-{-SProc.withProcess (logStrLn "STREAMER") (Darkice.createProcess "darkice" darkiceOpts) $ do-}
-    {-loop = do-}
-        {-mi <- liftIO $ STM.atomically $ STM.readTMChan toEngine-}
-        {-case mi of-}
-            {-Nothing -> return ()-}
-            {-Just i -> do-}
-                {-mo <- engine i-}
-                {-case mo of-}
-                    {-Nothing -> liftIO $ close-}
-                    {-Just o -> do liftIO $ STM.atomically $ STM.writeTMChan fromEngine o-}
-                                 {-loop-}
--}
-
 scanlE :: (a -> b -> a) -> a -> R.Event t b -> R.Event t a
 scanlE f a0 = R.accumE a0 . fmap (flip f)
 
 sample :: R.Behavior t a -> R.Event t b -> R.Event t (a, b)
 sample = R.apply . fmap (,)
+
+zipB :: R.Behavior t a -> R.Behavior t b -> R.Behavior t (a, b)
+zipB a b = (,) <$> a <*> b
 
 {-alter :: (Maybe a -> Maybe a) -> k -> H.HashMap k a -> H.HashMap k a-}
 alter f k m =
@@ -495,6 +481,7 @@ data LocationState = LocationState {
 
 type SoundMap = H.HashMap SoundId (Sound, SoundFileInfo)
 type LocationMap = H.HashMap LocationId (Location, LocationState)
+type ListenerMap = H.HashMap ListenerId (Listener, ListenerState)
 
 class ControlName a where
     controlName :: a -> String
@@ -567,8 +554,10 @@ newLocation soundMap (locationId, location) = do
     return (locationId, (location, LocationState bus (H.fromList (zip (locationSounds location) players))))
 
 data ListenerState = ListenerState {
-    patchCables :: H.HashMap LocationId SC.Synth
-  } deriving (Show)
+    outputBus :: SC.AudioBus
+  , patchCables :: H.HashMap LocationId SC.Synth
+  , streamer :: Proc.ProcessHandle
+  }
 
 patchCableSynthDef :: SC.UGen
 patchCableSynthDef =
@@ -579,17 +568,58 @@ patchCableSynthDef =
 distanceScaling :: Double -> Double
 distanceScaling = recip
 
-newListener :: LocationMap -> (ListenerId, Listener) -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
-newListener locations (listenerId, listener) = do
-    liftIO $ print ("yeah", locations)
+-- TODO: Use control-monad-exception for exception reporting
+--       There also needs to be a way to communicate exceptions back from
+--       the SC engine loop to the reactive event network.
+findOutputBus :: Environment -> ListenerMap -> SC.ServerT IO SC.AudioBus
+findOutputBus env listeners = do
+    case avail List.\\ used of
+        [] -> failure SC.NoFreeIds
+        (i:_) -> SC.outputBus 2 i
+    where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
+          avail = map (*2) [0..getL maxNumListeners env - 1]
+
+startDarkice :: Environment -> String -> String -> IO Proc.ProcessHandle
+startDarkice env name soundscape = do
+    FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
+    SProc.createProcess (logStrLn $ "STREAMER:" ++ name) (Darkice.createProcess "darkice" darkiceOpts)
+    where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ name ++ ".cfg")
+          darkiceCfg = Darkice.defaultConfig {
+                          Darkice.jackClientName = Just name
+                        , Darkice.mountPoint = soundscape }
+          darkiceOpts = Darkice.defaultOptions {
+                          Darkice.configFile = Just darkiceCfgFile }
+
+makeConnectionMap :: Bool -> Environment -> SJack.Connections
+makeConnectionMap monitor env = concatMap f [0..getL maxNumListeners env - 1]
+    where
+        f i = let darkice = "darkice-" ++ show i
+                  sc1 = "out_" ++ show (i + 1)
+                  sc2 = "out_" ++ show (i + 2)
+              in [ (("supercollider",sc1),(darkice,"left"))
+                 , (("supercollider",sc2),(darkice,"right")) ]
+                 ++ if monitor
+                    then [ (("supercollider",sc1),("system","playback_1"))
+                         , (("supercollider",sc2),("system","playback_2")) ]
+                    else []
+
+darkiceName :: Integral a => a -> String
+darkiceName a = "darkice-" ++ show (fromIntegral a :: Int)
+
+newListener :: Environment -> LocationMap -> ListenerMap -> (ListenerId, Listener) -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
+newListener env locations listeners (listenerId, listener) = do
+    -- TODO: Only send SynthDef once
     sd <- SC.exec' immediately . SC.async $ SC.d_recv "patchCable" patchCableSynthDef
     g <- SC.rootNode
-    listenerState <- fmap ListenerState $ T.forM locations $ \(l, s) ->
-        let level = distanceScaling (distance (listenerPosition listener) (position l))
-        in SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
-                                                            , control "out" (0::Double)
-                                                            , control "level" (1::Double) ]
-    return (listenerId, (listener, listenerState))
+    output <- findOutputBus env listeners
+    cables <- T.forM locations $ \(l, s) -> do
+        let dist = distance (listenerPosition listener) (position l)
+            level = min 1 (distanceScaling dist)
+        SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
+                                                         , control "out" output
+                                                         , control "level" level ]
+    darkice <- liftIO $ startDarkice env (darkiceName . SC.busId $ output) "soundscape"
+    return (listenerId, (listener, ListenerState output cables darkice))
 
 type Time = Double
 
@@ -647,14 +677,10 @@ main = do
                 logLn $ "Starting with temporary directory " ++ tmpDir_
                 SJack.withJack (logStrLn "JACK") "jackdmp" jackOptions $ \jackServerName -> do
                     logLn $ "Jack server name: " ++ jackServerName
-                    let connections = [
-                            (("supercollider","out_1"),("darkice","left"))
-                          , (("supercollider","out_2"),("darkice","right"))
-                          , (("supercollider","out_1"),("system","playback_1"))
-                          , (("supercollider","out_2"),("system","playback_2")) ]
-                    void $ SJack.withPatchBay jackServerName "patchbay" connections $ do
-                        let env = makeEnv opts jackServerName
-                            run source sink = do
+                    let env = makeEnv opts tmpDir jackServerName
+                        connectionMap = makeConnectionMap False env
+                    void $ SJack.withPatchBay jackServerName "patchbay" connectionMap $ do
+                        let run source sink = do
                                 (scLoop, scSink) <- newChan
                                 {-fromEngine <- STM.newTMChanIO-}
                                 fromEngine <- MVar.newEmptyMVar
@@ -704,10 +730,10 @@ main = do
 
                                         -- AddListener
                                         (eListenerState, fListenerState) <- R.newEvent
-                                        R.reactimate $ scSink . Execute fListenerState <$> (uncurry newListener <$> sample bLocations eAddListener)
                                         let eListeners = scanlE (flip (uncurry H.insert)) H.empty eListenerState
                                             bListeners = R.stepper H.empty eListeners
-                                        R.reactimate $ print <$> eListeners
+                                        R.reactimate $ scSink . Execute fListenerState <$> ((uncurry . uncurry) (newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener)
+                                        {-R.reactimate $ print <$> eListeners-}
                                         R.reactimate $ send Ok <$ eListeners
 
                                         -- Set up connections to and from JSON I/O network
