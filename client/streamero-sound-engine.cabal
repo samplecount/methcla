@@ -15,6 +15,7 @@ Executable streamero-sound-engine
                     Streamero.Jack
                     Streamero.Process
                     Streamero.Readline
+                    Streamero.SoundFile
   GHC-Options:      -Wall -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
                   , aeson >= 0.6
@@ -29,8 +30,11 @@ Executable streamero-sound-engine
                   , data-lens-template >= 2.0
                   , editline >= 0.2
                   , explicit-exception >= 0.1
+                  , hosc >= 0.11
+                  , hsc3 >= 0.11
                   , hsc3-process >= 0.7
                   , hsc3-server >= 0.4
+                  , hsndfile >= 0.5
                   , jack >= 0.6
                   , lifted-base >= 0.1
                   , network >= 2.3
@@ -39,6 +43,9 @@ Executable streamero-sound-engine
                   , reactive-banana >= 0.5
                   , resourcet >= 0.3
                   , split >= 0.1
+                  , stm >= 2.3
+                  , stm-chans >= 1.3
+                  , stm-conduit >= 0.4
                   , system-fileio >= 0.3
                   , system-filepath >= 0.4
                   , text >= 0.11

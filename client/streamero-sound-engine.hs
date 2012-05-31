@@ -1,6 +1,14 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE ExistentialQuantification
+           , FlexibleInstances
+           , OverloadedStrings
+           , RankNTypes
+           , TemplateHaskell
+           , TypeSynonymInstances #-}
 import           Control.Applicative
-import           Control.Concurrent (readMVar)
+import           Control.Concurrent (forkIO, myThreadId, threadDelay)
+import qualified Control.Concurrent.Chan as Chan
+import qualified Control.Concurrent.STM as STM
+import qualified Control.Concurrent.STM.TMChan as STM
 import           Control.Exception.Lifted
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -11,6 +19,7 @@ import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.Bits as Bits
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.ByteString.Lazy as BL
@@ -22,6 +31,7 @@ import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.Cereal as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as C
+import qualified Data.Conduit.TMChan as C
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
 import           Data.Lens.Template
@@ -30,20 +40,30 @@ import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import qualified Data.Traversable as T
+import           Data.Word (Word64)
 import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Network.Socket as N
+import qualified Reactive.Banana as R
+import           Sound.OpenSoundControl (immediately)
+import qualified Sound.OpenSoundControl as OSC
+import qualified Sound.SC3.UGen as SC
 import qualified Sound.SC3.Server.Monad as SC
+import qualified Sound.SC3.Server.Monad.Command as SC
+import qualified Sound.SC3.Server.Monad.Request as SC
 import qualified Sound.SC3.Server.Process as SC
 import qualified Sound.SC3.Server.Process.Monad as SCM
 import qualified Streamero.Darkice as Darkice
-import           Streamero.Readline (sourceReadline)
-import qualified Streamero.Process as SProc
 import qualified Streamero.Jack as SJack
+import qualified Streamero.Process as SProc
+import           Streamero.Readline (sourceReadline)
+import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
 import           System.Exit (ExitCode(..), exitWith)
 import           System.IO
 import           System.Posix.Env (getEnv, setEnv, unsetEnv)
+import           System.Posix.Signals (installHandler, keyboardSignal, Handler(Catch))
 import qualified System.Process as Proc
 import           System.Unix.Directory (withTemporaryDirectory)
 
@@ -56,6 +76,13 @@ catMaybes = do
         Nothing -> return ()
         Just Nothing -> catMaybes
         Just (Just a) -> C.yield a >> catMaybes
+
+printC :: (Show a, MonadIO m) => C.Conduit a m a
+printC = do
+    v <- C.await
+    case v of
+        Nothing -> return ()
+        Just a -> liftIO (print a) >> C.yield a >> printC
 
 -- | Chunk input into messages delimited by 32 bit integer byte counts.
 message :: C.MonadThrow m => C.Conduit BS.ByteString m BC.ByteString
@@ -108,6 +135,7 @@ jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
 
+type SoundscapeId = String
 type SessionId = String
 type LocationId = Int
 type SoundId = Int
@@ -118,12 +146,31 @@ instance FromJSON Coord where
     parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
     parseJSON _          = mzero
 
+distance :: Coord -> Coord -> Double
+distance c1 c2 = earthRadius * ahaversin h
+    where
+        earthRadius = 6371e3
+        sqr x = x * x
+        haversin = sqr . sin . (/2)
+        ahaversin = (*2) . asin . sqrt
+        deg2rad = (/180) . (*pi)
+        h = haversin (latitude c2 - latitude c1) +
+               cos (deg2rad (latitude c1)) * cos (deg2rad (latitude c2))
+                   * haversin (longitude c2 - longitude c1)
+        {-c = 2.0 * atan2(sqrt a, sqrt (1.0-a))-}
+
 data Sound =
     SoundFile {
         path :: FilePath
       , loop :: Bool
     }
     deriving (Show)
+
+data SoundFileInfo = SoundFileInfo {
+    sampleRate :: Int
+  , numChannels :: Int
+  , numFrames :: Word64
+  } deriving (Show)
 
 instance FromJSON Sound where
     parseJSON (Object v) = do
@@ -132,6 +179,8 @@ instance FromJSON Sound where
             "sample" -> SoundFile <$> v .: "path" <*> v .: "loop"
             _        -> mzero
     parseJSON _          = mzero
+
+type ListenerId = SessionId
 
 data Listener = Listener {
     listenerPosition :: Coord
@@ -145,11 +194,13 @@ data Location = Location {
 
 data Request =
     Quit
-  | AddListener SessionId Coord
-  | RemoveListener SessionId
-  | UpdateListener SessionId (Listener -> Listener)
+  {-| Init SoundscapeId String String-}
+  | AddListener ListenerId Coord
+  | RemoveListener ListenerId
+  | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
   | AddLocation LocationId Coord Double [SoundId]
+  | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
 
 instance FromJSON Request where
@@ -157,11 +208,13 @@ instance FromJSON Request where
         t <- v .: "request" :: J.Parser Text
         case t of
             "Quit"           -> pure Quit
+            {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
             "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position"
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
             "AddLocation"    -> AddLocation <$> v .: "id" <*> v .: "position" <*> v .: "radius" <*> v .: "sounds"
+            "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
                                                                     [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
                                                                     , maybe id (\x s -> s { radius = x })   <$> v .:? "radius"
@@ -183,7 +236,7 @@ data Environment = Env {
 data State = State {
     _sounds    :: H.HashMap SoundId Sound
   , _locations :: H.HashMap LocationId Location
-  , _listeners :: H.HashMap SessionId Listener
+  , _listeners :: H.HashMap ListenerId Listener
   } deriving (Show)
 
 $( makeLenses [''Environment, ''State] )
@@ -219,7 +272,7 @@ engine request = do
             S.modify (modL listeners (H.adjust f id))
             return Ok
         Quit -> error "BUG"
-    S.get >>= liftIO . hPutStrLn stderr . show
+    {-S.get >>= liftIO . hPutStrLn stderr . show-}
     return $! Just response
 
 -- | Engine conduit mapping requests to responses.
@@ -232,6 +285,51 @@ engineC r s = C.conduitState
                     Nothing -> return $ C.StateFinished Nothing []
                     Just a  -> return $ C.StateProducing s' [a])
             (\_ -> return [])
+
+engineR :: Environment -> Request -> State -> (Maybe Response, State)
+engineR env request state =
+    case request of
+        AddSound id sound ->
+            -- Add sound to sound map, get soundfile metadata etc.
+            (Just Ok, modL sounds (H.insert id sound) state)
+        AddLocation id pos radius sounds ->
+            -- Start synth for sound at location, load buffers etc.
+            -- Notify listeners
+            let x = Location pos radius sounds
+            in (Just Ok, modL locations (H.insert id x) state)
+        UpdateLocation id f ->
+            -- Update location radius, position, sounds
+            (Just Ok, modL locations (H.adjust f id) state)
+        AddListener id pos ->
+            let l = Listener pos
+            in (Just Ok, modL listeners (H.insert id l) state)
+        RemoveListener id ->
+            (Just Ok, modL listeners (H.delete id) state)
+        UpdateListener id f ->
+            (Just Ok, modL listeners (H.adjust f id) state)
+        Quit -> (Nothing, state)
+
+data EventSinks = EventSinks {
+    fireAddSound :: (SoundId, Sound) -> IO ()
+  , fireAddLocation :: (LocationId, Location) -> IO ()
+  , fireRemoveLocation :: LocationId -> IO ()
+  , fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
+  , fireAddListener :: (ListenerId, Listener) -> IO ()
+  , fireRemoveListener :: ListenerId -> IO ()
+  , fireUpdateListener :: (ListenerId, Listener -> Listener) -> IO ()
+  , fireQuit :: () -> IO ()
+  }
+
+requestToEvent :: EventSinks -> Request -> IO ()
+requestToEvent es (AddSound id sound) = fireAddSound es (id, sound)
+requestToEvent es (AddLocation id pos radius sounds) = fireAddLocation es (id, Location pos radius sounds)
+requestToEvent es (RemoveLocation id) = fireRemoveLocation es id
+requestToEvent es (UpdateLocation id f) = fireUpdateLocation es (id, f)
+requestToEvent es (AddListener id pos) = fireAddListener es (id, Listener pos)
+requestToEvent es (RemoveListener id) = fireRemoveListener es id
+requestToEvent es (UpdateListener id f) = fireUpdateListener es (id, f)
+requestToEvent es Quit = return ()
+requestToEvent _ _ = return ()
 
 data Options = Options {
     _help :: Bool
@@ -269,7 +367,9 @@ withSC env clientName =
     SCM.withSynth
         SC.defaultServerOptions {
             SC.numberOfInputBusChannels = 2
-          , SC.numberOfOutputBusChannels = 2 * (maxNumListeners ^$ env) }
+          , SC.numberOfOutputBusChannels = 2 * (maxNumListeners ^$ env)
+          {-, SC.ugenPluginPath = Just [ "./plugins" ]-}
+          }
         SC.defaultRTOptions {
             SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":" ++ clientName }
         SC.defaultOutputHandler { SC.onPutString = logStrLn "SC"
@@ -292,13 +392,227 @@ logLn = logStrLn "ENGINE"
 someException :: SomeException -> SomeException
 someException = id
 
+data Command m =
+    QuitServer
+  | forall a . Execute (a -> IO ()) (SC.ServerT m a)
+
+newChan :: IO (SC.ServerT IO (), Command IO -> IO ())
+newChan = do
+    toSC <- STM.newTMChanIO
+    let loop :: SC.ServerT IO ()
+        loop = do
+            x <- liftIO . STM.atomically $ STM.readTMChan toSC
+            case x of
+                Just QuitServer -> return ()
+                Just (Execute callback action) -> do
+                    action >>= liftIO . callback
+                    loop
+                _ -> return ()
+        sink = STM.atomically . STM.writeTMChan toSC
+    return (loop, sink)
+
+newEvent :: (SC.ServerT IO a -> IO a) -> R.NetworkDescription t (R.Event t a, SC.ServerT IO a -> IO ())
+newEvent pull = do
+    (evt, sink) <- R.newEvent
+    return (evt, \action -> pull action >>= sink)
+
+newAsyncEvent :: R.NetworkDescription t (R.Event t a, IO a -> IO ())
+newAsyncEvent = do
+    (evt, fire) <- R.newEvent
+    return (evt, \action -> void $ forkIO $ action >>= fire)
+
+newSyncEvent :: R.NetworkDescription t (R.Event t a, IO a -> IO ())
+newSyncEvent = do
+    (evt, fire) <- R.newEvent
+    return (evt, \action -> action >>= fire)
+
+{-newEvent_ :: SC.ServerT (R.NetworkDescription t) (R.Event t a, SC.ServerT IO a -> IO ())-}
+{-newEvent_ = do-}
+    {-(evt, sink) <- lift $ R.newEvent-}
+    {-exec <- SC.capture-}
+    {-return (evt, \action -> exec action >>= sink)-}
+
+newBreakHandler :: IO () -> IO ()
+newBreakHandler quit = void $ installHandler keyboardSignal
+    (Catch $ putStrLn "Quitting..." >> quit)
+    Nothing
+
+sinkVoid :: MonadIO m => (input -> IO ()) -> C.Sink input m ()
+sinkVoid sink = C.sinkState () push close
+    where push _ input = liftIO (sink input) >> return (C.StateProcessing ())
+          -- TODO: close needs to send a close notification to the sink!
+          close _ = return ()
+
+{- Darkice shtuff
+let darkiceCfgFile = FS.append tmpDir "darkice.cfg"
+    darkiceCfg = Darkice.defaultConfig {
+                    Darkice.jackClientName = Just "darkice"
+                  , Darkice.mountPoint = "soundscape" }
+    darkiceOpts = Darkice.defaultOptions {
+                    Darkice.configFile = Just darkiceCfgFile }
+{-FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg-}
+{-SProc.withProcess (logStrLn "STREAMER") (Darkice.createProcess "darkice" darkiceOpts) $ do-}
+    {-loop = do-}
+        {-mi <- liftIO $ STM.atomically $ STM.readTMChan toEngine-}
+        {-case mi of-}
+            {-Nothing -> return ()-}
+            {-Just i -> do-}
+                {-mo <- engine i-}
+                {-case mo of-}
+                    {-Nothing -> liftIO $ close-}
+                    {-Just o -> do liftIO $ STM.atomically $ STM.writeTMChan fromEngine o-}
+                                 {-loop-}
+-}
+
+scanlE :: (a -> b -> a) -> a -> R.Event t b -> R.Event t a
+scanlE f a0 = R.accumE a0 . fmap (flip f)
+
+sample :: R.Behavior t a -> R.Event t b -> R.Event t (a, b)
+sample = R.apply . fmap (,)
+
+{-alter :: (Maybe a -> Maybe a) -> k -> H.HashMap k a -> H.HashMap k a-}
+alter f k m =
+    case H.lookup k m of
+        Nothing -> case f Nothing of
+                    Nothing -> m
+                    Just a -> H.insert k a m
+        a -> case f a of
+                Nothing -> H.delete k m
+                Just a' -> H.insert k a' m
+
+soundFileInfo :: FilePath -> IO SoundFileInfo
+soundFileInfo path = do
+    info <- SF.getInfo path
+    return $ SoundFileInfo (SF.samplerate info) (SF.channels info) (fromIntegral $ SF.frames info)
+
+data Player = Player SC.Buffer SC.Synth deriving Show
+
+data LocationState = LocationState {
+    bus :: SC.AudioBus
+  , players :: H.HashMap SoundId Player
+  } deriving (Show)
+
+type SoundMap = H.HashMap SoundId (Sound, SoundFileInfo)
+type LocationMap = H.HashMap LocationId (Location, LocationState)
+
+class ControlName a where
+    controlName :: a -> String
+
+instance ControlName String where
+    controlName = id
+
+class ToControlValue a where
+    toControlValue :: a -> Double
+
+instance ToControlValue Double where
+    toControlValue = id
+
+instance ToControlValue Float where
+    toControlValue = realToFrac
+
+instance ToControlValue Int where
+    toControlValue = fromIntegral
+
+instance ToControlValue Bool where
+    toControlValue True = 1
+    toControlValue False = 0
+
+instance ToControlValue SC.AudioBus where
+    toControlValue = fromIntegral . SC.busId
+
+instance ToControlValue SC.ControlBus where
+    toControlValue = fromIntegral . SC.busId
+
+instance ToControlValue SC.Buffer where
+    toControlValue = fromIntegral . SC.bufferId
+
+control :: (ToControlValue a) => String -> a -> (String, Double)
+control s a = (s, toControlValue a)
+
+resource = return . return
+
+playerSynthDef :: Int -> SC.Loop -> SC.UGen
+playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ SC.mix $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
+
+mkPlayerSynthDef :: Int -> SC.Loop -> SC.ServerT IO SC.SynthDef
+mkPlayerSynthDef nc = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show nc) . playerSynthDef nc
+
+truncatePowerOfTwo :: (Bits.Bits a, Integral a) => a -> a
+truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase 2 . fromIntegral
+
+-- FIXME: Use playBuf for small sound files (e.g. <= 32768)
+diskBufferSize :: SoundFileInfo -> Int
+diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames 
+
+newPlayer :: (Int -> SC.Loop -> SC.ServerT IO SC.SynthDef) -> SC.AudioBus -> Sound -> SoundFileInfo -> SC.ServerT IO Player
+newPlayer mkSynthDef bus sound info = do
+    let nc = numChannels info
+    sd <- mkSynthDef nc SC.Loop
+    g <- SC.rootNode
+    {-SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
+    (buffer, synth) <- SC.exec' immediately $
+        SC.b_alloc (diskBufferSize info) nc `SC.whenDone` \buffer ->
+            SC.b_read buffer (path sound) Nothing Nothing Nothing True `SC.whenDone` \_ -> do
+                synth <- SC.s_new sd SC.AddToTail g
+                            [ control "buffer" buffer
+                            , control "out" bus ]
+                resource (buffer, synth)
+    return $ Player buffer synth
+
+newLocation :: SoundMap -> (LocationId, Location) -> SC.ServerT IO (LocationId, (Location, LocationState))
+newLocation soundMap (locationId, location) = do
+    bus <- SC.newAudioBus 1
+    players <- mapM (uncurry (newPlayer mkPlayerSynthDef bus) . (H.!) soundMap) (locationSounds location)
+    return (locationId, (location, LocationState bus (H.fromList (zip (locationSounds location) players))))
+
+data ListenerState = ListenerState {
+    patchCables :: H.HashMap LocationId SC.Synth
+  } deriving (Show)
+
+patchCableSynthDef :: SC.UGen
+patchCableSynthDef =
+    let i = SC.in' 1 SC.AR (SC.control SC.KR "in" 0)
+        o = SC.out (SC.control SC.KR "out" 0)
+    in o (i * SC.lag (SC.control SC.KR "level" 0) 0.1)
+
+distanceScaling :: Double -> Double
+distanceScaling = recip
+
+newListener :: LocationMap -> (ListenerId, Listener) -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
+newListener locations (listenerId, listener) = do
+    liftIO $ print ("yeah", locations)
+    sd <- SC.exec' immediately . SC.async $ SC.d_recv "patchCable" patchCableSynthDef
+    g <- SC.rootNode
+    listenerState <- fmap ListenerState $ T.forM locations $ \(l, s) ->
+        let level = distanceScaling (distance (listenerPosition listener) (position l))
+        in SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
+                                                            , control "out" (0::Double)
+                                                            , control "level" (1::Double) ]
+    return (listenerId, (listener, listenerState))
+
+type Time = Double
+
+newTimer :: R.NetworkDescription t (Time, R.Event t Time, Time -> IO ())
+newTimer = do
+    chan <- liftIO STM.newTChanIO
+    liftIO $ forkIO $ loop chan
+    (evt, fire) <- R.newEvent
+    t0 <- liftIO OSC.utcr
+    return (t0, evt, \t -> STM.atomically $ STM.writeTChan chan (t, fire))
+    where
+        loop chan = do
+            (t, fire) <- STM.atomically $ STM.readTChan chan
+            OSC.pauseThreadUntil t
+            fire t
+            loop chan
+
 main :: IO ()
 main = do
     opts <- processArgs arguments
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
         else do
-            e <- try $ withTemporaryDirectory "streamero_" $ \tmpDir_ -> do
+            withTemporaryDirectory "streamero_" $ \tmpDir_ -> do
                 let tmpDir = FS.decodeString tmpDir_
                     jackOptions = (SJack.defaultOptions (FS.encodeString $ FS.basename tmpDir)) { SJack.driver = "coreaudio" }
                 -- Set HOME directory for jack to find its config file
@@ -310,23 +624,87 @@ main = do
                 logLn $ "Starting with temporary directory " ++ tmpDir_
                 SJack.withJack (logStrLn "JACK") "jackdmp" jackOptions $ \jackServerName -> do
                     logLn $ "Jack server name: " ++ jackServerName
-                    void $ SJack.withPatchBay jackServerName "patchbay" [(("supercollider","out_1"),("darkice","left")),(("supercollider","out_2"),("darkice","right"))] $ do
+                    let connections = [
+                            (("supercollider","out_1"),("darkice","left"))
+                          , (("supercollider","out_2"),("darkice","right"))
+                          , (("supercollider","out_1"),("system","playback_1"))
+                          , (("supercollider","out_2"),("system","playback_2")) ]
+                    void $ SJack.withPatchBay jackServerName "patchbay" connections $ do
                         let env = makeEnv opts jackServerName
-                            run source sink = withSC env "supercollider" $ do
-                                let darkiceCfgFile = FS.append tmpDir "darkice.cfg"
-                                    darkiceCfg = Darkice.defaultConfig {
-                                                    Darkice.jackClientName = Just "darkice"
-                                                  , Darkice.mountPoint = "soundscape" }
-                                    darkiceOpts = Darkice.defaultOptions {
-                                                    Darkice.configFile = Just darkiceCfgFile }
-                                liftIO $ do
-                                    FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
-                                    SProc.withProcess (logStrLn "STREAMER") (Darkice.createProcess "darkice" darkiceOpts) $
-                                        source =$= engineC env makeState $$ sink
+                            run source sink = do
+                                (scLoop, scSink) <- newChan
+                                fromEngine <- STM.newTMChanIO
+                                let send = STM.atomically . STM.writeTMChan fromEngine
+                                    close = scSink QuitServer >> STM.atomically (STM.closeTMChan fromEngine)
+                                newBreakHandler $ close
+                                withSC env "supercollider" $ do
+                                    {-source =$= engineC env makeState $$ sink-}
+                                    mainThread <- liftIO $ myThreadId
+                                    let networkDescription :: forall t . R.NetworkDescription t ()
+                                        networkDescription = do
+                                        {-(request, toEngine) <- R.newEvent-}
+                                        -- Request events
+                                        (eAddSound, fAddSound) <- R.newEvent
+                                        (eAddLocation, fAddLocation) <- R.newEvent
+                                        (eRemoveLocation, fRemoveLocation) <- R.newEvent
+                                        (eUpdateLocation, fUpdateLocation) <- R.newEvent
+                                        (eAddListener, fAddListener) <- R.newEvent
+                                        (eRemoveListener, fRemoveListener) <- R.newEvent
+                                        (eUpdateListener, fUpdateListener) <- R.newEvent
+                                        (eQuit, fQuit) <- R.newEvent
+                                        let eventSinks = EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
+
+                                        -- Read sound file info (a)synchronously
+                                        {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
+                                        (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
+                                        R.reactimate $ (\(i, s) -> fSoundFileInfo $ do { si <- soundFileInfo (path s) ; return (i, (s, si)) }) <$> eAddSound
+                                        -- Update sound map
+                                        let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
+                                            bSounds = R.stepper H.empty eSounds
+                                        -- Return status
+                                        R.reactimate $ send Ok <$ eSounds
+
+                                        R.reactimate $ print <$> eSounds
+                                        {-R.reactimate $ print <$> eSoundFileInfo-}
+                                        {-R.reactimate $ print <$> eAddSound-}
+
+                                        -- AddLocation
+                                        (eLocationState, fLocationState) <- R.newEvent
+                                        {-R.reactimate $ print <$> sample bSounds eLocations-}
+                                        R.reactimate $ scSink . Execute fLocationState <$> (uncurry newLocation <$> sample bSounds eAddLocation)
+                                        R.reactimate $ print <$> eLocationState
+                                        let eLocations = scanlE (flip (uncurry H.insert)) H.empty eLocationState
+                                            bLocations = R.stepper H.empty eLocations
+                                        R.reactimate $ print <$> eLocations
+                                        R.reactimate $ send Ok <$ eLocations
+
+                                        -- AddListener
+                                        (eListenerState, fListenerState) <- R.newEvent
+                                        R.reactimate $ scSink . Execute fListenerState <$> (uncurry newListener <$> sample bLocations eAddListener)
+                                        let eListeners = scanlE (flip (uncurry H.insert)) H.empty eListenerState
+                                            bListeners = R.stepper H.empty eListeners
+                                        R.reactimate $ print <$> eListeners
+                                        R.reactimate $ send Ok <$ eListeners
+
+                                        -- Set up connections to and from JSON I/O network
+                                        -- NOTE: Event network needs to be set up already!
+                                        R.liftIOLater $ void $ forkIO $ do
+                                            -- FIXME: Why is this necessary?
+                                            threadDelay (truncate 1e6)
+                                            void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)
+                                            void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))
+
+                                    liftIO $ R.actuate =<< R.compile networkDescription
+                                    {-S.runRWST loop env makeState-}
+                                    scLoop
                         const $ lift $ case socket ^$ opts of
                             Nothing ->
                                 -- Readline interface
                                 let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
+                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
+                                in run source sink
+                            Just "-" ->
+                                let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
                                     sink = toJson =$= unlines =$= CB.sinkHandle stdout
                                 in run source sink
                             Just socketFile ->
@@ -335,9 +713,3 @@ main = do
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
-            case e of
-                Left exc -> do
-                    putStrLn $ "Exception caught: " ++ show (someException exc)
-                    exitWith $ ExitFailure 1
-                Right _ ->
-                    exitWith ExitSuccess
