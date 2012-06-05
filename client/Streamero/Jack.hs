@@ -13,9 +13,9 @@ module Streamero.Jack (
 {-import           Data.Conduit.Process-}
 {-import qualified Data.Conduit as C-}
 import           Control.Applicative
-import           Control.Concurrent (forkIO, threadDelay)
-import           Control.Concurrent.MVar
-import           Control.Monad (forever, replicateM_, void)
+import           Control.Concurrent (forkIO)
+import qualified Control.Concurrent.Chan as Chan
+import           Control.Monad (forever, join, replicateM_, void)
 import qualified Control.Monad.Exception.Synchronous as E
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.Trans.Class as Trans
@@ -29,9 +29,9 @@ import           Foreign.Ptr
 import qualified Reactive.Banana as R
 import qualified Sound.JACK as JACK
 import qualified Sound.JACK.Exception as JACK
+import qualified Sound.OpenSoundControl as OSC
 import qualified Streamero.Process as P
 import           System.Posix (setEnv)
-import           System.Timeout (timeout)
 
 data Options = Options {
     name :: String
@@ -136,11 +136,14 @@ connectPorts :: JACK.Client -> (String, String) -> (String, String) -> IO ()
 connectPorts client (c1, p1) (c2, p2) =
     JACK.handleExceptions $ JACK.connect client (mkPortName c1 p1) (mkPortName c2 p2)
 
-data PatchBay = PatchBay { quit :: MVar (), result :: MVar Bool }
+defer :: Chan.Chan (IO ()) -> (a -> IO ()) -> a -> IO ()
+defer chan sink = Chan.writeChan chan . sink
 
 withPatchBay :: String -> String -> Connections -> (JACK.Client -> E.ExceptionalT (JACK.Status (JACK.PortRegister (JACK.PortMismatch Errno))) IO a) -> IO ()
 withPatchBay serverName clientName connectionSpecs action = do
-    {-patchBay <- PatchBay <$> newEmptyMVar-}
+    -- Handle all callbacks from a single (separate) thread
+    chan <- Chan.newChan
+    void $ forkIO $ forever $ join (Chan.readChan chan)
     -- FIXME: Implement connection timeout correctly
     replicateM_ 20 $ do
         JACK.handleExceptions $ JACK.withClient serverName clientName $ \client -> do
@@ -148,13 +151,13 @@ withPatchBay serverName clientName connectionSpecs action = do
                 networkDescription = do
                     (clientEvt, clientSink) <- R.newEvent
                     liftIO $ JACK.handleExceptions $ JACK.setClientRegistration client =<<
-                                (Trans.lift $ JACK.mkClientRegistration $ clientRegistration clientSink)
+                                (Trans.lift $ JACK.mkClientRegistration $ clientRegistration (defer chan clientSink))
                     (portEvt, portSink) <- R.newEvent
                     liftIO $ JACK.handleExceptions $ JACK.setPortRegistration client =<<
-                                (Trans.lift $ JACK.mkPortRegistration $ portRegistration portSink client)
+                                (Trans.lift $ JACK.mkPortRegistration $ portRegistration (defer chan portSink) client)
                     (connEvt, connSink) <- R.newEvent
                     liftIO $ JACK.handleExceptions $ JACK.setPortConnect client =<<
-                                (Trans.lift $ JACK.mkPortConnect $ portConnect connSink client)
+                                (Trans.lift $ JACK.mkPortConnect $ portConnect (defer chan connSink) client)
                     {-R.reactimate $ fmap print clientEvt-}
                     {-R.reactimate $ fmap print portEvt-}
                     ports <- liftIO $ JACK.getPorts client
@@ -180,19 +183,13 @@ withPatchBay serverName clientName connectionSpecs action = do
                     {-R.reactimate $ (R.apply (((\cm e -> print (cm, e))) <$> connectionsB) connectPortsE)-}
                     R.reactimate $ uncurry (connectPorts client) <$> connectPortsE
             Trans.lift $ R.compile networkDescription >>= R.actuate
-            JACK.withActivation client $ void $ action client -- Trans.lift $ do
-                {-putStrLn $ "Patchbay started ..."-}
-                {-takeMVar $ quit patchBay-}
-                {-action-}
-        threadDelay (truncate $ 0.5e6)
-
-closePatchBay :: PatchBay -> IO ()
-closePatchBay = flip putMVar () . quit
+            JACK.withActivation client $ void $ action client
+        OSC.pauseThread 1
 
 clientRegistration :: ((String, Bool) -> IO ()) -> CString -> CInt -> Ptr JACK.CallbackArg -> IO ()
 clientRegistration sink cName register _ = do
-    name <- peekCAString cName
-    sink (name, register /= 0)
+    hName <- peekCAString cName
+    sink (hName, register /= 0)
 
 portRegistration :: ((String, String, Bool) -> IO ()) -> JACK.Client -> JACK.PortId -> CInt -> Ptr JACK.CallbackArg -> IO ()
 portRegistration sink client portId register _ = do
