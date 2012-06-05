@@ -712,6 +712,10 @@ main = do
                     logLn $ "Jack server name: " ++ jackServerName
                     let env = makeEnv opts tmpDir jackServerName
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
+                    liftIO $ do
+                        let delay = 1
+                        logLn $ "Waiting " ++ show delay ++ " seconds before trying to connect to Jack"
+                        OSC.pauseThread delay
                     void $ SJack.withPatchBay jackServerName "patchbay" connectionMap $ do
                         let run source sink = do
                                 (scLoop, scSink) <- newChan
