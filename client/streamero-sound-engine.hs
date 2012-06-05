@@ -601,25 +601,29 @@ startDarkice env name soundscape = do
     where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ name ++ ".cfg")
           darkiceCfg = Darkice.defaultConfig {
                           Darkice.jackClientName = Just name
-                        , Darkice.mountPoint = soundscape }
+                        , Darkice.mountPoint = soundscape ++ "/" ++ name
+                        , Darkice.bufferSize = 1 }
           darkiceOpts = Darkice.defaultOptions {
                           Darkice.configFile = Just darkiceCfgFile }
 
 makeConnectionMap :: Bool -> Environment -> SJack.Connections
 makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) env - 1]
     where
-        f i = let darkice = "darkice-" ++ show i
+        f i = let stream = "stream-" ++ show i
+                  stream1 = "left"
+                  stream2 = "right"
+                  sc = "supercollider"
                   sc1 = "out_" ++ show (i + 1)
                   sc2 = "out_" ++ show (i + 2)
-              in [ (("supercollider",sc1),(darkice,"left"))
-                 , (("supercollider",sc2),(darkice,"right")) ]
+              in [ ((sc,sc1),(stream,stream1))
+                 , ((sc,sc2),(stream,stream2)) ]
                  ++ if monitor
-                    then [ (("supercollider",sc1),("system","playback_1"))
-                         , (("supercollider",sc2),("system","playback_2")) ]
+                    then [ ((sc,sc1),("system","playback_1"))
+                         , ((sc,sc2),("system","playback_2")) ]
                     else []
 
-darkiceName :: Integral a => a -> String
-darkiceName a = "darkice-" ++ show (fromIntegral a :: Int)
+streamName :: Integral a => a -> String
+streamName a = "stream-" ++ show (fromIntegral a :: Int)
 
 newListener :: Environment -> LocationMap -> ListenerMap -> (ListenerId, Listener) -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
 newListener env locations listeners (listenerId, listener) = do
@@ -633,7 +637,7 @@ newListener env locations listeners (listenerId, listener) = do
         SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
                                                          , control "out" output
                                                          , control "level" level ]
-    darkice <- liftIO $ startDarkice env (darkiceName . SC.busId $ output) "soundscape"
+    darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) "soundscape"
     return (listenerId, (listener, ListenerState output cables darkice))
 
 type Time = Double
