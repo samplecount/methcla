@@ -747,6 +747,7 @@ main = do
                                         -- Read sound file info (a)synchronously
                                         {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
                                         (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
+                                        -- FIXME: Catch exception and report error when file not found.
                                         R.reactimate $ (\(i, s) -> fSoundFileInfo $ do { si <- soundFileInfo (path s) ; return (i, (s, si)) }) <$> eAddSound
                                         -- Update sound map
                                         let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
