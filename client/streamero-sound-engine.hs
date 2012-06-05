@@ -5,6 +5,7 @@
            , TemplateHaskell
            , TypeSynonymInstances #-}
 import           Control.Applicative
+import           Control.Category ((.))
 import           Control.Concurrent (forkIO, myThreadId, threadDelay)
 import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.Chan as Chan
@@ -48,6 +49,7 @@ import           Data.Word (Word64)
 import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Network.Socket as N
+import           Prelude hiding ((.))
 import qualified Reactive.Banana as R
 import           Sound.OpenSoundControl (immediately)
 import qualified Sound.OpenSoundControl as OSC
@@ -232,11 +234,37 @@ instance ToJSON Response where
     toJSON Ok = object [ "response" .= ("Ok" :: Text) ]
     toJSON (Error e) = object [ "response" .= ("Error" :: Text), "message" .= e ]
 
+data Options = Options {
+    _help :: Bool
+  , _socket :: Maybe FilePath
+  , _jackPath :: FilePath
+  , _jackDriver :: String
+  , _maxNumListeners :: Int
+  , _monitor :: Bool
+  } deriving (Show)
+
+defaultOptions :: Options
+defaultOptions = Options {
+    _help = False
+  , _socket = Nothing
+  , _jackPath = "jackd"
+  , _jackDriver = "dummy"
+  , _monitor = False
+  , _maxNumListeners = 1
+  }
+
+$( makeLenses [''Options] )
+
 data Environment = Env {
-    _maxNumListeners :: Int
+    _options :: Options
   , _temporaryDirectory :: FS.FilePath
   , _jackServerName :: String
   } deriving (Show)
+
+makeEnv :: Options -> FS.FilePath -> String -> Environment
+makeEnv = Env
+
+$( makeLenses [''Environment] )
 
 data State = State {
     _sounds    :: H.HashMap SoundId Sound
@@ -244,10 +272,10 @@ data State = State {
   , _listeners :: H.HashMap ListenerId Listener
   } deriving (Show)
 
-$( makeLenses [''Environment, ''State] )
-
 makeState :: State
 makeState = State H.empty H.empty H.empty
+
+$( makeLenses [''State] )
 
 type AppT = S.RWST Environment () State
 
@@ -334,35 +362,16 @@ requestToEvent es (AddListener id pos) = fireAddListener es (id, Listener pos)
 requestToEvent es (RemoveListener id) = fireRemoveListener es id
 requestToEvent es (UpdateListener id f) = fireUpdateListener es (id, f)
 requestToEvent es Quit = return ()
-requestToEvent _ _ = return ()
-
-data Options = Options {
-    _help :: Bool
-  , _socket :: Maybe FilePath
-  , _audioDevice :: Maybe String
-  , _opt_maxNumListeners :: Int
-  } deriving (Show)
-
-defaultOptions :: Options
-defaultOptions = Options {
-    _help = False
-  , _socket = Nothing
-  , _audioDevice = Nothing
-  , _opt_maxNumListeners = 1
-  }
-
-$( makeLenses [''Options] )
-
-makeEnv :: Options -> FS.FilePath -> String -> Environment
-makeEnv opts = Env (opt_maxNumListeners ^$ opts)
 
 arguments :: Mode Options
 arguments =
     mode "streamero-sound-engine" defaultOptions "Streamero Sound Engine v0.1"
          (flagArg (upd socket . Just) "SOCKET") $
          [ flagHelpSimple (setL help True)
-         , flagReq ["audio-device", "d"] (upd audioDevice . Just) "STRING" "Audio device"
-         , flagReq ["max-num-listeners", "n"] (upd opt_maxNumListeners . read) "NUMBER" "Maximum number of listeners"
+         , flagReq ["jack-path"] (upd jackPath) "STRING" "Path to Jack command"
+         , flagReq ["jack-driver", "d"] (upd jackDriver) "STRING" "Jack driver"
+         , flagBool ["monitor"] (setL monitor) "Whether to monitor the stream locally"
+         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
          ]
     where
         upd what x = Right . setL what x
@@ -372,7 +381,7 @@ withSC env clientName =
     SCM.withSynth
         SC.defaultServerOptions {
             SC.numberOfInputBusChannels = 2
-          , SC.numberOfOutputBusChannels = 2 * (maxNumListeners ^$ env)
+          , SC.numberOfOutputBusChannels = 2 * (maxNumListeners . options ^$ env)
           {-, SC.ugenPluginPath = Just [ "./plugins" ]-}
           }
         SC.defaultRTOptions {
@@ -577,7 +586,7 @@ findOutputBus env listeners = do
         [] -> failure SC.NoFreeIds
         (i:_) -> SC.outputBus 2 i
     where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
-          avail = map (*2) [0..getL maxNumListeners env - 1]
+          avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
 
 startDarkice :: Environment -> String -> String -> IO Proc.ProcessHandle
 startDarkice env name soundscape = do
@@ -591,7 +600,7 @@ startDarkice env name soundscape = do
                           Darkice.configFile = Just darkiceCfgFile }
 
 makeConnectionMap :: Bool -> Environment -> SJack.Connections
-makeConnectionMap monitor env = concatMap f [0..getL maxNumListeners env - 1]
+makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) env - 1]
     where
         f i = let darkice = "darkice-" ++ show i
                   sc1 = "out_" ++ show (i + 1)
@@ -667,7 +676,10 @@ main = do
         else do
             withTemporaryDirectory "streamero_" $ \tmpDir_ -> do
                 let tmpDir = FS.decodeString tmpDir_
-                    jackOptions = (SJack.defaultOptions (FS.encodeString $ FS.basename tmpDir)) { SJack.driver = "coreaudio" }
+                    jackOptions = (SJack.defaultOptions (FS.encodeString $ FS.basename tmpDir)) {
+                                        SJack.driver = jackDriver ^$ opts
+                                      , SJack.timeout = Just 5000
+                                      }
                 -- Set HOME directory for jack to find its config file
                 {-setEnv "HOME" tmpDir_ True-}
                 {-FS.writeTextFile (FS.append tmpDir ".jackdrc") (Text.unwords . map Text.pack $ ["/usr/local/bin/jackd"] ++ SJack.optionList jackOptions)-}
@@ -675,10 +687,10 @@ main = do
                 {-unsetEnv "JACK_NO_START_SERVER"-}
                 {-setEnv "JACK_START_SERVER" "1" True-}
                 logLn $ "Starting with temporary directory " ++ tmpDir_
-                SJack.withJack (logStrLn "JACK") "jackdmp" jackOptions $ \jackServerName -> do
+                SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \jackServerName -> do
                     logLn $ "Jack server name: " ++ jackServerName
                     let env = makeEnv opts tmpDir jackServerName
-                        connectionMap = makeConnectionMap False env
+                        connectionMap = makeConnectionMap (monitor ^$ opts) env
                     void $ SJack.withPatchBay jackServerName "patchbay" connectionMap $ do
                         let run source sink = do
                                 (scLoop, scSink) <- newChan
