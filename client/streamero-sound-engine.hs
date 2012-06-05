@@ -8,7 +8,6 @@ import           Control.Arrow (first)
 import           Control.Category ((.))
 import           Control.Concurrent (forkIO, myThreadId, threadDelay)
 import qualified Control.Concurrent.MVar as MVar
-import qualified Control.Concurrent.Chan as Chan
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Concurrent.STM.TMChan as STM
 import           Control.Exception.Lifted
@@ -16,8 +15,6 @@ import           Control.Failure (Failure, failure)
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
-import qualified Control.Monad.Trans.Resource as Resource
-import qualified Control.Monad.Trans.RWS.Strict as S
 import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), object)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
@@ -34,7 +31,6 @@ import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.Cereal as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as C
-import qualified Data.Conduit.TMChan as C
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
@@ -43,8 +39,6 @@ import qualified Data.List as List
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
-import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
 import qualified Data.Traversable as T
 import           Data.Word (Word64)
 import qualified Filesystem as FS
@@ -67,14 +61,10 @@ import qualified Streamero.Process as SProc
 import           Streamero.Readline (sourceReadline)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
-import           System.Exit (ExitCode(..), exitWith)
 import           System.IO
-import           System.Posix.Env (getEnv, setEnv, unsetEnv)
 import           System.Posix.Signals (installHandler, keyboardSignal, Handler(Catch))
 import qualified System.Process as Proc
 import           System.Unix.Directory (withTemporaryDirectory)
-
-import Debug.Trace
 
 catMaybes :: Monad m => C.Conduit (Maybe a) m a
 catMaybes = do
@@ -109,13 +99,13 @@ unlines = CL.map (BS.concat . BL.toChunks . flip BC.snoc '\n')
 
 -- | Convert JSON values to Haskell values.
 fromJson :: (C.MonadThrow m, FromJSON a) => C.Conduit J.Value m a
-fromJson = loop where
-    loop = do
+fromJson = go where
+    go = do
         next <- C.await
         case next of
             Nothing -> return ()
             Just v -> case J.fromJSON v of
-                        J.Success a -> C.yield a >> loop
+                        J.Success a -> C.yield a >> go
                         J.Error e   -> lift . C.monadThrow . C.ParseError [] $ e
 
 -- | Convert Haskell values to JSON values.
@@ -124,13 +114,13 @@ toJson = CL.map J.encode
 
 -- | Parse JSON messages into JSON values.
 parseJsonMessage :: C.MonadThrow m => C.Conduit BC.ByteString m J.Value
-parseJsonMessage = loop where
-    loop = do
+parseJsonMessage = go where
+    go = do
         next <- C.await
         case next of
             Nothing -> return ()
             Just b -> case A.parse J.json (BS.concat $ BC.toChunks $ b) of
-                        A.Done _ v    -> C.yield v >> loop
+                        A.Done _ v    -> C.yield v >> go
                         A.Fail _ cs e -> lift . C.monadThrow . C.ParseError cs $ e
                         A.Partial _   -> lift $ C.monadThrow C.DivergentParser
 
@@ -266,82 +256,6 @@ makeEnv = Env
 
 $( makeLenses [''Environment] )
 
-data State = State {
-    _sounds    :: H.HashMap SoundId Sound
-  , _locations :: H.HashMap LocationId Location
-  , _listeners :: H.HashMap ListenerId Listener
-  } deriving (Show)
-
-makeState :: State
-makeState = State H.empty H.empty H.empty
-
-$( makeLenses [''State] )
-
-type AppT = S.RWST Environment () State
-
--- | Engine state machine.
-engine :: MonadIO m => Request -> AppT m (Maybe Response)
-engine Quit = return Nothing
-engine request = do
-    response <- case request of
-        AddSound id sound -> do
-            S.modify (modL sounds (H.insert id sound))
-            return Ok
-        AddLocation id pos radius sounds -> do
-            let x = Location pos radius sounds
-            S.modify (modL locations (H.insert id x))
-            return Ok
-        UpdateLocation id f -> do
-            S.modify (modL locations (H.adjust f id))
-            return Ok
-        AddListener id pos -> do
-            let l = Listener pos
-            S.modify (modL listeners (H.insert id l))
-            return Ok
-        RemoveListener id -> do
-            S.modify (modL listeners (H.delete id))
-            return Ok
-        UpdateListener id f -> do
-            S.modify (modL listeners (H.adjust f id))
-            return Ok
-        Quit -> error "BUG"
-    {-S.get >>= liftIO . hPutStrLn stderr . show-}
-    return $! Just response
-
--- | Engine conduit mapping requests to responses.
-engineC :: MonadIO m => Environment -> State -> C.Conduit Request m Response
-engineC r s = C.conduitState
-            s
-            (\s i -> do
-                (r, s', _) <- S.runRWST (engine i) r s
-                case r of
-                    Nothing -> return $ C.StateFinished Nothing []
-                    Just a  -> return $ C.StateProducing s' [a])
-            (\_ -> return [])
-
-engineR :: Environment -> Request -> State -> (Maybe Response, State)
-engineR env request state =
-    case request of
-        AddSound id sound ->
-            -- Add sound to sound map, get soundfile metadata etc.
-            (Just Ok, modL sounds (H.insert id sound) state)
-        AddLocation id pos radius sounds ->
-            -- Start synth for sound at location, load buffers etc.
-            -- Notify listeners
-            let x = Location pos radius sounds
-            in (Just Ok, modL locations (H.insert id x) state)
-        UpdateLocation id f ->
-            -- Update location radius, position, sounds
-            (Just Ok, modL locations (H.adjust f id) state)
-        AddListener id pos ->
-            let l = Listener pos
-            in (Just Ok, modL listeners (H.insert id l) state)
-        RemoveListener id ->
-            (Just Ok, modL listeners (H.delete id) state)
-        UpdateListener id f ->
-            (Just Ok, modL listeners (H.adjust f id) state)
-        Quit -> (Nothing, state)
-
 data EventSinks = EventSinks {
     fireAddSound :: (SoundId, Sound) -> IO ()
   , fireAddLocation :: (LocationId, Location) -> IO ()
@@ -354,14 +268,14 @@ data EventSinks = EventSinks {
   }
 
 requestToEvent :: EventSinks -> Request -> IO ()
-requestToEvent es (AddSound id sound) = fireAddSound es (id, sound)
-requestToEvent es (AddLocation id pos radius sounds) = fireAddLocation es (id, Location pos radius sounds)
-requestToEvent es (RemoveLocation id) = fireRemoveLocation es id
-requestToEvent es (UpdateLocation id f) = fireUpdateLocation es (id, f)
-requestToEvent es (AddListener id pos) = fireAddListener es (id, Listener pos)
-requestToEvent es (RemoveListener id) = fireRemoveListener es id
-requestToEvent es (UpdateListener id f) = fireUpdateListener es (id, f)
-requestToEvent es Quit = return ()
+requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
+requestToEvent es (AddLocation i p r ss) = fireAddLocation es (i, Location p r ss)
+requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
+requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
+requestToEvent es (AddListener i pos) = fireAddListener es (i, Listener pos)
+requestToEvent es (RemoveListener i) = fireRemoveListener es i
+requestToEvent es (UpdateListener i f) = fireUpdateListener es (i, f)
+requestToEvent es Quit = fireQuit es ()
 
 arguments :: Mode Options
 arguments =
@@ -409,9 +323,6 @@ logE = R.reactimate . fmap logLn
 traceE :: Show a => R.Event t a -> R.NetworkDescription t ()
 traceE = logE . fmap show
 
-someException :: SomeException -> SomeException
-someException = id
-
 data Command m =
     QuitServer
   | Execute (SC.ServerT m ())
@@ -419,18 +330,18 @@ data Command m =
 newChan :: IO (SC.ServerT IO (), Command IO -> IO ())
 newChan = do
     toSC <- STM.newTMChanIO
-    let loop :: SC.ServerT IO ()
-        loop = do
+    let serverLoop :: SC.ServerT IO ()
+        serverLoop = do
             x <- liftIO . STM.atomically $ STM.readTMChan toSC
             case x of
                 Just QuitServer -> return ()
                 Just (Execute action) -> do
                     -- TODO: Exception handling
                     action
-                    loop
+                    serverLoop
                 _ -> return ()
         sink = STM.atomically . STM.writeTMChan toSC
-    return (loop, sink)
+    return (serverLoop, sink)
 
 newEvent :: (SC.ServerT IO a -> IO a) -> R.NetworkDescription t (R.Event t a, SC.ServerT IO a -> IO ())
 newEvent pull = do
@@ -447,22 +358,10 @@ newSyncEvent = do
     (evt, fire) <- R.newEvent
     return (evt, \action -> action >>= fire)
 
-{-newEvent_ :: SC.ServerT (R.NetworkDescription t) (R.Event t a, SC.ServerT IO a -> IO ())-}
-{-newEvent_ = do-}
-    {-(evt, sink) <- lift $ R.newEvent-}
-    {-exec <- SC.capture-}
-    {-return (evt, \action -> exec action >>= sink)-}
-
 newBreakHandler :: IO () -> IO ()
 newBreakHandler quit = void $ installHandler keyboardSignal
     (Catch $ putStrLn "Quitting..." >> quit)
     Nothing
-
-sinkVoid :: MonadIO m => (input -> IO ()) -> C.Sink input m ()
-sinkVoid sink = C.sinkState () push close
-    where push _ input = liftIO (sink input) >> return (C.StateProcessing ())
-          -- TODO: close needs to send a close notification to the sink!
-          close _ = return ()
 
 scanlE :: (a -> b -> a) -> a -> R.Event t b -> R.Event t a
 scanlE f a0 = R.accumE a0 . fmap (flip f)
@@ -472,16 +371,6 @@ sample = R.apply . fmap (,)
 
 zipB :: R.Behavior t a -> R.Behavior t b -> R.Behavior t (a, b)
 zipB a b = (,) <$> a <*> b
-
-{-alter :: (Maybe a -> Maybe a) -> k -> H.HashMap k a -> H.HashMap k a-}
-alter f k m =
-    case H.lookup k m of
-        Nothing -> case f Nothing of
-                    Nothing -> m
-                    Just a -> H.insert k a m
-        a -> case f a of
-                Nothing -> H.delete k m
-                Just a' -> H.insert k a' m
 
 soundFileInfo :: FilePath -> IO SoundFileInfo
 soundFileInfo path = do
@@ -533,6 +422,7 @@ instance ToControlValue SC.Buffer where
 control :: (ToControlValue a) => String -> a -> (String, Double)
 control s a = (s, toControlValue a)
 
+resource :: forall a. a -> SC.RequestT IO (SC.Resource IO a)
 resource = return . return
 
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
@@ -542,7 +432,7 @@ mkPlayerSynthDef :: Int -> SC.Loop -> SC.ServerT IO SC.SynthDef
 mkPlayerSynthDef nc = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show nc) . playerSynthDef nc
 
 truncatePowerOfTwo :: (Bits.Bits a, Integral a) => a -> a
-truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase 2 . fromIntegral
+truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase (2::Double) . fromIntegral
 
 -- FIXME: Use playBuf for small sound files (e.g. <= 32768)
 diskBufferSize :: SoundFileInfo -> Int
@@ -655,27 +545,16 @@ type Time = Double
 newTimer :: R.NetworkDescription t (Time, R.Event t Time, Time -> IO ())
 newTimer = do
     chan <- liftIO STM.newTChanIO
-    liftIO $ forkIO $ loop chan
+    liftIO $ void $ forkIO $ threadLoop chan
     (evt, fire) <- R.newEvent
     t0 <- liftIO OSC.utcr
     return (t0, evt, \t -> STM.atomically $ STM.writeTChan chan (t, fire))
     where
-        loop chan = do
+        threadLoop chan = do
             (t, fire) <- STM.atomically $ STM.readTChan chan
             OSC.pauseThreadUntil t
             fire t
-            loop chan
-
-conduitTVar :: MonadIO m => STM.TVar input -> STM.TVar output -> C.Conduit input m output
-conduitTVar inputVar outputVar = do
-    x <- C.await
-    case x of
-        Nothing -> return ()
-        Just input -> do
-            liftIO . STM.atomically . STM.writeTVar inputVar $ input
-            output <- liftIO . STM.atomically . STM.readTVar $ outputVar
-            C.yield output
-            conduitTVar inputVar outputVar
+            threadLoop chan
 
 conduitIO :: MonadIO m => (input -> IO ()) -> (IO output) -> C.Conduit input m output
 conduitIO inputFunc outputFunc = do
@@ -701,31 +580,27 @@ main = do
                                       , SJack.timeout = Just 5000
                                       }
                 logLn $ "Starting with temporary directory " ++ tmpDir_
-                SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \jackServerName -> do
-                    logLn $ "Jack server name: " ++ jackServerName
-                    let env = makeEnv opts tmpDir jackServerName
+                SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \serverName -> do
+                    logLn $ "Jack server name: " ++ serverName
+                    let env = makeEnv opts tmpDir serverName
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
                     liftIO $ do
                         let delay = 1
                         logLn $ "Waiting " ++ show delay ++ " seconds before trying to connect to Jack"
                         OSC.pauseThread delay
-                    void $ SJack.withPatchBay jackServerName "patchbay" connectionMap $ do
+                    void $ SJack.withPatchBay serverName "patchbay" connectionMap $ do
                         let run source sink = do
                                 (scLoop, scSink) <- newChan
                                 fromEngineVar <- MVar.newEmptyMVar
                                 let toEngine f = fmap (\a -> scSink $ Execute (a >>= liftIO . f))
                                     fromEngine = MVar.takeMVar fromEngineVar
-                                {-fromEngine <- STM.newTMChanIO-}
                                 let send = MVar.putMVar fromEngineVar
                                     missing cmd = send $ Error $ "API call " ++ cmd ++ " not yet implemented"
-                                    close = scSink QuitServer -- >> STM.atomically (STM.closeTMChan fromEngine)
+                                    close = scSink QuitServer
                                 newBreakHandler close
                                 withSC env "supercollider" $ do
-                                    {-source =$= engineC env makeState $$ sink-}
-                                    mainThread <- liftIO $ myThreadId
                                     let networkDescription :: forall t . R.NetworkDescription t ()
                                         networkDescription = do
-                                        {-(request, toEngine) <- R.newEvent-}
                                         -- Request events
                                         (eAddSound, fAddSound) <- R.newEvent
                                         (eAddLocation, fAddLocation) <- R.newEvent
@@ -788,12 +663,9 @@ main = do
                                         R.liftIOLater $ void $ forkIO $ do
                                             -- FIXME: Why is this necessary?
                                             {-threadDelay (truncate 1e6)-}
-                                            {-void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)-}
-                                            {-void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))-}
                                             source =$= conduitIO (requestToEvent eventSinks) fromEngine $$ sink
 
                                     liftIO $ R.actuate =<< R.compile networkDescription
-                                    {-S.runRWST loop env makeState-}
                                     scLoop
                         const $ lift $ case socket ^$ opts of
                             Nothing ->
