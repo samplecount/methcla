@@ -701,12 +701,6 @@ main = do
                                         SJack.driver = jackDriver ^$ opts
                                       , SJack.timeout = Just 5000
                                       }
-                -- Set HOME directory for jack to find its config file
-                {-setEnv "HOME" tmpDir_ True-}
-                {-FS.writeTextFile (FS.append tmpDir ".jackdrc") (Text.unwords . map Text.pack $ ["/usr/local/bin/jackd"] ++ SJack.optionList jackOptions)-}
-                {-FS.readTextFile (FS.append tmpDir ".jackdrc") >>= Text.putStrLn-}
-                {-unsetEnv "JACK_NO_START_SERVER"-}
-                {-setEnv "JACK_START_SERVER" "1" True-}
                 logLn $ "Starting with temporary directory " ++ tmpDir_
                 SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \jackServerName -> do
                     logLn $ "Jack server name: " ++ jackServerName
