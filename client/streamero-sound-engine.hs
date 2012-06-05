@@ -84,10 +84,8 @@ printC = do
 -- | Chunk input into messages delimited by 32 bit integer byte counts.
 message :: C.MonadThrow m => C.Conduit BS.ByteString m BC.ByteString
 message = C.sequence $ do
-    w <- C.sinkGet getWord32be
-    case w of
-        Left e -> lift . C.monadThrow . C.ParseError [] $ e
-        Right n -> CB.take (fromIntegral n)
+    n <- C.sinkGet getWord32be
+    CB.take (fromIntegral n)
 
 -- | Flatten messages into the output stream, prepending them with a 32 bit integer byte count.
 unmessage :: Monad m => C.Conduit BC.ByteString m BS.ByteString
