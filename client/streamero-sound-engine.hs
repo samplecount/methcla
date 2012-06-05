@@ -754,7 +754,6 @@ main = do
                                             bSounds = R.stepper H.empty eSounds
                                         -- Return status
                                         R.reactimate $ send Ok <$ eSounds
-
                                         R.reactimate $ print <$> eSounds
                                         {-R.reactimate $ print <$> eSoundFileInfo-}
                                         {-R.reactimate $ print <$> eAddSound-}
@@ -769,6 +768,12 @@ main = do
                                         R.reactimate $ print <$> eLocations
                                         R.reactimate $ send Ok <$ eLocations
 
+                                        -- RemoveLocation
+                                        R.reactimate $ missing "RemoveLocation" <$ eRemoveLocation
+
+                                        -- UpdateLocation
+                                        R.reactimate $ missing "UpdateLocation" <$ eUpdateLocation
+
                                         -- AddListener
                                         (eListenerState, fListenerState) <- R.newEvent
                                         let eUpdatedListener = R.apply ((\h (k, f) -> let (l, s) = h H.! k in (k, (f l, s))) <$> bListeners) eUpdateListener
@@ -782,14 +787,17 @@ main = do
                                         R.reactimate $ toEngine (const (return ())) $ (\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener)
                                         R.reactimate $ send Ok <$ eListeners
 
+                                        -- Quit
+                                        R.reactimate $ missing "Quit" <$ eQuit
+
                                         -- Set up connections to and from JSON I/O network
                                         -- NOTE: Event network needs to be set up already!
                                         R.liftIOLater $ void $ forkIO $ do
                                             -- FIXME: Why is this necessary?
-                                            threadDelay (truncate 1e6)
+                                            {-threadDelay (truncate 1e6)-}
                                             {-void $ forkIO $ handle (throwTo mainThread . someException) (C.sourceTMChan fromEngine $$ sink)-}
                                             {-void $ forkIO $ handle (throwTo mainThread . someException) (source $$ sinkVoid (requestToEvent eventSinks))-}
-                                            void $ forkIO $ source =$= conduitIO (requestToEvent eventSinks) (MVar.takeMVar fromEngine) $$ sink
+                                            source =$= conduitIO (requestToEvent eventSinks) fromEngine $$ sink
 
                                     liftIO $ R.actuate =<< R.compile networkDescription
                                     {-S.runRWST loop env makeState-}
