@@ -403,6 +403,12 @@ logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
 logLn :: String -> IO ()
 logLn = logStrLn "ENGINE"
 
+logE :: R.Event t String -> R.NetworkDescription t ()
+logE = R.reactimate . fmap logLn
+
+traceE :: Show a => R.Event t a -> R.NetworkDescription t ()
+traceE = logE . fmap show
+
 someException :: SomeException -> SomeException
 someException = id
 
