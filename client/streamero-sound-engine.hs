@@ -674,6 +674,7 @@ main = do
                                     sink = toJson =$= unlines =$= CB.sinkHandle stdout
                                 in run source sink
                             Just "-" ->
+                                -- Terminal interface
                                 let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
                                     sink = toJson =$= unlines =$= CB.sinkHandle stdout
                                 in run source sink
