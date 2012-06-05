@@ -4,6 +4,7 @@
            , TemplateHaskell
            , TypeSynonymInstances #-}
 import           Control.Applicative
+import           Control.Arrow (first)
 import           Control.Category ((.))
 import           Control.Concurrent (forkIO, myThreadId, threadDelay)
 import qualified Control.Concurrent.MVar as MVar
@@ -34,6 +35,7 @@ import qualified Data.Conduit.Cereal as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Network as C
 import qualified Data.Conduit.TMChan as C
+import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
 import           Data.Lens.Template
@@ -640,6 +642,15 @@ newListener env locations listeners (listenerId, listener) = do
     darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) "soundscape"
     return (listenerId, (listener, ListenerState output cables darkice))
 
+updateListener :: LocationMap -> Listener -> ListenerState -> SC.ServerT IO ()
+updateListener locations listener state = do
+    let cables = patchCables state
+    F.forM_ (H.keys cables) $ \loc -> do
+        let dist = distance (listenerPosition listener) (position (fst (locations H.! loc)))
+            level = min 1 (distanceScaling dist)
+        liftIO $ logLn $ "Distance: " ++ show (loc, dist, level)
+        SC.exec immediately $ SC.n_set (cables H.! loc) [ control "level" level ]
+
 type Time = Double
 
 newTimer :: R.NetworkDescription t (Time, R.Event t Time, Time -> IO ())
@@ -755,10 +766,15 @@ main = do
 
                                         -- AddListener
                                         (eListenerState, fListenerState) <- R.newEvent
-                                        let eListeners = scanlE (flip (uncurry H.insert)) H.empty eListenerState
+                                        let eUpdatedListener = R.apply ((\h (k, f) -> let (l, s) = h H.! k in (k, (f l, s))) <$> bListeners) eUpdateListener
+                                            eListeners = R.accumE H.empty $ (uncurry H.insert <$> eListenerState)
+                                                                            `R.union`
+                                                                            (H.delete <$> eRemoveListener)
+                                                                            `R.union`
+                                                                            ((\(k, (l, _)) -> H.adjust (first (const l)) k) <$> eUpdatedListener)
                                             bListeners = R.stepper H.empty eListeners
-                                        R.reactimate $ scSink . Execute fListenerState <$> ((uncurry . uncurry) (newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener)
-                                        {-R.reactimate $ print <$> eListeners-}
+                                        R.reactimate $ toEngine fListenerState $ (uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener
+                                        R.reactimate $ toEngine (const (return ())) $ (\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener)
                                         R.reactimate $ send Ok <$ eListeners
 
                                         -- Set up connections to and from JSON I/O network
