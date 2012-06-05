@@ -160,9 +160,9 @@ distance c1 c2 = earthRadius * ahaversin h
         haversin = sqr . sin . (/2)
         ahaversin = (*2) . asin . sqrt
         deg2rad = (/180) . (*pi)
-        h = haversin (latitude c2 - latitude c1) +
+        h = haversin (deg2rad (latitude c2) - deg2rad (latitude c1)) +
                cos (deg2rad (latitude c1)) * cos (deg2rad (latitude c2))
-                   * haversin (longitude c2 - longitude c1)
+                   * haversin (deg2rad (longitude c2) - deg2rad (longitude c1))
         {-c = 2.0 * atan2(sqrt a, sqrt (1.0-a))-}
 
 data Sound =
