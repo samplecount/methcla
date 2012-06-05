@@ -32,16 +32,17 @@ createProcess program = P.proc (FS.encodeString program) . optionList
 data Config = Config {
     jackClientName :: Maybe String
   , mountPoint :: String
+  , bufferSize :: Double
   } deriving (Show)
 
 defaultConfig :: Config
-defaultConfig = Config Nothing "default"
+defaultConfig = Config Nothing "default" 1
 
 configText :: Config -> Text
 configText config = Text.unlines [
     "[general]"
   , "duration       = 0"
-  , "bufferSecs     = 1"
+  , "bufferSecs     = " `aps` show (bufferSize config)
 
   , "[input]"
   , "device         = jack"
