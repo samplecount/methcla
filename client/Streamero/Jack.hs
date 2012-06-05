@@ -37,7 +37,10 @@ data Options = Options {
     name :: String
   , driver :: String
   , verbose :: Bool
+  , silent :: Bool
   , temporary :: Bool
+  , realtime :: Bool
+  , timeout :: Maybe Int
   , rate :: Word32
   , period :: Word32
   } deriving (Show)
@@ -47,7 +50,10 @@ defaultOptions n = Options {
     name = n
   , driver = "dummy"
   , verbose = False
+  , silent = False
   , temporary = True
+  , realtime = True
+  , timeout = Nothing
   , rate = 44100
   , period = 512
   }
@@ -55,7 +61,10 @@ defaultOptions n = Options {
 optionList :: Options -> [String]
 optionList opts = concat [ [ "--name", name opts ]
                          , if verbose opts then [ "--verbose" ] else []
+                         , if silent opts then [ "--silent" ] else []
                          , if temporary opts then [ "--temporary" ] else []
+                         , if realtime opts then [ "--realtime" ] else [ "--no-realtime" ]
+                         , maybe [] (\x -> [ "--timeout", show x]) (timeout opts)
                          , [ "-d", driver opts ]
                          , [ "--rate", show (rate opts) ]
                          , [ "--period", show (period opts) ]
