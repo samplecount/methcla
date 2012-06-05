@@ -164,7 +164,6 @@ distance c1 c2 = earthRadius * ahaversin h
         h = haversin (deg2rad (latitude c2) - deg2rad (latitude c1)) +
                cos (deg2rad (latitude c1)) * cos (deg2rad (latitude c2))
                    * haversin (deg2rad (longitude c2) - deg2rad (longitude c1))
-        {-c = 2.0 * atan2(sqrt a, sqrt (1.0-a))-}
 
 data Sound =
     SoundFile {
