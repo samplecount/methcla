@@ -58,7 +58,7 @@ import qualified Sound.SC3.Server.Process.Monad as SCM
 import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
 import qualified Streamero.Process as SProc
-import           Streamero.Readline (sourceReadline)
+{-import           Streamero.Readline (sourceReadline)-}
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
 import           System.IO
@@ -666,19 +666,19 @@ main = do
                                     liftIO $ R.actuate =<< R.compile networkDescription
                                     scLoop
                         const $ lift $ case socket ^$ opts of
-                            Nothing ->
-                                -- Readline interface
-                                let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson
-                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
-                                in run source sink
-                            Just "-" ->
-                                -- Terminal interface
-                                let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
-                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
-                                in run source sink
+                            {-Nothing ->-}
+                                {--- Readline interface-}
+                                {-let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson-}
+                                    {-sink = toJson =$= unlines =$= CB.sinkHandle stdout-}
+                                {-in run source sink-}
                             Just socketFile ->
                                 -- Socket interface
                                 withUnixSocket socketFile $ \s ->
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
+                            _ ->
+                                -- Terminal interface
+                                let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
+                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
+                                in run source sink

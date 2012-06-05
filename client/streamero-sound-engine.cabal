@@ -14,7 +14,7 @@ Executable streamero-sound-engine
   Other-Modules:    Streamero.Darkice
                     Streamero.Jack
                     Streamero.Process
-                    Streamero.Readline
+                    --Streamero.Readline
                     Streamero.SoundFile
   GHC-Options:      -Wall -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
@@ -28,7 +28,7 @@ Executable streamero-sound-engine
                   , conduit >= 0.4 && < 0.5
                   , data-lens >= 2.10 && < 2.11
                   , data-lens-template >= 2.1 && < 2.2
-                  , editline >= 0.2 && < 0.3
+                  --, editline >= 0.2 && < 0.3
                   , explicit-exception >= 0.1 && < 0.2
                   , failure >= 0.2 && < 0.3
                   , hosc >= 0.11 && < 0.12
