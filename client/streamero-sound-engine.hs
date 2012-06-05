@@ -1,7 +1,6 @@
 {-# LANGUAGE ExistentialQuantification
            , FlexibleInstances
            , OverloadedStrings
-           , RankNTypes
            , TemplateHaskell
            , TypeSynonymInstances #-}
 import           Control.Applicative
@@ -414,7 +413,7 @@ someException = id
 
 data Command m =
     QuitServer
-  | forall a . Execute (a -> IO ()) (SC.ServerT m a)
+  | Execute (SC.ServerT m ())
 
 newChan :: IO (SC.ServerT IO (), Command IO -> IO ())
 newChan = do
@@ -424,8 +423,9 @@ newChan = do
             x <- liftIO . STM.atomically $ STM.readTMChan toSC
             case x of
                 Just QuitServer -> return ()
-                Just (Execute callback action) -> do
-                    action >>= liftIO . callback
+                Just (Execute action) -> do
+                    -- TODO: Exception handling
+                    action
                     loop
                 _ -> return ()
         sink = STM.atomically . STM.writeTMChan toSC
@@ -700,9 +700,12 @@ main = do
                     void $ SJack.withPatchBay jackServerName "patchbay" connectionMap $ do
                         let run source sink = do
                                 (scLoop, scSink) <- newChan
+                                fromEngineVar <- MVar.newEmptyMVar
+                                let toEngine f = fmap (\a -> scSink $ Execute (a >>= liftIO . f))
+                                    fromEngine = MVar.takeMVar fromEngineVar
                                 {-fromEngine <- STM.newTMChanIO-}
-                                fromEngine <- MVar.newEmptyMVar
-                                let send = MVar.putMVar fromEngine
+                                let send = MVar.putMVar fromEngineVar
+                                    missing cmd = send $ Error $ "API call " ++ cmd ++ " not yet implemented"
                                     close = scSink QuitServer -- >> STM.atomically (STM.closeTMChan fromEngine)
                                 newBreakHandler close
                                 withSC env "supercollider" $ do
@@ -739,7 +742,7 @@ main = do
                                         -- AddLocation
                                         (eLocationState, fLocationState) <- R.newEvent
                                         {-R.reactimate $ print <$> sample bSounds eLocations-}
-                                        R.reactimate $ scSink . Execute fLocationState <$> (uncurry newLocation <$> sample bSounds eAddLocation)
+                                        R.reactimate $ toEngine fLocationState (uncurry newLocation <$> sample bSounds eAddLocation)
                                         R.reactimate $ print <$> eLocationState
                                         let eLocations = scanlE (flip (uncurry H.insert)) H.empty eLocationState
                                             bLocations = R.stepper H.empty eLocations
