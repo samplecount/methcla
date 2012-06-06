@@ -1,0 +1,4 @@
+{"request":"AddSound","id":0,"type":"sample","path":"/Users/sk/Music/schtief.wav","loop":true}
+{"request":"AddSound","id":1,"type":"sample","path":"/Users/sk/Music/mhmhm.wav","loop":true}
+{"request":"AddLocation","id":0,"position":{"latitude":48.2,"longitude":11.2},"radius":10.2,"sounds":[0,1]}
+{"request":"AddListener","id":"0","position":{"latitude":48.200001,"longitude":11.200001}}
