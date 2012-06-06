@@ -671,14 +671,14 @@ main = do
                                 {-let source = sourceReadline "> " =$= CL.map BS8.pack =$= parseJsonStream =$= fromJson-}
                                     {-sink = toJson =$= unlines =$= CB.sinkHandle stdout-}
                                 {-in run source sink-}
+                            Nothing ->
+                                -- Terminal interface
+                                let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
+                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
+                                in run source sink
                             Just socketFile ->
                                 -- Socket interface
                                 withUnixSocket socketFile $ \s ->
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
-                            _ ->
-                                -- Terminal interface
-                                let source = CB.sourceHandle stdin =$= C.mapOutput (BC.fromChunks . (:[])) CB.lines =$= parseJsonMessage =$= printC =$= fromJson
-                                    sink = toJson =$= unlines =$= CB.sinkHandle stdout
-                                in run source sink
