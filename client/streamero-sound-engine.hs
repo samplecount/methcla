@@ -52,9 +52,8 @@ import qualified Sound.SC3.UGen as SC
 import qualified Sound.SC3.Server.Allocator as SC
 import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Monad.Command as SC
+import qualified Sound.SC3.Server.Monad.Process as SC
 import qualified Sound.SC3.Server.Monad.Request as SC
-import qualified Sound.SC3.Server.Process as SC
-import qualified Sound.SC3.Server.Process.Monad as SCM
 import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
 import qualified Streamero.Process as SProc
@@ -290,7 +289,7 @@ arguments =
 
 withSC :: Environment -> String -> SC.Server a -> IO a
 withSC env clientName =
-    SCM.withSynth
+    SC.withSynth
         SC.defaultServerOptions {
             SC.numberOfInputBusChannels = 2
           , SC.numberOfOutputBusChannels = 2 * (maxNumListeners . options ^$ env)
@@ -420,9 +419,6 @@ instance ToControlValue SC.Buffer where
 control :: (ToControlValue a) => String -> a -> (String, Double)
 control s a = (s, toControlValue a)
 
-resource :: forall a. a -> SC.RequestT IO (SC.Resource IO a)
-resource = return . return
-
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
 playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ SC.mix $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
 
@@ -448,7 +444,7 @@ newPlayer mkSynthDef bus sound info = do
                 synth <- SC.s_new sd SC.AddToTail g
                             [ control "buffer" buffer
                             , control "out" bus ]
-                resource (buffer, synth)
+                SC.resource (buffer, synth)
     return $ Player buffer synth
 
 newLocation :: SoundMap -> (LocationId, Location) -> SC.ServerT IO (LocationId, (Location, LocationState))

@@ -53,4 +53,3 @@ Executable streamero-sound-engine
                   , unix >= 2.5 && < 2.6
                   , Unixutils >= 1.50 && < 1.51
                   , unordered-containers >= 0.2 && < 0.3
-  Extra-Libraries:  scsynth
