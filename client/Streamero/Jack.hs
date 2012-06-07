@@ -19,6 +19,7 @@ import           Control.Monad (forever, join, replicateM_, void)
 import qualified Control.Monad.Exception.Synchronous as E
 import           Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.Trans.Class as Trans
+import           Data.IORef
 import           Data.Word (Word32)
 import           System.Process (CreateProcess)
 import qualified Data.HashMap.Strict as Map
@@ -139,52 +140,71 @@ connectPorts client (c1, p1) (c2, p2) =
 defer :: Chan.Chan (IO ()) -> (a -> IO ()) -> a -> IO ()
 defer chan sink = Chan.writeChan chan . sink
 
+withClientTimeout :: Double -> String -> String -> (JACK.Client -> E.ExceptionalT JACK.All IO ()) -> IO ()
+withClientTimeout timeout serverName clientName action = do
+    t0 <- OSC.utcr
+    done <- newIORef False
+    go (t0+timeout) done
+    where
+        go t0 done = do
+            t <- OSC.utcr
+            if t > t0
+                then return ()
+                else do
+                    JACK.handleExceptions $ JACK.withClient serverName clientName $ \client -> do
+                        Trans.lift $ writeIORef done True
+                        action client
+                    bDone <- readIORef done
+                    if bDone
+                        then return ()
+                        else do
+                            OSC.pauseThread 0.5
+                            go t0 done
+
 withPatchBay :: String -> String -> Connections -> (JACK.Client -> E.ExceptionalT (JACK.Status (JACK.PortRegister (JACK.PortMismatch Errno))) IO a) -> IO ()
 withPatchBay serverName clientName connectionSpecs action = do
     -- Handle all callbacks from a single (separate) thread
     chan <- Chan.newChan
     void $ forkIO $ forever $ join (Chan.readChan chan)
     -- FIXME: Implement connection timeout correctly
-    replicateM_ 20 $ do
-        JACK.handleExceptions $ JACK.withClient serverName clientName $ \client -> do
-            let networkDescription :: forall t . R.NetworkDescription t ()
-                networkDescription = do
-                    (clientEvt, clientSink) <- R.newEvent
-                    liftIO $ JACK.handleExceptions $ JACK.setClientRegistration client =<<
-                                (Trans.lift $ JACK.mkClientRegistration $ clientRegistration (defer chan clientSink))
-                    (portEvt, portSink) <- R.newEvent
-                    liftIO $ JACK.handleExceptions $ JACK.setPortRegistration client =<<
-                                (Trans.lift $ JACK.mkPortRegistration $ portRegistration (defer chan portSink) client)
-                    (connEvt, connSink) <- R.newEvent
-                    liftIO $ JACK.handleExceptions $ JACK.setPortConnect client =<<
-                                (Trans.lift $ JACK.mkPortConnect $ portConnect (defer chan connSink) client)
-                    {-R.reactimate $ fmap print clientEvt-}
-                    {-R.reactimate $ fmap print portEvt-}
-                    ports <- liftIO $ JACK.getPorts client
-                    connections <- liftIO $ mapM (portGetConnections client) ports
-                    let portMap = mkPortMap ports
-                        connectionMap = mkConnectionMap connections
-                    {-liftIO $ print portMap-}
-                    {-liftIO $ print connectionMap-}
-                    let portsChanged = R.accumE (False, portMap) (R.union ((\(c, b) (_, p) -> if b then (False, addClient c p) else (False, removeClient c p)) <$> clientEvt)
-                                                                          ((\(c, p, b) (_, pm) -> if b then (True, addPort c p pm) else (False, removePort c p pm)) <$> portEvt))
-                        connectPortsE = R.filterJust $ R.apply (flip ($) <$> connectionsB) (R.spill $ (\(portAdded, pm) -> if portAdded then map (connect pm) connectionSpecs else []) <$> portsChanged)
-                            where connect pm ((c1, p1), (c2, p2)) cm
-                                    | portExists c1 p1 pm && portExists c2 p2 pm && not (connectionExists (c1, p1) (c2, p2) cm) = Just ((c1, p1), (c2, p2))
-                                    | otherwise = Nothing
-                        {-connectionsB = R.accumB connectionMap ((\(p1, p2, b) -> if b then addConnection p1 p2 else removeConnection p1 p2) <$> R.union connectPortsE connEvt)-}
-                        connectionsB = R.accumB
-                                        connectionMap
-                                        ((\(p1, p2, b) -> if b then addConnection p1 p2 else removeConnection p1 p2)
-                                         <$> connEvt `R.union` ((\(a, b) -> (a, b, True)) <$> connectPortsE))
-                    {-R.reactimate $ R.apply ((const . print) <$> portsB) (R.union (const () <$> clientEvt) (const () <$> portEvt))-}
-                    {-R.reactimate $ print <$> portsChanged-}
-                    {-R.reactimate $ print <$> connEvt-}
-                    {-R.reactimate $ (R.apply (((\cm e -> print (cm, e))) <$> connectionsB) connectPortsE)-}
-                    R.reactimate $ uncurry (connectPorts client) <$> connectPortsE
-            Trans.lift $ R.compile networkDescription >>= R.actuate
-            JACK.withActivation client $ void $ action client
-        OSC.pauseThread 1
+    withClientTimeout 10 serverName clientName $ \client -> do
+        let networkDescription :: forall t . R.NetworkDescription t ()
+            networkDescription = do
+                (clientEvt, clientSink) <- R.newEvent
+                liftIO $ JACK.handleExceptions $ JACK.setClientRegistration client =<<
+                            (Trans.lift $ JACK.mkClientRegistration $ clientRegistration (defer chan clientSink))
+                (portEvt, portSink) <- R.newEvent
+                liftIO $ JACK.handleExceptions $ JACK.setPortRegistration client =<<
+                            (Trans.lift $ JACK.mkPortRegistration $ portRegistration (defer chan portSink) client)
+                (connEvt, connSink) <- R.newEvent
+                liftIO $ JACK.handleExceptions $ JACK.setPortConnect client =<<
+                            (Trans.lift $ JACK.mkPortConnect $ portConnect (defer chan connSink) client)
+                {-R.reactimate $ fmap print clientEvt-}
+                {-R.reactimate $ fmap print portEvt-}
+                ports <- liftIO $ JACK.getPorts client
+                connections <- liftIO $ mapM (portGetConnections client) ports
+                let portMap = mkPortMap ports
+                    connectionMap = mkConnectionMap connections
+                {-liftIO $ print portMap-}
+                {-liftIO $ print connectionMap-}
+                let portsChanged = R.accumE (False, portMap) (R.union ((\(c, b) (_, p) -> if b then (False, addClient c p) else (False, removeClient c p)) <$> clientEvt)
+                                                                      ((\(c, p, b) (_, pm) -> if b then (True, addPort c p pm) else (False, removePort c p pm)) <$> portEvt))
+                    connectPortsE = R.filterJust $ R.apply (flip ($) <$> connectionsB) (R.spill $ (\(portAdded, pm) -> if portAdded then map (connect pm) connectionSpecs else []) <$> portsChanged)
+                        where connect pm ((c1, p1), (c2, p2)) cm
+                                | portExists c1 p1 pm && portExists c2 p2 pm && not (connectionExists (c1, p1) (c2, p2) cm) = Just ((c1, p1), (c2, p2))
+                                | otherwise = Nothing
+                    {-connectionsB = R.accumB connectionMap ((\(p1, p2, b) -> if b then addConnection p1 p2 else removeConnection p1 p2) <$> R.union connectPortsE connEvt)-}
+                    connectionsB = R.accumB
+                                    connectionMap
+                                    ((\(p1, p2, b) -> if b then addConnection p1 p2 else removeConnection p1 p2)
+                                     <$> connEvt `R.union` ((\(a, b) -> (a, b, True)) <$> connectPortsE))
+                {-R.reactimate $ R.apply ((const . print) <$> portsB) (R.union (const () <$> clientEvt) (const () <$> portEvt))-}
+                {-R.reactimate $ print <$> portsChanged-}
+                {-R.reactimate $ print <$> connEvt-}
+                {-R.reactimate $ (R.apply (((\cm e -> print (cm, e))) <$> connectionsB) connectPortsE)-}
+                R.reactimate $ uncurry (connectPorts client) <$> connectPortsE
+        Trans.lift $ R.compile networkDescription >>= R.actuate
+        JACK.withActivation client $ void $ action client
 
 clientRegistration :: ((String, Bool) -> IO ()) -> CString -> CInt -> Ptr JACK.CallbackArg -> IO ()
 clientRegistration sink cName register _ = do
