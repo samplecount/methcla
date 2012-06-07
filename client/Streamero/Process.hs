@@ -9,7 +9,7 @@ module Streamero.Process (
 
 import           Control.Monad (unless, void)
 import           Control.Concurrent (forkIO, newEmptyMVar, putMVar, takeMVar)
-import           Control.Exception (onException, throw)
+import           Control.Exception (finally, throw)
 import           System.Exit (ExitCode(..))
 import           System.IO (Handle)
 import qualified System.IO as IO
@@ -37,10 +37,7 @@ withProcess handleOutput spec action = do
     pid <- createProcess handleOutput spec
     exitCode <- newEmptyMVar
     void $ forkIO $ waitForProcess pid >>= putMVar exitCode
-    a <- action `onException` do
-        terminateProcess pid
-        -- Wait for process termination
-        takeMVar exitCode
+    a <- action `finally` terminateProcess pid
     e <- takeMVar exitCode
     case e of
         ExitSuccess -> return a
