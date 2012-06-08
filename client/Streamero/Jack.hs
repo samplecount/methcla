@@ -166,7 +166,6 @@ withPatchBay serverName clientName connectionSpecs action = do
     -- Handle all callbacks from a single (separate) thread
     chan <- Chan.newChan
     void $ forkIO $ forever $ join (Chan.readChan chan)
-    -- FIXME: Implement connection timeout correctly
     withClientTimeout 10 serverName clientName $ \client -> do
         let networkDescription :: forall t . R.NetworkDescription t ()
             networkDescription = do
