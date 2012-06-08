@@ -57,11 +57,12 @@ import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
 import qualified Streamero.Process as SProc
 {-import           Streamero.Readline (sourceReadline)-}
+import           Streamero.Signals (ignoreSignals, catchSignals)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
 import           System.IO
-import           System.Posix.Signals (installHandler, keyboardSignal, Handler(Catch))
-import qualified System.Process as Proc
+import           System.Posix.Signals (keyboardSignal)
+import           System.Process (ProcessHandle)
 import           System.Unix.Directory (withTemporaryDirectory)
 
 catMaybes :: Monad m => C.Conduit (Maybe a) m a
@@ -335,18 +336,24 @@ newServer f = do
             case x of
                 QuitServer -> return ()
                 Execute action -> do
-                    -- TODO: Exception handling
                     action
                     serverLoop
         sink = Chan.writeChan toSC
-    void $ forkIO $ catch (f serverLoop >> MVar.putMVar result Nothing) (MVar.putMVar result . Just)
-    return $ ServerHandle sink result
+        handle = ServerHandle sink result
+    void $ forkIO $ catch (ignoreSignals [keyboardSignal] (f serverLoop) >> MVar.putMVar result Nothing) (MVar.putMVar result . Just)
+    return handle
 
-execute :: ServerHandle -> SC.ServerT IO () -> IO ()
-execute (ServerHandle sink _) = sink . Execute
+execute_ :: ServerHandle -> SC.ServerT IO () -> IO ()
+execute_ (ServerHandle sink _) = sink . Execute
 
-executeE :: ServerHandle -> (a -> IO ()) -> R.Event t (SC.ServerT IO a) -> R.Event t (IO ())
-executeE handle sink = fmap $ \action -> execute handle (action >>= liftIO . sink)
+executeWith :: ServerHandle -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
+executeWith handle sink action = execute_ handle (action >>= liftIO . sink)
+
+execute :: ServerHandle -> SC.ServerT IO a -> IO a
+execute handle action = do
+    result <- MVar.newEmptyMVar
+    executeWith handle (MVar.putMVar result) action
+    MVar.takeMVar result
 
 quit :: ServerHandle -> IO ()
 quit (ServerHandle sink _) = sink QuitServer
@@ -368,16 +375,14 @@ newSyncEvent = do
     (evt, fire) <- R.newEvent
     return (evt, \action -> action >>= fire)
 
-newBreakHandler :: IO () -> IO ()
-newBreakHandler quit = void $ installHandler keyboardSignal
-    (Catch $ putStrLn "Quitting..." >> quit)
-    Nothing
-
 scanlE :: (a -> b -> a) -> a -> R.Event t b -> R.Event t a
 scanlE f a0 = R.accumE a0 . fmap (flip f)
 
 sample :: R.Behavior t a -> R.Event t b -> R.Event t (a, b)
 sample = R.apply . fmap (,)
+
+sample_ :: R.Behavior t a -> R.Event t b -> R.Event t a
+sample_ = R.apply . fmap const
 
 zipB :: R.Behavior t a -> R.Behavior t b -> R.Behavior t (a, b)
 zipB a b = (,) <$> a <*> b
@@ -469,7 +474,7 @@ newLocation soundMap (locationId, location) = do
 data ListenerState = ListenerState {
     outputBus :: SC.AudioBus
   , patchCables :: H.HashMap LocationId SC.Synth
-  , streamer :: Proc.ProcessHandle
+  , streamer :: ProcessHandle
   }
 
 patchCableSynthDef :: SC.UGen
@@ -492,7 +497,7 @@ findOutputBus env listeners = do
     where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
           avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
 
-startDarkice :: Environment -> String -> String -> IO Proc.ProcessHandle
+startDarkice :: Environment -> String -> String -> IO ProcessHandle
 startDarkice env name soundscape = do
     FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
     SProc.createProcess (logStrLn $ "STREAMER:" ++ name) (Darkice.createProcess "darkice" darkiceOpts)
@@ -547,6 +552,20 @@ updateListener locations listener state = do
         liftIO $ logLn $ "Distance: " ++ show (loc, dist, level)
         SC.exec immediately $ SC.n_set (cables H.! loc) [ control "level" level ]
 
+freeListener :: ListenerState -> SC.ServerT IO ()
+freeListener state = do
+    -- Free synths
+    SC.exec immediately $ F.forM_ (patchCables state) SC.n_free
+    -- Free output bus
+    SC.freeBus $ outputBus state
+    -- Stop stream
+    liftIO $ do
+        SProc.interruptProcess (streamer state)
+        logLn $ "Stopped stream"
+
+freeListeners :: ListenerMap -> SC.ServerT IO ()
+freeListeners = F.mapM_ (freeListener.snd)
+
 type Time = Double
 
 newTimer :: R.NetworkDescription t (Time, R.Event t Time, Time -> IO ())
@@ -574,6 +593,9 @@ conduitIO inputFunc outputFunc = do
             C.yield output
             conduitIO inputFunc outputFunc
 
+execute' :: (SC.ServerT IO () -> IO ()) -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
+execute' f g m = f (m >>= liftIO . g)
+
 main :: IO ()
 main = do
     opts <- processArgs arguments
@@ -585,6 +607,7 @@ main = do
                     jackOptions = (SJack.defaultOptions (FS.encodeString $ FS.basename tmpDir)) {
                                         SJack.driver = jackDriver ^$ opts
                                       , SJack.timeout = Just 5000
+                                      , SJack.temporary = False
                                       }
                 logLn $ "Starting with temporary directory " ++ tmpDir_
                 SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \serverName -> do
@@ -593,82 +616,94 @@ main = do
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
                         run source sink = do
                             engine <- newServer $ withSC env "supercollider"
+                            {-quitVar <- MVar.newEmptyMVar-}
                             fromEngineVar <- MVar.newEmptyMVar
-                            let toEngine = executeE engine
+                            eventSinks <- MVar.newEmptyMVar
+                            let --toEngine = executeE engine
                                 fromEngine = MVar.takeMVar fromEngineVar
                                 send = MVar.putMVar fromEngineVar
+                                {-quitEngine = MVar.putMVar quitVar ()-}
+                                {-quitEngine = quit engine-}
                                 missing cmd = send $ Error $ "API call " ++ cmd ++ " not yet implemented"
-                            newBreakHandler (quit engine)
-                            execute engine $ do
-                                let networkDescription :: forall t . R.NetworkDescription t ()
-                                    networkDescription = do
-                                    -- Request events
-                                    (eAddSound, fAddSound) <- R.newEvent
-                                    (eAddLocation, fAddLocation) <- R.newEvent
-                                    (eRemoveLocation, fRemoveLocation) <- R.newEvent
-                                    (eUpdateLocation, fUpdateLocation) <- R.newEvent
-                                    (eAddListener, fAddListener) <- R.newEvent
-                                    (eRemoveListener, fRemoveListener) <- R.newEvent
-                                    (eUpdateListener, fUpdateListener) <- R.newEvent
-                                    (eQuit, fQuit) <- R.newEvent
-                                    let eventSinks = EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
+                            {-withSC env "supercollider" $ do-}
+                                {-toEngine <- SC.capture-}
+                            let networkDescription :: forall t . R.NetworkDescription t ()
+                                networkDescription = do
+                                -- Request events
+                                (eAddSound, fAddSound) <- R.newEvent
+                                (eAddLocation, fAddLocation) <- R.newEvent
+                                (eRemoveLocation, fRemoveLocation) <- R.newEvent
+                                (eUpdateLocation, fUpdateLocation) <- R.newEvent
+                                (eAddListener, fAddListener) <- R.newEvent
+                                (eRemoveListener, fRemoveListener) <- R.newEvent
+                                (eUpdateListener, fUpdateListener) <- R.newEvent
+                                (eQuit, fQuit) <- R.newEvent
+                                liftIO $ MVar.putMVar eventSinks $ EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
 
-                                    -- Read sound file info (a)synchronously
-                                    {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
-                                    (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
-                                    -- FIXME: Catch exception and report error when file not found.
-                                    R.reactimate $ (\(i, s) -> fSoundFileInfo $ do { si <- soundFileInfo (path s) ; return (i, (s, si)) }) <$> eAddSound
-                                    traceE eAddSound
-                                    -- Update sound map
-                                    let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
-                                        bSounds = R.stepper H.empty eSounds
-                                    -- Return status
-                                    R.reactimate $ send Ok <$ eSounds
-                                    R.reactimate $ print <$> eSounds
-                                    {-R.reactimate $ print <$> eSoundFileInfo-}
-                                    {-R.reactimate $ print <$> eAddSound-}
+                                -- Read sound file info (a)synchronously
+                                {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
+                                (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
+                                -- FIXME: Catch exception and report error when file not found.
+                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ do { si <- soundFileInfo (path s) ; return (i, (s, si)) }) <$> eAddSound
+                                traceE eAddSound
+                                -- Update sound map
+                                let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
+                                    bSounds = R.stepper H.empty eSounds
+                                -- Return status
+                                R.reactimate $ send Ok <$ eSounds
+                                R.reactimate $ print <$> eSounds
+                                {-R.reactimate $ print <$> eSoundFileInfo-}
+                                {-R.reactimate $ print <$> eAddSound-}
 
-                                    -- AddLocation
-                                    (eLocationState, fLocationState) <- R.newEvent
-                                    {-R.reactimate $ print <$> sample bSounds eLocations-}
-                                    R.reactimate $ toEngine fLocationState (uncurry newLocation <$> sample bSounds eAddLocation)
-                                    R.reactimate $ print <$> eLocationState
-                                    let eLocations = scanlE (flip (uncurry H.insert)) H.empty eLocationState
-                                        bLocations = R.stepper H.empty eLocations
-                                    R.reactimate $ print <$> eLocations
-                                    R.reactimate $ send Ok <$ eLocations
+                                -- AddLocation
+                                (eLocationState, fLocationState) <- R.newEvent
+                                {-R.reactimate $ print <$> sample bSounds eLocations-}
+                                R.reactimate $ executeWith engine fLocationState <$> (uncurry newLocation <$> sample bSounds eAddLocation)
+                                R.reactimate $ print <$> eLocationState
+                                let eLocations = scanlE (flip (uncurry H.insert)) H.empty eLocationState
+                                    bLocations = R.stepper H.empty eLocations
+                                R.reactimate $ print <$> eLocations
+                                R.reactimate $ send Ok <$ eLocations
 
-                                    -- RemoveLocation
-                                    R.reactimate $ missing "RemoveLocation" <$ eRemoveLocation
+                                -- RemoveLocation
+                                R.reactimate $ missing "RemoveLocation" <$ eRemoveLocation
 
-                                    -- UpdateLocation
-                                    R.reactimate $ missing "UpdateLocation" <$ eUpdateLocation
+                                -- UpdateLocation
+                                R.reactimate $ missing "UpdateLocation" <$ eUpdateLocation
 
-                                    -- AddListener
-                                    (eListenerState, fListenerState) <- R.newEvent
-                                    let eUpdatedListener = R.apply ((\h (k, f) -> let (l, s) = h H.! k in (k, (f l, s))) <$> bListeners) eUpdateListener
-                                        eListeners = R.accumE H.empty $ (uncurry H.insert <$> eListenerState)
-                                                                        `R.union`
-                                                                        (H.delete <$> eRemoveListener)
-                                                                        `R.union`
-                                                                        ((\(k, (l, _)) -> H.adjust (first (const l)) k) <$> eUpdatedListener)
-                                        bListeners = R.stepper H.empty eListeners
-                                    R.reactimate $ toEngine fListenerState $ (uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener
-                                    R.reactimate $ toEngine (const (return ())) $ (\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener)
-                                    R.reactimate $ send Ok <$ eListeners
+                                -- AddListener
+                                (eListenerState, fListenerState) <- R.newEvent
+                                let eUpdatedListener = R.apply ((\h (k, f) -> let (l, s) = h H.! k in (k, (f l, s))) <$> bListeners) eUpdateListener
+                                    eListeners = R.accumE H.empty $ (uncurry H.insert <$> eListenerState)
+                                                                    `R.union`
+                                                                    (H.delete <$> eRemoveListener)
+                                                                    `R.union`
+                                                                    ((\(k, (l, _)) -> H.adjust (first (const l)) k) <$> eUpdatedListener)
+                                    bListeners = R.stepper H.empty eListeners
+                                R.reactimate $ executeWith engine fListenerState <$> ((uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener)
+                                R.reactimate $ executeWith engine (const (return ())) <$> ((\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener))
+                                R.reactimate $ send Ok <$ eListeners
 
-                                    -- Quit
-                                    R.reactimate $ (quit engine >> send Ok) <$ eQuit
-
-                                    -- Set up connections to and from JSON I/O network
-                                    -- NOTE: Event network needs to be set up already!
-                                    R.liftIOLater $ void $ forkIO $ do
-                                        -- FIXME: Why is this necessary?
-                                        {-threadDelay (truncate 1e6)-}
-                                        source =$= conduitIO (requestToEvent eventSinks) fromEngine $$ sink
-
-                                liftIO $ R.actuate =<< R.compile networkDescription
+                                -- Quit
+                                (eFreedListeners, fFreedListeners) <- R.newEvent
+                                R.reactimate $ executeWith engine fFreedListeners <$> (freeListeners <$> sample_ bListeners eQuit)
+                                R.reactimate $ (quit engine >> send Ok) <$ eFreedListeners
+                            -- Compile network and get event sinks
+                            network <- R.compile networkDescription
+                            sinks <- MVar.takeMVar eventSinks
+                            -- Set up interrupt handler
+                            catchSignals (fireQuit sinks ()) [keyboardSignal]
+                            -- Activate network
+                            R.actuate network
+                            -- Sync with engine
+                            {-execute engine $ SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
+                            execute engine $ return ()
+                            -- Set up connections to and from JSON I/O network
+                            void $ forkIO $ source =$= conduitIO (requestToEvent sinks) fromEngine $$ sink
+                            {-MVar.takeMVar quitVar-}
                             waitForServer engine
+                            -- Deactivate network
+                            R.pause network
                     liftIO $ do
                         let delay = 1
                         logLn $ "Waiting " ++ show delay ++ " seconds before trying to connect to Jack"
@@ -691,4 +726,4 @@ main = do
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= {- printC =$= -} fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
-                logLn "done"
+                logLn "done."

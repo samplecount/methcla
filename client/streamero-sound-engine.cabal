@@ -15,6 +15,7 @@ Executable streamero-sound-engine
                     Streamero.Jack
                     Streamero.Process
                     --Streamero.Readline
+                    Streamero.Signals
                     Streamero.SoundFile
   GHC-Options:      -Wall -rtsopts -threaded
   Build-depends:    base >= 3 && < 5
