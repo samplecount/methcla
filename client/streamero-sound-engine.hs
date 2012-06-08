@@ -43,6 +43,8 @@ import           Data.Word (Word64)
 import qualified Filesystem as FS
 import qualified Filesystem.Path.CurrentOS as FS
 import qualified Network.Socket as N
+import           Network.URL (URL)
+import qualified Network.URL as URL
 import           Prelude hiding ((.), catch)
 import qualified Reactive.Banana as R
 import           Sound.OpenSoundControl (immediately)
@@ -177,6 +179,7 @@ type ListenerId = SessionId
 
 data Listener = Listener {
     listenerPosition :: Coord
+  , streamURL :: URL
   } deriving (Show)
 
 data Location = Location {
@@ -188,7 +191,7 @@ data Location = Location {
 data Request =
     Quit
   {-| Init SoundscapeId String String-}
-  | AddListener ListenerId Coord
+  | AddListener ListenerId Coord URL
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
@@ -196,13 +199,18 @@ data Request =
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
 
+parseURL a =
+    case URL.importURL a of
+        Nothing -> fail $ "Invalid URL " ++ a
+        Just url -> return url
+
 instance FromJSON Request where
     parseJSON o@(Object v) = do
         t <- v .: "request" :: J.Parser Text
         case t of
             "Quit"           -> pure Quit
             {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
-            "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position"
+            "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position" <*> (parseURL =<< (v .: "stream_url"))
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
@@ -269,7 +277,7 @@ requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
 requestToEvent es (AddLocation i p r ss) = fireAddLocation es (i, Location p r ss)
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
-requestToEvent es (AddListener i pos) = fireAddListener es (i, Listener pos)
+requestToEvent es (AddListener i x1 x2) = fireAddListener es (i, Listener x1 x2)
 requestToEvent es (RemoveListener i) = fireRemoveListener es i
 requestToEvent es (UpdateListener i f) = fireUpdateListener es (i, f)
 requestToEvent es Quit = fireQuit es ()
@@ -497,14 +505,21 @@ findOutputBus env listeners = do
     where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
           avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
 
-startDarkice :: Environment -> String -> String -> IO ProcessHandle
-startDarkice env name soundscape = do
+startDarkice :: Environment -> String -> URL -> IO ProcessHandle
+startDarkice env name url = do
     FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
     SProc.createProcess (logStrLn $ "STREAMER:" ++ name) (Darkice.createProcess "darkice" darkiceOpts)
     where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ name ++ ".cfg")
           darkiceCfg = Darkice.defaultConfig {
                           Darkice.jackClientName = Just name
-                        , Darkice.mountPoint = soundscape ++ "/" ++ name
+                        , Darkice.server = case URL.url_type url of
+                                            URL.Absolute host -> URL.host host
+                                            _ -> Darkice.server Darkice.defaultConfig
+                        , Darkice.port = case URL.url_type url of
+                                            URL.Absolute host -> maybe (Darkice.port Darkice.defaultConfig) fromIntegral (URL.port host)
+                                            _ -> Darkice.port Darkice.defaultConfig
+                        , Darkice.password = "h3aRh3aR"
+                        , Darkice.mountPoint = URL.url_path url
                         , Darkice.bufferSize = 1 }
           darkiceOpts = Darkice.defaultOptions {
                           Darkice.configFile = Just darkiceCfgFile }
@@ -540,7 +555,7 @@ newListener env locations listeners (listenerId, listener) = do
         SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
                                                          , control "out" output
                                                          , control "level" level ]
-    darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) "soundscape"
+    darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) (streamURL listener)
     return (listenerId, (listener, ListenerState output cables darkice))
 
 updateListener :: LocationMap -> Listener -> ListenerState -> SC.ServerT IO ()
@@ -683,6 +698,7 @@ main = do
                                 R.reactimate $ executeWith engine fListenerState <$> ((uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener)
                                 R.reactimate $ executeWith engine (const (return ())) <$> ((\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener))
                                 R.reactimate $ send Ok <$ eListeners
+                                R.reactimate $ logLn . URL.exportURL . streamURL . snd <$> eAddListener
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent

@@ -1,7 +1,7 @@
 {"request":"Init","soundscape":"aksjdh","streaming":{"server":"178.156.14.2","port":8000,"sampleRate":44100,"bitrate":128}}
 {"request":"Quit"}
 
-{"request":"AddListener","id":"0","position":{"latitude":12.2,"longitude":3.5}}
+{"request":"AddListener","id":"0","position":{"latitude":12.2,"longitude":3.5},"stream_url":"http://blup.com:8000/blah"}
 {"request":"RemoveListener","id":"0"}
 {"request":"UpdateListener","id":"0","position":{"latitude":18.9,"longitude":7.2}}
 
