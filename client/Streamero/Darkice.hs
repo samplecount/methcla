@@ -31,12 +31,22 @@ createProcess program = P.proc (FS.encodeString program) . optionList
 
 data Config = Config {
     jackClientName :: Maybe String
+  , server :: String
+  , port :: Int
+  , password :: String
   , mountPoint :: String
   , bufferSize :: Double
   } deriving (Show)
 
 defaultConfig :: Config
-defaultConfig = Config Nothing "default" 1
+defaultConfig = Config {
+    jackClientName = Nothing
+  , server = "127.0.0.1"
+  , port = 8000
+  , password = "hackme"
+  , mountPoint = "default"
+  , bufferSize = 1
+  }
 
 configText :: Config -> Text
 configText config = Text.unlines [
@@ -57,11 +67,11 @@ configText config = Text.unlines [
   , "[icecast2-0]"
   , "format          = mp3"
   , "bitrateMode     = cbr"
-  , "bitrate         = 128"
+  , "bitrate         = 64"
   , "quality         = 0.8"
-  , "server          = 127.0.0.1"
-  , "port            = 8000"
-  , "password        = hackme"
+  , "server          = " `aps` server config
+  , "port            = " `aps` show (port config)
+  , "password        = " `aps` password config
   , "mountPoint      = " `aps` mountPoint config
   , "name            = Streamero"
   , "description     = Streamero soundscape so und so"
