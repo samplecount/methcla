@@ -491,9 +491,6 @@ patchCableSynthDef =
         o = SC.out (SC.control SC.KR "out" 0)
     in o (i * SC.lag (SC.control SC.KR "level" 0) 0.1)
 
-distanceScaling :: Double -> Double
-distanceScaling = recip
-
 -- TODO: Use control-monad-exception for exception reporting
 --       There also needs to be a way to communicate exceptions back from
 --       the SC engine loop to the reactive event network.
@@ -543,6 +540,15 @@ makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) e
 streamName :: Integral a => a -> String
 streamName a = "stream-" ++ show (fromIntegral a :: Int)
 
+distanceScaling :: Double -> Double -> Double -> Double -> Double
+distanceScaling rolloffFactor refDist maxDist dist
+    | dist > maxDist = 0
+    | otherwise      = refDist / (refDist + rolloffFactor * (dist' - refDist))
+        where dist' = min (max refDist dist) maxDist
+
+locationDistanceScaling :: Location -> Double -> Double
+locationDistanceScaling = distanceScaling 1 1 . radius
+
 newListener :: Environment -> LocationMap -> ListenerMap -> (ListenerId, Listener) -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
 newListener env locations listeners (listenerId, listener) = do
     -- TODO: Only send SynthDef once
@@ -551,7 +557,7 @@ newListener env locations listeners (listenerId, listener) = do
     output <- findOutputBus env listeners
     cables <- T.forM locations $ \(l, s) -> do
         let dist = distance (listenerPosition listener) (position l)
-            level = min 1 (distanceScaling dist)
+            level = locationDistanceScaling l dist
         SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
                                                          , control "out" output
                                                          , control "level" level ]
@@ -561,11 +567,12 @@ newListener env locations listeners (listenerId, listener) = do
 updateListener :: LocationMap -> Listener -> ListenerState -> SC.ServerT IO ()
 updateListener locations listener state = do
     let cables = patchCables state
-    F.forM_ (H.keys cables) $ \loc -> do
-        let dist = distance (listenerPosition listener) (position (fst (locations H.! loc)))
-            level = min 1 (distanceScaling dist)
-        liftIO $ logLn $ "Distance: " ++ show (loc, dist, level)
-        SC.exec immediately $ SC.n_set (cables H.! loc) [ control "level" level ]
+    F.forM_ (H.keys cables) $ \lid -> do
+        let l = fst (locations H.! lid)
+            dist = distance (listenerPosition listener) (position l)
+            level = locationDistanceScaling l dist
+        liftIO $ logLn $ "Distance: " ++ show (lid, dist, level)
+        SC.exec immediately $ SC.n_set (cables H.! lid) [ control "level" level ]
 
 freeListener :: ListenerState -> SC.ServerT IO ()
 freeListener state = do
