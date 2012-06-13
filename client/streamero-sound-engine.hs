@@ -59,6 +59,7 @@ import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
 import qualified Streamero.Process as SProc
 {-import           Streamero.Readline (sourceReadline)-}
+import           Streamero.SC3 (toStereo)
 import           Streamero.Signals (ignoreSignals, catchSignals)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
@@ -446,7 +447,7 @@ control :: (ToControlValue a) => String -> a -> (String, Double)
 control s a = (s, toControlValue a)
 
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
-playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ SC.mix $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
+playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ toStereo $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
 
 mkPlayerSynthDef :: Int -> SC.Loop -> SC.ServerT IO SC.SynthDef
 mkPlayerSynthDef nc = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show nc) . playerSynthDef nc
@@ -475,7 +476,7 @@ newPlayer mkSynthDef bus sound info = do
 
 newLocation :: SoundMap -> (LocationId, Location) -> SC.ServerT IO (LocationId, (Location, LocationState))
 newLocation soundMap (locationId, location) = do
-    bus <- SC.newAudioBus 1
+    bus <- SC.newAudioBus 2
     players <- mapM (uncurry (newPlayer mkPlayerSynthDef bus) . (H.!) soundMap) (locationSounds location)
     return (locationId, (location, LocationState bus (H.fromList (zip (locationSounds location) players))))
 
@@ -487,7 +488,7 @@ data ListenerState = ListenerState {
 
 patchCableSynthDef :: SC.UGen
 patchCableSynthDef =
-    let i = SC.in' 1 SC.AR (SC.control SC.KR "in" 0)
+    let i = SC.in' 2 SC.AR (SC.control SC.KR "in" 0)
         o = SC.out (SC.control SC.KR "out" 0)
     in o (i * SC.lag (SC.control SC.KR "level" 0) 0.1)
 

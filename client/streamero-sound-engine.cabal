@@ -15,6 +15,7 @@ Executable streamero-sound-engine
                     Streamero.Jack
                     Streamero.Process
                     --Streamero.Readline
+                    Streamero.SC3
                     Streamero.Signals
                     Streamero.SoundFile
   GHC-Options:      -Wall -rtsopts -threaded
@@ -34,6 +35,7 @@ Executable streamero-sound-engine
                   , failure >= 0.2 && < 0.3
                   , hosc >= 0.11 && < 0.12
                   , hsc3 >= 0.11 && < 0.12
+                  , hsc3-lang >= 0.11 && < 0.12
                   , hsc3-process >= 0.7
                   , hsc3-server >= 0.4
                   , hsndfile >= 0.5
