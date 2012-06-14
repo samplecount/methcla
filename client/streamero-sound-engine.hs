@@ -15,7 +15,7 @@ import           Control.Failure (Failure, failure)
 import           Control.Monad
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
-import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), object)
+import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), (.!=), object)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -159,22 +159,23 @@ data Sound =
     SoundFile {
         path :: FilePath
       , loop :: Bool
+      , event :: Bool
     }
     deriving (Show)
+
+instance FromJSON Sound where
+    parseJSON (Object v) = do
+        t <- v .: "type" :: J.Parser Text
+        case t of
+            "sample" -> SoundFile <$> v .: "path" <*> v .: "loop" <*> v .:? "event" .!= False
+            _        -> mzero
+    parseJSON _          = mzero
 
 data SoundFileInfo = SoundFileInfo {
     sampleRate :: Int
   , numChannels :: Int
   , numFrames :: Word64
   } deriving (Show)
-
-instance FromJSON Sound where
-    parseJSON (Object v) = do
-        t <- v .: "type" :: J.Parser Text
-        case t of
-            "sample" -> SoundFile <$> v .: "path" <*> v .: "loop"
-            _        -> mzero
-    parseJSON _          = mzero
 
 type ListenerId = SessionId
 
