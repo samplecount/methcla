@@ -6,6 +6,7 @@
 {"request":"UpdateListener","id":"0","position":{"latitude":18.9,"longitude":7.2}}
 
 {"request":"AddSound","id":0,"type":"sample","path":"/blah/blup.wav","loop":true,"event":false}
+{"request":"PlaySound","listener":"0","sound":0}
 
 {"request":"AddLocation","id":0,"position":{"latitude":1.2,"longitude":3.4},"relative":false,"radius":10.2,"sounds":[0,1,5]}
 {"request":"RemoveLocation","id":0}

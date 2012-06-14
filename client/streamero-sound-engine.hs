@@ -213,6 +213,7 @@ data Request =
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
+  | PlaySound ListenerId SoundId
   | AddLocation LocationId Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
@@ -232,6 +233,7 @@ instance FromJSON Request where
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
+            "PlaySound"      -> PlaySound <$> v .: "listener" <*> v .: "sound"
             "AddLocation"    -> AddLocation <$> v .: "id" <*> J.parseJSON o
             "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
@@ -281,6 +283,7 @@ $( makeLenses [''Environment] )
 
 data EventSinks = EventSinks {
     fireAddSound :: (SoundId, Sound) -> IO ()
+  , firePlaySound :: (ListenerId, SoundId) -> IO ()
   , fireAddLocation :: (LocationId, Location) -> IO ()
   , fireRemoveLocation :: LocationId -> IO ()
   , fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
@@ -292,6 +295,7 @@ data EventSinks = EventSinks {
 
 requestToEvent :: EventSinks -> Request -> IO ()
 requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
+requestToEvent es (PlaySound x1 x2) = firePlaySound es (x1, x2)
 requestToEvent es (AddLocation i l) = fireAddLocation es (i, l)
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
@@ -494,6 +498,20 @@ newPlayer mkSynthDef bus sound info = do
                 SC.resource (buffer, synth)
     return $ Player buffer synth
 
+-- | Play an event sound at a certain location.
+playSound :: (Listener, ListenerState) -> (Sound, SoundFileInfo) -> SC.ServerT IO Player
+playSound (listener, listenerState) (sound, soundFileInfo) = do
+    player <- newPlayer mkPlayerSynthDef (outputBus listenerState) sound soundFileInfo
+    void $ SC.fork $ do
+        liftIO $ OSC.pauseThread (duration soundFileInfo)
+        SC.exec immediately $ do
+            let Player buffer synth = player
+            SC.n_free synth
+            SC.async $ SC.b_free buffer
+            return ()
+        {-liftIO $ logLn "Event player freed"-}
+    return player
+
 newLocation :: SoundMap -> (LocationId, Location) -> SC.ServerT IO (LocationId, (Location, LocationState))
 newLocation soundMap (locationId, location) = do
     bus <- SC.newAudioBus 2
@@ -681,6 +699,7 @@ main = do
                                 networkDescription = do
                                 -- Request events
                                 (eAddSound, fAddSound) <- R.newEvent
+                                (ePlaySound, fPlaySound) <- R.newEvent
                                 (eAddLocation, fAddLocation) <- R.newEvent
                                 (eRemoveLocation, fRemoveLocation) <- R.newEvent
                                 (eUpdateLocation, fUpdateLocation) <- R.newEvent
@@ -688,8 +707,9 @@ main = do
                                 (eRemoveListener, fRemoveListener) <- R.newEvent
                                 (eUpdateListener, fUpdateListener) <- R.newEvent
                                 (eQuit, fQuit) <- R.newEvent
-                                liftIO $ MVar.putMVar eventSinks $ EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
+                                liftIO $ MVar.putMVar eventSinks $ EventSinks fAddSound fPlaySound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
 
+                                -- AddSound
                                 -- Read sound file info (a)synchronously
                                 {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
                                 (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
@@ -734,6 +754,10 @@ main = do
                                 R.reactimate $ executeWith engine (const (return ())) <$> ((\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener))
                                 R.reactimate $ send Ok <$ eListeners
                                 R.reactimate $ logLn . URL.exportURL . streamURL . snd <$> eAddListener
+
+                                -- PlaySound
+                                (ePlayerStart, fPlayerStart) <- R.newEvent
+                                R.reactimate $ executeWith engine fPlayerStart <$> R.apply ((\ls ss (lid, sid) -> playSound (ls H.! lid) (ss H.! sid)) <$> bListeners <*> bSounds) ePlaySound
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
