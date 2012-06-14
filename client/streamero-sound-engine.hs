@@ -474,7 +474,7 @@ playerSynthDef :: Int -> SC.Loop -> SC.UGen
 playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ toStereo $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
 
 mkPlayerSynthDef :: Int -> SC.Loop -> SC.ServerT IO SC.SynthDef
-mkPlayerSynthDef nc = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show nc) . playerSynthDef nc
+mkPlayerSynthDef nc loop = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show loop ++ "-" ++ show nc) . playerSynthDef nc $ loop
 
 truncatePowerOfTwo :: (Bits.Bits a, Integral a) => a -> a
 truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase (2::Double) . fromIntegral
@@ -486,7 +486,7 @@ diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames
 newPlayer :: (Int -> SC.Loop -> SC.ServerT IO SC.SynthDef) -> SC.AudioBus -> Sound -> SoundFileInfo -> SC.ServerT IO Player
 newPlayer mkSynthDef bus sound info = do
     let nc = numChannels info
-    sd <- mkSynthDef nc SC.Loop
+    sd <- mkSynthDef nc (if loop sound then SC.Loop else SC.NoLoop)
     g <- SC.rootNode
     {-SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
     (buffer, synth) <- SC.exec' immediately $
