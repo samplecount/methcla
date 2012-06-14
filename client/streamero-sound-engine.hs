@@ -562,6 +562,12 @@ makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) e
 streamName :: Integral a => a -> String
 streamName a = "stream-" ++ show (fromIntegral a :: Int)
 
+listenerLocationDistance :: Listener -> Location -> Double
+listenerLocationDistance listener location =
+    case reference location of
+        Absolute -> distance (listenerPosition listener) (position location)
+        Relative -> distance (listenerPosition listener) (listenerPosition listener `offset` position location)
+
 distanceScaling :: Double -> Double -> Double -> Double -> Double
 distanceScaling rolloffFactor refDist maxDist dist
     | dist > maxDist = 0
@@ -578,7 +584,7 @@ newListener env locations listeners (listenerId, listener) = do
     g <- SC.rootNode
     output <- findOutputBus env listeners
     cables <- T.forM locations $ \(l, s) -> do
-        let dist = distance (listenerPosition listener) (position l)
+        let dist = listenerLocationDistance listener l
             level = locationDistanceScaling l dist
         SC.exec immediately $ SC.s_new sd SC.AddToTail g [ control "in" (bus s)
                                                          , control "out" output
@@ -591,7 +597,7 @@ updateListener locations listener state = do
     let cables = patchCables state
     F.forM_ (H.keys cables) $ \lid -> do
         let l = fst (locations H.! lid)
-            dist = distance (listenerPosition listener) (position l)
+            dist = listenerLocationDistance listener l
             level = locationDistanceScaling l dist
         liftIO $ logLn $ "Distance: " ++ show (lid, dist, level)
         SC.exec immediately $ SC.n_set (cables H.! lid) [ control "level" level ]
