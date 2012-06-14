@@ -418,6 +418,9 @@ soundFileInfo path = do
     info <- SF.getInfo path
     return $ SoundFileInfo (SF.samplerate info) (SF.channels info) (fromIntegral $ SF.frames info)
 
+duration :: SoundFileInfo -> Double
+duration i = fromIntegral (numFrames i) / fromIntegral (sampleRate i)
+
 data Player = Player SC.Buffer SC.Synth deriving Show
 
 data LocationState = LocationState {
