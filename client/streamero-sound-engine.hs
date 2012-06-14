@@ -143,6 +143,11 @@ instance FromJSON Coord where
     parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
     parseJSON _          = mzero
 
+-- | Add one coordinate as an offset to another.
+offset :: Coord -> Coord -> Coord
+offset c1 c2 = Coord (latitude c1 + latitude c2) (longitude c1 + longitude c2)
+
+-- | Distance in meters between two coordinates.
 distance :: Coord -> Coord -> Double
 distance c1 c2 = earthRadius * ahaversin h
     where
