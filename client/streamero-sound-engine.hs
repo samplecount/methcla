@@ -184,11 +184,22 @@ data Listener = Listener {
   , streamURL :: URL
   } deriving (Show)
 
+data Reference = Absolute | Relative deriving (Eq, Show)
+
 data Location = Location {
     position :: Coord
+  , reference :: Reference
   , radius :: Double
   , locationSounds :: [SoundId]
   } deriving (Show)
+
+instance FromJSON Location where
+    parseJSON (Object v) = Location <$>
+                            v .: "position" <*>
+                            ((\b -> if b then Relative else Absolute) <$> v .:? "relative" .!= False) <*>
+                            v .: "radius" <*>
+                            v .: "sounds"
+    parseJSON _ = mzero
 
 data Request =
     Quit
@@ -197,7 +208,7 @@ data Request =
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
-  | AddLocation LocationId Coord Double [SoundId]
+  | AddLocation LocationId Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
 
@@ -216,7 +227,7 @@ instance FromJSON Request where
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
-            "AddLocation"    -> AddLocation <$> v .: "id" <*> v .: "position" <*> v .: "radius" <*> v .: "sounds"
+            "AddLocation"    -> AddLocation <$> v .: "id" <*> J.parseJSON o
             "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
                                                                     [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
@@ -276,7 +287,7 @@ data EventSinks = EventSinks {
 
 requestToEvent :: EventSinks -> Request -> IO ()
 requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
-requestToEvent es (AddLocation i p r ss) = fireAddLocation es (i, Location p r ss)
+requestToEvent es (AddLocation i l) = fireAddLocation es (i, l)
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
 requestToEvent es (AddListener i x1 x2) = fireAddListener es (i, Listener x1 x2)
