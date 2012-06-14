@@ -497,8 +497,9 @@ newPlayer mkSynthDef bus sound info = do
 newLocation :: SoundMap -> (LocationId, Location) -> SC.ServerT IO (LocationId, (Location, LocationState))
 newLocation soundMap (locationId, location) = do
     bus <- SC.newAudioBus 2
-    players <- mapM (uncurry (newPlayer mkPlayerSynthDef bus) . (H.!) soundMap) (locationSounds location)
-    return (locationId, (location, LocationState bus (H.fromList (zip (locationSounds location) players))))
+    let sounds = List.foldl' (\h i -> H.insert i (soundMap H.! i) h) H.empty (locationSounds location)
+    players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) (H.filter (not.event.fst) sounds)
+    return (locationId, (location, LocationState bus players))
 
 data ListenerState = ListenerState {
     outputBus :: SC.AudioBus
