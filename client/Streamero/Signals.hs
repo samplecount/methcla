@@ -14,5 +14,5 @@ ignoreSignals signals action = do
                                signals
                                oldHandlers
 
-catchSignals :: IO () -> [Signal] -> IO ()
-catchSignals action = mapM_ (\sig -> installHandler sig (Catch $ action) Nothing)
+catchSignals :: [Signal] -> IO () -> IO ()
+catchSignals signals action = mapM_ (\sig -> installHandler sig (Catch $ action) Nothing) signals

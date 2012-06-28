@@ -64,7 +64,7 @@ import           Streamero.Signals (ignoreSignals, catchSignals)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
 import           System.IO
-import           System.Posix.Signals (keyboardSignal)
+import           System.Posix.Signals (Signal, sigINT, sigTERM)
 import           System.Process (ProcessHandle)
 import           System.Unix.Directory (withTemporaryDirectory)
 
@@ -357,8 +357,8 @@ data Command =
 -- | Return SC server loop and command sink.
 data ServerHandle = ServerHandle (Command -> IO ()) (MVar.MVar (Maybe SomeException))
 
-newServer :: (SC.ServerT IO () -> IO ()) -> IO ServerHandle
-newServer f = do
+newServer :: [Signal] -> (SC.ServerT IO () -> IO ()) -> IO ServerHandle
+newServer blockedSignals f = do
     toSC <- Chan.newChan
     result <- MVar.newEmptyMVar
     let serverLoop = do
@@ -370,7 +370,7 @@ newServer f = do
                     serverLoop
         sink = Chan.writeChan toSC
         handle = ServerHandle sink result
-    void $ forkIO $ catch (ignoreSignals [keyboardSignal] (f serverLoop) >> MVar.putMVar result Nothing) (MVar.putMVar result . Just)
+    void $ forkIO $ catch (ignoreSignals blockedSignals (f serverLoop) >> MVar.putMVar result Nothing) (MVar.putMVar result . Just)
     return handle
 
 execute_ :: ServerHandle -> SC.ServerT IO () -> IO ()
@@ -682,8 +682,9 @@ main = do
                     logLn $ "Jack server name: " ++ serverName
                     let env = makeEnv opts tmpDir serverName
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
+                        handledSignals = [sigINT, sigTERM]
                         run source sink = do
-                            engine <- newServer $ withSC env "supercollider"
+                            engine <- newServer handledSignals $ withSC env "supercollider"
                             {-quitVar <- MVar.newEmptyMVar-}
                             fromEngineVar <- MVar.newEmptyMVar
                             eventSinks <- MVar.newEmptyMVar
@@ -767,7 +768,7 @@ main = do
                             network <- R.compile networkDescription
                             sinks <- MVar.takeMVar eventSinks
                             -- Set up interrupt handler
-                            catchSignals (fireQuit sinks ()) [keyboardSignal]
+                            catchSignals handledSignals $ fireQuit sinks ()
                             -- Activate network
                             R.actuate network
                             -- Sync with engine
