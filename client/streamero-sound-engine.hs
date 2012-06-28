@@ -255,6 +255,7 @@ data Options = Options {
   , _jackPath :: FilePath
   , _jackDriver :: String
   , _maxNumListeners :: Int
+  , _scUdpPort :: Int
   , _monitor :: Bool
   } deriving (Show)
 
@@ -264,6 +265,7 @@ defaultOptions = Options {
   , _socket = Nothing
   , _jackPath = "jackd"
   , _jackDriver = "dummy"
+  , _scUdpPort = 57110
   , _monitor = False
   , _maxNumListeners = 1
   }
@@ -311,8 +313,9 @@ arguments =
          [ flagHelpSimple (setL help True)
          , flagReq ["jack-path"] (upd jackPath) "STRING" "Path to Jack command"
          , flagReq ["jack-driver", "d"] (upd jackDriver) "STRING" "Jack driver"
+         , flagReq ["udp-port"] (upd scUdpPort . read) "INTEGER" "SuperCollider UDP port"
          , flagBool ["monitor"] (setL monitor) "Whether to monitor the stream locally"
-         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "NUMBER" "Maximum number of listeners"
+         , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "INTEGER" "Maximum number of listeners"
          ]
     where
         upd what x = Right . setL what x
@@ -326,7 +329,9 @@ withSC env clientName =
           {-, SC.ugenPluginPath = Just [ "./plugins" ]-}
           }
         SC.defaultRTOptions {
-            SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":" ++ clientName }
+            SC.networkPort = SC.UDPPort (scUdpPort . options ^$ env)
+          , SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":" ++ clientName
+          }
         SC.defaultOutputHandler { SC.onPutString = logStrLn "SC"
                                 , SC.onPutError = logStrLn "SC" }
 
