@@ -671,6 +671,7 @@ execute' f g m = f (m >>= liftIO . g)
 
 main :: IO ()
 main = do
+    hSetBuffering stdout LineBuffering
     opts <- processArgs arguments
     if help ^$ opts
         then print $ helpText [] HelpFormatDefault arguments
