@@ -596,8 +596,8 @@ makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) e
                   stream1 = "left"
                   stream2 = "right"
                   sc = "supercollider"
-                  sc1 = "out_" ++ show (i + 1)
-                  sc2 = "out_" ++ show (i + 2)
+                  sc1 = "out_" ++ show (2*i + 1)
+                  sc2 = "out_" ++ show (2*i + 2)
               in [ ((sc,sc1),(stream,stream1))
                  , ((sc,sc2),(stream,stream2)) ]
                  ++ if monitor
