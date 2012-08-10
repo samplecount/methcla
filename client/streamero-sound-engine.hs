@@ -260,6 +260,7 @@ data Options = Options {
   , _maxNumListeners :: Int
   , _scUdpPort :: Int
   , _monitor :: Bool
+  , _local :: Bool
   } deriving (Show)
 
 defaultOptions :: Options
@@ -268,9 +269,10 @@ defaultOptions = Options {
   , _socket = Nothing
   , _jackPath = "jackd"
   , _jackDriver = "dummy"
+  , _maxNumListeners = 1
   , _scUdpPort = 57110
   , _monitor = False
-  , _maxNumListeners = 1
+  , _local = False
   }
 
 $( makeLenses [''Options] )
@@ -319,6 +321,7 @@ arguments =
          , flagReq ["udp-port"] (upd scUdpPort . read) "INTEGER" "SuperCollider UDP port"
          , flagBool ["monitor"] (setL monitor) "Whether to monitor the stream locally"
          , flagReq ["max-num-listeners", "n"] (upd maxNumListeners . read) "INTEGER" "Maximum number of listeners"
+         , flagBool ["local"] (setL local) "Stream to a local instance of icecast"
          ]
     where
         upd what x = Right . setL what x
@@ -769,6 +772,14 @@ main = do
                                 R.reactimate $ missing "UpdateLocation" <$ eUpdateLocation
 
                                 -- AddListener
+                                let eAddListener' = if local ^$ opts
+                                                    then second (\l -> let u = streamURL l
+                                                                       in l { streamURL = case URL.url_type u of
+                                                                                            URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = "localhost" }) }
+                                                                                            _ -> u
+                                                                            }
+                                                                ) <$> eAddListener
+                                                    else eAddListener
                                 (eListenerState, fListenerState) <- R.newEvent
                                 let eUpdatedListener = R.apply ((\h (k, f) -> let (l, s) = h H.! k in (k, (f l, s))) <$> bListeners) eUpdateListener
                                     eListeners = R.accumE H.empty $ (uncurry H.insert <$> eListenerState)
@@ -777,10 +788,10 @@ main = do
                                                                     `R.union`
                                                                     ((\(k, (l, _)) -> H.adjust (first (const l)) k) <$> eUpdatedListener)
                                     bListeners = R.stepper H.empty eListeners
-                                R.reactimate $ executeWith engine fListenerState <$> ((uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener)
+                                R.reactimate $ executeWith engine fListenerState <$> ((uncurry . uncurry $ newListener env) <$> sample (bLocations `zipB` bListeners) eAddListener')
                                 R.reactimate $ executeWith engine (const (return ())) <$> ((\(lm, (l, s)) -> updateListener lm l s) <$> sample bLocations (snd <$> eUpdatedListener))
                                 R.reactimate $ send Ok <$ eListeners
-                                R.reactimate $ logLn . URL.exportURL . streamURL . snd <$> eAddListener
+                                R.reactimate $ logLn . URL.exportURL . streamURL . snd <$> eAddListener'
 
                                 -- PlaySound
                                 (ePlayerStart, fPlayerStart) <- R.newEvent
