@@ -4,15 +4,15 @@
            , TemplateHaskell
            , TypeSynonymInstances #-}
 import           Control.Applicative
-import           Control.Arrow (first)
+import           Control.Arrow (first, second)
 import           Control.Category ((.))
 import           Control.Concurrent (forkIO, myThreadId, threadDelay)
 import qualified Control.Concurrent.Chan as Chan
 import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception.Lifted
+import           Control.Exception.Lifted as E
 import           Control.Failure (Failure, failure)
-import           Control.Monad
+import           Control.Monad (foldM, mzero, unless, void, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
 import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), (.!=), object)
@@ -55,6 +55,7 @@ import qualified Sound.SC3.Server.Monad as SC
 import qualified Sound.SC3.Server.Monad.Command as SC
 import qualified Sound.SC3.Server.Monad.Process as SC
 import qualified Sound.SC3.Server.Monad.Request as SC
+import qualified Sound.File.Sndfile as SF
 import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
 import qualified Streamero.Process as SProc
@@ -63,6 +64,8 @@ import           Streamero.SC3 (toStereo)
 import           Streamero.Signals (ignoreSignals, catchSignals)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
+import qualified System.Directory as Dir
+import           System.FilePath ((</>))
 import           System.IO
 import           System.Posix.Signals (Signal, sigINT, sigTERM)
 import           System.Process (ProcessHandle)
@@ -484,6 +487,23 @@ mkPlayerSynthDef nc loop = SC.exec' immediately . SC.async . SC.d_recv ("player-
 truncatePowerOfTwo :: (Bits.Bits a, Integral a) => a -> a
 truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase (2::Double) . fromIntegral
 
+unsupportedFormat :: SF.Exception -> Maybe SF.Exception
+unsupportedFormat e =
+    case SF.errorString e of
+        "File contains data in an unknown format." -> Just e
+        _ -> Nothing
+
+addSound i s = do
+    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path s)) $ \e -> do
+        let cacheDir = "tmp/cache/streamero-sound-engine"
+            cacheFile = cacheDir </> show i ++ ".flac"
+        cacheFileExists <- Dir.doesFileExist cacheFile
+        unless cacheFileExists $ do
+            Dir.createDirectoryIfMissing True cacheDir
+            SF.toFLAC (path s) cacheFile
+        ((,) s { path = cacheFile }) `fmap` soundFileInfo cacheFile
+    return (i, (s', si))
+
 -- FIXME: Use playBuf for small sound files (e.g. <= 32768)
 diskBufferSize :: SoundFileInfo -> Int
 diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames 
@@ -721,7 +741,7 @@ main = do
                                 {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
                                 (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
-                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ do { si <- soundFileInfo (path s) ; return (i, (s, si)) }) <$> eAddSound
+                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound
                                 traceE eAddSound
                                 -- Update sound map
                                 let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
