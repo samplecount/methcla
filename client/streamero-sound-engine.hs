@@ -1,7 +1,7 @@
 {-# LANGUAGE ExistentialQuantification
            , FlexibleInstances
            , OverloadedStrings
-           , TemplateHaskell
+           -- , TemplateHaskell
            , TypeSynonymInstances #-}
 import           Control.Applicative
 import           Control.Arrow (first, second)
@@ -33,7 +33,7 @@ import qualified Data.Conduit.Network as C
 import qualified Data.Foldable as F
 import qualified Data.HashMap.Strict as H
 import           Data.Lens.Common
-import           Data.Lens.Template
+--import           Data.Lens.Template
 import qualified Data.List as List
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
@@ -275,7 +275,32 @@ defaultOptions = Options {
   , _local = False
   }
 
-$( makeLenses [''Options] )
+-- $( makeLenses [''Options] )
+
+help = lens
+  _help (\x s -> s {
+  _help = x })
+socket = lens
+  _socket (\x s -> s {
+  _socket = x })
+jackPath = lens
+  _jackPath (\x s -> s {
+  _jackPath = x })
+jackDriver = lens
+  _jackDriver (\x s -> s {
+  _jackDriver  = x })
+maxNumListeners = lens
+  _maxNumListeners (\x s -> s {
+  _maxNumListeners = x })
+scUdpPort = lens
+  _scUdpPort (\x s -> s {
+  _scUdpPort = x })
+monitor = lens
+  _monitor (\x s -> s {
+  _monitor = x })
+local = lens
+  _local (\x s -> s {
+  _local = x })
 
 data Environment = Env {
     _options :: Options
@@ -286,7 +311,16 @@ data Environment = Env {
 makeEnv :: Options -> FS.FilePath -> String -> Environment
 makeEnv = Env
 
-$( makeLenses [''Environment] )
+-- $( makeLenses [''Environment] )
+options = lens
+  _options (\x s -> s {
+  _options = x })
+temporaryDirectory = lens
+  _temporaryDirectory (\x s -> s {
+  _temporaryDirectory = x })
+jackServerName = lens
+  _jackServerName (\x s -> s {
+  _jackServerName = x })
 
 data EventSinks = EventSinks {
     fireAddSound :: (SoundId, Sound) -> IO ()
