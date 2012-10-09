@@ -208,7 +208,7 @@ instance FromJSON Location where
                             v .: "position" <*>
                             ((\b -> if b then Relative else Absolute) <$> v .:? "relative" .!= False) <*>
                             v .: "radius" <*>
-                            v .: "sounds"
+                            v .:? "sounds" .!= []
     parseJSON _ = mzero
 
 locationDistance :: Location -> Coord -> Double
