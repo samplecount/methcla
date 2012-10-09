@@ -509,7 +509,11 @@ type SoundMap = H.HashMap SoundId (Sound, SoundFileInfo)
 
 lookupSounds :: [SoundId] -> SoundMap -> SoundMap
 --lookupSounds ids = flip H.intersection . H.fromList (map ((,)()) ids)
-lookupSounds ids soundMap = List.foldl' (\h i -> H.insert i (soundMap H.! i) h) H.empty ids
+lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
+                                                    Nothing -> h
+                                                    Just s -> H.insert i s h)
+                                        H.empty
+                                        ids
 
 data Player = Player SC.Buffer SC.Synth deriving Show
 
