@@ -912,13 +912,18 @@ main = do
                                 (eQuit, fQuit) <- R.newEvent
                                 liftIO $ MVar.putMVar eventSinks $ EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
 
+                                -- Debugging
+                                traceE $ ((,)"eAddSound") <$> eAddSound
+                                traceE $ ((,)"eAddLocation") <$> eAddLocation
+                                traceE $ ((,)"eUpdateLocation".fst) <$> eUpdateLocation
+                                traceE $ ((,)"eRemoveLocation") <$> eRemoveLocation
+
                                 -- AddSound
                                 -- Read sound file info (a)synchronously
                                 {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
                                 (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
                                 R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound
-                                traceE eAddSound
                                 -- Update sound map
                                 let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
                                     bSounds = R.stepper H.empty eSounds
