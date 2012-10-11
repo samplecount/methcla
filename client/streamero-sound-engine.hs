@@ -589,7 +589,7 @@ diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames
 newPlayer :: (Int -> SC.Loop -> SC.ServerT IO SC.SynthDef) -> SC.AudioBus -> Sound -> SoundFileInfo -> SC.ServerT IO Player
 newPlayer mkSynthDef bus sound info = do
     let nc = numChannels info
-    sd <- mkSynthDef nc (if loop sound then SC.Loop else SC.NoLoop)
+    sd <- mkSynthDef nc (if isEvent sound then SC.NoLoop else SC.Loop)
     g <- SC.rootNode
     {-SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
     (buffer, synth) <- SC.exec' immediately $
