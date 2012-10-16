@@ -652,12 +652,18 @@ freeLocation locationId state = do
 updateLocation :: SoundMap -> LocationId -> Location -> LocationState -> SC.ServerT IO (LocationId, LocationState -> LocationState)
 updateLocation soundMap locationId location state = do
     -- Find ids of continuous sounds not yet playing
-    let sounds = H.filter (not.isEvent.fst)
-                    $ lookupSounds
-                      (H.keys $ H.fromList (map (flip(,)()) (locationSounds location)) `H.difference` players state)
-                      soundMap
-    newPlayers <- T.mapM (uncurry (newPlayer mkPlayerSynthDef (bus state)))  sounds
-    return (locationId, \s -> s { players = H.union newPlayers (players s) })
+    let locationSoundMap = H.fromList (map (flip(,)()) (locationSounds location))
+        continuous = H.filterWithKey (\k _ -> maybe False (not.isEvent.fst) (H.lookup k soundMap))
+        continuousSounds = continuous . flip lookupSounds soundMap
+        diff a b = H.keys (H.difference a b)
+        soundsToPlay = lookupSounds (H.keys $ continuous (H.difference locationSoundMap (players state))) soundMap
+        playersToStop = continuous (H.difference (players state) locationSoundMap)
+    -- Start new players
+    newPlayers <- T.mapM (uncurry (newPlayer mkPlayerSynthDef (bus state))) soundsToPlay
+    -- Stop old players
+    SC.exec immediately $ F.mapM_ freePlayer playersToStop
+    --liftIO $ logStrLn "updateLocation" $ show (locationSounds location, H.keys soundsToPlay, H.keys playersToStop, newPlayers)
+    return (locationId, \s -> s { players = H.union newPlayers (H.filterWithKey (\k _ -> not (H.member k playersToStop)) (players s)) })
 
 -- Gain is 1 for dist < refDist and 0 for dist > maxDist.
 -- This is an extension of the OpenAL "Inverse Distance Clamped Model" (equivalent to the )
@@ -910,7 +916,15 @@ main = do
                                 (eRemoveListener, fRemoveListener) <- R.newEvent
                                 (eUpdateListener, fUpdateListener) <- R.newEvent
                                 (eQuit, fQuit) <- R.newEvent
-                                liftIO $ MVar.putMVar eventSinks $ EventSinks fAddSound fAddLocation fRemoveLocation fUpdateLocation fAddListener fRemoveListener fUpdateListener fQuit
+                                liftIO $ MVar.putMVar eventSinks
+                                       $ EventSinks fAddSound
+                                                    fAddLocation
+                                                    fRemoveLocation
+                                                    fUpdateLocation
+                                                    fAddListener
+                                                    fRemoveListener
+                                                    fUpdateListener
+                                                    fQuit
 
                                 -- Debugging
                                 traceE $ ((,)"eAddSound") <$> eAddSound
@@ -946,7 +960,8 @@ main = do
                                     uncurry freeLocation <$> lookupB bLocationStates eRemoveLocation
                                 R.reactimate $ fmap (executeWith engine fUpdateLocationState) $
                                     uncurry . uncurry <$> (updateLocation <$> bSounds)
-                                        <@> ((\h1 h2 k -> ((k, h1 H.! k), h2 H.! k)) <$> bLocations <*> bLocationStates <@> (fst <$> eUpdateLocation))
+                                        -- FIXME: Untangle this mess by grouping data by dependencies
+                                        <@> ((\h1 h2 (k, f) -> ((k, f (h1 H.! k)), h2 H.! k)) <$> bLocations <*> bLocationStates <@> eUpdateLocation)
 
                                 R.reactimate $ send Ok <$ R.unions [ void eAddLocationState
                                                                    , void eRemoveLocationState
