@@ -73,13 +73,20 @@ import           System.Posix.Signals (Signal, sigINT, sigTERM)
 import           System.Process (ProcessHandle)
 import           System.Unix.Directory (withTemporaryDirectory)
 
-catMaybes :: Monad m => C.Conduit (Maybe a) m a
-catMaybes = do
+-- TODO:
+-- * store id in listener, location and sound for easier access when traversing hash maps
+-- * store listener and location state along with data in hash map as before (now that patch cables are separate)
+-- * Use individual events for field updates
+-- * Refactor into modules
+-- * Place player synths in one group and patch cables in another (ordered after the first group) to avoid order of execution problems
+
+catMaybesC :: Monad m => C.Conduit (Maybe a) m a
+catMaybesC = do
     v <- C.await
     case v of
         Nothing -> return ()
-        Just Nothing -> catMaybes
-        Just (Just a) -> C.yield a >> catMaybes
+        Just Nothing -> catMaybesC
+        Just (Just a) -> C.yield a >> catMaybesC
 
 printC :: (Show a, MonadIO m) => C.Conduit a m a
 printC = do
@@ -135,7 +142,7 @@ jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 
 -- | Parse a stream of JSON messages into JSON values.
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
-parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybes
+parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybesC
 
 type SoundscapeId = String
 type SessionId = String
