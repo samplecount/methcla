@@ -400,11 +400,11 @@ logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
 logLn :: String -> IO ()
 logLn = logStrLn "ENGINE"
 
-logE :: R.Event t String -> R.NetworkDescription t ()
-logE = R.reactimate . fmap logLn
+logE :: String -> R.Event t String -> R.NetworkDescription t ()
+logE s = R.reactimate . fmap (logStrLn s)
 
-traceE :: Show a => R.Event t a -> R.NetworkDescription t ()
-traceE = logE . fmap show
+traceE :: Show a => String -> R.Event t a -> R.NetworkDescription t ()
+traceE s = logE s . fmap show
 
 data Command =
     QuitServer
@@ -934,10 +934,10 @@ main = do
                                                     fQuit
 
                                 -- Debugging
-                                traceE $ ((,)"eAddSound") <$> eAddSound
-                                traceE $ ((,)"eAddLocation") <$> eAddLocation
-                                traceE $ ((,)"eUpdateLocation".fst) <$> eUpdateLocation
-                                traceE $ ((,)"eRemoveLocation") <$> eRemoveLocation
+                                traceE "eAddSound" eAddSound
+                                traceE "eAddLocation" eAddLocation
+                                traceE "eUpdateLocation" (fst <$> eUpdateLocation)
+                                traceE "eRemoveLocation" eRemoveLocation
 
                                 -- AddSound
                                 -- Read sound file info (a)synchronously
