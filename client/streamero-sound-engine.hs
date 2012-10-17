@@ -602,7 +602,8 @@ newPlayer mkSynthDef bus sound info = do
     (buffer, synth) <- SC.exec' immediately $
         SC.b_alloc (diskBufferSize info) nc `SC.whenDone` \buffer ->
             SC.b_read buffer (path sound) Nothing Nothing Nothing True `SC.whenDone` \_ -> do
-                synth <- SC.s_new sd SC.AddToTail g
+                -- FIXME: Put all player synths in one group, see TODO above
+                synth <- SC.s_new sd SC.AddToHead g
                             [ control "buffer" buffer
                             , control "out" bus ]
                 SC.resource (buffer, synth)
