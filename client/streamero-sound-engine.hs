@@ -681,7 +681,7 @@ distanceScaling rolloffFactor refDist maxDist dist
         where dist' = min (max refDist dist) maxDist
 
 locationDistanceScaling :: Location -> Double -> Double
-locationDistanceScaling = distanceScaling 0.1 1 .   radius
+locationDistanceScaling = distanceScaling 0.1 1 . radius
 --locationDistanceScaling _ _ = 1.0
 
 data ListenerState = ListenerState {
