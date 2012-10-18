@@ -76,8 +76,6 @@ import           System.Process (ProcessHandle)
 import           System.Unix.Directory (withTemporaryDirectory)
 
 -- TODO:
--- * store id in listener, location and sound for easier access when traversing hash maps
--- * store listener and location state along with data in hash map as before (now that patch cables are separate)
 -- * Use individual events for field updates
 -- * Refactor into modules
 -- * Place player synths in one group and patch cables in another (ordered after the first group) to avoid order of execution problems
@@ -148,6 +146,18 @@ jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybesC
 
+setHostName :: String -> URL -> URL
+setHostName h u =
+  case URL.url_type u of
+    URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = h }) }
+    _ -> u
+
+parseURL :: MonadPlus m => String -> m URL
+parseURL a =
+    case URL.importURL a of
+        Nothing -> mzero
+        Just url -> return url
+
 data Coord = Coord { latitude :: Double, longitude :: Double }
              deriving (Eq, Show)
 
@@ -204,17 +214,8 @@ data Listener = Listener {
   , streamURL :: URL
   } deriving (Show)
 
-setHostName :: String -> URL -> URL
-setHostName h u =
-  case URL.url_type u of
-    URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = h }) }
-    _ -> u
-
-parseURL :: MonadPlus m => String -> m URL
-parseURL a =
-    case URL.importURL a of
-        Nothing -> mzero
-        Just url -> return url
+data ListenerChange = ListenerPositionChanged Coord
+                      deriving (Eq, Show)
 
 instance FromJSON Listener where
   parseJSON (Object v) =
@@ -223,6 +224,13 @@ instance FromJSON Listener where
     <*> v .: "position"
     <*> (parseURL =<< (v .: "stream_url"))
   parseJSON _ = mzero
+
+data ListenerState = ListenerState {
+  outputBus :: SC.AudioBus
+, streamer :: ProcessHandle
+}
+
+type ListenerMap = H.HashMap ListenerId (Listener, ListenerState)
 
 data Reference = Absolute | Relative deriving (Eq, Show)
 
@@ -235,6 +243,8 @@ data Location = Location {
 , radius :: Double
 , locationSounds :: [SoundId]
 } deriving (Show)
+
+type LocationMap = H.HashMap LocationId (Location, LocationState)
 
 instance FromJSON Location where
     parseJSON (Object v) =
@@ -551,11 +561,6 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
 
 data Player = Player SC.Buffer SC.Synth deriving Show
 
-type LocationMap = H.HashMap LocationId Location
-type LocationStateMap = H.HashMap LocationId LocationState
-type ListenerMap = H.HashMap ListenerId Listener
-type ListenerStateMap = H.HashMap ListenerId ListenerState
-
 class ControlName a where
     controlName :: a -> String
 
@@ -652,23 +657,23 @@ playSound (listener, listenerState) (sound, soundFileInfo) = do
         {-liftIO $ logLn "Event player freed"-}
     return player
 
-newLocation :: SoundMap -> Location -> SC.ServerT IO (LocationId, (Location, LocationState))
-newLocation soundMap location = do
+addLocation :: SoundMap -> Location -> SC.ServerT IO (Location, LocationState)
+addLocation soundMap location = do
     bus <- SC.newAudioBus 2
     let sounds = H.filter (not.isEvent.fst) (lookupSounds (locationSounds location) soundMap)
     players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) sounds
-    return (locationId location, (location, LocationState bus players))
+    return (location, LocationState bus players)
 
-freeLocation :: LocationId -> LocationState -> SC.ServerT IO LocationId
-freeLocation locationId state = do
+removeLocation :: (Location, LocationState) -> SC.ServerT IO LocationId
+removeLocation (location, state) = do
     -- Free synths
     SC.exec immediately $ F.mapM_ freePlayer (players state)
     -- Free output bus
     SC.freeBus $ bus state
-    return locationId
+    return $ locationId location
 
-updateLocation :: SoundMap -> LocationId -> Location -> LocationState -> SC.ServerT IO (LocationId, LocationState -> LocationState)
-updateLocation soundMap locationId location state = do
+updateLocation :: SoundMap -> (Location, LocationState) -> SC.ServerT IO (Location, LocationState)
+updateLocation soundMap (location, state) = do
     -- Find ids of continuous sounds not yet playing
     let locationSoundMap = H.fromList (map (flip(,)()) (locationSounds location))
         continuous = H.filterWithKey (\k _ -> maybe False (not.isEvent.fst) (H.lookup k soundMap))
@@ -681,7 +686,7 @@ updateLocation soundMap locationId location state = do
     -- Stop old players
     SC.exec immediately $ F.mapM_ freePlayer playersToStop
     --liftIO $ logStrLn "updateLocation" $ show (locationSounds location, H.keys soundsToPlay, H.keys playersToStop, newPlayers)
-    return (locationId, \s -> s { players = H.union newPlayers (H.filterWithKey (\k _ -> not (H.member k playersToStop)) (players s)) })
+    return (location, state { players = H.union newPlayers (H.filterWithKey (\k _ -> not (H.member k playersToStop)) (players state)) })
 
 -- Gain is 1 for dist < refDist and 0 for dist > maxDist.
 -- This is an extension of the OpenAL "Inverse Distance Clamped Model" (equivalent to the )
@@ -694,11 +699,6 @@ distanceScaling rolloffFactor refDist maxDist dist
 locationDistanceScaling :: Location -> Double -> Double
 locationDistanceScaling = distanceScaling 0.1 1 . radius
 --locationDistanceScaling _ _ = 1.0
-
-data ListenerState = ListenerState {
-    outputBus :: SC.AudioBus
-  , streamer :: ProcessHandle
-  }
 
 type PatchCables = H.HashMap ListenerId (H.HashMap LocationId SC.Synth)
 
@@ -760,35 +760,39 @@ streamName a = "stream-" ++ show (fromIntegral a :: Int)
 listenerDistance :: Location -> Listener -> Double
 listenerDistance location = locationDistance location . listenerPosition
 
-listenerLocations :: Listener -> H.HashMap LocationId Location -> H.HashMap LocationId Location
-listenerLocations listener = H.filter (\location -> location `listenerDistance` listener <= radius location)
+listenerLocations :: Listener -> LocationMap -> LocationMap
+listenerLocations listener = H.filter (\(location, _) -> location `listenerDistance` listener <= radius location)
 
 -- TODO: Use control-monad-exception for exception reporting
 --       There also needs to be a way to communicate exceptions back from
 --       the SC engine loop to the reactive event network.
-findOutputBus :: Environment -> ListenerStateMap -> SC.ServerT IO SC.AudioBus
-findOutputBus env listenerStates = do
+findOutputBus :: Environment -> ListenerMap -> SC.ServerT IO SC.AudioBus
+findOutputBus env listeners = do
     case avail List.\\ used of
         [] -> failure SC.NoFreeIds
         (i:_) -> SC.outputBus 2 i
-    where used = map (fromIntegral.SC.busId.outputBus) . H.elems $ listenerStates
+    where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
           avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
 
-newListener :: Environment -> LocationMap -> LocationStateMap -> ListenerStateMap -> Listener -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
-newListener env locations locationStates listenerStates listener = do
-    output <- findOutputBus env listenerStates
+addListener :: Environment -> ListenerMap -> Listener -> SC.ServerT IO (Listener, ListenerState)
+addListener env listeners listener = do
+    output <- findOutputBus env listeners
     darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) (streamURL listener)
-    return (listenerId listener, (listener, ListenerState output darkice))
+    return (listener, ListenerState output darkice)
 
-freeListener :: ListenerId -> ListenerState -> SC.ServerT IO ListenerId
-freeListener listenerId state = do
-    -- Free output bus
-    SC.freeBus $ outputBus state
-    -- Stop stream
-    liftIO $ do
-        SProc.interruptProcess (streamer state)
-        logLn $ "Stopped stream"
-    return listenerId
+removeListener :: ListenerMap -> ListenerId -> SC.ServerT IO ListenerId
+removeListener listeners listenerId = do
+  let state = snd (listeners H.! listenerId)
+  -- Free output bus
+  SC.freeBus $ outputBus state
+  -- Stop stream
+  liftIO $ do
+      SProc.interruptProcess (streamer state)
+      logLn $ "Stopped stream"
+  return listenerId
+
+removeAllListeners :: ListenerMap -> SC.ServerT IO ()
+removeAllListeners listeners = mapM_ (removeListener listeners) (H.keys listeners)
 
 updatePatchCablesForListener :: LocationMap -> ListenerMap -> PatchCables -> ListenerId -> SC.ServerT IO (PatchCables -> PatchCables)
 updatePatchCablesForListener locations listeners patchCables listenerId = do
@@ -799,11 +803,11 @@ updatePatchCablesForListener locations listeners patchCables listenerId = do
         case H.lookup locationId listenerPatchCables of
           Nothing -> return ()
           Just synth -> do
-            let listener = listeners H.! listenerId
-                location = locations H.! locationId
+            let listener = fst (listeners H.! listenerId)
+                location = fst (locations H.! locationId)
                 dist     = location `listenerDistance` listener
                 level    = location `locationDistanceScaling` dist
-            liftIO $ logStrLn "updatePatchCablesForListener" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
+            --liftIO $ logStrLn "updatePatchCablesForListener" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
             SC.exec immediately $ SC.n_set synth [ control "level" level ]
       return id
 
@@ -812,65 +816,63 @@ updatePatchCablesForLocation locations listeners patchCables locationId = do
   F.forM_ (H.keys patchCables) $ \listenerId ->
     case H.lookup locationId (patchCables H.! listenerId) of
       Just synth -> do
-        let listener = listeners H.! listenerId
-            location = locations H.! locationId
+        let listener = fst (listeners H.! listenerId)
+            location = fst (locations H.! locationId)
             dist     = location `listenerDistance` listener
             level    = location `locationDistanceScaling` dist
-        liftIO $ logStrLn "updatePatchCablesForLocation" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
+        --liftIO $ logStrLn "updatePatchCablesForLocation" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
         SC.exec immediately $ SC.n_set synth [ control "level" level ]
   return id
 
 data LocationEvent = Enter ListenerId LocationId | Leave ListenerId LocationId deriving Show
 
-data EventPlayer = EventPlayer SC.AudioBus SC.Synth (H.HashMap SoundId Player)
+data EventPlayer = EventPlayer SC.AudioBus SC.Synth (H.HashMap SoundId Player) deriving Show
 type EventPlayerMap = H.HashMap ListenerId (H.HashMap LocationId EventPlayer)
 
-updateEventPlayers :: SoundMap -> LocationMap -> ListenerMap -> ListenerStateMap -> EventPlayerMap -> LocationEvent -> SC.ServerT IO EventPlayerMap
-updateEventPlayers sounds locations listeners listenerStates eventPlayers event =
+updateEventPlayers :: SoundMap -> LocationMap -> ListenerMap -> EventPlayerMap -> LocationEvent -> SC.ServerT IO (EventPlayerMap -> EventPlayerMap)
+updateEventPlayers sounds locations listeners eventPlayers event =
     case event of
         Enter listenerId locationId -> do
-            let location = locations H.! locationId
-                listener = listeners H.! listenerId
-                listenerState = listenerStates H.! listenerId
+            let location = fst (locations H.! locationId)
+                (listener, listenerState) = listeners H.! listenerId
                 eventSounds = H.filter (isEvent.fst) (lookupSounds (locationSounds location) sounds)
                 level = locationDistanceScaling location (location `listenerDistance` listener)
-            liftIO $ logLn $ show eventSounds
+            liftIO $ logLn $ show (locationSounds location, eventSounds)
             if H.null eventSounds
-                then return eventPlayers
+                then return id
                 else do
                     bus <- SC.newAudioBus 2
                     players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) eventSounds
                     g <- SC.rootNode
                     cable <- newPatchCable g bus (outputBus listenerState) listener location
-                    return $! H.insert listenerId
-                                       (H.insert locationId
-                                                 (EventPlayer bus cable players)
-                                                 (H.lookupDefault H.empty listenerId eventPlayers))
-                                        eventPlayers
+                    return $ H.insert listenerId
+                                      (H.insert locationId
+                                                (EventPlayer bus cable players)
+                                                (H.lookupDefault H.empty listenerId eventPlayers))
         Leave listenerId locationId ->
             case H.lookup listenerId eventPlayers of
-                Nothing -> return eventPlayers
+                Nothing -> return id
                 Just h -> case H.lookup locationId h of
-                            Nothing -> return H.empty
+                            Nothing -> return id
                             Just (EventPlayer bus cable players) -> do
                                 SC.exec immediately $ do
                                     F.mapM_ freePlayer players
                                     SC.n_free cable
                                 SC.freeBus bus
-                                return $! H.insert listenerId (H.delete locationId h) eventPlayers
+                                return $ H.insert listenerId (H.delete locationId h)
 
-updateEventPlayersForListener :: LocationMap -> ListenerMap -> EventPlayerMap -> ListenerId -> SC.ServerT IO EventPlayerMap
+updateEventPlayersForListener :: LocationMap -> ListenerMap -> EventPlayerMap -> ListenerId -> SC.ServerT IO (EventPlayerMap -> EventPlayerMap)
 updateEventPlayersForListener locations listeners eventPlayers listenerId = do
     case H.lookup listenerId eventPlayers of
         Nothing -> return ()
         Just es -> F.forM_ (H.keys es) $ \locationId -> do
-            let listener = listeners H.! listenerId
-                location = locations H.! locationId
+            let listener = fst (listeners H.! listenerId)
+                location = fst (locations H.! locationId)
                 dist = location `listenerDistance` listener
                 level = location `locationDistanceScaling` dist
                 EventPlayer _ cable _ = es H.! locationId
             SC.exec immediately $ SC.n_set cable [ control "level" level ]            
-    return eventPlayers
+    return id
 
 type Time = Double
 
@@ -937,6 +939,7 @@ main = do
                                 {-toEngine <- SC.capture-}
                             let networkDescription :: forall t . R.NetworkDescription t ()
                                 networkDescription = do
+
                                 -- Request events
                                 (eAddSound, fAddSound) <- R.newEvent
                                 (eAddLocation, fAddLocation) <- R.newEvent
@@ -956,12 +959,6 @@ main = do
                                                     fUpdateListener
                                                     fQuit
 
-                                -- Debugging
-                                traceE "eAddSound" eAddSound
-                                traceE "eAddLocation" eAddLocation
-                                traceE "eUpdateLocation" (fst <$> eUpdateLocation)
-                                traceE "eRemoveLocation" eRemoveLocation
-
                                 -- AddSound
                                 -- Read sound file info (a)synchronously
                                 {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
@@ -977,31 +974,41 @@ main = do
                                 {-R.reactimate $ print <$> eSoundFileInfo-}
                                 {-R.reactimate $ print <$> eAddSound-}
 
+                                traceE "eAddSound" eAddSound
+
                                 -- Locations and states
-                                let (eLocations, bLocations) = hashMapB
-                                                                ((\l -> (locationId l, l)) <$> eAddLocation)
-                                                                eRemoveLocation
-                                                                eUpdateLocation
+                                (eAddLocation', fAddLocation') <- R.newEvent
+                                (eRemoveLocation', fRemoveLocation') <- R.newEvent
+                                (eUpdateLocation', fUpdateLocation') <- R.newEvent
 
-                                (eAddLocationState, fAddLocationState) <- R.newEvent
-                                (eRemoveLocationState, fRemoveLocationState) <- R.newEvent
-                                (eUpdateLocationState, fUpdateLocationState) <- R.newEvent
-                                let (eLocationStates, bLocationStates) = hashMapB (second snd <$> eAddLocationState)
-                                                                                  eRemoveLocationState
-                                                                                  eUpdateLocationState
-                                R.reactimate $ fmap (executeWith engine fAddLocationState)
-                                             $ newLocation <$> bSounds <@> eAddLocation
-                                R.reactimate $ fmap (executeWith engine fRemoveLocationState) $
-                                    uncurry freeLocation <$> lookupB bLocationStates eRemoveLocation
-                                R.reactimate $ fmap (executeWith engine fUpdateLocationState) $
-                                    uncurry . uncurry <$> (updateLocation <$> bSounds)
-                                        -- FIXME: Untangle this mess by grouping data by dependencies
-                                        <@> ((\h1 h2 (k, f) -> ((k, f (h1 H.! k)), h2 H.! k)) <$> bLocations <*> bLocationStates <@> eUpdateLocation)
+                                let bLocations = R.accumB
+                                                  H.empty
+                                                  (R.unions [ (\(l, s) -> H.insert (locationId l) (l, s))
+                                                              <$> eAddLocation' `R.union` eUpdateLocation'
+                                                            , H.delete <$> eRemoveLocation'
+                                                            ])
+                                eLocations <- R.changes bLocations
 
-                                R.reactimate $ send Ok <$ R.unions [ void eAddLocationState
-                                                                   , void eRemoveLocationState
-                                                                   , void eUpdateLocationState ]
-                                traceE "bLocationStates" eLocationStates
+                                R.reactimate $ fmap (executeWith engine fAddLocation')
+                                             $ addLocation
+                                               <$> bSounds
+                                               <@> eAddLocation
+                                R.reactimate $ fmap (executeWith engine fRemoveLocation')
+                                             $ removeLocation
+                                               <$> bLocations `lookupB_` eRemoveLocation
+                                R.reactimate $ fmap (executeWith engine fUpdateLocation')
+                                             $ updateLocation
+                                               <$> bSounds
+                                               <@> ((\h (k, f) -> first f (h H.! k)) <$> bLocations <@> eUpdateLocation)
+
+                                R.reactimate $ send Ok <$ R.unions [ void eAddLocation'
+                                                                   , void eRemoveLocation'
+                                                                   , void eUpdateLocation' ]
+
+                                traceE "eAddLocation" eAddLocation
+                                traceE "eUpdateLocation" (fst <$> eUpdateLocation)
+                                traceE "eRemoveLocation" eRemoveLocation
+                                traceE "bLocations" eLocations
 
                                 -- Listeners and listener states
                                 let eAddListenerRewriteUrl = flip fmap eAddListener $
@@ -1010,32 +1017,40 @@ main = do
                                       else id
                                 R.reactimate $ logLn . URL.exportURL . streamURL <$> eAddListenerRewriteUrl
 
-                                let (eListeners, bListeners) = hashMapB ((\l -> (listenerId l, l)) <$> eAddListener)
-                                                                        eRemoveListener
-                                                                        eUpdateListener
+                                (eAddListener', fAddListener') <- R.newEvent
+                                (eRemoveListener', fRemoveListener') <- R.newEvent
+                                -- No side effects
+                                let eUpdateListener' = (\(i, f) -> (i, first f)) <$> eUpdateListener
 
-                                (eAddListenerState, fAddListenerState) <- R.newEvent
-                                (eRemoveListenerState, fRemoveListenerState) <- R.newEvent
-                                (eUpdateListenerState, fUpdateListenerState) <- R.newEvent
-                                let (eListenerStates, bListenerStates) = hashMapB (second snd <$> eAddListenerState)
-                                                                                  eRemoveListenerState
-                                                                                  eUpdateListenerState
-                                R.reactimate $ fmap (executeWith engine fAddListenerState)
-                                             $ newListener env
-                                               <$> bLocations
-                                               <*> bLocationStates
-                                               <*> bListenerStates
+                                let bListeners = R.accumB
+                                                  H.empty
+                                                  (R.unions [ (\(l, s) -> H.insert (listenerId l) (l, s)) <$> eAddListener'
+                                                            , (\(i, f) -> H.adjust f i) <$> eUpdateListener'
+                                                            , H.delete <$> eRemoveListener' ])
+                                eListeners <- R.changes bListeners
+
+                                R.reactimate $ fmap (executeWith engine fAddListener')
+                                             $ addListener env
+                                               <$> bListeners
                                                <@> eAddListenerRewriteUrl
-                                R.reactimate $ fmap (executeWith engine fRemoveListenerState) $
-                                    uncurry freeListener <$> lookupB bListenerStates eRemoveListener
 
-                                R.reactimate $ send Ok <$ R.unions [ void eAddListenerState
-                                                                   , void eRemoveListenerState
-                                                                   , void eUpdateListenerState ]
+                                R.reactimate $ fmap (executeWith engine fRemoveListener')
+                                             $ removeListener
+                                               <$> bListeners
+                                               <@> eRemoveListener
+
+                                R.reactimate $ send Ok <$ R.unions [ void eAddListener'
+                                                                   , void eRemoveListener'
+                                                                   , void eUpdateListener' ]
+
+                                traceE "eAddListener" eAddListenerRewriteUrl
+                                --traceE "eUpdateListener" (fst <$> eUpdateListener)
+                                --traceE "eUpdateListenerState" (fst <$> eUpdateListener')
+                                traceE "eRemoveListener" eRemoveListener
 
                                 -- Listener/location map
                                 let -- eListenerLocations :: R.Event t (H.HashMap ListenerId (H.HashMap LocationId LocationId))
-                                    eListenersOrLocationsChanged = eListeners `R.union` (const <$> bListeners <@> eLocations)
+                                    eListenersOrLocationsChanged = fmap fst <$> eListeners `R.union` (const <$> bListeners <@> eLocations)
                                     eListenerLocations = fmap . flip listenerLocations <$> bLocations <@> eListenersOrLocationsChanged
                                     bListenerLocations = R.stepper H.empty eListenerLocations
                                     locationEvents ls (_, ls') = (H.foldlWithKey' f [] ls ++ H.foldlWithKey' g [] ls', ls)
@@ -1061,43 +1076,43 @@ main = do
                                 traceE "eLocationEvents" eLocationEvents
 
                                 -- Start and stop event players
-                                (eUpdatedEventPlayers, fUpdatedEventPlayers) <- R.newEvent
-                                let bEventPlayers = R.stepper H.empty eUpdatedEventPlayers
-                                R.reactimate $ fmap (executeWith engine fUpdatedEventPlayers)
+                                (eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
+                                let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
+                                eEventPlayers <- R.changes bEventPlayers
+
+                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
                                              $ updateEventPlayers
                                                <$> bSounds
                                                <*> bLocations
                                                <*> bListeners
-                                               <*> bListenerStates
                                                <*> bEventPlayers
                                                <@> eLocationEvents
                                 -- Update event players
-                                R.reactimate $ fmap (executeWith engine fUpdatedEventPlayers)
+                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
                                              $ updateEventPlayersForListener
                                                <$> bLocations
                                                <*> bListeners
                                                <*> bEventPlayers
-                                               <@> (fst <$> eUpdateListener)
+                                               <@> (fst <$> eUpdateListener')
+
+                                traceE "bEventPlayers" eEventPlayers
 
                                 -- Piggedipatchables
                                 (eUpdatePatchCables, fUpdatePatchCables) <- R.newEvent
                                 let bPatchCables = R.accumB H.empty eUpdatePatchCables
                                     eUpdatePatchCables' = R.unions [
                                         -- AddListener: Add patch cables between new listener and all locations
-                                        (\locations locationStates (listenerId, (listener, listenerState)) -> do
+                                        (\locations (listener, listenerState) -> do
                                           group <- SC.rootNode
-                                          cables <- fmap H.fromList
-                                                      $ T.forM (H.keys locations)
-                                                      $ \locationId -> fmap ((,)locationId)
-                                                      $ newPatchCable group
-                                                                      (bus (locationStates H.! locationId))
-                                                                      (outputBus listenerState)
-                                                                      listener
-                                                                      (locations H.! locationId)
-                                          return $ H.insert listenerId cables)
+                                          cables <- T.forM locations $ \(location, locationState) ->
+                                            newPatchCable group
+                                                          (bus locationState)
+                                                          (outputBus listenerState)
+                                                          listener
+                                                          location
+                                          return $ H.insert (listenerId listener) cables)
                                         <$> bLocations
-                                        <*> bLocationStates
-                                        <@> eAddListenerState
+                                        <@> eAddListener'
                                         -- UpdateListener: Update patch cables with new listener position
                                       , updatePatchCablesForListener
                                           <$> bLocations
@@ -1111,21 +1126,20 @@ main = do
                                         <$> bPatchCables
                                         <@> eRemoveListener
                                         -- AddLocation: Add patch cables between the new location and each listener
-                                      , (\listeners listenerStates (locationId, (location, locationState)) -> do
+                                      , (\listeners (location, locationState) -> do
                                           group <- SC.rootNode
-                                          updates <- flip H.traverseWithKey listeners $ \listenerId listener -> do
+                                          updates <- T.forM listeners $ \(listener, listenerState) -> do
                                             synth <- newPatchCable
                                                       group
                                                       (bus locationState)
-                                                      (outputBus (listenerStates H.! listenerId))
+                                                      (outputBus listenerState)
                                                       listener
                                                       location
-                                            return $ H.insert locationId synth
+                                            return $ H.insert (locationId location) synth
                                           return $ flip (H.foldlWithKey' (\h k f -> H.adjust f k h))
                                                         updates)
                                         <$> bListeners
-                                        <*> bListenerStates
-                                        <@> eAddLocationState
+                                        <@> eAddLocation'
                                         -- UpdateLocation: Update patch cables with new location position
                                       , updatePatchCablesForLocation
                                           <$> bLocations
@@ -1144,7 +1158,10 @@ main = do
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
-                                R.reactimate $ fmap (executeWith engine fFreedListeners) $ const . F.mapM_ (uncurry freeListener) . H.toList <$> bListenerStates <@> eQuit
+                                R.reactimate $ fmap (executeWith engine fFreedListeners)
+                                             $ (const <$> removeAllListeners)
+                                               <$> bListeners
+                                               <@> eQuit
                                 R.reactimate $ (quit engine >> send Ok) <$ eFreedListeners
                             -- Compile network and get event sinks
                             network <- R.compile networkDescription
