@@ -80,6 +80,8 @@ import           System.Unix.Directory (withTemporaryDirectory)
 -- * Use individual events for field updates
 -- * Refactor into modules
 -- * Place player synths in one group and patch cables in another (ordered after the first group) to avoid order of execution problems
+-- * Only update the patch cables for locations the listener is currently in.
+-- * Use playBuf for small sound files (e.g. <= 32768)
 
 catMaybesC :: Monad m => C.Conduit (Maybe a) m a
 catMaybesC = do
