@@ -13,7 +13,7 @@ import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.STM as STM
 import           Control.Exception.Lifted as E
 import           Control.Failure (Failure, failure)
-import           Control.Monad (foldM, join, mzero, unless, void, when)
+import           Control.Monad (MonadPlus, foldM, join, mzero, unless, void, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (lift)
 import           Data.Aeson (FromJSON(..), ToJSON(..), Value(..), (.=), (.:), (.:?), (.!=), object)
@@ -204,6 +204,18 @@ data Listener = Listener {
   , streamURL :: URL
   } deriving (Show)
 
+setHostName :: String -> URL -> URL
+setHostName h u =
+  case URL.url_type u of
+    URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = h }) }
+    _ -> u
+
+parseURL :: MonadPlus m => String -> m URL
+parseURL a =
+    case URL.importURL a of
+        Nothing -> mzero
+        Just url -> return url
+
 instance FromJSON Listener where
   parseJSON (Object v) =
     Listener
@@ -254,11 +266,6 @@ data Request =
   | AddLocation Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
-
-parseURL a =
-    case URL.importURL a of
-        Nothing -> fail $ "Invalid URL " ++ a
-        Just url -> return url
 
 instance FromJSON Request where
     parseJSON o@(Object v) = do
@@ -997,14 +1004,10 @@ main = do
                                 traceE "bLocationStates" eLocationStates
 
                                 -- Listeners and listener states
-                                let eAddListenerRewriteUrl =
+                                let eAddListenerRewriteUrl = flip fmap eAddListener $
                                       if local ^$ opts
-                                      then (\l -> let u = streamURL l
-                                                  in l { streamURL = case URL.url_type u of
-                                                                      URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = "localhost" }) }
-                                                                      _ -> u
-                                                       }) <$> eAddListener
-                                      else eAddListener
+                                      then (\l -> l { streamURL = setHostName "localhost" (streamURL l) })
+                                      else id
                                 R.reactimate $ logLn . URL.exportURL . streamURL <$> eAddListenerRewriteUrl
 
                                 let (eListeners, bListeners) = hashMapB ((\l -> (listenerId l, l)) <$> eAddListener)
