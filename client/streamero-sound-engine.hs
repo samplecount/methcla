@@ -199,27 +199,39 @@ data SoundFileInfo = SoundFileInfo {
 newtype ListenerId = ListenerId Text deriving (Eq, Show, H.Hashable, FromJSON)
 
 data Listener = Listener {
-    listenerPosition :: Coord
+    listenerId :: ListenerId
+  , listenerPosition :: Coord
   , streamURL :: URL
   } deriving (Show)
+
+instance FromJSON Listener where
+  parseJSON (Object v) =
+    Listener
+    <$> v .: "id"
+    <*> v .: "position"
+    <*> (parseURL =<< (v .: "stream_url"))
+  parseJSON _ = mzero
 
 data Reference = Absolute | Relative deriving (Eq, Show)
 
 newtype LocationId = LocationId Int deriving (Eq, Show, H.Hashable, FromJSON)
 
 data Location = Location {
-  position :: Coord
+  locationId :: LocationId
+, position :: Coord
 , reference :: Reference
 , radius :: Double
 , locationSounds :: [SoundId]
 } deriving (Show)
 
 instance FromJSON Location where
-    parseJSON (Object v) = Location <$>
-                            v .: "position" <*>
-                            ((\b -> if b then Relative else Absolute) <$> v .:? "relative" .!= False) <*>
-                            v .: "radius" <*>
-                            v .:? "sounds" .!= []
+    parseJSON (Object v) =
+      Location
+      <$> v .: "id"
+      <*> v .: "position"
+      <*> ((\b -> if b then Relative else Absolute) <$> v .:? "relative" .!= False)
+      <*> v .: "radius"
+      <*> v .:? "sounds" .!= []
     parseJSON _ = mzero
 
 locationDistance :: Location -> Coord -> Double
@@ -235,11 +247,11 @@ data LocationState = LocationState {
 
 data Request =
     Quit
-  | AddListener ListenerId Coord URL
+  | AddListener Listener
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
-  | AddLocation LocationId Location
+  | AddLocation Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
 
@@ -254,11 +266,11 @@ instance FromJSON Request where
         case t of
             "Quit"           -> pure Quit
             {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
-            "AddListener"    -> AddListener <$> v .: "id" <*> v .: "position" <*> (parseURL =<< (v .: "stream_url"))
+            "AddListener"    -> AddListener <$> J.parseJSON o
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
-            "AddLocation"    -> AddLocation <$> v .: "id" <*> J.parseJSON o
+            "AddLocation"    -> AddLocation <$> J.parseJSON o
             "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
                                                                     [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
@@ -345,10 +357,10 @@ jackServerName = lens
 
 data EventSinks = EventSinks {
     fireAddSound :: (SoundId, Sound) -> IO ()
-  , fireAddLocation :: (LocationId, Location) -> IO ()
+  , fireAddLocation :: Location -> IO ()
   , fireRemoveLocation :: LocationId -> IO ()
   , fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
-  , fireAddListener :: (ListenerId, Listener) -> IO ()
+  , fireAddListener :: Listener -> IO ()
   , fireRemoveListener :: ListenerId -> IO ()
   , fireUpdateListener :: (ListenerId, Listener -> Listener) -> IO ()
   , fireQuit :: () -> IO ()
@@ -356,10 +368,10 @@ data EventSinks = EventSinks {
 
 requestToEvent :: EventSinks -> Request -> IO ()
 requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
-requestToEvent es (AddLocation i l) = fireAddLocation es (i, l)
+requestToEvent es (AddLocation x) = fireAddLocation es x
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
-requestToEvent es (AddListener i x1 x2) = fireAddListener es (i, Listener x1 x2)
+requestToEvent es (AddListener x) = fireAddListener es x
 requestToEvent es (RemoveListener i) = fireRemoveListener es i
 requestToEvent es (UpdateListener i f) = fireUpdateListener es (i, f)
 requestToEvent es Quit = fireQuit es ()
@@ -633,12 +645,12 @@ playSound (listener, listenerState) (sound, soundFileInfo) = do
         {-liftIO $ logLn "Event player freed"-}
     return player
 
-newLocation :: SoundMap -> LocationId -> Location -> SC.ServerT IO (LocationId, (Location, LocationState))
-newLocation soundMap locationId location = do
+newLocation :: SoundMap -> Location -> SC.ServerT IO (LocationId, (Location, LocationState))
+newLocation soundMap location = do
     bus <- SC.newAudioBus 2
     let sounds = H.filter (not.isEvent.fst) (lookupSounds (locationSounds location) soundMap)
     players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) sounds
-    return (locationId, (location, LocationState bus players))
+    return (locationId location, (location, LocationState bus players))
 
 freeLocation :: LocationId -> LocationState -> SC.ServerT IO LocationId
 freeLocation locationId state = do
@@ -755,11 +767,11 @@ findOutputBus env listenerStates = do
     where used = map (fromIntegral.SC.busId.outputBus) . H.elems $ listenerStates
           avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
 
-newListener :: Environment -> LocationMap -> LocationStateMap -> ListenerStateMap -> ListenerId -> Listener -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
-newListener env locations locationStates listenerStates listenerId listener = do
+newListener :: Environment -> LocationMap -> LocationStateMap -> ListenerStateMap -> Listener -> SC.ServerT IO (ListenerId, (Listener, ListenerState))
+newListener env locations locationStates listenerStates listener = do
     output <- findOutputBus env listenerStates
     darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) (streamURL listener)
-    return (listenerId, (listener, ListenerState output darkice))
+    return (listenerId listener, (listener, ListenerState output darkice))
 
 freeListener :: ListenerId -> ListenerState -> SC.ServerT IO ListenerId
 freeListener listenerId state = do
@@ -959,7 +971,10 @@ main = do
                                 {-R.reactimate $ print <$> eAddSound-}
 
                                 -- Locations and states
-                                let (eLocations, bLocations) = hashMapB eAddLocation eRemoveLocation eUpdateLocation
+                                let (eLocations, bLocations) = hashMapB
+                                                                ((\l -> (locationId l, l)) <$> eAddLocation)
+                                                                eRemoveLocation
+                                                                eUpdateLocation
 
                                 (eAddLocationState, fAddLocationState) <- R.newEvent
                                 (eRemoveLocationState, fRemoveLocationState) <- R.newEvent
@@ -967,8 +982,8 @@ main = do
                                 let (eLocationStates, bLocationStates) = hashMapB (second snd <$> eAddLocationState)
                                                                                   eRemoveLocationState
                                                                                   eUpdateLocationState
-                                R.reactimate $ fmap (executeWith engine fAddLocationState) $
-                                    uncurry <$> (newLocation <$> bSounds) <@> eAddLocation
+                                R.reactimate $ fmap (executeWith engine fAddLocationState)
+                                             $ newLocation <$> bSounds <@> eAddLocation
                                 R.reactimate $ fmap (executeWith engine fRemoveLocationState) $
                                     uncurry freeLocation <$> lookupB bLocationStates eRemoveLocation
                                 R.reactimate $ fmap (executeWith engine fUpdateLocationState) $
@@ -984,15 +999,17 @@ main = do
                                 -- Listeners and listener states
                                 let eAddListenerRewriteUrl =
                                       if local ^$ opts
-                                      then second (\l -> let u = streamURL l
-                                                         in l { streamURL = case URL.url_type u of
-                                                                              URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = "localhost" }) }
-                                                                              _ -> u
-                                                              }) <$> eAddListener
+                                      then (\l -> let u = streamURL l
+                                                  in l { streamURL = case URL.url_type u of
+                                                                      URL.Absolute host -> u { URL.url_type = URL.Absolute (host { URL.host = "localhost" }) }
+                                                                      _ -> u
+                                                       }) <$> eAddListener
                                       else eAddListener
-                                R.reactimate $ logLn . URL.exportURL . streamURL . snd <$> eAddListenerRewriteUrl
+                                R.reactimate $ logLn . URL.exportURL . streamURL <$> eAddListenerRewriteUrl
 
-                                let (eListeners, bListeners) = hashMapB eAddListener eRemoveListener eUpdateListener
+                                let (eListeners, bListeners) = hashMapB ((\l -> (listenerId l, l)) <$> eAddListener)
+                                                                        eRemoveListener
+                                                                        eUpdateListener
 
                                 (eAddListenerState, fAddListenerState) <- R.newEvent
                                 (eRemoveListenerState, fRemoveListenerState) <- R.newEvent
@@ -1000,8 +1017,12 @@ main = do
                                 let (eListenerStates, bListenerStates) = hashMapB (second snd <$> eAddListenerState)
                                                                                   eRemoveListenerState
                                                                                   eUpdateListenerState
-                                R.reactimate $ fmap (executeWith engine fAddListenerState) $
-                                    uncurry <$> (newListener env <$> bLocations <*> bLocationStates <*> bListenerStates) <@> eAddListenerRewriteUrl
+                                R.reactimate $ fmap (executeWith engine fAddListenerState)
+                                             $ newListener env
+                                               <$> bLocations
+                                               <*> bLocationStates
+                                               <*> bListenerStates
+                                               <@> eAddListenerRewriteUrl
                                 R.reactimate $ fmap (executeWith engine fRemoveListenerState) $
                                     uncurry freeListener <$> lookupB bListenerStates eRemoveListener
 
