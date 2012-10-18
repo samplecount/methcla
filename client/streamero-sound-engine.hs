@@ -1,5 +1,6 @@
 {-# LANGUAGE ExistentialQuantification
            , FlexibleInstances
+           , GeneralizedNewtypeDeriving
            , OverloadedStrings
            -- , TemplateHaskell
            , TypeSynonymInstances #-}
@@ -147,12 +148,8 @@ jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybesC
 
-type SoundscapeId = String
-type SessionId = String
-type LocationId = Int
-type SoundId = Int
-
-data Coord = Coord { latitude :: Double, longitude :: Double } deriving (Eq, Show)
+data Coord = Coord { latitude :: Double, longitude :: Double }
+             deriving (Eq, Show)
 
 instance FromJSON Coord where
     parseJSON (Object v) = Coord <$> v .: "latitude" <*> v .: "longitude"
@@ -174,6 +171,8 @@ distance c1 c2 = earthRadius * ahaversin h
         h = haversin (deg2rad (latitude c2) - deg2rad (latitude c1)) +
                cos (deg2rad (latitude c1)) * cos (deg2rad (latitude c2))
                    * haversin (deg2rad (longitude c2) - deg2rad (longitude c1))
+
+newtype SoundId = SoundId Int deriving (Eq, Show, H.Hashable, FromJSON)
 
 data Sound =
     SoundFile {
@@ -197,7 +196,7 @@ data SoundFileInfo = SoundFileInfo {
   , numFrames :: Word64
   } deriving (Show)
 
-type ListenerId = SessionId
+newtype ListenerId = ListenerId Text deriving (Eq, Show, H.Hashable, FromJSON)
 
 data Listener = Listener {
     listenerPosition :: Coord
@@ -206,12 +205,14 @@ data Listener = Listener {
 
 data Reference = Absolute | Relative deriving (Eq, Show)
 
+newtype LocationId = LocationId Int deriving (Eq, Show, H.Hashable, FromJSON)
+
 data Location = Location {
-    position :: Coord
-  , reference :: Reference
-  , radius :: Double
-  , locationSounds :: [SoundId]
-  } deriving (Show)
+  position :: Coord
+, reference :: Reference
+, radius :: Double
+, locationSounds :: [SoundId]
+} deriving (Show)
 
 instance FromJSON Location where
     parseJSON (Object v) = Location <$>
@@ -227,9 +228,13 @@ locationDistance location coord =
         Absolute -> distance coord (position location)
         Relative -> distance coord (coord `offset` position location)
 
+data LocationState = LocationState {
+  bus :: SC.AudioBus
+, players :: H.HashMap SoundId Player
+} deriving (Show)
+
 data Request =
     Quit
-  {-| Init SoundscapeId String String-}
   | AddListener ListenerId Coord URL
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
