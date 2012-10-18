@@ -837,7 +837,6 @@ updateEventPlayers sounds locations listeners eventPlayers event =
                 (listener, listenerState) = listeners H.! listenerId
                 eventSounds = H.filter (isEvent.fst) (lookupSounds (locationSounds location) sounds)
                 level = locationDistanceScaling location (location `listenerDistance` listener)
-            liftIO $ logLn $ show (locationSounds location, eventSounds)
             if H.null eventSounds
                 then return id
                 else do
