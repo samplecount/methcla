@@ -805,21 +805,18 @@ removeListener listeners listenerId = do
 removeAllListeners :: ListenerMap -> SC.ServerT IO ()
 removeAllListeners listeners = mapM_ (removeListener listeners) (H.keys listeners)
 
-updatePatchCablesForListener :: LocationMap -> ListenerMap -> PatchCables -> ListenerId -> SC.ServerT IO (PatchCables -> PatchCables)
-updatePatchCablesForListener locations listeners patchCables listenerId = do
-  case H.lookup listenerId patchCables of
+updatePatchCablesForListener :: LocationMap -> PatchCables -> Listener -> SC.ServerT IO (PatchCables -> PatchCables)
+updatePatchCablesForListener locations patchCables listener = do
+  case H.lookup (listenerId listener) patchCables of
     Nothing -> return id
     Just listenerPatchCables -> do
       F.forM_ (H.keys listenerPatchCables) $ \locationId ->
-        case H.lookup locationId listenerPatchCables of
-          Nothing -> return ()
-          Just synth -> do
-            let listener = fst (listeners H.! listenerId)
-                location = fst (locations H.! locationId)
-                dist     = location `listenerDistance` listener
-                level    = location `locationDistanceScaling` dist
-            --liftIO $ logStrLn "updatePatchCablesForListener" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
-            SC.exec immediately $ SC.n_set synth [ control "level" level ]
+        let location = fst (locations H.! locationId)
+            dist     = location `listenerDistance` listener
+            level    = location `locationDistanceScaling` dist
+            synth = listenerPatchCables H.! locationId
+        --liftIO $ logStrLn "updatePatchCablesForListener" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
+        in SC.exec immediately $ SC.n_set synth [ control "level" level ]
       return id
 
 updatePatchCablesForLocation :: LocationMap -> ListenerMap -> PatchCables -> LocationId -> SC.ServerT IO (PatchCables -> PatchCables)
@@ -1122,9 +1119,8 @@ main = do
                                         -- UpdateListener: Update patch cables with new listener position
                                       , updatePatchCablesForListener
                                           <$> bLocations
-                                          <*> bListeners
                                           <*> bPatchCables
-                                          <@> (fst <$> eUpdateListener)
+                                          <@> eUpdateListener'
                                         -- RemoveListener: Remove patch cables between listener and all locations
                                       , (\patchCables listenerId -> do
                                           SC.exec immediately $ F.forM_ (patchCables H.! listenerId) SC.n_free
