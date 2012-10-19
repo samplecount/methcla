@@ -1047,54 +1047,54 @@ main = do
                                 --traceE "eUpdateListenerState" (fst <$> eUpdateListener')
                                 traceE "eRemoveListener" eRemoveListener
 
-                                -- Listener/location map
-                                let -- eListenerLocations :: R.Event t (H.HashMap ListenerId (H.HashMap LocationId LocationId))
-                                    eListenersOrLocationsChanged = fmap fst <$> eListeners `R.union` (const <$> bListeners <@> eLocations)
-                                    eListenerLocations = fmap . flip listenerLocations <$> bLocations <@> eListenersOrLocationsChanged
-                                    bListenerLocations = R.stepper H.empty eListenerLocations
-                                    locationEvents ls (_, ls') = (H.foldlWithKey' f [] ls ++ H.foldlWithKey' g [] ls', ls)
-                                      where f es l locs =
-                                              case H.lookup l ls' of
-                                                Nothing ->
-                                                  -- New listener: generate 'Enter' events for all locations
-                                                  es ++ (Enter l <$> H.keys locs)
-                                                Just locs' ->
-                                                  -- Examine previous locations
-                                                  es
-                                                  ++ (Enter l <$> H.keys (H.difference locs locs'))
-                                                  ++ (Leave l <$> H.keys (H.difference locs' locs))
-                                            g es l locs
-                                              | not (H.member l ls) = es ++ (Leave l <$> H.keys locs)
-                                              | otherwise = []
-                                    eLocationEvents = R.spill
-                                                    $ R.filterE (not.null)
-                                                    $ fmap fst
-                                                    $ R.accumE ([], H.empty)
-                                                               (locationEvents <$> eListenerLocations)
+                                ---- Listener/location map
+                                --let -- eListenerLocations :: R.Event t (H.HashMap ListenerId (H.HashMap LocationId LocationId))
+                                --    eListenersOrLocationsChanged = fmap fst <$> eListeners `R.union` (const <$> bListeners <@> eLocations)
+                                --    eListenerLocations = fmap . flip listenerLocations <$> bLocations <@> eListenersOrLocationsChanged
+                                --    bListenerLocations = R.stepper H.empty eListenerLocations
+                                --    locationEvents ls (_, ls') = (H.foldlWithKey' f [] ls ++ H.foldlWithKey' g [] ls', ls)
+                                --      where f es l locs =
+                                --              case H.lookup l ls' of
+                                --                Nothing ->
+                                --                  -- New listener: generate 'Enter' events for all locations
+                                --                  es ++ (Enter l <$> H.keys locs)
+                                --                Just locs' ->
+                                --                  -- Examine previous locations
+                                --                  es
+                                --                  ++ (Enter l <$> H.keys (H.difference locs locs'))
+                                --                  ++ (Leave l <$> H.keys (H.difference locs' locs))
+                                --            g es l locs
+                                --              | not (H.member l ls) = es ++ (Leave l <$> H.keys locs)
+                                --              | otherwise = []
+                                --    eLocationEvents = R.spill
+                                --                    $ R.filterE (not.null)
+                                --                    $ fmap fst
+                                --                    $ R.accumE ([], H.empty)
+                                --                               (locationEvents <$> eListenerLocations)
 
-                                traceE "eLocationEvents" eLocationEvents
+                                --traceE "eLocationEvents" eLocationEvents
 
-                                -- Start and stop event players
-                                (eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
-                                let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
-                                eEventPlayers <- R.changes bEventPlayers
+                                ---- Start and stop event players
+                                --(eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
+                                --let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
+                                --eEventPlayers <- R.changes bEventPlayers
 
-                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
-                                             $ updateEventPlayers
-                                               <$> bSounds
-                                               <*> bLocations
-                                               <*> bListeners
-                                               <*> bEventPlayers
-                                               <@> eLocationEvents
-                                -- Update event players
-                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
-                                             $ updateEventPlayersForListener
-                                               <$> bLocations
-                                               <*> bListeners
-                                               <*> bEventPlayers
-                                               <@> (fst <$> eUpdateListener')
+                                --R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                --             $ updateEventPlayers
+                                --               <$> bSounds
+                                --               <*> bLocations
+                                --               <*> bListeners
+                                --               <*> bEventPlayers
+                                --               <@> eLocationEvents
+                                ---- Update event players
+                                --R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                --             $ updateEventPlayersForListener
+                                --               <$> bLocations
+                                --               <*> bListeners
+                                --               <*> bEventPlayers
+                                --               <@> (fst <$> eUpdateListener')
 
-                                traceE "bEventPlayers" eEventPlayers
+                                --traceE "bEventPlayers" eEventPlayers
 
                                 -- Piggedipatchables
                                 (eUpdatePatchCables, fUpdatePatchCables) <- R.newEvent
