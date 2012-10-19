@@ -34,6 +34,7 @@ import qualified Data.Conduit.Network as C
 import qualified Data.Foldable as F
 import qualified Data.Hashable as H
 import qualified Data.HashMap.Strict as H
+import qualified Data.HashSet as HS
 import           Data.Lens.Common
 --import           Data.Lens.Template
 import qualified Data.List as List
@@ -214,7 +215,7 @@ data Listener = Listener {
   , streamURL :: URL
   } deriving (Show)
 
-data ListenerChange = ListenerPositionChanged Coord
+data ListenerUpdate = ListenerPosition Coord
                       deriving (Eq, Show)
 
 instance FromJSON Listener where
@@ -230,6 +231,9 @@ data ListenerState = ListenerState {
 , streamer :: ProcessHandle
 }
 
+instance Show ListenerState where
+  show x = "ListenerState " ++ show (outputBus x)
+
 type ListenerMap = H.HashMap ListenerId (Listener, ListenerState)
 
 data Reference = Absolute | Relative deriving (Eq, Show)
@@ -244,7 +248,12 @@ data Location = Location {
 , locationSounds :: [SoundId]
 } deriving (Show)
 
-type LocationMap = H.HashMap LocationId (Location, LocationState)
+data LocationUpdate =
+    LocationPosition Coord
+  | LocationReference Reference
+  | LocationRadius Double
+  | LocationSounds [SoundId]
+  deriving (Eq, Show)
 
 instance FromJSON Location where
     parseJSON (Object v) =
@@ -266,6 +275,8 @@ data LocationState = LocationState {
   bus :: SC.AudioBus
 , players :: H.HashMap SoundId Player
 } deriving (Show)
+
+type LocationMap = H.HashMap LocationId (Location, LocationState)
 
 data Request =
     Quit
@@ -441,7 +452,7 @@ logE :: String -> R.Event t String -> R.NetworkDescription t ()
 logE s = R.reactimate . fmap (logStrLn s)
 
 traceE :: Show a => String -> R.Event t a -> R.NetworkDescription t ()
-traceE s = logE s . fmap show
+traceE s = logE "ENGINE" . fmap (((s++": ")++).show)
 
 data Command =
     QuitServer
@@ -1004,10 +1015,10 @@ main = do
                                                                    , void eRemoveLocation'
                                                                    , void eUpdateLocation' ]
 
-                                traceE "eAddLocation" eAddLocation
-                                traceE "eUpdateLocation" (fst <$> eUpdateLocation)
-                                traceE "eRemoveLocation" eRemoveLocation
-                                traceE "bLocations" eLocations
+                                traceE "AddLocation" eAddLocation
+                                traceE "UpdateLocation" (fst <$> eUpdateLocation)
+                                traceE "RemoveLocation" eRemoveLocation
+                                traceE "Locations" eLocations
 
                                 -- Listeners and listener states
                                 let eAddListenerRewriteUrl = flip fmap eAddListener $
@@ -1019,12 +1030,12 @@ main = do
                                 (eAddListener', fAddListener') <- R.newEvent
                                 (eRemoveListener', fRemoveListener') <- R.newEvent
                                 -- No side effects
-                                let eUpdateListener' = (\(i, f) -> (i, first f)) <$> eUpdateListener
-
-                                let bListeners = R.accumB
+                                --let eUpdateListener' = (\(i, f) -> (i, first f)) <$> eUpdateListener
+                                let eUpdateListener' = (\ls (i, f) -> f (fst (ls H.! i))) <$> bListeners <@> eUpdateListener
+                                    bListeners = R.accumB
                                                   H.empty
                                                   (R.unions [ (\(l, s) -> H.insert (listenerId l) (l, s)) <$> eAddListener'
-                                                            , (\(i, f) -> H.adjust f i) <$> eUpdateListener'
+                                                            , (\l -> H.adjust (first (const l)) (listenerId l)) <$> eUpdateListener'
                                                             , H.delete <$> eRemoveListener' ])
                                 eListeners <- R.changes bListeners
 
@@ -1042,59 +1053,55 @@ main = do
                                                                    , void eRemoveListener'
                                                                    , void eUpdateListener' ]
 
-                                traceE "eAddListener" eAddListenerRewriteUrl
+                                traceE "AddListener" eAddListener'
                                 --traceE "eUpdateListener" (fst <$> eUpdateListener)
-                                --traceE "eUpdateListenerState" (fst <$> eUpdateListener')
-                                traceE "eRemoveListener" eRemoveListener
+                                traceE "listenerPosition" (listenerPosition <$> eUpdateListener')
+                                traceE "RemoveListener" eRemoveListener'
 
-                                ---- Listener/location map
-                                --let -- eListenerLocations :: R.Event t (H.HashMap ListenerId (H.HashMap LocationId LocationId))
-                                --    eListenersOrLocationsChanged = fmap fst <$> eListeners `R.union` (const <$> bListeners <@> eLocations)
-                                --    eListenerLocations = fmap . flip listenerLocations <$> bLocations <@> eListenersOrLocationsChanged
-                                --    bListenerLocations = R.stepper H.empty eListenerLocations
-                                --    locationEvents ls (_, ls') = (H.foldlWithKey' f [] ls ++ H.foldlWithKey' g [] ls', ls)
-                                --      where f es l locs =
-                                --              case H.lookup l ls' of
-                                --                Nothing ->
-                                --                  -- New listener: generate 'Enter' events for all locations
-                                --                  es ++ (Enter l <$> H.keys locs)
-                                --                Just locs' ->
-                                --                  -- Examine previous locations
-                                --                  es
-                                --                  ++ (Enter l <$> H.keys (H.difference locs locs'))
-                                --                  ++ (Leave l <$> H.keys (H.difference locs' locs))
-                                --            g es l locs
-                                --              | not (H.member l ls) = es ++ (Leave l <$> H.keys locs)
-                                --              | otherwise = []
-                                --    eLocationEvents = R.spill
-                                --                    $ R.filterE (not.null)
-                                --                    $ fmap fst
-                                --                    $ R.accumE ([], H.empty)
-                                --                               (locationEvents <$> eListenerLocations)
+                                -- Listener/location map
+                                let (eLocationEvents, bListenerLocations) =
+                                        first R.spill
+                                      $ R.mapAccum H.empty
+                                      $ R.unions [
+                                        (\locs l acc ->
+                                          let i  = listenerId l
+                                              ls = H.keys $ listenerLocations l locs
+                                              s  = HS.fromList ls
+                                              es = case H.lookup i acc of
+                                                    Nothing -> Enter i <$> ls
+                                                    Just s' -> (Enter i <$> HS.toList (HS.difference s s'))
+                                                            ++ (Leave i <$> HS.toList (HS.difference s' s))
+                                          in (es, H.insert i s acc))
+                                        <$> bLocations <@> eUpdateListener'
+                                      , (\i acc -> case H.lookup i acc of
+                                                    Nothing -> ([], acc)
+                                                    Just s  -> (Leave i <$> HS.toList s, H.delete i acc))
+                                        <$> eRemoveListener' ]
 
-                                --traceE "eLocationEvents" eLocationEvents
+                                traceE "LocationEvents" eLocationEvents
+                                --traceE "bListenerLocations" (const <$> bListenerLocations <@> eUpdateListener')
 
-                                ---- Start and stop event players
-                                --(eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
-                                --let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
-                                --eEventPlayers <- R.changes bEventPlayers
+                                -- Start and stop event players
+                                (eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
+                                let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
+                                eEventPlayers <- R.changes bEventPlayers
 
-                                --R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
-                                --             $ updateEventPlayers
-                                --               <$> bSounds
-                                --               <*> bLocations
-                                --               <*> bListeners
-                                --               <*> bEventPlayers
-                                --               <@> eLocationEvents
-                                ---- Update event players
-                                --R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
-                                --             $ updateEventPlayersForListener
-                                --               <$> bLocations
-                                --               <*> bListeners
-                                --               <*> bEventPlayers
-                                --               <@> (fst <$> eUpdateListener')
+                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                             $ updateEventPlayers
+                                               <$> bSounds
+                                               <*> bLocations
+                                               <*> bListeners
+                                               <*> bEventPlayers
+                                               <@> eLocationEvents
+                                -- Update event players
+                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                             $ updateEventPlayersForListener
+                                               <$> bLocations
+                                               <*> bListeners
+                                               <*> bEventPlayers
+                                               <@> (listenerId <$> eUpdateListener')
 
-                                --traceE "bEventPlayers" eEventPlayers
+                                traceE "EventPlayers" eEventPlayers
 
                                 -- Piggedipatchables
                                 (eUpdatePatchCables, fUpdatePatchCables) <- R.newEvent
@@ -1153,7 +1160,7 @@ main = do
                                         <@> eRemoveLocation
                                       ]
                                 R.reactimate $ fmap (executeWith engine fUpdatePatchCables) eUpdatePatchCables'
-                                traceE "bPatchCables" =<< R.changes bPatchCables
+                                traceE "PatchCables" =<< R.changes bPatchCables
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
