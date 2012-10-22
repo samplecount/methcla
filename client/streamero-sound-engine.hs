@@ -38,7 +38,7 @@ import qualified Data.HashSet as HS
 import           Data.Lens.Common
 --import           Data.Lens.Template
 import qualified Data.List as List
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (catMaybes, maybeToList)
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
@@ -299,6 +299,7 @@ data Request =
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
+  | UpdateSound SoundId [SoundUpdate]
   | AddLocation Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
@@ -313,6 +314,9 @@ instance FromJSON Request where
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
+            "UpdateSound"    -> UpdateSound
+                                <$> v .: "id"
+                                <*> (fmap SoundIsEvent . maybeToList <$> v .:? "event")
             "AddLocation"    -> AddLocation <$> J.parseJSON o
             "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
@@ -398,19 +402,67 @@ jackServerName = lens
   _jackServerName (\x s -> s {
   _jackServerName = x })
 
+data EventSources t = EventSources {
+  eAddSound :: R.Event t (SoundId, Sound)
+, eUpdateSound :: R.Event t (SoundId, SoundUpdate)
+, eAddLocation :: R.Event t Location
+, eRemoveLocation :: R.Event t LocationId
+, eUpdateLocation :: R.Event t (LocationId, Location -> Location)
+, eAddListener :: R.Event t Listener
+, eRemoveListener :: R.Event t ListenerId
+, eUpdateListener :: R.Event t (ListenerId, Listener -> Listener)
+, eQuit :: R.Event t ()
+}
+
 data EventSinks = EventSinks {
-    fireAddSound :: (SoundId, Sound) -> IO ()
-  , fireAddLocation :: Location -> IO ()
-  , fireRemoveLocation :: LocationId -> IO ()
-  , fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
-  , fireAddListener :: Listener -> IO ()
-  , fireRemoveListener :: ListenerId -> IO ()
-  , fireUpdateListener :: (ListenerId, Listener -> Listener) -> IO ()
-  , fireQuit :: () -> IO ()
-  }
+  fireAddSound :: (SoundId, Sound) -> IO ()
+, fireUpdateSound :: (SoundId, SoundUpdate) -> IO ()
+, fireAddLocation :: Location -> IO ()
+, fireRemoveLocation :: LocationId -> IO ()
+, fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
+, fireAddListener :: Listener -> IO ()
+, fireRemoveListener :: ListenerId -> IO ()
+, fireUpdateListener :: (ListenerId, Listener -> Listener) -> IO ()
+, fireQuit :: () -> IO ()
+}
+
+mkInputEvents = do
+  (eAddSound, fAddSound) <- R.newEvent
+  (eUpdateSound, fUpdateSound) <- R.newEvent
+  (eAddLocation, fAddLocation) <- R.newEvent
+  (eRemoveLocation, fRemoveLocation) <- R.newEvent
+  (eUpdateLocation, fUpdateLocation) <- R.newEvent
+  (eAddListener, fAddListener) <- R.newEvent
+  (eRemoveListener, fRemoveListener) <- R.newEvent
+  (eUpdateListener, fUpdateListener) <- R.newEvent
+  (eQuit, fQuit) <- R.newEvent
+  return
+    (
+      EventSources
+        eAddSound
+        eUpdateSound
+        eAddLocation
+        eRemoveLocation
+        eUpdateLocation
+        eAddListener
+        eRemoveListener
+        eUpdateListener
+        eQuit
+    , EventSinks
+        fAddSound
+        fUpdateSound
+        fAddLocation
+        fRemoveLocation
+        fUpdateLocation
+        fAddListener
+        fRemoveListener
+        fUpdateListener
+        fQuit
+    )
 
 requestToEvent :: EventSinks -> Request -> IO ()
-requestToEvent es (AddSound i sound) = fireAddSound es (i, sound)
+requestToEvent es (AddSound i x) = fireAddSound es (i, x)
+requestToEvent es (UpdateSound i xs) = mapM_ (fireUpdateSound es . (,) i) xs
 requestToEvent es (AddLocation x) = fireAddLocation es x
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
@@ -957,41 +1009,26 @@ main = do
                             let networkDescription :: forall t . R.NetworkDescription t ()
                                 networkDescription = do
 
-                                -- Request events
-                                (eAddSound, fAddSound) <- R.newEvent
-                                (eAddLocation, fAddLocation) <- R.newEvent
-                                (eRemoveLocation, fRemoveLocation) <- R.newEvent
-                                (eUpdateLocation, fUpdateLocation) <- R.newEvent
-                                (eAddListener, fAddListener) <- R.newEvent
-                                (eRemoveListener, fRemoveListener) <- R.newEvent
-                                (eUpdateListener, fUpdateListener) <- R.newEvent
-                                (eQuit, fQuit) <- R.newEvent
-                                liftIO $ MVar.putMVar eventSinks
-                                       $ EventSinks fAddSound
-                                                    fAddLocation
-                                                    fRemoveLocation
-                                                    fUpdateLocation
-                                                    fAddListener
-                                                    fRemoveListener
-                                                    fUpdateListener
-                                                    fQuit
+                                -- Create input events and sinks
+                                (input, sinks) <- mkInputEvents
+                                liftIO $ MVar.putMVar eventSinks sinks
 
                                 -- AddSound
                                 -- Read sound file info (a)synchronously
                                 {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
                                 (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
-                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound
+                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound input
                                 -- Update sound map
                                 let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
                                     bSounds = R.stepper H.empty eSounds
                                 -- Return status
                                 R.reactimate $ send Ok <$ eSounds
-                                {-R.reactimate $ print <$> eSounds-}
+                                {-R.reactimate x$ print <$> eSounds-}
                                 {-R.reactimate $ print <$> eSoundFileInfo-}
                                 {-R.reactimate $ print <$> eAddSound-}
 
-                                traceE "eAddSound" eAddSound
+                                traceE "eAddSound" (eAddSound input)
 
                                 -- Locations and states
                                 (eAddLocation', fAddLocation') <- R.newEvent
@@ -1009,26 +1046,26 @@ main = do
                                 R.reactimate $ fmap (executeWith engine fAddLocation')
                                              $ addLocation
                                                <$> bSounds
-                                               <@> eAddLocation
+                                               <@> eAddLocation input
                                 R.reactimate $ fmap (executeWith engine fRemoveLocation')
                                              $ removeLocation
-                                               <$> bLocations `lookupB_` eRemoveLocation
+                                               <$> bLocations `lookupB_` eRemoveLocation input
                                 R.reactimate $ fmap (executeWith engine fUpdateLocation')
                                              $ updateLocation
                                                <$> bSounds
-                                               <@> ((\h (k, f) -> first f (h H.! k)) <$> bLocations <@> eUpdateLocation)
+                                               <@> ((\h (k, f) -> first f (h H.! k)) <$> bLocations <@> eUpdateLocation input)
 
                                 R.reactimate $ send Ok <$ R.unions [ void eAddLocation'
                                                                    , void eRemoveLocation'
                                                                    , void eUpdateLocation' ]
 
-                                traceE "AddLocation" eAddLocation
-                                traceE "UpdateLocation" (fst <$> eUpdateLocation)
-                                traceE "RemoveLocation" eRemoveLocation
+                                traceE "AddLocation" (eAddLocation input)
+                                traceE "UpdateLocation" (fst <$> eUpdateLocation input)
+                                traceE "RemoveLocation" (eRemoveLocation input)
                                 traceE "Locations" eLocations
 
                                 -- Listeners and listener states
-                                let eAddListenerRewriteUrl = flip fmap eAddListener $
+                                let eAddListenerRewriteUrl = flip fmap (eAddListener input) $
                                       if local ^$ opts
                                       then (\l -> l { streamURL = setHostName "localhost" (streamURL l) })
                                       else id
@@ -1038,7 +1075,7 @@ main = do
                                 (eRemoveListener', fRemoveListener') <- R.newEvent
                                 -- No side effects
                                 --let eUpdateListener' = (\(i, f) -> (i, first f)) <$> eUpdateListener
-                                let eUpdateListener' = (\ls (i, f) -> first f (ls H.! i)) <$> bListeners <@> eUpdateListener
+                                let eUpdateListener' = (\ls (i, f) -> first f (ls H.! i)) <$> bListeners <@> eUpdateListener input
                                     bListeners = R.accumB
                                                   H.empty
                                                   (R.unions [ (\(l, s) -> H.insert (listenerId l) (l, s)) <$> eAddListener'
@@ -1054,7 +1091,7 @@ main = do
                                 R.reactimate $ fmap (executeWith engine fRemoveListener')
                                              $ removeListener
                                                <$> bListeners
-                                               <@> eRemoveListener
+                                               <@> eRemoveListener input
 
                                 R.reactimate $ send Ok <$ R.unions [ void eAddListener'
                                                                    , void eRemoveListener'
@@ -1135,7 +1172,7 @@ main = do
                                           SC.exec immediately $ F.forM_ (patchCables H.! listenerId) SC.n_free
                                           return $ H.delete listenerId)
                                         <$> bPatchCables
-                                        <@> eRemoveListener
+                                        <@> eRemoveListener'
                                         -- AddLocation: Add patch cables between the new location and each listener
                                       , (\listeners (location, locationState) -> do
                                           group <- SC.rootNode
@@ -1171,7 +1208,7 @@ main = do
                                 R.reactimate $ fmap (executeWith engine fFreedListeners)
                                              $ (const <$> removeAllListeners)
                                                <$> bListeners
-                                               <@> eQuit
+                                               <@> eQuit input
                                 R.reactimate $ (quit engine >> send Ok) <$ eFreedListeners
                             -- Compile network and get event sinks
                             network <- R.compile networkDescription
