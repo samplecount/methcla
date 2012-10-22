@@ -1211,4 +1211,4 @@ main = do
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= {- printC =$= -} fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
-                logLn "done."
+            logLn "done."
