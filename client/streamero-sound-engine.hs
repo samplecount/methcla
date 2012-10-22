@@ -188,16 +188,19 @@ newtype SoundId = SoundId Int deriving (Eq, Show, H.Hashable, FromJSON)
 data Sound =
     SoundFile {
         path :: FilePath
-      , loop :: Bool
       , isEvent :: Bool
     }
     deriving (Show)
+
+data SoundUpdate =
+  SoundIsEvent Bool
+  deriving (Show)
 
 instance FromJSON Sound where
     parseJSON (Object v) = do
         t <- v .: "type" :: J.Parser Text
         case t of
-            "sample" -> SoundFile <$> v .: "path" <*> v .: "loop" <*> v .:? "event" .!= False
+            "sample" -> SoundFile <$> v .: "path" <*> v .:? "event" .!= False
             _        -> mzero
     parseJSON _          = mzero
 
