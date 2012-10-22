@@ -723,8 +723,7 @@ newPatchCable :: SC.Group -> SC.AudioBus -> SC.AudioBus -> Listener -> Location 
 newPatchCable group input output listener location = do
     -- TODO: Only send SynthDef once
     sd <- SC.exec' immediately . SC.async $ SC.d_recv "patchCable" patchCableSynthDef
-    let dist = location `listenerDistance` listener
-        level = location `locationDistanceScaling` dist
+    let level = listenerLocationDistanceScaling listener location
     SC.exec immediately $ SC.s_new sd SC.AddToTail group
                             [ control "in" input
                             , control "out" output
@@ -768,11 +767,14 @@ makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) e
 streamName :: Integral a => a -> String
 streamName a = "stream-" ++ show (fromIntegral a :: Int)
 
-listenerDistance :: Location -> Listener -> Double
-listenerDistance location = locationDistance location . listenerPosition
+listenerLocationDistance :: Listener -> Location -> Double
+listenerLocationDistance listener location = locationDistance location (listenerPosition listener)
+
+listenerLocationDistanceScaling :: Listener -> Location -> Double
+listenerLocationDistanceScaling listener location = locationDistanceScaling location (listenerLocationDistance listener location)
 
 listenerLocations :: Listener -> LocationMap -> LocationMap
-listenerLocations listener = H.filter (\(location, _) -> location `listenerDistance` listener <= radius location)
+listenerLocations listener = H.filter (\(location, _) -> listenerLocationDistance listener location <= radius location)
 
 -- TODO: Use control-monad-exception for exception reporting
 --       There also needs to be a way to communicate exceptions back from
@@ -811,25 +813,21 @@ updatePatchCablesForListener locations patchCables listener = do
     Nothing -> return id
     Just listenerPatchCables -> do
       F.forM_ (H.keys listenerPatchCables) $ \locationId ->
-        let location = fst (locations H.! locationId)
-            dist     = location `listenerDistance` listener
-            level    = location `locationDistanceScaling` dist
+        let level = listenerLocationDistanceScaling listener (fst (locations H.! locationId))
             synth = listenerPatchCables H.! locationId
         --liftIO $ logStrLn "updatePatchCablesForListener" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
         in SC.exec immediately $ SC.n_set synth [ control "level" level ]
       return id
 
-updatePatchCablesForLocation :: LocationMap -> ListenerMap -> PatchCables -> LocationId -> SC.ServerT IO (PatchCables -> PatchCables)
-updatePatchCablesForLocation locations listeners patchCables locationId = do
+updatePatchCablesForLocation :: ListenerMap -> PatchCables -> Location -> SC.ServerT IO (PatchCables -> PatchCables)
+updatePatchCablesForLocation listeners patchCables location = do
   F.forM_ (H.keys patchCables) $ \listenerId ->
-    case H.lookup locationId (patchCables H.! listenerId) of
-      Just synth -> do
-        let listener = fst (listeners H.! listenerId)
-            location = fst (locations H.! locationId)
-            dist     = location `listenerDistance` listener
-            level    = location `locationDistanceScaling` dist
-        --liftIO $ logStrLn "updatePatchCablesForLocation" $ "Distance: " ++ show (listenerPosition listener) ++ " " ++ show (listenerId, dist, level)
-        SC.exec immediately $ SC.n_set synth [ control "level" level ]
+    case H.lookup (locationId location) (patchCables H.! listenerId) of
+      Just synth ->
+        let level = listenerLocationDistanceScaling
+                      (fst (listeners H.! listenerId))
+                      location
+        in SC.exec immediately $ SC.n_set synth [ control "level" level ]
   return id
 
 data LocationEvent = Enter ListenerId LocationId | Leave ListenerId LocationId deriving Show
@@ -840,22 +838,22 @@ type EventPlayerMap = H.HashMap ListenerId (H.HashMap LocationId EventPlayer)
 updateEventPlayers :: SoundMap -> LocationMap -> ListenerMap -> EventPlayerMap -> LocationEvent -> SC.ServerT IO (EventPlayerMap -> EventPlayerMap)
 updateEventPlayers sounds locations listeners eventPlayers event =
     case event of
-        Enter listenerId locationId -> do
+        Enter listenerId locationId ->
             let location = fst (locations H.! locationId)
                 (listener, listenerState) = listeners H.! listenerId
                 eventSounds = H.filter (isEvent.fst) (lookupSounds (locationSounds location) sounds)
-                level = locationDistanceScaling location (location `listenerDistance` listener)
-            if H.null eventSounds
-                then return id
-                else do
-                    bus <- SC.newAudioBus 2
-                    players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) eventSounds
-                    g <- SC.rootNode
-                    cable <- newPatchCable g bus (outputBus listenerState) listener location
-                    return $ H.insert listenerId
-                                      (H.insert locationId
-                                                (EventPlayer bus cable players)
-                                                (H.lookupDefault H.empty listenerId eventPlayers))
+                level = listenerLocationDistanceScaling listener location
+            in if H.null eventSounds
+               then return id
+               else do
+                bus <- SC.newAudioBus 2
+                players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) eventSounds
+                g <- SC.rootNode
+                cable <- newPatchCable g bus (outputBus listenerState) listener location
+                return $ H.insert listenerId
+                                  (H.insert locationId
+                                            (EventPlayer bus cable players)
+                                            (H.lookupDefault H.empty listenerId eventPlayers))
         Leave listenerId locationId ->
             case H.lookup listenerId eventPlayers of
                 Nothing -> return id
@@ -872,13 +870,12 @@ updateEventPlayersForListener :: LocationMap -> ListenerMap -> EventPlayerMap ->
 updateEventPlayersForListener locations listeners eventPlayers listenerId = do
     case H.lookup listenerId eventPlayers of
         Nothing -> return ()
-        Just es -> F.forM_ (H.keys es) $ \locationId -> do
-            let listener = fst (listeners H.! listenerId)
-                location = fst (locations H.! locationId)
-                dist = location `listenerDistance` listener
-                level = location `locationDistanceScaling` dist
+        Just es -> F.forM_ (H.keys es) $ \locationId ->
+            let level = listenerLocationDistanceScaling
+                          (fst (listeners H.! listenerId))
+                          (fst (locations H.! locationId))
                 EventPlayer _ cable _ = es H.! locationId
-            SC.exec immediately $ SC.n_set cable [ control "level" level ]            
+            in SC.exec immediately $ SC.n_set cable [ control "level" level ]
     return id
 
 type Time = Double
@@ -1144,16 +1141,15 @@ main = do
                                         <@> eAddLocation'
                                         -- UpdateLocation: Update patch cables with new location position
                                       , updatePatchCablesForLocation
-                                          <$> bLocations
-                                          <*> bListeners
+                                          <$> bListeners
                                           <*> bPatchCables
-                                          <@> (fst <$> eUpdateLocation)
+                                          <@> (fst <$> eUpdateLocation')
                                         -- RemoveLocation: Remove patch cables netween the location and each listener
                                       , (\patchCables locationId -> do
                                           SC.exec immediately $ mapM_ SC.n_free $ catMaybes $ H.elems $ fmap (H.lookup locationId) patchCables
                                           return $ fmap (H.delete locationId))
                                         <$> bPatchCables
-                                        <@> eRemoveLocation
+                                        <@> eRemoveLocation'
                                       ]
                                 R.reactimate $ fmap (executeWith engine fUpdatePatchCables) eUpdatePatchCables'
                                 traceE "PatchCables" =<< R.changes bPatchCables
