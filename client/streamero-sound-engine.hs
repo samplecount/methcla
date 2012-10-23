@@ -163,6 +163,13 @@ parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybesC
 
 -- --------------------------------------------------------------------
+-- JSON helpers
+
+mkUpdate :: FromJSON x => Text -> (x -> a -> a) -> J.Value -> J.Parser (a -> a)
+mkUpdate key set (Object v) = maybe id set <$> v .:? key
+mkUpdate _ _ _ = mzero
+
+-- --------------------------------------------------------------------
 -- URL helpers
 
 setHostName :: String -> URL -> URL
@@ -235,10 +242,6 @@ instance FromJSON Sound where
     parseJSON _ = mzero
 
 newtype SoundUpdate = SoundUpdate (Sound -> Sound)
-
-mkUpdate :: FromJSON x => Text -> (x -> a -> a) -> J.Value -> J.Parser (a -> a)
-mkUpdate key set (Object v) = maybe id set <$> v .:? key
-mkUpdate _ _ _ = mzero
 
 instance FromJSON SoundUpdate where
   parseJSON = fmap SoundUpdate . mkUpdate "event" (\x s -> s { isEvent = x })
@@ -338,30 +341,42 @@ data Request =
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
-  | UpdateSound SoundId SoundUpdate
+  | UpdateSound SoundId (Sound -> Sound)
   | AddLocation Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
 
 instance FromJSON Request where
-    parseJSON o@(Object v) = do
-        t <- v .: "request" :: J.Parser Text
-        case t of
-            "Quit"           -> pure Quit
-            {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
-            "AddListener"    -> AddListener <$> J.parseJSON o
-            "RemoveListener" -> RemoveListener <$> v .: "id"
-            "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
-            "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
-            "UpdateSound"    -> UpdateSound <$> v .: "id" <*> J.parseJSON o
-            "AddLocation"    -> AddLocation <$> J.parseJSON o
-            "RemoveLocation" -> RemoveLocation <$> v .: "id"
-            "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
-                                                                    [ maybe id (\x s -> s { position = x }) <$> v .:? "position"
-                                                                    , maybe id (\x s -> s { radius = x })   <$> v .:? "radius"
-                                                                    , maybe id (\x s -> s { locationSounds = x })   <$> v .:? "sounds" ]
-            _                -> mzero
-    parseJSON _ = mzero
+  parseJSON v@(Object o) = do
+    t <- o .: "request" :: J.Parser Text
+    case t of
+      "Quit"           -> pure Quit
+      {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
+      "AddListener"    -> AddListener
+                          <$> J.parseJSON v
+      "RemoveListener" -> RemoveListener
+                          <$> o .: "id"
+      "UpdateListener" -> UpdateListener
+                          <$> o .: "id"
+                          <*> mkUpdate "position" (\p l -> l { listenerPosition = p }) v
+      "AddSound"       -> AddSound
+                          <$> o .: "id"
+                          <*> J.parseJSON v
+      "UpdateSound"    -> UpdateSound
+                          <$> o .: "id"
+                          <*> fmap (\(SoundUpdate f) -> f) (J.parseJSON v)
+      "AddLocation"    -> AddLocation
+                          <$> J.parseJSON v
+      "RemoveLocation" -> RemoveLocation
+                          <$> o .: "id"
+      "UpdateLocation" -> UpdateLocation
+                          <$> o .: "id"
+                          <*> foldM (\f -> fmap ((.)f)) id
+                                [ mkUpdate "position" (\x s -> s { position = x })        v
+                                , mkUpdate "radius"   (\x s -> s { radius = x })          v
+                                , mkUpdate "sounds"   (\x s -> s { locationSounds = x })  v ]
+      _ -> mzero
+  parseJSON _ = mzero
 
 data Response = Ok | Error String
 
@@ -441,7 +456,7 @@ jackServerName = lens
 
 data EventSources t = EventSources {
   eAddSound :: R.Event t (SoundId, Sound)
-, eUpdateSound :: R.Event t (SoundId, SoundUpdate)
+, eUpdateSound :: R.Event t (SoundId, Sound -> Sound)
 , eAddLocation :: R.Event t Location
 , eRemoveLocation :: R.Event t LocationId
 , eUpdateLocation :: R.Event t (LocationId, Location -> Location)
@@ -453,7 +468,7 @@ data EventSources t = EventSources {
 
 data EventSinks = EventSinks {
   fireAddSound :: (SoundId, Sound) -> IO ()
-, fireUpdateSound :: (SoundId, SoundUpdate) -> IO ()
+, fireUpdateSound :: (SoundId, Sound -> Sound) -> IO ()
 , fireAddLocation :: Location -> IO ()
 , fireRemoveLocation :: LocationId -> IO ()
 , fireUpdateLocation :: (LocationId, Location -> Location) -> IO ()
