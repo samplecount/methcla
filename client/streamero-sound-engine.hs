@@ -994,23 +994,22 @@ main = do
                                 liftIO $ MVar.putMVar eventSinks sinks
 
                                 -- AddSound
-                                -- Read sound file info (a)synchronously
-                                {-(eSoundFileInfo, fSoundFileInfo) <- newAsyncEvent-}
-                                (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
+                                -- Read sound file info synchronously
+                                (eAddSound', fAddSound') <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
-                                R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound input
+                                R.reactimate $ (\(i, s) -> fAddSound' $ addSound i s) <$> eAddSound input
 
                                 -- Update sound map
-                                let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
-                                    bSounds = R.stepper H.empty eSounds
+                                let eUpdateSound' = (\h (k, f) -> (k, first f (h H.! k))) <$> bSounds <@> eUpdateSound input
+                                    (eSounds, bSounds) = R.mapAccum H.empty $ R.unions [
+                                        (\(i, x) acc -> let acc' = H.insert i x acc in (acc', acc')) <$> eAddSound'
+                                      , (\(i, x) acc -> let acc' = H.insert i x acc in (acc', acc')) <$> eUpdateSound'
+                                      ]
 
-                                -- Return status
-                                R.reactimate $ send Ok <$ eSounds
-                                {-R.reactimate x$ print <$> eSounds-}
-                                {-R.reactimate $ print <$> eSoundFileInfo-}
-                                {-R.reactimate $ print <$> eAddSound-}
+                                R.reactimate $ send Ok <$ R.unions [ eAddSound', eUpdateSound' ]
 
-                                traceE "eAddSound" (eAddSound input)
+                                --traceE "eAddSound" (eAddSound input)
+                                traceE "eSounds'" eSounds
 
                                 -- Locations and states
                                 (eAddLocation', fAddLocation') <- R.newEvent
