@@ -723,10 +723,6 @@ playSound (listener, listenerState) (sound, soundFileInfo) = do
 -- --------------------------------------------------------------------
 -- Locations
 
---startContinuousPlayer :: Sound -> (Location, LocationState) -> SC.ServerT IO (Location, LocationState)
-
---stopContinuousPlayer :: SoundId
-
 addLocation :: SoundMap -> Location -> SC.ServerT IO (Location, LocationState)
 addLocation soundMap location = do
     bus <- SC.newAudioBus 2
