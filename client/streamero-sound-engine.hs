@@ -355,7 +355,6 @@ instance FromJSON Request where
     t <- o .: "request" :: J.Parser Text
     case t of
       "Quit"           -> pure Quit
-      {-"Init"           -> Init <$> v .: "soundscape" <*> v .: "streamingServer" v .: "streamingPassword"-}
       "AddListener"    -> AddListener
                           <$> J.parseJSON v
       "RemoveListener" -> RemoveListener
