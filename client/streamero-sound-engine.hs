@@ -226,19 +226,20 @@ instance FromJSON SoundType where
   parseJSON _ = mzero
 
 data Sound = Sound {
-    soundType :: SoundType
+    soundId :: SoundId
+  , soundType :: SoundType
   , isEvent :: Bool
   } deriving (Show)
 
---data SoundUpdate =
---  SoundIsEvent Bool
---  deriving (Show)
-
---isSoundIsEvent (SoundIsEvent _) = True
---isSoundIsEvent _ = False
+isContinuous :: Sound -> Bool
+isContinuous = not . isEvent
 
 instance FromJSON Sound where
-    parseJSON v@(Object o) = Sound <$> parseJSON v <*> o .:? "event" .!= False
+    parseJSON v@(Object o) =
+      Sound
+      <$> o .: "id"
+      <*> parseJSON v
+      <*> o .:? "event" .!= False
     parseJSON _ = mzero
 
 newtype SoundUpdate = SoundUpdate (Sound -> Sound)
@@ -280,9 +281,9 @@ instance FromJSON ListenerUpdate where
   parseJSON = fmap ListenerUpdate . mkUpdate "position" (\p l -> l { listenerPosition = p })
 
 data ListenerState = ListenerState {
-  outputBus :: SC.AudioBus
-, streamer :: ProcessHandle
-}
+    outputBus :: SC.AudioBus
+  , streamer :: ProcessHandle
+  }
 
 instance Show ListenerState where
   show x = "ListenerState " ++ show (outputBus x)
@@ -344,7 +345,7 @@ data Request =
   | AddListener Listener
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
-  | AddSound SoundId Sound
+  | AddSound Sound
   | UpdateSound SoundId (Sound -> Sound)
   | AddLocation Location
   | RemoveLocation LocationId
@@ -363,8 +364,7 @@ instance FromJSON Request where
                           <$> o .: "id"
                           <*> fmap (\(ListenerUpdate f) -> f) (J.parseJSON v)
       "AddSound"       -> AddSound
-                          <$> o .: "id"
-                          <*> J.parseJSON v
+                          <$> J.parseJSON v
       "UpdateSound"    -> UpdateSound
                           <$> o .: "id"
                           <*> fmap (\(SoundUpdate f) -> f) (J.parseJSON v)
@@ -455,7 +455,7 @@ jackServerName = lens
   _jackServerName = x })
 
 data EventSources t = EventSources {
-  eAddSound :: R.Event t (SoundId, Sound)
+  eAddSound :: R.Event t Sound
 , eUpdateSound :: R.Event t (SoundId, Sound -> Sound)
 , eAddLocation :: R.Event t Location
 , eRemoveLocation :: R.Event t LocationId
@@ -467,7 +467,7 @@ data EventSources t = EventSources {
 }
 
 data EventSinks = EventSinks {
-  fireAddSound :: (SoundId, Sound) -> IO ()
+  fireAddSound :: Sound -> IO ()
 , fireUpdateSound :: (SoundId, Sound -> Sound) -> IO ()
 , fireAddLocation :: Location -> IO ()
 , fireRemoveLocation :: LocationId -> IO ()
@@ -513,7 +513,7 @@ mkInputEvents = do
     )
 
 requestToEvent :: EventSinks -> Request -> IO ()
-requestToEvent es (AddSound i x) = fireAddSound es (i, x)
+requestToEvent es (AddSound x) = fireAddSound es x
 requestToEvent es (UpdateSound i x) = fireUpdateSound es (i, x)
 requestToEvent es (AddLocation x) = fireAddLocation es x
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
@@ -657,17 +657,20 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
                                         H.empty
                                         ids
 
-addSound :: SoundId -> Sound -> IO (SoundId, (Sound, SoundFileInfo))
-addSound i s = do
+lookupSoundsOf :: (Sound -> Bool) -> [SoundId] -> SoundMap -> SoundMap
+lookupSoundsOf f ids = H.filter (f . fst) . lookupSounds ids
+
+addSound :: Sound -> IO (Sound, SoundFileInfo)
+addSound s = do
     (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path (soundType s))) $ \e -> do
         let cacheDir = "tmp/cache/streamero-sound-engine"
-            cacheFile = cacheDir </> show i ++ ".flac"
+            cacheFile = cacheDir </> show (soundId s) ++ ".flac"
         cacheFileExists <- Dir.doesFileExist cacheFile
         unless cacheFileExists $ do
             Dir.createDirectoryIfMissing True cacheDir
             SF.toFLAC (path (soundType s)) cacheFile
         ((,) s { soundType = (soundType s) { path = cacheFile } }) `fmap` soundFileInfo cacheFile
-    return (i, (s', si))
+    return (s', si)
 
 -- --------------------------------------------------------------------
 -- Players
@@ -728,10 +731,14 @@ playSound (listener, listenerState) (sound, soundFileInfo) = do
 -- --------------------------------------------------------------------
 -- Locations
 
+--startContinuousPlayer :: Sound -> (Location, LocationState) -> SC.ServerT IO (Location, LocationState)
+
+--stopContinuousPlayer :: SoundId
+
 addLocation :: SoundMap -> Location -> SC.ServerT IO (Location, LocationState)
 addLocation soundMap location = do
     bus <- SC.newAudioBus 2
-    let sounds = H.filter (not.isEvent.fst) (lookupSounds (locationSounds location) soundMap)
+    let sounds = lookupSoundsOf isContinuous (locationSounds location) soundMap
     players <- T.mapM (uncurry (newPlayer mkPlayerSynthDef bus)) sounds
     return (location, LocationState bus players)
 
@@ -747,7 +754,7 @@ updateLocation :: SoundMap -> (Location, LocationState) -> SC.ServerT IO (Locati
 updateLocation soundMap (location, state) = do
     -- Find ids of continuous sounds not yet playing
     let locationSoundMap = H.fromList (map (flip(,)()) (locationSounds location))
-        continuous = H.filterWithKey (\k _ -> maybe False (not.isEvent.fst) (H.lookup k soundMap))
+        continuous = H.filterWithKey (\k _ -> maybe False (isContinuous.fst) (H.lookup k soundMap))
         continuousSounds = continuous . flip lookupSounds soundMap
         diff a b = H.keys (H.difference a b)
         soundsToPlay = lookupSounds (H.keys $ continuous (H.difference locationSoundMap (players state))) soundMap
@@ -997,19 +1004,19 @@ main = do
                                 -- Read sound file info synchronously
                                 (eAddSound', fAddSound') <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
-                                R.reactimate $ (\(i, s) -> fAddSound' $ addSound i s) <$> eAddSound input
+                                R.reactimate $ fAddSound' . addSound <$> eAddSound input
 
                                 -- Update sound map
-                                let eUpdateSound' = (\h (k, f) -> (k, first f (h H.! k))) <$> bSounds <@> eUpdateSound input
+                                let eUpdateSound' = (\h (k, f) -> first f (h H.! k)) <$> bSounds <@> eUpdateSound input
                                     (eSounds, bSounds) = R.mapAccum H.empty $ R.unions [
-                                        (\(i, x) acc -> let acc' = H.insert i x acc in (acc', acc')) <$> eAddSound'
-                                      , (\(i, x) acc -> let acc' = H.insert i x acc in (acc', acc')) <$> eUpdateSound'
+                                        (\(s, s') acc -> let acc' = H.insert (soundId s) (s, s') acc in (acc', acc')) <$> eAddSound'
+                                      , (\(s, s') acc -> let acc' = H.insert (soundId s) (s, s') acc in (acc', acc')) <$> eUpdateSound'
                                       ]
 
                                 R.reactimate $ send Ok <$ R.unions [ eAddSound', eUpdateSound' ]
 
-                                --traceE "eAddSound" (eAddSound input)
-                                traceE "eSounds'" eSounds
+                                traceE "AddSound" eAddSound'
+                                traceE "Sounds" eSounds
 
                                 -- Locations and states
                                 (eAddLocation', fAddLocation') <- R.newEvent
@@ -1024,17 +1031,18 @@ main = do
                                                             ])
                                 eLocations <- R.changes bLocations
 
-                                reactimateEngine fAddLocation'
-                                             $ addLocation
-                                               <$> bSounds
-                                               <@> eAddLocation input
-                                reactimateEngine fRemoveLocation'
-                                             $ removeLocation
-                                               <$> bLocations `lookupB_` eRemoveLocation input
-                                reactimateEngine fUpdateLocation'
-                                             $ updateLocation
-                                               <$> bSounds
-                                               <@> ((\h (k, f) -> first f (h H.! k)) <$> bLocations <@> eUpdateLocation input)
+                                reactimateEngine fAddLocation' $
+                                  addLocation
+                                  <$> bSounds
+                                  <@> eAddLocation input
+                                reactimateEngine fRemoveLocation' $
+                                  removeLocation
+                                  <$> bLocations `lookupB_` eRemoveLocation input
+                                reactimateEngine fUpdateLocation' $
+                                  updateLocation
+                                  <$> bSounds
+                                  <@> ((\h (k, f) -> first f (h H.! k))
+                                       <$> bLocations <@> eUpdateLocation input)
 
                                 R.reactimate $ send Ok <$ R.unions [ void eAddLocation'
                                                                    , void eRemoveLocation'
@@ -1064,15 +1072,15 @@ main = do
                                                             , H.delete <$> eRemoveListener' ])
                                 eListeners <- R.changes bListeners
 
-                                reactimateEngine fAddListener'
-                                             $ addListener env
-                                               <$> bListeners
-                                               <@> eAddListenerRewriteUrl
+                                reactimateEngine fAddListener' $
+                                  addListener env
+                                  <$> bListeners
+                                  <@> eAddListenerRewriteUrl
 
-                                reactimateEngine fRemoveListener'
-                                             $ removeListener
-                                               <$> bListeners
-                                               <@> eRemoveListener input
+                                reactimateEngine fRemoveListener' $
+                                  removeListener
+                                  <$> bListeners
+                                  <@> eRemoveListener input
 
                                 R.reactimate $ send Ok <$ R.unions [ void eAddListener'
                                                                    , void eRemoveListener'
@@ -1113,17 +1121,17 @@ main = do
                                 let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
                                 eEventPlayers <- R.changes bEventPlayers
 
-                                reactimateEngine fUpdateEventPlayers
-                                             $ updateEventPlayers
-                                               <$> bSounds
-                                               <*> bEventPlayers
-                                               <@> eLocationEvents
+                                reactimateEngine fUpdateEventPlayers $
+                                  updateEventPlayers
+                                  <$> bSounds
+                                  <*> bEventPlayers
+                                  <@> eLocationEvents
                                 -- Update event players
-                                reactimateEngine fUpdateEventPlayers
-                                             $ updateEventPlayersForListener
-                                               <$> bLocations
-                                               <*> bEventPlayers
-                                               <@> fmap fst eUpdateListener'
+                                reactimateEngine fUpdateEventPlayers $
+                                  updateEventPlayersForListener
+                                  <$> bLocations
+                                  <*> bEventPlayers
+                                  <@> fmap fst eUpdateListener'
 
                                 traceE "EventPlayers" eEventPlayers
 
@@ -1145,9 +1153,9 @@ main = do
                                         <@> eAddListener'
                                         -- UpdateListener: Update patch cables with new listener position
                                       , updatePatchCablesForListener
-                                          <$> bLocations
-                                          <*> bPatchCables
-                                          <@> fmap fst eUpdateListener'
+                                        <$> bLocations
+                                        <*> bPatchCables
+                                        <@> fmap fst eUpdateListener'
                                         -- RemoveListener: Remove patch cables between listener and all locations
                                       , (\patchCables listenerId -> do
                                           SC.exec immediately $ F.forM_ (patchCables H.! listenerId) SC.n_free
@@ -1171,9 +1179,9 @@ main = do
                                         <@> eAddLocation'
                                         -- UpdateLocation: Update patch cables with new location position
                                       , updatePatchCablesForLocation
-                                          <$> bListeners
-                                          <*> bPatchCables
-                                          <@> (fst <$> eUpdateLocation')
+                                        <$> bListeners
+                                        <*> bPatchCables
+                                        <@> (fst <$> eUpdateLocation')
                                         -- RemoveLocation: Remove patch cables netween the location and each listener
                                       , (\patchCables locationId -> do
                                           SC.exec immediately $ mapM_ SC.n_free $ catMaybes $ H.elems $ fmap (H.lookup locationId) patchCables
@@ -1186,10 +1194,10 @@ main = do
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
-                                reactimateEngine fFreedListeners
-                                             $ (const <$> removeAllListeners)
-                                               <$> bListeners
-                                               <@> eQuit input
+                                reactimateEngine fFreedListeners $
+                                  (const <$> removeAllListeners)
+                                  <$> bListeners
+                                  <@> eQuit input
                                 R.reactimate $ (MonadServer.quit engine >> send Ok) <$ eFreedListeners
                             -- Compile network and get event sinks
                             network <- R.compile networkDescription
