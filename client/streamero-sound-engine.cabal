@@ -13,6 +13,7 @@ Executable streamero-sound-engine
   Main-is:          streamero-sound-engine.hs
   Other-Modules:    Streamero.Darkice
                     Streamero.Jack
+                    Streamero.MonadServer
                     Streamero.Process
                     --Streamero.Readline
                     Streamero.SC3

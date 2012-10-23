@@ -63,6 +63,7 @@ import qualified Sound.SC3.Server.Monad.Request as SC
 import qualified Sound.File.Sndfile as SF
 import qualified Streamero.Darkice as Darkice
 import qualified Streamero.Jack as SJack
+import qualified Streamero.MonadServer as MonadServer
 import qualified Streamero.Process as SProc
 {-import           Streamero.Readline (sourceReadline)-}
 import           Streamero.SC3 (toStereo)
@@ -82,6 +83,9 @@ import           System.Unix.Directory (withTemporaryDirectory)
 -- * Place player synths in one group and patch cables in another (ordered after the first group) to avoid order of execution problems
 -- * Only update the patch cables for locations the listener is currently in.
 -- * Use playBuf for small sound files (e.g. <= 32768)
+
+-- --------------------------------------------------------------------
+-- Conduit helpers
 
 catMaybesC :: Monad m => C.Conduit (Maybe a) m a
 catMaybesC = do
@@ -195,6 +199,9 @@ data Sound =
 data SoundUpdate =
   SoundIsEvent Bool
   deriving (Show)
+
+isSoundIsEvent (SoundIsEvent _) = True
+isSoundIsEvent _ = False
 
 instance FromJSON Sound where
     parseJSON (Object v) = do
@@ -509,6 +516,9 @@ withUnixSocket file = bracket
         })
     N.sClose
 
+-- --------------------------------------------------------------------
+-- Logging
+
 logStrLn :: String -> String -> IO ()
 logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
 
@@ -521,66 +531,25 @@ logE s = R.reactimate . fmap (logStrLn s)
 traceE :: Show a => String -> R.Event t a -> R.NetworkDescription t ()
 traceE s = logE "ENGINE" . fmap (((s++": ")++).show)
 
-data Command =
-    QuitServer
-  | Execute (SC.ServerT IO ())
-
--- | Return SC server loop and command sink.
-data ServerHandle = ServerHandle (Command -> IO ()) (MVar.MVar (Maybe SomeException))
-
-newServer :: [Signal] -> (SC.ServerT IO () -> IO ()) -> IO ServerHandle
-newServer blockedSignals f = do
-    toSC <- Chan.newChan
-    result <- MVar.newEmptyMVar
-    let serverLoop = do
-            x <- liftIO $ Chan.readChan toSC
-            case x of
-                QuitServer -> return ()
-                Execute action -> do
-                    action
-                    serverLoop
-        sink = Chan.writeChan toSC
-        handle = ServerHandle sink result
-    void $ forkIO $ catch (ignoreSignals blockedSignals (f serverLoop) >> MVar.putMVar result Nothing) (MVar.putMVar result . Just)
-    return handle
-
-execute_ :: ServerHandle -> SC.ServerT IO () -> IO ()
-execute_ (ServerHandle sink _) = sink . Execute
-
-executeWith :: ServerHandle -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
-executeWith handle sink action = execute_ handle (action >>= liftIO . sink)
-
-execute :: ServerHandle -> SC.ServerT IO a -> IO a
-execute handle action = do
-    result <- MVar.newEmptyMVar
-    executeWith handle (MVar.putMVar result) action
-    MVar.takeMVar result
-
-quit :: ServerHandle -> IO ()
-quit (ServerHandle sink _) = sink QuitServer
-
-waitForServer :: ServerHandle -> IO ()
-waitForServer (ServerHandle _ result) = do
-    x <- MVar.takeMVar result
-    case x of
-        Nothing -> return ()
-        Just e -> throw e
-
-newAsyncEvent :: R.NetworkDescription t (R.Event t a, IO a -> IO ())
-newAsyncEvent = do
-    (evt, fire) <- R.newEvent
-    return (evt, \action -> void $ forkIO $ action >>= fire)
+-- --------------------------------------------------------------------
+-- (A)synchronous monadic actions and events
 
 newSyncEvent :: R.NetworkDescription t (R.Event t a, IO a -> IO ())
 newSyncEvent = do
     (evt, fire) <- R.newEvent
     return (evt, \action -> action >>= fire)
 
-newEngineEvent :: ServerHandle -> R.Event t (SC.ServerT IO a) -> R.NetworkDescription t (R.Event t a)
-newEngineEvent handle evt = do
+reactimateMS :: MonadIO m => MonadServer.Handle m -> (a -> IO ()) -> R.Event t (m a) -> R.NetworkDescription t ()
+reactimateMS handle sink = R.reactimate . fmap (MonadServer.executeWith handle sink)
+
+newAsyncEvent :: MonadIO m => MonadServer.Handle m -> R.Event t (m a) -> R.NetworkDescription t (R.Event t a)
+newAsyncEvent handle evt = do
     (evt', fire) <- R.newEvent
-    R.reactimate $ executeWith handle fire <$> evt
+    reactimateMS handle fire evt
     return evt'
+
+-- --------------------------------------------------------------------
+-- Reactive helpers
 
 scanlE :: (a -> b -> a) -> a -> R.Event t b -> R.Event t a
 scanlE f a0 = R.accumE a0 . fmap (flip f)
@@ -618,6 +587,9 @@ hashMapB insert remove update =
 -- -> R.Event t k -> (k -> s -> SC.ServerT IO ())
 -- -> R.Event t (k, v -> v) -> (k -> v -> s -> SC.ServerT IO s)
 -- -> (R.Event t (H.HashMap k (v, s)), R.Behavior t (H.HashMap k (v, s)))
+
+-- --------------------------------------------------------------------
+-- Sound files
 
 soundFileInfo :: FilePath -> IO SoundFileInfo
 soundFileInfo path = do
@@ -994,7 +966,9 @@ main = do
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
                         handledSignals = [sigINT, sigTERM]
                         run source sink = do
-                            engine <- newServer handledSignals $ withSC env "supercollider"
+                            engine <- MonadServer.new (ignoreSignals handledSignals . withSC env "supercollider")
+                            let reactimateEngine = reactimateMS engine
+
                             {-quitVar <- MVar.newEmptyMVar-}
                             fromEngineVar <- MVar.newEmptyMVar
                             eventSinks <- MVar.newEmptyMVar
@@ -1043,14 +1017,14 @@ main = do
                                                             ])
                                 eLocations <- R.changes bLocations
 
-                                R.reactimate $ fmap (executeWith engine fAddLocation')
+                                reactimateEngine fAddLocation'
                                              $ addLocation
                                                <$> bSounds
                                                <@> eAddLocation input
-                                R.reactimate $ fmap (executeWith engine fRemoveLocation')
+                                reactimateEngine fRemoveLocation'
                                              $ removeLocation
                                                <$> bLocations `lookupB_` eRemoveLocation input
-                                R.reactimate $ fmap (executeWith engine fUpdateLocation')
+                                reactimateEngine fUpdateLocation'
                                              $ updateLocation
                                                <$> bSounds
                                                <@> ((\h (k, f) -> first f (h H.! k)) <$> bLocations <@> eUpdateLocation input)
@@ -1083,12 +1057,12 @@ main = do
                                                             , H.delete <$> eRemoveListener' ])
                                 eListeners <- R.changes bListeners
 
-                                R.reactimate $ fmap (executeWith engine fAddListener')
+                                reactimateEngine fAddListener'
                                              $ addListener env
                                                <$> bListeners
                                                <@> eAddListenerRewriteUrl
 
-                                R.reactimate $ fmap (executeWith engine fRemoveListener')
+                                reactimateEngine fRemoveListener'
                                              $ removeListener
                                                <$> bListeners
                                                <@> eRemoveListener input
@@ -1132,13 +1106,13 @@ main = do
                                 let bEventPlayers = R.accumB H.empty eUpdateEventPlayers
                                 eEventPlayers <- R.changes bEventPlayers
 
-                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                reactimateEngine fUpdateEventPlayers
                                              $ updateEventPlayers
                                                <$> bSounds
                                                <*> bEventPlayers
                                                <@> eLocationEvents
                                 -- Update event players
-                                R.reactimate $ fmap (executeWith engine fUpdateEventPlayers)
+                                reactimateEngine fUpdateEventPlayers
                                              $ updateEventPlayersForListener
                                                <$> bLocations
                                                <*> bEventPlayers
@@ -1200,16 +1174,16 @@ main = do
                                         <$> bPatchCables
                                         <@> eRemoveLocation'
                                       ]
-                                R.reactimate $ fmap (executeWith engine fUpdatePatchCables) eUpdatePatchCables'
+                                reactimateEngine fUpdatePatchCables eUpdatePatchCables'
                                 traceE "PatchCables" =<< R.changes bPatchCables
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
-                                R.reactimate $ fmap (executeWith engine fFreedListeners)
+                                reactimateEngine fFreedListeners
                                              $ (const <$> removeAllListeners)
                                                <$> bListeners
                                                <@> eQuit input
-                                R.reactimate $ (quit engine >> send Ok) <$ eFreedListeners
+                                R.reactimate $ (MonadServer.quit engine >> send Ok) <$ eFreedListeners
                             -- Compile network and get event sinks
                             network <- R.compile networkDescription
                             sinks <- MVar.takeMVar eventSinks
@@ -1219,11 +1193,11 @@ main = do
                             R.actuate network
                             -- Sync with engine
                             {-execute engine $ SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
-                            execute engine $ return ()
+                            MonadServer.execute engine $ return ()
                             -- Set up connections to and from JSON I/O network
                             void $ forkIO $ source =$= conduitIO (requestToEvent sinks) fromEngine $$ sink
                             {-MVar.takeMVar quitVar-}
-                            waitForServer engine
+                            MonadServer.wait engine
                             -- Deactivate network
                             R.pause network
                     liftIO $ do
