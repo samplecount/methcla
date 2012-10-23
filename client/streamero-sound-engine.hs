@@ -206,27 +206,42 @@ distance c1 c2 = earthRadius * ahaversin h
 
 newtype SoundId = SoundId Int deriving (Eq, Show, H.Hashable, FromJSON)
 
-data Sound =
-    SoundFile {
-        path :: FilePath
-      , isEvent :: Bool
-    }
-    deriving (Show)
-
-data SoundUpdate =
-  SoundIsEvent Bool
+data SoundType =
+  SoundFile { path :: FilePath }
   deriving (Show)
 
-isSoundIsEvent (SoundIsEvent _) = True
-isSoundIsEvent _ = False
+instance FromJSON SoundType where
+  parseJSON (Object v) = do
+    t <- v .: "type" :: J.Parser Text
+    case t of
+      "sample" -> SoundFile <$> v .: "path"
+      _ -> mzero
+  parseJSON _ = mzero
+
+data Sound = Sound {
+    soundType :: SoundType
+  , isEvent :: Bool
+  } deriving (Show)
+
+--data SoundUpdate =
+--  SoundIsEvent Bool
+--  deriving (Show)
+
+--isSoundIsEvent (SoundIsEvent _) = True
+--isSoundIsEvent _ = False
 
 instance FromJSON Sound where
-    parseJSON (Object v) = do
-        t <- v .: "type" :: J.Parser Text
-        case t of
-            "sample" -> SoundFile <$> v .: "path" <*> v .:? "event" .!= False
-            _        -> mzero
-    parseJSON _          = mzero
+    parseJSON v@(Object o) = Sound <$> parseJSON v <*> o .:? "event" .!= False
+    parseJSON _ = mzero
+
+newtype SoundUpdate = SoundUpdate (Sound -> Sound)
+
+mkUpdate :: FromJSON x => Text -> (x -> a -> a) -> J.Value -> J.Parser (a -> a)
+mkUpdate key set (Object v) = maybe id set <$> v .:? key
+mkUpdate _ _ _ = mzero
+
+instance FromJSON SoundUpdate where
+  parseJSON = fmap SoundUpdate . mkUpdate "event" (\x s -> s { isEvent = x })
 
 data SoundFileInfo = SoundFileInfo {
     sampleRate :: Int
@@ -323,7 +338,7 @@ data Request =
   | RemoveListener ListenerId
   | UpdateListener ListenerId (Listener -> Listener)
   | AddSound SoundId Sound
-  | UpdateSound SoundId [SoundUpdate]
+  | UpdateSound SoundId SoundUpdate
   | AddLocation Location
   | RemoveLocation LocationId
   | UpdateLocation LocationId (Location -> Location)
@@ -338,9 +353,7 @@ instance FromJSON Request where
             "RemoveListener" -> RemoveListener <$> v .: "id"
             "UpdateListener" -> UpdateListener <$> v .: "id" <*> (maybe id (\p l -> l { listenerPosition = p }) <$> v .:? "position")
             "AddSound"       -> AddSound <$> v .: "id" <*> J.parseJSON o
-            "UpdateSound"    -> UpdateSound
-                                <$> v .: "id"
-                                <*> (fmap SoundIsEvent . maybeToList <$> v .:? "event")
+            "UpdateSound"    -> UpdateSound <$> v .: "id" <*> J.parseJSON o
             "AddLocation"    -> AddLocation <$> J.parseJSON o
             "RemoveLocation" -> RemoveLocation <$> v .: "id"
             "UpdateLocation" -> UpdateLocation <$> v .: "id" <*> foldM (\f -> fmap ((.)f)) id
@@ -486,7 +499,7 @@ mkInputEvents = do
 
 requestToEvent :: EventSinks -> Request -> IO ()
 requestToEvent es (AddSound i x) = fireAddSound es (i, x)
-requestToEvent es (UpdateSound i xs) = mapM_ (fireUpdateSound es . (,) i) xs
+requestToEvent es (UpdateSound i x) = fireUpdateSound es (i, x)
 requestToEvent es (AddLocation x) = fireAddLocation es x
 requestToEvent es (RemoveLocation i) = fireRemoveLocation es i
 requestToEvent es (UpdateLocation i f) = fireUpdateLocation es (i, f)
@@ -631,14 +644,14 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
 
 addSound :: SoundId -> Sound -> IO (SoundId, (Sound, SoundFileInfo))
 addSound i s = do
-    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path s)) $ \e -> do
+    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path (soundType s))) $ \e -> do
         let cacheDir = "tmp/cache/streamero-sound-engine"
             cacheFile = cacheDir </> show i ++ ".flac"
         cacheFileExists <- Dir.doesFileExist cacheFile
         unless cacheFileExists $ do
             Dir.createDirectoryIfMissing True cacheDir
-            SF.toFLAC (path s) cacheFile
-        ((,) s { path = cacheFile }) `fmap` soundFileInfo cacheFile
+            SF.toFLAC (path (soundType s)) cacheFile
+        ((,) s { soundType = (soundType s) { path = cacheFile } }) `fmap` soundFileInfo cacheFile
     return (i, (s', si))
 
 -- --------------------------------------------------------------------
@@ -672,7 +685,7 @@ newPlayer mkSynthDef bus sound info = do
     {-SC.exec' immediately $ SC.dumpOSC SC.TextPrinter-}
     (buffer, synth) <- SC.exec' immediately $
         SC.b_alloc (diskBufferSize info) nc `SC.whenDone` \buffer ->
-            SC.b_read buffer (path sound) Nothing Nothing Nothing True `SC.whenDone` \_ -> do
+            SC.b_read buffer (path (soundType sound)) Nothing Nothing Nothing True `SC.whenDone` \_ -> do
                 -- FIXME: Put all player synths in one group, see TODO above
                 synth <- SC.s_new sd SC.AddToHead g
                             [ control "buffer" buffer
@@ -971,9 +984,11 @@ main = do
                                 (eSoundFileInfo, fSoundFileInfo) <- newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
                                 R.reactimate $ (\(i, s) -> fSoundFileInfo $ addSound i s) <$> eAddSound input
+
                                 -- Update sound map
                                 let eSounds = scanlE (flip (uncurry H.insert)) H.empty eSoundFileInfo
                                     bSounds = R.stepper H.empty eSounds
+
                                 -- Return status
                                 R.reactimate $ send Ok <$ eSounds
                                 {-R.reactimate x$ print <$> eSounds-}
