@@ -628,14 +628,6 @@ hashMapB insert remove update =
       result = fmap
   in R.mapAccum H.empty (result dup <$> e)
 
---hashMapStateB :: (Eq k, H.Hashable k) =>
---    ServerHandle
--- -> R.Event t (k, v)
--- -> (k -> v -> SC.ServerT IO s)
--- -> R.Event t k -> (k -> s -> SC.ServerT IO ())
--- -> R.Event t (k, v -> v) -> (k -> v -> s -> SC.ServerT IO s)
--- -> (R.Event t (H.HashMap k (v, s)), R.Behavior t (H.HashMap k (v, s)))
-
 -- --------------------------------------------------------------------
 -- Sounds and sound files
 
@@ -765,6 +757,31 @@ updateLocation soundMap (location, state) = do
     SC.exec immediately $ F.mapM_ freePlayer playersToStop
     --liftIO $ logStrLn "updateLocation" $ show (locationSounds location, H.keys soundsToPlay, H.keys playersToStop, newPlayers)
     return (location, state { players = H.union newPlayers (H.filterWithKey (\k _ -> not (H.member k playersToStop)) (players state)) })
+
+updateLocationsForSound :: LocationMap -> (Sound, SoundFileInfo) -> SC.ServerT IO (LocationMap -> LocationMap)
+updateLocationsForSound locations (sound, soundFileInfo)
+  | isEvent sound = do
+    locations' <- flip H.traverseWithKey locations $ \_ (location, locationState) ->
+      case H.lookup (soundId sound) (players locationState) of
+        Nothing -> return (location, locationState)
+        Just player -> do
+          SC.exec immediately $ freePlayer player
+          return $ (location, locationState { players = H.delete (soundId sound) (players locationState) })
+    return $ const locations'
+  | isContinuous sound = do
+    locations' <- flip H.traverseWithKey locations $ \_ (location, locationState) ->
+      case H.lookup (soundId sound) (players locationState) of
+        Nothing -> if elem (soundId sound) (locationSounds location)
+                   then do
+                      -- Start player
+                      player <- newPlayer mkPlayerSynthDef (bus locationState) sound soundFileInfo
+                      return (location, locationState { players = H.insert (soundId sound) player (players locationState) })
+                   else return (location, locationState)
+        Just _ ->
+          -- Already playing
+          return (location, locationState)
+    return $ const locations'
+  | otherwise = return id
 
 -- Gain is 1 for dist < refDist and 0 for dist > maxDist.
 -- This is an extension of the OpenAL "Inverse Distance Clamped Model" (equivalent to the )
@@ -955,6 +972,20 @@ updateEventPlayersForListener locations eventPlayers listener = do
             in SC.exec immediately $ SC.n_set cable [ control "level" level ]
     return id
 
+-- | Stop all event players for (previously) continuous sound.
+updateEventPlayersForSound :: EventPlayerMap -> Sound -> SC.ServerT IO (EventPlayerMap -> EventPlayerMap)
+updateEventPlayersForSound eventPlayers sound
+  | isContinuous sound = do
+      eventPlayers' <- flip H.traverseWithKey eventPlayers $ \listenerId locations ->
+        flip H.traverseWithKey locations $ \locationId e@(EventPlayer b s players) ->
+          case H.lookup (soundId sound) players of
+            Nothing -> return e
+            Just player -> do
+              SC.exec immediately $ freePlayer player
+              return $ EventPlayer b s (H.delete (soundId sound) players)
+      return $ const eventPlayers'
+  | otherwise = return id
+
 -- --------------------------------------------------------------------
 -- Main engine function
 
@@ -1023,11 +1054,16 @@ main = do
                                 (eRemoveLocation', fRemoveLocation') <- R.newEvent
                                 (eUpdateLocation', fUpdateLocation') <- R.newEvent
 
+                                (eUpdateLocationsForSound, fUpdateLocationsForSound) <- R.newEvent
+
                                 let bLocations = R.accumB
                                                   H.empty
                                                   (R.unions [ (\(l, s) -> H.insert (locationId l) (l, s))
-                                                              <$> eAddLocation' `R.union` eUpdateLocation'
+                                                              <$> R.unions [
+                                                                    eAddLocation'
+                                                                  , eUpdateLocation' ]
                                                             , H.delete <$> eRemoveLocation'
+                                                            , eUpdateLocationsForSound
                                                             ])
                                 eLocations <- R.changes bLocations
 
@@ -1052,6 +1088,12 @@ main = do
                                 traceE "UpdateLocation" (fst <$> eUpdateLocation input)
                                 traceE "RemoveLocation" (eRemoveLocation input)
                                 traceE "Locations" eLocations
+
+                                -- Update locations when sound isEvent field changes
+                                reactimateEngine fUpdateLocationsForSound $
+                                  updateLocationsForSound
+                                  <$> bLocations
+                                  <@> eUpdateSound'
 
                                 -- Listeners and listener states
                                 let eAddListenerRewriteUrl = flip fmap (eAddListener input) $
@@ -1126,12 +1168,19 @@ main = do
                                   <$> bSounds
                                   <*> bEventPlayers
                                   <@> eLocationEvents
+
                                 -- Update event players
                                 reactimateEngine fUpdateEventPlayers $
                                   updateEventPlayersForListener
                                   <$> bLocations
                                   <*> bEventPlayers
                                   <@> fmap fst eUpdateListener'
+
+                                -- Update event players when isEvent field changes
+                                reactimateEngine fUpdateEventPlayers $
+                                  updateEventPlayersForSound
+                                  <$> bEventPlayers
+                                  <@> fmap fst eUpdateSound'
 
                                 traceE "EventPlayers" eEventPlayers
 
@@ -1181,7 +1230,7 @@ main = do
                                       , updatePatchCablesForLocation
                                         <$> bListeners
                                         <*> bPatchCables
-                                        <@> (fst <$> eUpdateLocation')
+                                        <@> fmap fst eUpdateLocation'
                                         -- RemoveLocation: Remove patch cables netween the location and each listener
                                       , (\patchCables locationId -> do
                                           SC.exec immediately $ mapM_ SC.n_free $ catMaybes $ H.elems $ fmap (H.lookup locationId) patchCables
