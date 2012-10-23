@@ -146,9 +146,24 @@ parseJsonMessage = go where
 jsonOrWhite :: A.Parser (Maybe J.Value)
 jsonOrWhite = (Just <$> J.json) <|> (A.many1 A.space >> return Nothing)
 
+-- | Conduit wrapping IO functions.
+conduitIO :: MonadIO m => (input -> IO ()) -> (IO output) -> C.Conduit input m output
+conduitIO inputFunc outputFunc = do
+    x <- C.await
+    case x of
+        Nothing -> return ()
+        Just input -> do
+            liftIO $ inputFunc input
+            output <- liftIO outputFunc
+            C.yield output
+            conduitIO inputFunc outputFunc
+
 -- | Parse a stream of JSON messages into JSON values.
 parseJsonStream :: C.MonadThrow m => C.Conduit BS.ByteString m J.Value
 parseJsonStream = C.sequence (C.sinkParser jsonOrWhite) =$= catMaybesC
+
+-- --------------------------------------------------------------------
+-- URL helpers
 
 setHostName :: String -> URL -> URL
 setHostName h u =
@@ -161,6 +176,9 @@ parseURL a =
     case URL.importURL a of
         Nothing -> mzero
         Just url -> return url
+
+-- --------------------------------------------------------------------
+-- Model data types
 
 data Coord = Coord { latitude :: Double, longitude :: Double }
              deriving (Eq, Show)
@@ -547,6 +565,9 @@ newAsyncEvent handle evt = do
     reactimateMS handle fire evt
     return evt'
 
+execute' :: (SC.ServerT IO () -> IO ()) -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
+execute' f g m = f (m >>= liftIO . g)
+
 -- --------------------------------------------------------------------
 -- Reactive helpers
 
@@ -588,7 +609,7 @@ hashMapB insert remove update =
 -- -> (R.Event t (H.HashMap k (v, s)), R.Behavior t (H.HashMap k (v, s)))
 
 -- --------------------------------------------------------------------
--- Sound files
+-- Sounds and sound files
 
 soundFileInfo :: FilePath -> IO SoundFileInfo
 soundFileInfo path = do
@@ -608,6 +629,21 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
                                         H.empty
                                         ids
 
+addSound :: SoundId -> Sound -> IO (SoundId, (Sound, SoundFileInfo))
+addSound i s = do
+    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path s)) $ \e -> do
+        let cacheDir = "tmp/cache/streamero-sound-engine"
+            cacheFile = cacheDir </> show i ++ ".flac"
+        cacheFileExists <- Dir.doesFileExist cacheFile
+        unless cacheFileExists $ do
+            Dir.createDirectoryIfMissing True cacheDir
+            SF.toFLAC (path s) cacheFile
+        ((,) s { path = cacheFile }) `fmap` soundFileInfo cacheFile
+    return (i, (s', si))
+
+-- --------------------------------------------------------------------
+-- Players
+
 data Player = Player SC.Buffer SC.Synth deriving Show
 
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
@@ -624,17 +660,6 @@ unsupportedFormat e =
     case SF.errorString e of
         "File contains data in an unknown format." -> Just e
         _ -> Nothing
-
-addSound i s = do
-    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path s)) $ \e -> do
-        let cacheDir = "tmp/cache/streamero-sound-engine"
-            cacheFile = cacheDir </> show i ++ ".flac"
-        cacheFileExists <- Dir.doesFileExist cacheFile
-        unless cacheFileExists $ do
-            Dir.createDirectoryIfMissing True cacheDir
-            SF.toFLAC (path s) cacheFile
-        ((,) s { path = cacheFile }) `fmap` soundFileInfo cacheFile
-    return (i, (s', si))
 
 diskBufferSize :: SoundFileInfo -> Int
 diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames 
@@ -671,6 +696,9 @@ playSound (listener, listenerState) (sound, soundFileInfo) = do
             return ()
         {-liftIO $ logLn "Event player freed"-}
     return player
+
+-- --------------------------------------------------------------------
+-- Locations
 
 addLocation :: SoundMap -> Location -> SC.ServerT IO (Location, LocationState)
 addLocation soundMap location = do
@@ -715,23 +743,8 @@ locationDistanceScaling :: Location -> Double -> Double
 locationDistanceScaling = distanceScaling 0.1 1 . radius
 --locationDistanceScaling _ _ = 1.0
 
-type PatchCables = H.HashMap ListenerId (H.HashMap LocationId SC.Synth)
-
-patchCableSynthDef :: SC.UGen
-patchCableSynthDef =
-    let i = SC.in' 2 SC.AR (SC.control SC.KR "in" 0)
-        o = SC.out (SC.control SC.KR "out" 0)
-    in o (i * SC.lag (SC.control SC.KR "level" 0) 0.1)
-
-newPatchCable :: SC.Group -> SC.AudioBus -> SC.AudioBus -> Listener -> Location -> SC.ServerT IO SC.Synth
-newPatchCable group input output listener location = do
-    -- TODO: Only send SynthDef once
-    sd <- SC.exec' immediately . SC.async $ SC.d_recv "patchCable" patchCableSynthDef
-    let level = listenerLocationDistanceScaling listener location
-    SC.exec immediately $ SC.s_new sd SC.AddToTail group
-                            [ control "in" input
-                            , control "out" output
-                            , control "level" level ]
+-- --------------------------------------------------------------------
+-- Streaming client
 
 startDarkice :: Environment -> String -> URL -> IO ProcessHandle
 startDarkice env name url = do
@@ -770,6 +783,9 @@ makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) e
 
 streamName :: Integral a => a -> String
 streamName a = "stream-" ++ show (fromIntegral a :: Int)
+
+-- --------------------------------------------------------------------
+-- Listeners
 
 listenerLocationDistance :: Listener -> Location -> Double
 listenerLocationDistance listener location = locationDistance location (listenerPosition listener)
@@ -811,6 +827,27 @@ removeListener listeners listenerId = do
 removeAllListeners :: ListenerMap -> SC.ServerT IO ()
 removeAllListeners listeners = mapM_ (removeListener listeners) (H.keys listeners)
 
+-- --------------------------------------------------------------------
+-- Patch cables
+
+type PatchCables = H.HashMap ListenerId (H.HashMap LocationId SC.Synth)
+
+patchCableSynthDef :: SC.UGen
+patchCableSynthDef =
+    let i = SC.in' 2 SC.AR (SC.control SC.KR "in" 0)
+        o = SC.out (SC.control SC.KR "out" 0)
+    in o (i * SC.lag (SC.control SC.KR "level" 0) 0.1)
+
+newPatchCable :: SC.Group -> SC.AudioBus -> SC.AudioBus -> Listener -> Location -> SC.ServerT IO SC.Synth
+newPatchCable group input output listener location = do
+    -- TODO: Only send SynthDef once
+    sd <- SC.exec' immediately . SC.async $ SC.d_recv "patchCable" patchCableSynthDef
+    let level = listenerLocationDistanceScaling listener location
+    SC.exec immediately $ SC.s_new sd SC.AddToTail group
+                            [ control "in" input
+                            , control "out" output
+                            , control "level" level ]
+
 updatePatchCablesForListener :: LocationMap -> PatchCables -> Listener -> SC.ServerT IO (PatchCables -> PatchCables)
 updatePatchCablesForListener locations patchCables listener = do
   case H.lookup (listenerId listener) patchCables of
@@ -833,6 +870,9 @@ updatePatchCablesForLocation listeners patchCables location = do
                       location
         in SC.exec immediately $ SC.n_set synth [ control "level" level ]
   return id
+
+-- --------------------------------------------------------------------
+-- Event sounds and players
 
 data LocationEvent = Enter Listener ListenerState Location | Leave Listener Location deriving Show
 
@@ -880,35 +920,8 @@ updateEventPlayersForListener locations eventPlayers listener = do
             in SC.exec immediately $ SC.n_set cable [ control "level" level ]
     return id
 
-type Time = Double
-
-newTimer :: R.NetworkDescription t (Time, R.Event t Time, Time -> IO ())
-newTimer = do
-    chan <- liftIO STM.newTChanIO
-    liftIO $ void $ forkIO $ threadLoop chan
-    (evt, fire) <- R.newEvent
-    t0 <- liftIO OSC.utcr
-    return (t0, evt, \t -> STM.atomically $ STM.writeTChan chan (t, fire))
-    where
-        threadLoop chan = do
-            (t, fire) <- STM.atomically $ STM.readTChan chan
-            OSC.pauseThreadUntil t
-            fire t
-            threadLoop chan
-
-conduitIO :: MonadIO m => (input -> IO ()) -> (IO output) -> C.Conduit input m output
-conduitIO inputFunc outputFunc = do
-    x <- C.await
-    case x of
-        Nothing -> return ()
-        Just input -> do
-            liftIO $ inputFunc input
-            output <- liftIO outputFunc
-            C.yield output
-            conduitIO inputFunc outputFunc
-
-execute' :: (SC.ServerT IO () -> IO ()) -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
-execute' f g m = f (m >>= liftIO . g)
+-- --------------------------------------------------------------------
+-- Main engine function
 
 main :: IO ()
 main = do
