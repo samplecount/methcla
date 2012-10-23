@@ -1,9 +1,8 @@
 {-# LANGUAGE ExistentialQuantification
-           , FlexibleInstances
            , GeneralizedNewtypeDeriving
            , OverloadedStrings
            -- , TemplateHaskell
-           , TypeSynonymInstances #-}
+           #-}
 import           Control.Applicative
 import           Control.Arrow (first, second)
 import           Control.Category ((.))
@@ -66,7 +65,7 @@ import qualified Streamero.Jack as SJack
 import qualified Streamero.MonadServer as MonadServer
 import qualified Streamero.Process as SProc
 {-import           Streamero.Readline (sourceReadline)-}
-import           Streamero.SC3 (toStereo)
+import           Streamero.SC3 (control, toStereo)
 import           Streamero.Signals (ignoreSignals, catchSignals)
 import qualified Streamero.SoundFile as SF
 import           System.Console.CmdArgs.Explicit
@@ -610,40 +609,6 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
                                         ids
 
 data Player = Player SC.Buffer SC.Synth deriving Show
-
-class ControlName a where
-    controlName :: a -> String
-
-instance ControlName String where
-    controlName = id
-
-class ToControlValue a where
-    toControlValue :: a -> Double
-
-instance ToControlValue Double where
-    toControlValue = id
-
-instance ToControlValue Float where
-    toControlValue = realToFrac
-
-instance ToControlValue Int where
-    toControlValue = fromIntegral
-
-instance ToControlValue Bool where
-    toControlValue True = 1
-    toControlValue False = 0
-
-instance ToControlValue SC.AudioBus where
-    toControlValue = fromIntegral . SC.busId
-
-instance ToControlValue SC.ControlBus where
-    toControlValue = fromIntegral . SC.busId
-
-instance ToControlValue SC.Buffer where
-    toControlValue = fromIntegral . SC.bufferId
-
-control :: (ToControlValue a) => String -> a -> (String, Double)
-control s a = (s, toControlValue a)
 
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
 playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ toStereo $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
