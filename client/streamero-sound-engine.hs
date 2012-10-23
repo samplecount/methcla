@@ -260,9 +260,6 @@ data Listener = Listener {
   , streamURL :: URL
   } deriving (Show)
 
-data ListenerUpdate = ListenerPosition Coord
-                      deriving (Eq, Show)
-
 instance Eq Listener where
   a == b = listenerId a == listenerId b
 
@@ -276,6 +273,11 @@ instance FromJSON Listener where
     <*> v .: "position"
     <*> (parseURL =<< (v .: "stream_url"))
   parseJSON _ = mzero
+
+newtype ListenerUpdate = ListenerUpdate (Listener -> Listener)
+
+instance FromJSON ListenerUpdate where
+  parseJSON = fmap ListenerUpdate . mkUpdate "position" (\p l -> l { listenerPosition = p })
 
 data ListenerState = ListenerState {
   outputBus :: SC.AudioBus
@@ -299,13 +301,6 @@ data Location = Location {
 , locationSounds :: [SoundId]
 } deriving (Show)
 
-data LocationUpdate =
-    LocationPosition Coord
-  | LocationReference Reference
-  | LocationRadius Double
-  | LocationSounds [SoundId]
-  deriving (Eq, Show)
-
 instance Eq Location where
   a == b = locationId a == locationId b
 
@@ -321,6 +316,15 @@ instance FromJSON Location where
       <*> v .: "radius"
       <*> v .:? "sounds" .!= []
     parseJSON _ = mzero
+
+newtype LocationUpdate = LocationUpdate (Location -> Location)
+
+instance FromJSON LocationUpdate where
+  parseJSON v = LocationUpdate <$>
+    foldM (\f -> fmap ((.)f)) id
+          [ mkUpdate "position" (\x s -> s { position = x })        v
+          , mkUpdate "radius"   (\x s -> s { radius = x })          v
+          , mkUpdate "sounds"   (\x s -> s { locationSounds = x })  v ]
 
 locationDistance :: Location -> Coord -> Double
 locationDistance location coord =
@@ -358,7 +362,7 @@ instance FromJSON Request where
                           <$> o .: "id"
       "UpdateListener" -> UpdateListener
                           <$> o .: "id"
-                          <*> mkUpdate "position" (\p l -> l { listenerPosition = p }) v
+                          <*> fmap (\(ListenerUpdate f) -> f) (J.parseJSON v)
       "AddSound"       -> AddSound
                           <$> o .: "id"
                           <*> J.parseJSON v
@@ -371,10 +375,7 @@ instance FromJSON Request where
                           <$> o .: "id"
       "UpdateLocation" -> UpdateLocation
                           <$> o .: "id"
-                          <*> foldM (\f -> fmap ((.)f)) id
-                                [ mkUpdate "position" (\x s -> s { position = x })        v
-                                , mkUpdate "radius"   (\x s -> s { radius = x })          v
-                                , mkUpdate "sounds"   (\x s -> s { locationSounds = x })  v ]
+                          <*> fmap (\(LocationUpdate f) -> f) (J.parseJSON v)
       _ -> mzero
   parseJSON _ = mzero
 
