@@ -10,7 +10,7 @@ import           Control.Concurrent (forkIO, myThreadId, threadDelay)
 import qualified Control.Concurrent.Chan as Chan
 import qualified Control.Concurrent.MVar as MVar
 import qualified Control.Concurrent.STM as STM
-import           Control.Exception.Lifted as E
+import qualified Control.Exception.Lifted as E
 import           Control.Failure (Failure, failure)
 import           Control.Monad (MonadPlus, foldM, join, mzero, unless, void, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -61,6 +61,7 @@ import qualified Sound.SC3.Server.Monad.Process as SC
 import qualified Sound.SC3.Server.Monad.Request as SC
 import qualified Sound.File.Sndfile as SF
 import qualified Streamero.Darkice as Darkice
+import           Streamero.Exception (Exception(..))
 import qualified Streamero.Jack as SJack
 import qualified Streamero.MonadServer as MonadServer
 import qualified Streamero.Process as SProc
@@ -378,11 +379,11 @@ instance FromJSON Request where
       _ -> mzero
   parseJSON _ = mzero
 
-data Response = Ok | Error String
+data Response = Ok | Error Exception
 
 instance ToJSON Response where
     toJSON Ok = object [ "response" .= ("Ok" :: Text) ]
-    toJSON (Error e) = object [ "response" .= ("Error" :: Text), "message" .= e ]
+    toJSON (Error e) = object [ "response" .= ("Error" :: Text), "exception" .= e ]
 
 data Options = Options {
     _help :: Bool
@@ -554,7 +555,7 @@ withSC env clientName =
                                 , SC.onPutError = logStrLn "SC" }
 
 withUnixSocket :: String -> (N.Socket -> IO a) -> IO a
-withUnixSocket file = bracket
+withUnixSocket file = E.bracket
     (do { s <- N.socket N.AF_UNIX N.Stream 0
         ; N.connect s (N.SockAddrUnix file)
         ; return s
@@ -595,6 +596,9 @@ newAsyncEvent handle evt = do
 
 execute' :: (SC.ServerT IO () -> IO ()) -> (a -> IO ()) -> SC.ServerT IO a -> IO ()
 execute' f g m = f (m >>= liftIO . g)
+
+try :: IO a -> IO (Either Exception a)
+try = E.try
 
 -- --------------------------------------------------------------------
 -- Reactive helpers
@@ -652,17 +656,28 @@ lookupSounds ids soundMap = List.foldl' (\h i -> case H.lookup i soundMap of
 lookupSoundsOf :: (Sound -> Bool) -> [SoundId] -> SoundMap -> SoundMap
 lookupSoundsOf f ids = H.filter (f . fst) . lookupSounds ids
 
+unsupportedFormat :: SF.Exception -> Maybe SF.Exception
+unsupportedFormat e =
+    case SF.errorString e of
+        "File contains data in an unknown format." -> Just e
+        _ -> Nothing
+
+fromSndfileException :: FilePath -> SF.Exception -> Exception
+fromSndfileException path = FileError path . SF.errorString
+
 addSound :: Sound -> IO (Sound, SoundFileInfo)
-addSound s = do
-    (s', si) <- E.catchJust unsupportedFormat (((,)s) `fmap` soundFileInfo (path (soundType s))) $ \e -> do
-        let cacheDir = "tmp/cache/streamero-sound-engine"
-            cacheFile = cacheDir </> show (soundId s) ++ ".flac"
-        cacheFileExists <- Dir.doesFileExist cacheFile
-        unless cacheFileExists $ do
-            Dir.createDirectoryIfMissing True cacheDir
-            SF.toFLAC (path (soundType s)) cacheFile
-        ((,) s { soundType = (soundType s) { path = cacheFile } }) `fmap` soundFileInfo cacheFile
-    return (s', si)
+addSound s =
+  E.handle (E.throw . fromSndfileException file) $ do
+    E.catchJust unsupportedFormat (((,)s) <$> soundFileInfo file) $ \e -> do
+      let cacheDir = "tmp/cache/streamero-sound-engine"
+          cacheFile = cacheDir </> show (soundId s) ++ ".flac"
+      cacheFileExists <- Dir.doesFileExist cacheFile
+      unless cacheFileExists $ do
+        Dir.createDirectoryIfMissing True cacheDir
+        SF.toFLAC file cacheFile
+      ((,) s { soundType = (soundType s) { path = cacheFile } })
+        <$> soundFileInfo cacheFile
+  where file = path (soundType s)
 
 -- --------------------------------------------------------------------
 -- Players
@@ -677,12 +692,6 @@ mkPlayerSynthDef nc loop = SC.exec' immediately . SC.async . SC.d_recv ("player-
 
 truncatePowerOfTwo :: (Bits.Bits a, Integral a) => a -> a
 truncatePowerOfTwo = Bits.shiftL 1 . truncate . logBase (2::Double) . fromIntegral
-
-unsupportedFormat :: SF.Exception -> Maybe SF.Exception
-unsupportedFormat e =
-    case SF.errorString e of
-        "File contains data in an unknown format." -> Just e
-        _ -> Nothing
 
 diskBufferSize :: SoundFileInfo -> Int
 diskBufferSize = fromIntegral . min 32768 . truncatePowerOfTwo . numFrames 
@@ -1029,20 +1038,23 @@ main = do
 
                                 -- AddSound
                                 -- Read sound file info synchronously
-                                (eAddSound', fAddSound') <- newSyncEvent
+                                ((eAddSoundError, eAddSound'), fAddSound') <- first R.split <$> newSyncEvent
                                 -- FIXME: Catch exception and report error when file not found.
-                                R.reactimate $ fAddSound' . addSound <$> eAddSound input
+                                R.reactimate $ fAddSound' . try . addSound <$> eAddSound input
 
                                 -- Update sound map
-                                let eUpdateSound' = (\h (k, f) -> first f (h H.! k)) <$> bSounds <@> eUpdateSound input
+                                let eUpdateSound' = (\h (k, f) -> first f (lookupTag "eUpdateSound" k h))
+                                                    <$> bSounds
+                                                    <@> eUpdateSound input
                                     (eSounds, bSounds) = R.mapAccum H.empty $ R.unions [
                                         (\(s, s') acc -> let acc' = H.insert (soundId s) (s, s') acc in (acc', acc')) <$> eAddSound'
                                       , (\(s, s') acc -> let acc' = H.insert (soundId s) (s, s') acc in (acc', acc')) <$> eUpdateSound'
                                       ]
 
                                 R.reactimate $ send Ok <$ R.unions [ eAddSound', eUpdateSound' ]
+                                R.reactimate $ send . Error <$> eAddSoundError
 
-                                traceE "AddSound" eAddSound'
+                                traceE "AddSound" $ R.union (Left <$> eAddSoundError) (Right <$> eAddSound')
                                 traceE "Sounds" eSounds
 
                                 -- Locations and states

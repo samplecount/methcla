@@ -12,6 +12,7 @@ Cabal-version:      >=1.2
 Executable streamero-sound-engine
   Main-is:          streamero-sound-engine.hs
   Other-Modules:    Streamero.Darkice
+                    Streamero.Exception
                     Streamero.Jack
                     Streamero.MonadServer
                     Streamero.Process

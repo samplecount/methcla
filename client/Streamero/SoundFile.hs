@@ -7,6 +7,7 @@ module Streamero.SoundFile (
 ) where
 
 import qualified Control.Exception as E
+import qualified Streamero.Exception as E
 import qualified Sound.File.Sndfile as SF
 import           System.Exit (ExitCode(..))
 import           System.Process (rawSystem)
@@ -27,11 +28,11 @@ toFLAC input output = do
     e <- rawSystem "ffmpeg" [ "-y", "-i", input, "-acodec", "flac", output ]
     case e of
         ExitSuccess -> return ()
-        _ -> E.throw e
+        _ -> E.throw $ E.FileConversionError input output
 
 toPCM :: FilePath -> FilePath -> IO ()
 toPCM input output = do
     e <- rawSystem "ffmpeg" [ "-y", "-i", input, output ]
     case e of
         ExitSuccess -> return ()
-        _ -> E.throw e
+        _ -> E.throw $ E.FileConversionError input output
