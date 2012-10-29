@@ -1035,7 +1035,6 @@ main = do
                                 send = MVar.putMVar fromEngineVar
                                 {-quitEngine = MVar.putMVar quitVar ()-}
                                 {-quitEngine = quit engine-}
-                                missing cmd = send $ Error $ "API call " ++ cmd ++ " not yet implemented"
                             {-withSC env "supercollider" $ do-}
                                 {-toEngine <- SC.capture-}
                             let networkDescription :: forall t . R.NetworkDescription t ()
