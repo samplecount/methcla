@@ -890,7 +890,10 @@ listenerLocationDistanceScaling :: Listener -> Location -> Double
 listenerLocationDistanceScaling listener location = locationDistanceScaling location (listenerLocationDistance listener location)
 
 listenerLocations :: Listener -> LocationMap -> LocationMap
-listenerLocations listener = H.filter (\(location, _) -> listenerLocationDistance listener location <= radius location)
+listenerLocations listener =
+  H.filter $ \(location, _) ->
+                listenerLocationDistance listener location
+                  <= radius location
 
 addListener :: Environment -> ListenerMap -> Listener -> SC.ServerT IO (Listener, ListenerState)
 addListener env listeners listener = do
@@ -966,7 +969,9 @@ updatePatchCablesForLocation listeners patchCables location = do
 -- --------------------------------------------------------------------
 -- Event sounds and players
 
-data LocationEvent = Enter Listener ListenerState Location | Leave Listener Location deriving Show
+data LocationEvent = Enter Listener ListenerState Location
+                   | Leave Listener Location
+                   deriving Show
 
 data EventPlayer = EventPlayer SC.AudioBus SC.Synth (H.HashMap SoundId Player) deriving Show
 type EventPlayerMap = H.HashMap ListenerId (H.HashMap LocationId EventPlayer)
@@ -1188,8 +1193,8 @@ main = do
                                               s  = HS.fromList ls
                                               es = case H.lookup i acc of
                                                     Nothing -> Enter l state <$> ls
-                                                    Just s' -> (Enter l state <$> HS.toList (HS.difference s s'))
-                                                            ++ (Leave l <$> HS.toList (HS.difference s' s))
+                                                    Just s' -> (Leave l <$> HS.toList (HS.difference s' s))
+                                                            ++ (Enter l state <$> HS.toList (HS.difference s s'))
                                           in (es, H.insert i s acc))
                                         <$> bLocations <@> eUpdateListener'
                                       , (\(l, _) acc ->
@@ -1199,7 +1204,11 @@ main = do
                                               Just s  -> (Leave l <$> HS.toList s, H.delete i acc))
                                         <$> (flip (lookupTag "eLocationEvents") <$> bListeners <@> eRemoveListener') ]
 
-                                traceE "LocationEvents" eLocationEvents
+                                --traceE "LocationEvents" eLocationEvents
+                                logE "ENGINE" $ (\e -> case e of
+                                                Enter li _ lo -> unwords ["Enter", show (listenerId li), show (locationId lo)]
+                                                Leave li lo -> unwords ["Leave", show (listenerId li), show (locationId lo)] )
+                                       <$> eLocationEvents
                                 --traceE "bListenerLocations" (const <$> bListenerLocations <@> eUpdateListener')
 
                                 -- Start and stop event players
