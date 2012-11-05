@@ -884,10 +884,12 @@ makeConnectionMap monitor = concatMap f . streamIds
 -- Listeners
 
 listenerLocationDistance :: Listener -> Location -> Double
-listenerLocationDistance listener location = locationDistance location (listenerPosition listener)
+listenerLocationDistance li lo =
+  locationDistance lo (listenerPosition li)
 
 listenerLocationDistanceScaling :: Listener -> Location -> Double
-listenerLocationDistanceScaling listener location = locationDistanceScaling location (listenerLocationDistance listener location)
+listenerLocationDistanceScaling li lo =
+  locationDistanceScaling lo (listenerLocationDistance li lo)
 
 listenerLocations :: Listener -> LocationMap -> LocationMap
 listenerLocations listener =
