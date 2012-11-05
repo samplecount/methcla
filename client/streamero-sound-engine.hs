@@ -552,8 +552,8 @@ withSC env clientName =
             SC.networkPort = SC.UDPPort (scUdpPort . options ^$ env)
           , SC.hardwareDeviceName = Just $ (jackServerName ^$ env) ++ ":" ++ clientName
           }
-        SC.defaultOutputHandler { SC.onPutString = logStrLn "SC"
-                                , SC.onPutError = logStrLn "SC" }
+        SC.defaultOutputHandler { SC.onPutString = logLn SC
+                                , SC.onPutError = logLn SC }
 
 withUnixSocket :: String -> (N.Socket -> IO a) -> IO a
 withUnixSocket file = E.bracket
@@ -575,17 +575,29 @@ forMWithKey_ h f = F.forM_ (H.keys h) $ \k -> f k (h H.! k)
 -- --------------------------------------------------------------------
 -- Logging
 
-logStrLn :: String -> String -> IO ()
-logStrLn tag s = putStrLn $ "[" ++ tag ++ "] " ++ s
+data Component = ENGINE
+               | STREAMER
+               | SC
+               | JACK
+               deriving (Show)
 
-logLn :: String -> IO ()
-logLn = logStrLn "ENGINE"
+logLn :: Component -> String -> IO ()
+logLn component s = putStrLn $ "[" ++ show component ++ "] " ++ s
 
-logE :: String -> R.Event t String -> R.NetworkDescription t ()
-logE s = R.reactimate . fmap (logStrLn s)
+logLn_ :: String -> IO ()
+logLn_ = logLn ENGINE
 
-traceE :: Show a => String -> R.Event t a -> R.NetworkDescription t ()
-traceE s = logE "ENGINE" . fmap (((s++": ")++).show)
+logE :: Component -> R.Event t String -> R.NetworkDescription t ()
+logE c = R.reactimate . fmap (logLn c)
+
+logE_ :: R.Event t String -> R.NetworkDescription t ()
+logE_ = logE ENGINE
+
+traceE :: String -> R.Event t String -> R.NetworkDescription t ()
+traceE tag = logE_ . fmap ((tag++": ")++)
+
+traceShowE :: Show a => String -> R.Event t a -> R.NetworkDescription t ()
+traceShowE tag = traceE tag . fmap show
 
 -- --------------------------------------------------------------------
 -- (A)synchronous monadic actions and events
@@ -841,7 +853,7 @@ findStreamId env listeners = do
 startDarkice :: Environment -> String -> String -> URL -> IO ProcessHandle
 startDarkice env jackName streamName url = do
     FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
-    SProc.createProcess (logStrLn $ "STREAMER:" ++ streamName) (Darkice.createProcess "darkice" darkiceOpts)
+    SProc.createProcess (logLn STREAMER . (("[" ++ streamName++"] ")++)) (Darkice.createProcess "darkice" darkiceOpts)
     where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ jackName ++ ".cfg")
           darkiceCfg = Darkice.defaultConfig {
                           Darkice.jackClientName = Just jackName
@@ -917,7 +929,7 @@ removeListener listeners listenerId = do
   -- Stop stream
   liftIO $ do
       SProc.interruptProcess (streamer state)
-      logLn $ "Stopped stream"
+      logLn STREAMER $ "Stopped stream"
   return listenerId
 
 removeAllListeners :: ListenerMap -> SC.ServerT IO ()
@@ -1049,9 +1061,9 @@ main = do
                                       , SJack.timeout = Just 5000
                                       , SJack.temporary = False
                                       }
-                logLn $ "Starting with temporary directory " ++ tmpDir_
-                SJack.withJack (logStrLn "JACK") (jackPath ^$ opts) jackOptions $ \serverName -> do
-                    logLn $ "Jack server name: " ++ serverName
+                logLn_ $ "Starting with temporary directory " ++ tmpDir_
+                SJack.withJack (logLn JACK) (jackPath ^$ opts) jackOptions $ \serverName -> do
+                    logLn_ $ "Jack server name: " ++ serverName
                     let env = makeEnv opts tmpDir serverName
                         connectionMap = makeConnectionMap (monitor ^$ opts) env
                         handledSignals = [sigINT, sigTERM]
@@ -1094,8 +1106,8 @@ main = do
                                 R.reactimate $ send Ok <$ R.unions [ eAddSound', eUpdateSound' ]
                                 R.reactimate $ send . Error <$> eAddSoundError
 
-                                traceE "AddSound" $ R.union (Left <$> eAddSoundError) (Right <$> eAddSound')
-                                traceE "Sounds" eSounds
+                                traceShowE "AddSound" $ R.union (Left <$> eAddSoundError) (Right <$> eAddSound')
+                                traceShowE "Sounds" eSounds
 
                                 -- Locations and states
                                 (eAddLocation', fAddLocation') <- R.newEvent
@@ -1133,10 +1145,10 @@ main = do
                                                                    , void eRemoveLocation'
                                                                    , void eUpdateLocation' ]
 
-                                traceE "AddLocation" (eAddLocation input)
-                                traceE "UpdateLocation" (fst <$> eUpdateLocation input)
-                                traceE "RemoveLocation" (eRemoveLocation input)
-                                traceE "Locations" eLocations
+                                traceShowE "AddLocation" (eAddLocation input)
+                                traceShowE "UpdateLocation" (fst <$> eUpdateLocation input)
+                                traceShowE "RemoveLocation" (eRemoveLocation input)
+                                traceShowE "Locations" eLocations
 
                                 -- Update locations when sound isEvent field changes
                                 reactimateEngine fUpdateLocationsForSound $
@@ -1149,7 +1161,7 @@ main = do
                                       if local ^$ opts
                                       then (\l -> l { streamURL = setHostName "localhost" (streamURL l) })
                                       else id
-                                R.reactimate $ logLn . URL.exportURL . streamURL <$> eAddListenerRewriteUrl
+                                R.reactimate $ logLn_ . URL.exportURL . streamURL <$> eAddListenerRewriteUrl
 
                                 (eAddListener', fAddListener') <- R.newEvent
                                 (eRemoveListener', fRemoveListener') <- R.newEvent
@@ -1179,10 +1191,10 @@ main = do
                                                                    , void eRemoveListener'
                                                                    , void eUpdateListener' ]
 
-                                traceE "AddListener" eAddListener'
-                                --traceE "eUpdateListener" (fst <$> eUpdateListener)
-                                traceE "listenerPosition" (listenerPosition . fst <$> eUpdateListener')
-                                traceE "RemoveListener" eRemoveListener'
+                                traceShowE "AddListener" eAddListener'
+                                --traceShowE "eUpdateListener" (fst <$> eUpdateListener)
+                                traceShowE "listenerPosition" (listenerPosition . fst <$> eUpdateListener')
+                                traceShowE "RemoveListener" eRemoveListener'
 
                                 -- Listener/location map
                                 let (eLocationEvents, bListenerLocations) =
@@ -1206,12 +1218,13 @@ main = do
                                               Just s  -> (Leave l <$> HS.toList s, H.delete i acc))
                                         <$> (flip (lookupTag "eLocationEvents") <$> bListeners <@> eRemoveListener') ]
 
-                                --traceE "LocationEvents" eLocationEvents
-                                logE "ENGINE" $ (\e -> case e of
+                                --traceShowE "LocationEvents" eLocationEvents
+                                traceE "LocationEvents" $
+                                       (\e -> case e of
                                                 Enter li _ lo -> unwords ["Enter", show (listenerId li), show (locationId lo)]
                                                 Leave li lo -> unwords ["Leave", show (listenerId li), show (locationId lo)] )
                                        <$> eLocationEvents
-                                --traceE "bListenerLocations" (const <$> bListenerLocations <@> eUpdateListener')
+                                --traceShowE "bListenerLocations" (const <$> bListenerLocations <@> eUpdateListener')
 
                                 -- Start and stop event players
                                 (eUpdateEventPlayers, fUpdateEventPlayers) <- R.newEvent
@@ -1237,7 +1250,7 @@ main = do
                                   <$> bEventPlayers
                                   <@> fmap fst eUpdateSound'
 
-                                traceE "EventPlayers" eEventPlayers
+                                traceShowE "EventPlayers" eEventPlayers
 
                                 -- Piggedipatchables
                                 (eUpdatePatchCables, fUpdatePatchCables) <- R.newEvent
@@ -1297,7 +1310,7 @@ main = do
                                         <@> eRemoveLocation'
                                       ]
                                 reactimateEngine fUpdatePatchCables eUpdatePatchCables'
-                                traceE "PatchCables" =<< R.changes bPatchCables
+                                traceShowE "PatchCables" =<< R.changes bPatchCables
 
                                 -- Quit
                                 (eFreedListeners, fFreedListeners) <- R.newEvent
@@ -1324,7 +1337,7 @@ main = do
                             R.pause network
                     liftIO $ do
                         let delay = 1
-                        logLn $ "Waiting " ++ show delay ++ " seconds before trying to connect to Jack"
+                        logLn_ $ "Waiting " ++ show delay ++ " seconds before trying to connect to Jack"
                         OSC.pauseThread delay
                     void $ SJack.withPatchBay serverName "patchbay" connectionMap $ \client -> do
                         lift $ case socket ^$ opts of
@@ -1344,4 +1357,4 @@ main = do
                                     let source = C.sourceSocket s =$= message =$= parseJsonMessage =$= {- printC =$= -} fromJson
                                         sink = toJson =$= unmessage =$= C.sinkSocket s
                                     in run source sink
-            logLn "done."
+            logLn_ "done."
