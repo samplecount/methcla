@@ -36,6 +36,11 @@ data Config = Config {
   , password :: String
   , mountPoint :: String
   , bufferSize :: Double
+  , name :: Text
+  , description :: Text
+  , url :: Text
+  , genre :: Text
+  , public :: Bool
   } deriving (Show)
 
 defaultConfig :: Config
@@ -46,6 +51,11 @@ defaultConfig = Config {
   , password = "hackme"
   , mountPoint = "default"
   , bufferSize = 1
+  , name = ""
+  , description = ""
+  , url = ""
+  , genre = ""
+  , public = False
   }
 
 configText :: Config -> Text
@@ -73,11 +83,11 @@ configText config = Text.unlines [
   , "port            = " `aps` show (port config)
   , "password        = " `aps` password config
   , "mountPoint      = " `aps` mountPoint config
-  , "name            = Streamero"
-  , "description     = Streamero soundscape so und so"
-  , "url             = http://www.puesnada.es"
-  , "genre           = soundscape"
-  , "public          = no"
+  , "name            = " `Text.append` name config
+  , "description     = " `Text.append` description config
+  , "url             = " `Text.append` url config
+  , "genre           = " `Text.append` genre config
+  , "public          = " `Text.append` Text.pack (if public config then "yes" else "no")
   -- , "remoteDumpFile  = /tmp/server-dump.mp3"
   -- , "localDumpFile   = /tmp/encoder-dump.mp3"
   -- , "fileAddDate     = no"

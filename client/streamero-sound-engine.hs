@@ -1,8 +1,8 @@
-{-# LANGUAGE ExistentialQuantification
-           , GeneralizedNewtypeDeriving
-           , OverloadedStrings
-           -- , TemplateHaskell
-           #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 import           Control.Applicative
 import           Control.Arrow (first, second)
 import           Control.Category ((.))
@@ -41,6 +41,7 @@ import           Data.Maybe (catMaybes, maybeToList)
 import           Data.Serialize.Get (getWord32be)
 import           Data.Serialize.Put (putLazyByteString, putWord32be, runPut)
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Traversable as T
 import           Data.Word (Word64)
 import qualified Filesystem as FS
@@ -812,43 +813,72 @@ locationDistanceScaling = distanceScaling 0.1 1 . radius
 -- --------------------------------------------------------------------
 -- Streaming client
 
-startDarkice :: Environment -> String -> URL -> IO ProcessHandle
-startDarkice env name url = do
+newtype StreamId = StreamId Int deriving (Eq, Ord, Show)
+
+streamName :: StreamId -> String
+streamName (StreamId i) = "stream-" ++ show i
+
+streamBusId :: StreamId -> Int
+streamBusId (StreamId i) = i * 2
+
+streamId :: SC.AudioBus -> StreamId
+streamId b = StreamId (fromIntegral (SC.busId b) `div` 2)
+
+streamIds :: Environment -> [StreamId]
+streamIds env = map StreamId [0..getL (maxNumListeners.options) env - 1]
+
+-- TODO: Use control-monad-exception for exception reporting
+--       There also needs to be a way to communicate exceptions back from
+--       the SC engine loop to the reactive event network.
+findStreamId :: Failure SC.AllocFailure m => Environment -> ListenerMap -> m StreamId
+findStreamId env listeners = do
+    case avail List.\\ used of
+        [] -> failure SC.NoFreeIds
+        (i:_) -> return i
+    where used  = map (streamId.outputBus.snd) (H.elems listeners)
+          avail = streamIds env
+
+startDarkice :: Environment -> String -> String -> URL -> IO ProcessHandle
+startDarkice env jackName streamName url = do
     FS.writeTextFile darkiceCfgFile $ Darkice.configText darkiceCfg
-    SProc.createProcess (logStrLn $ "STREAMER:" ++ name) (Darkice.createProcess "darkice" darkiceOpts)
-    where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ name ++ ".cfg")
+    SProc.createProcess (logStrLn $ "STREAMER:" ++ streamName) (Darkice.createProcess "darkice" darkiceOpts)
+    where darkiceCfgFile = FS.append (temporaryDirectory ^$ env) (FS.decodeString $ jackName ++ ".cfg")
           darkiceCfg = Darkice.defaultConfig {
-                          Darkice.jackClientName = Just name
-                        , Darkice.server = case URL.url_type url of
-                                            URL.Absolute host -> URL.host host
-                                            _ -> Darkice.server Darkice.defaultConfig
-                        , Darkice.port = case URL.url_type url of
-                                            URL.Absolute host -> maybe (Darkice.port Darkice.defaultConfig) fromIntegral (URL.port host)
-                                            _ -> Darkice.port Darkice.defaultConfig
+                          Darkice.jackClientName = Just jackName
+                        , Darkice.server =
+                            case URL.url_type url of
+                              URL.Absolute host -> URL.host host
+                              _ -> Darkice.server Darkice.defaultConfig
+                        , Darkice.port =
+                            case URL.url_type url of
+                            URL.Absolute host -> maybe (Darkice.port Darkice.defaultConfig)
+                                                       fromIntegral
+                                                       (URL.port host)
+                            _ -> Darkice.port Darkice.defaultConfig
                         , Darkice.password = "h3aRh3aR"
                         , Darkice.mountPoint = URL.url_path url
-                        , Darkice.bufferSize = 1 }
+                        , Darkice.bufferSize = 1
+                        , Darkice.name = Text.pack streamName
+                        , Darkice.genre = "Soundscape" }
           darkiceOpts = Darkice.defaultOptions {
                           Darkice.configFile = Just darkiceCfgFile }
+          --escapePath = map (\c -> if c == '/' then '-' else c)
 
 makeConnectionMap :: Bool -> Environment -> SJack.Connections
-makeConnectionMap monitor env = concatMap f [0..getL (maxNumListeners.options) env - 1]
+makeConnectionMap monitor = concatMap f . streamIds
     where
-        f i = let stream = "stream-" ++ show i
+        f i = let stream = streamName i
                   stream1 = "left"
                   stream2 = "right"
                   sc = "supercollider"
-                  sc1 = "out_" ++ show (2*i + 1)
-                  sc2 = "out_" ++ show (2*i + 2)
+                  sc1 = "out_" ++ show (streamBusId i + 1)
+                  sc2 = "out_" ++ show (streamBusId i + 2)
               in [ ((sc,sc1),(stream,stream1))
                  , ((sc,sc2),(stream,stream2)) ]
                  ++ if monitor
                     then [ ((sc,sc1),("system","playback_1"))
                          , ((sc,sc2),("system","playback_2")) ]
                     else []
-
-streamName :: Integral a => a -> String
-streamName a = "stream-" ++ show (fromIntegral a :: Int)
 
 -- --------------------------------------------------------------------
 -- Listeners
@@ -862,21 +892,16 @@ listenerLocationDistanceScaling listener location = locationDistanceScaling loca
 listenerLocations :: Listener -> LocationMap -> LocationMap
 listenerLocations listener = H.filter (\(location, _) -> listenerLocationDistance listener location <= radius location)
 
--- TODO: Use control-monad-exception for exception reporting
---       There also needs to be a way to communicate exceptions back from
---       the SC engine loop to the reactive event network.
-findOutputBus :: Environment -> ListenerMap -> SC.ServerT IO SC.AudioBus
-findOutputBus env listeners = do
-    case avail List.\\ used of
-        [] -> failure SC.NoFreeIds
-        (i:_) -> SC.outputBus 2 i
-    where used = map (fromIntegral.SC.busId.outputBus.snd) . H.elems $ listeners
-          avail = map (*2) [0..getL (maxNumListeners.options) env - 1]
-
 addListener :: Environment -> ListenerMap -> Listener -> SC.ServerT IO (Listener, ListenerState)
 addListener env listeners listener = do
-    output <- findOutputBus env listeners
-    darkice <- liftIO $ startDarkice env (streamName . SC.busId $ output) (streamURL listener)
+    sid <- findStreamId env listeners
+    let url = streamURL listener
+    darkice <- liftIO $ startDarkice
+                          env
+                          (streamName sid)
+                          (URL.url_path url)
+                          url
+    output <- SC.outputBus 2 (streamBusId sid)
     return (listener, ListenerState output darkice)
 
 removeListener :: ListenerMap -> ListenerId -> SC.ServerT IO ListenerId
