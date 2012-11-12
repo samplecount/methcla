@@ -707,7 +707,10 @@ addSound s =
 data Player = Player SC.Buffer SC.Synth deriving Show
 
 playerSynthDef :: Int -> SC.Loop -> SC.UGen
-playerSynthDef nc loop = SC.out (SC.control SC.KR "out" 0) $ toStereo $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
+playerSynthDef nc loop =
+    SC.out (SC.control SC.KR "out" 0)
+  $ toStereo
+  $ SC.diskIn nc (SC.control SC.IR "buffer" (-1)) loop
 
 mkPlayerSynthDef :: Int -> SC.Loop -> SC.ServerT IO SC.SynthDef
 mkPlayerSynthDef nc loop = SC.exec' immediately . SC.async . SC.d_recv ("player-" ++ show loop ++ "-" ++ show nc) . playerSynthDef nc $ loop
