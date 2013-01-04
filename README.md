@@ -3,28 +3,26 @@
 This directory contains various Haskell libraries and scripts that are used to
 control the Mescaline audio engine.
 
-## General notes on building
-
-The most convenient way to build the libraries and executables is to use the
-various sandboxing tools available for Haskell development.
-
-You need the following tools; each can be installed with `cabal install`:
-
-* `cabal-meta`
-* `virthualenv`
-
-Create a local Haskell sandbox in `$PWD/.virthualenv` with
-
-    $ virthualenv
-
-Now, before building the libraries and executables, activate the `virthualenv`
-configuration:
-
-    $ source .virthualenv/bin/activate
-
 ### Building the sound engine
 
-Need to document this
+In the `engine` subdirectory execute
+
+    ./shake configure
+
+initially and each time the build files change.
+
+Then, to build a specific target:
+
+    ./shake build TARGET
+
+To get a list of possible targets
+
+    ./shake build
+
+
+To clean everything
+
+    ./shake clean
 
 ### Building the client libraries and scripts
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ -f "$HOME/.profile" ]; then
 	source "$HOME/.profile"
@@ -6,12 +6,19 @@ elif [ -f "$HOME/.bash_login" ]; then
 	source "$HOME/.bash_login"
 fi
 
-if [ -z "$VIRTHUALENV" -a -f "../.virthualenv/bin/activate" ]; then
-    source "../.virthualenv/bin/activate"
-fi
+# if [ -z "$VIRTHUALENV" -a -f "../.virthualenv/bin/activate" ]; then
+#     source "../.virthualenv/bin/activate"
+# fi
 
-ncpu=`sysctl -n hw.ncpu`
 rtsopts="+RTS -N -RTS"
 
-ghc --make -rtsopts -threaded -o shakefile.exe shakefile.hs || exit 1
-./shakefile.exe $rtsopts "$@" 2>&1 | tee errors.err || exit 1
+function shakeit()
+{
+	./cabal-dev/bin/shakefile $rtsopts "$@" 2>&1 | tee errors.err
+}
+
+case $1 in
+	config*) cabal-dev install || exit 1 ;;
+	build) shift ; shakeit "$@" || exit 1 ;;
+	clean) shift ; shakeit clean "$@" ;;
+esac
