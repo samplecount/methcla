@@ -18,7 +18,6 @@ function shakeit()
 }
 
 case $1 in
-	config*) cabal-dev install || exit 1 ;;
-	build) shift ; shakeit "$@" || exit 1 ;;
-	clean) shift ; shakeit clean "$@" ;;
+	update) cabal-dev install || exit 1 ;;
+	*) shakeit "$@" || exit 1 ;;
 esac
