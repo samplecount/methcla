@@ -10,7 +10,7 @@ errors.err
 tags
 tmtags
 build/
-client/cabal-dev/
+cabal-dev/
 dist/
 .shake.database
 .shake.journal
