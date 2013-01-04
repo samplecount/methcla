@@ -1,0 +1,18 @@
+Name: engine
+Version: 0.1.0
+Cabal-Version: >= 1.2
+Build-Type: Simple
+Executable shakefile
+  Main-Is: shakefile.hs
+  Ghc-Options: -Wall -rtsopts -threaded
+  Build-Depends:
+      base >= 4 && < 5
+    , cmdargs
+    , data-lens
+    , data-lens-template
+    , directory
+    , filemanip
+    , filepath
+    , process
+    , shake
+    , split
