@@ -6,7 +6,8 @@ import           Development.Shake.FilePath
 import           Data.Char (toLower)
 import           Data.Lens.Common
 import           Data.Lens.Template
-import           Data.List (intersperse, isInfixOf, isSuffixOf)
+import           Data.List (intercalate, intersperse, isInfixOf, isSuffixOf)
+import           Data.List.Split (splitOn)
 import           Data.Maybe
 import           GHC.Conc (numCapabilities)
 import qualified System.Console.CmdArgs.Implicit as C
@@ -338,9 +339,31 @@ osxLinker link target toolChain =
         SharedLibrary  -> defaultLinker target toolChain . prependL linkerFlags (flag "-dynamiclib")
         DynamicLibrary -> defaultLinker target toolChain . prependL linkerFlags (flag "-bundle")
 
-cToolChain_IOS_Simulator :: CToolChain
-cToolChain_IOS_Simulator =
-    prefix ^= Just "/Developer/Platforms/iPhoneSimulator.platform/Developer/usr"
+newtype DeveloperPath = DeveloperPath { developerPath :: FilePath }
+
+-- | Get base path of development tools on OSX.
+getDeveloperPath :: IO DeveloperPath
+getDeveloperPath =
+  (DeveloperPath . head . splitOn "\n")
+    <$> readProcess "xcode-select" ["--print-path"] ""
+
+platformDeveloperPath :: DeveloperPath -> String -> FilePath
+platformDeveloperPath developer platform =
+  developerPath developer </> "Platforms" </> (platform ++ ".platform") </> "Developer"
+
+platformSDKPath :: DeveloperPath -> String -> String -> FilePath
+platformSDKPath developer platform sdkVersion =
+  platformDeveloperPath developer platform </> "SDKs" </> (platform ++ sdkVersion ++ ".sdk")
+
+-- | Get OSX system version (first two digits).
+getSystemVersion :: IO String
+getSystemVersion =
+  (intercalate "." . take 2 . splitOn ".")
+    <$> readProcess "sw_vers" ["-productVersion"] ""
+
+cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
+cToolChain_IOS_Simulator developer =
+    prefix ^= Just (platformDeveloperPath developer "iPhoneSimulator" </> "/usr")
   $ compilerCmd ^= "clang"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
@@ -348,15 +371,17 @@ cToolChain_IOS_Simulator =
   $ linker ^= osxLinker
   $ defaultCToolChain
 
-cBuildFlags_IOS_Simulator :: CBuildFlags
-cBuildFlags_IOS_Simulator =
+cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
+cBuildFlags_IOS_Simulator developer sdkVersion =
     appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  $ appendL preprocessorFlags [ "-isysroot", "/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator5.0.sdk" ]
+  $ appendL preprocessorFlags
+            [ "-isysroot"
+            , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
   $ defaultCBuildFlags
 
-cToolChain_MacOSX_clang :: CToolChain
-cToolChain_MacOSX_clang =
-    prefix ^= Just "/usr"
+cToolChain_MacOSX_clang :: DeveloperPath -> CToolChain
+cToolChain_MacOSX_clang developer =
+    prefix ^= Just (developerPath developer </> "usr")
   $ compilerCmd ^= "clang"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
@@ -364,15 +389,17 @@ cToolChain_MacOSX_clang =
   $ linker ^= osxLinker
   $ defaultCToolChain
 
-cToolChain_MacOSX_gcc :: CToolChain
-cToolChain_MacOSX_gcc =
+cToolChain_MacOSX_gcc :: DeveloperPath -> CToolChain
+cToolChain_MacOSX_gcc developer =
     compilerCmd ^= "gcc"
   $ linkerCmd ^= "g++"
-  $ cToolChain_MacOSX_clang
+  $ cToolChain_MacOSX_clang developer
 
-cBuildFlags_MacOSX :: String -> CBuildFlags
-cBuildFlags_MacOSX sdkVersion =
-    appendL preprocessorFlags [ "-isysroot", "/Developer/SDKs/MacOSX" ++ sdkVersion ++ ".sdk" ]
+cBuildFlags_MacOSX :: DeveloperPath -> String -> CBuildFlags
+cBuildFlags_MacOSX developer sdkVersion =
+    appendL preprocessorFlags [
+      "-isysroot"
+    , platformSDKPath developer "MacOSX" sdkVersion ]
   $ appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
   $ defaultCBuildFlags
 
@@ -646,12 +673,13 @@ targetSpecs = [
     ( "clean", const (Dir.removeDirectoryRecursive . getL buildPrefix) )
   , ( "ios-simulator",
     \shake env -> do
+        developer <- getDeveloperPath
         let target = mkCTarget IOS_Simulator "i386"
-            toolChain = cToolChain_IOS_Simulator
+            toolChain = cToolChain_IOS_Simulator developer
             buildFlags = applyBuildConfiguration env configurations
                        . mescalineStaticBuidFlags
                        . mescalineCommonBuildFlags
-                       $ cBuildFlags_IOS_Simulator
+                       $ cBuildFlags_IOS_Simulator developer "5.0"
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -661,14 +689,16 @@ targetSpecs = [
     )
   , ( "macosx",
     \shake env -> do
+        developer <- getDeveloperPath
+        sdkVersion <- getSystemVersion
         jackBuildFlags <- pkgConfig "jack"
         let target = mkCTarget MacOSX "x86_64"
-            toolChain = cToolChain_MacOSX_gcc
+            toolChain = cToolChain_MacOSX_gcc developer
             buildFlags = applyBuildConfiguration env configurations
                        . jackBuildFlags
                        . mescalineSharedBuildFlags
                        . mescalineCommonBuildFlags
-                       $ cBuildFlags_MacOSX "10.6"
+                       $ cBuildFlags_MacOSX developer sdkVersion
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -737,4 +767,3 @@ main = do
                     putStrLn $ "Please chose a target:"
                     mapM_ (putStrLn . ("\t"++) . fst) targetSpecs
                 ts -> setLineBuffering >> processTargets shakeIt env ts
-
