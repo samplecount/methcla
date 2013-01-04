@@ -713,7 +713,7 @@ targetSpecs = [
             buildFlags = applyBuildConfiguration env configurations
                        . mescalineStaticBuidFlags
                        . mescalineCommonBuildFlags
-                       $ cBuildFlags_IOS_Simulator developer "5.0"
+                       $ cBuildFlags_IOS_Simulator developer "6.0"
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
