@@ -4,18 +4,6 @@
 [submodule "engine/external_libraries/boost_lockfree"]
 	path = engine/external_libraries/boost_lockfree
 	url = git://supercollider.git.sourceforge.net/gitroot/supercollider/boost-lockfree
-[submodule "engine/external_libraries/oscpp"]
-	path = engine/external_libraries/oscpp
-	url = git://github.com/kaoskorobase/oscpp.git
 [submodule "engine/external_libraries/lv2"]
 	path = engine/external_libraries/lv2
 	url = https://github.com/kaoskorobase/lv2.git
-[submodule "client/packages/bindings-sc3"]
-	path = client/packages/bindings-sc3
-	url = https://github.com/kaoskorobase/bindings-sc3.git
-[submodule "client/packages/hsc3-process"]
-	path = client/packages/hsc3-process
-	url = https://github.com/kaoskorobase/hsc3-process
-[submodule "client/packages/hsc3-server"]
-	path = client/packages/hsc3-server
-	url = https://github.com/kaoskorobase/hsc3-server
