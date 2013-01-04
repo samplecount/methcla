@@ -381,11 +381,11 @@ cBuildFlags_IOS developer sdkVersion =
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator developer =
-    prefix ^= Just (platformDeveloperPath developer "iPhoneSimulator" </> "/usr")
-  $ compilerCmd ^= "clang"
+    prefix ^= Just (platformDeveloperPath developer "iPhoneSimulator" </> "usr")
+  $ compilerCmd ^= "llvm-gcc"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
-  $ linkerCmd ^= "clang++"
+  $ linkerCmd ^= "llvm-g++"
   $ linker ^= osxLinker
   $ defaultCToolChain
 
@@ -397,13 +397,13 @@ cBuildFlags_IOS_Simulator developer sdkVersion =
             , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
   $ defaultCBuildFlags
 
-cToolChain_MacOSX_clang :: DeveloperPath -> CToolChain
-cToolChain_MacOSX_clang developer =
+cToolChain_MacOSX :: DeveloperPath -> CToolChain
+cToolChain_MacOSX developer =
     prefix ^= Just (developerPath developer </> "usr")
-  $ compilerCmd ^= "clang"
+  $ compilerCmd ^= "llvm-gcc"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
-  $ linkerCmd ^= "clang++"
+  $ linkerCmd ^= "llvm-g++"
   $ linker ^= osxLinker
   $ defaultCToolChain
 
@@ -411,7 +411,7 @@ cToolChain_MacOSX_gcc :: DeveloperPath -> CToolChain
 cToolChain_MacOSX_gcc developer =
     compilerCmd ^= "gcc"
   $ linkerCmd ^= "g++"
-  $ cToolChain_MacOSX_clang developer
+  $ cToolChain_MacOSX developer
 
 cBuildFlags_MacOSX :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_MacOSX developer sdkVersion =
@@ -727,7 +727,7 @@ targetSpecs = [
         sdkVersion <- getSystemVersion
         jackBuildFlags <- pkgConfig "jack"
         let target = mkCTarget MacOSX "x86_64"
-            toolChain = cToolChain_MacOSX_gcc developer
+            toolChain = cToolChain_MacOSX developer
             buildFlags = applyBuildConfiguration env configurations
                        . jackBuildFlags
                        . mescalineSharedBuildFlags
