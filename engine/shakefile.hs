@@ -326,7 +326,7 @@ sharedLibrary env target toolChain =
 osxArchiver :: Archiver
 osxArchiver target toolChain buildFlags inputs output = do
     need inputs
-    systemLoud (tool linkerCmd toolChain)
+    systemLoud (tool archiverCmd toolChain)
           $  archiverFlags `getL` buildFlags
           ++ flag "-static"
           ++ flag_ "-o" output
