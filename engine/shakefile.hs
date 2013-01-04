@@ -361,6 +361,24 @@ getSystemVersion =
   (intercalate "." . take 2 . splitOn ".")
     <$> readProcess "sw_vers" ["-productVersion"] ""
 
+cToolChain_IOS :: DeveloperPath -> CToolChain
+cToolChain_IOS developer =
+    prefix ^= Just (platformDeveloperPath developer "iPhoneOS" </> "usr")
+  $ compilerCmd ^= "llvm-gcc"
+  $ archiverCmd ^= "libtool"
+  $ archiver ^= osxArchiver
+  $ linkerCmd ^= "llvm-g++"
+  $ linker ^= osxLinker
+  $ defaultCToolChain
+
+cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
+cBuildFlags_IOS developer sdkVersion =
+    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
+  $ appendL preprocessorFlags
+            [ "-isysroot"
+            , platformSDKPath developer "iPhoneOS" sdkVersion ]
+  $ defaultCBuildFlags
+
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator developer =
     prefix ^= Just (platformDeveloperPath developer "iPhoneSimulator" </> "/usr")
@@ -671,6 +689,22 @@ optionsToShake opts = shakeOptions {
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
     ( "clean", const (Dir.removeDirectoryRecursive . getL buildPrefix) )
+  , ( "ios",
+    \shake env -> do
+        developer <- getDeveloperPath
+        let target = mkCTarget IOS "armv7"
+            toolChain = cToolChain_IOS developer
+            buildFlags = applyBuildConfiguration env configurations
+                       . mescalineStaticBuidFlags
+                       . mescalineCommonBuildFlags
+                       $ cBuildFlags_IOS developer "6.0"
+        libmescaline <- mescalineLib target
+        shake $ do
+            let libs = [ libmescaline ]
+                lib = staticLibrary env target toolChain buildFlags
+                libFile = libBuildPath env target
+            want =<< mapM lib libs
+    )
   , ( "ios-simulator",
     \shake env -> do
         developer <- getDeveloperPath
