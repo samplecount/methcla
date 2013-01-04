@@ -7,17 +7,17 @@ control the Mescaline audio engine.
 
 In the `engine` subdirectory execute
 
-    ./shake configure
+    ./shake update
 
 initially and each time the build files change.
 
 Then, to build a specific target:
 
-    ./shake build TARGET
+    ./shake TARGET
 
 To get a list of possible targets
 
-    ./shake build
+    ./shake
 
 
 To clean everything
