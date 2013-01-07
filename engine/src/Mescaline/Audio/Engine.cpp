@@ -191,7 +191,7 @@ void Environment::performMessage(API::Request* request, const LV2_Atom_Object* m
         const char* uri_id = unmapUri(msg->body.id);
         cout << atom_type << " " << uri_id << " " << uri_type << endl;
     }
-    LV2_OBJECT_FOREACH(msg, prop) {
+    LV2_ATOM_OBJECT_FOREACH(msg, prop) {
         cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
     }
 }

@@ -433,21 +433,19 @@ externalLibrary = combine externalLibraries
 lv2Dir :: FilePath
 lv2Dir = externalLibrary "lv2"
 
-serdDir :: FilePath
-serdDir = externalLibrary "serd-0.5.0"
-
-sordDir :: FilePath
-sordDir = externalLibrary "sord-0.5.0"
-
-lilvDir :: FilePath
-lilvDir = externalLibrary "lilv-0.5.0"
-
 boostDir :: FilePath
 boostDir = externalLibrary "boost"
 
+serdDir :: FilePath
+serdDir = externalLibrary "serd"
+
 serdBuildFlags :: CBuildFlags -> CBuildFlags
 serdBuildFlags = appendL userIncludes
-                    [ serdDir, serdDir </> "src" ]
+                    [ serdDir, serdDir </> "src"
+                    , externalLibraries ]
+
+sordDir :: FilePath
+sordDir = externalLibrary "sord"
 
 sordBuildFlags :: CBuildFlags -> CBuildFlags
 sordBuildFlags = appendL userIncludes
@@ -455,11 +453,26 @@ sordBuildFlags = appendL userIncludes
                     , serdDir
                     , externalLibraries ]
 
+sratomDir :: FilePath
+sratomDir = externalLibrary "sratom"
+
+sratomBuildFlags :: CBuildFlags -> CBuildFlags
+sratomBuildFlags = appendL userIncludes
+                    [ sratomDir
+                    , serdDir
+                    , sordDir
+                    , externalLibraries
+                    , lv2Dir ]
+
+lilvDir :: FilePath
+lilvDir = externalLibrary "lilv"
+
 lilvBuildFlags :: CBuildFlags -> CBuildFlags
 lilvBuildFlags = appendL userIncludes
                     [ lilvDir, lilvDir </> "src"
                     , serdDir
                     , sordDir
+                    , sratomDir
                     , externalLibraries
                     , lv2Dir ]
 
@@ -467,8 +480,8 @@ boostBuildFlags :: CBuildFlags -> CBuildFlags
 boostBuildFlags = appendL systemIncludes [ boostDir ]
 
 engineBuildFlags :: CTarget -> CBuildFlags -> CBuildFlags
-engineBuildFlags target buildFlags =
-    userIncludes `appendL`
+engineBuildFlags target =
+    appendL userIncludes
       ( ["."]
      ++ [ "external_libraries" ]
      ++ [ "external_libraries/lv2" ]
@@ -478,11 +491,10 @@ engineBuildFlags target buildFlags =
             MacOSX        -> [ "platform/jack" ]
             -- _             -> []
      ++ [ serdDir, sordDir, lilvDir ] )
-  $ systemIncludes `appendL`
+  . appendL systemIncludes
        ( [ "src" ]
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
-  $ buildFlags
 
 -- | Build flags common to all targets
 mescalineCommonBuildFlags :: CBuildFlags -> CBuildFlags
@@ -522,9 +534,9 @@ mescalineLib target = do
         sourceTree serdBuildFlags $ sourceFiles $
             under (serdDir </> "src") [
                 "env.c"
-              , "error.c"
               , "node.c"
               , "reader.c"
+              , "string.c"
               , "uri.c"
               , "writer.c"
               ]
@@ -533,24 +545,33 @@ mescalineLib target = do
             under (sordDir </> "src") [
                 "sord.c"
               , "syntax.c"
-              , "zix/tree.c"
+              , "zix/digest.c"
               , "zix/hash.c"
+              , "zix/tree.c"
+              ]
+        -- sratom
+      , sourceTree sratomBuildFlags $ sourceFiles $
+            under (sratomDir </> "src") [
+                "sratom.c"
               ]
         -- lilv
       , sourceTree lilvBuildFlags $ sourceFiles $
             under (lilvDir </> "src") [
                 "collections.c"
               , "instance.c"
+              , "lib.c"
               , "node.c"
               , "plugin.c"
               , "pluginclass.c"
               , "port.c"
               , "query.c"
               , "scalepoint.c"
+              , "state.c"
               , "ui.c"
               , "util.c"
               , "world.c"
-              , "zix/tree.c"
+              -- FIXME: Make sure at runtime that this is actually the same as sord/src/zix/tree.c
+              --, "zix/tree.c"
               ]
         -- boost
       , sourceTree boostBuildFlags $ sourceFiles boostSrc
