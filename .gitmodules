@@ -4,6 +4,3 @@
 [submodule "engine/external_libraries/boost_lockfree"]
 	path = engine/external_libraries/boost_lockfree
 	url = git://supercollider.git.sourceforge.net/gitroot/supercollider/boost-lockfree
-[submodule "engine/external_libraries/lv2"]
-	path = engine/external_libraries/lv2
-	url = https://github.com/kaoskorobase/lv2.git
