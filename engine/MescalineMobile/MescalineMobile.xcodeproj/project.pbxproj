@@ -797,7 +797,7 @@
 					"\"$(SRCROOT)/../build/debug/ios_simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
-				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv-0.5.0";
+				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv";
 			};
 			name = Debug;
 		};
@@ -823,7 +823,7 @@
 					"\"$(SRCROOT)/../build/release/ios_simulator/i386\"",
 				);
 				PRODUCT_NAME = Mescaline;
-				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv-0.5.0";
+				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv";
 			};
 			name = Release;
 		};
