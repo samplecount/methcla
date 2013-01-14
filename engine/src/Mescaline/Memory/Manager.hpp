@@ -46,7 +46,7 @@ protected:
 
     static void* alloc(Allocator& allocator, size_t size)
     {
-        Chunk* chunk = static_cast<Chunk*>(allocator.allocAligned<align>(sizeof(Chunk) + size));
+        Chunk* chunk = static_cast<Chunk*>(allocator.template allocAligned<align>(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
         BOOST_ASSERT( MESCALINE_ISALIGNED(align, reinterpret_cast<size_t>(chunk->data)) );
         return chunk->data;
