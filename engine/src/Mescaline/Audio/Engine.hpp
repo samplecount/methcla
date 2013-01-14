@@ -161,24 +161,12 @@ namespace Mescaline { namespace Audio
         size_t sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
 
-        ResourceId nextResourceId() { return m_resources.nextId(); }
-
-        AudioBus::Handle audioBus(const ResourceId& busId)
-        {
-            return boost::dynamic_pointer_cast<AudioBus>(m_resources.lookup(busId));
-        }
-
-//        {
-//            switch (busId.scope()) {
-//                case AudioBusId::kInput:
-//                    return m_audioInputChannels[busId.id()];
-//                case AudioBusId::kOutput:
-//                    return m_audioOutputChannels[busId.id()];
-//                case AudioBusId::kInternal:
-//                    return m_audioBuses[busId.id()];
-//            }
-//            BOOST_THROW_EXCEPTION(InvalidInput());
-//        }
+        //* Return audio bus with id.
+        AudioBus* audioBus(const AudioBusId& id);
+        //* Return external audio output bus at index.
+        AudioBus& externalAudioOutput(size_t index);
+        //* Return external audio input bus at index.
+        AudioBus& externalAudioInput(size_t index);
 
         Memory::RTMemoryManager& rtMem() { return m_rtMem; }
 
@@ -199,8 +187,8 @@ namespace Mescaline { namespace Audio
         };
 
         // URIs and messages
-        URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
-        const char* unmapUri(URID urid) const { return plugins().uriMap().unmap(urid); }
+        LV2_URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
+        const char* unmapUri(LV2_URID urid) const { return plugins().uriMap().unmap(urid); }
 
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
@@ -219,27 +207,27 @@ namespace Mescaline { namespace Audio
         void performBundle(API::Request* request, const LV2_Atom_Sequence* bdl);
 
     protected:
-        friend class Resource;
-
-        void addResource(Resource& resource);
-        void removeResource(Resource& resource);
+        friend class Node;
+        ResourceMap<NodeId,Node>& nodes() { return m_nodes; }
 
     private:
-        const size_t                    m_sampleRate;
-        const size_t                    m_blockSize;
-        Memory::RTMemoryManager         m_rtMem;
-        Plugin::Manager&                m_plugins;
-        ResourceMap                     m_resources;
-        Group*                          m_rootNode;
-        std::vector<ExternalAudioBus*>  m_audioInputChannels;
-        std::vector<ExternalAudioBus*>  m_audioOutputChannels;
-        Epoch                           m_epoch;
-        CommandChannel<Command>         m_commandChannel;
-        CommandEngine<Command>          m_commandEngine;
-        Uris                            m_uris;
-        LV2_Atom_Forge                  m_forge;
+        const size_t                        m_sampleRate;
+        const size_t                        m_blockSize;
+        Memory::RTMemoryManager             m_rtMem;
+        Plugin::Manager&                    m_plugins;
+        ResourceMap<AudioBusId,AudioBus>    m_audioBuses;
+        ResourceMap<AudioBusId,AudioBus>    m_freeAudioBuses;
+        ResourceMap<NodeId,Node>            m_nodes;
+        Group*                              m_rootNode;
+        std::vector<ExternalAudioBus*>      m_audioInputChannels;
+        std::vector<ExternalAudioBus*>      m_audioOutputChannels;
+        Epoch                               m_epoch;
+        CommandChannel<Command>             m_commandChannel;
+        CommandEngine<Command>              m_commandEngine;
+        Uris                                m_uris;
+        LV2_Atom_Forge                      m_forge;
     };
-    
+
     class Engine : public IO::Client
     {
     public:

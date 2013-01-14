@@ -11,14 +11,14 @@ namespace Mescaline { namespace Audio { namespace API { namespace Client {
 class Bus
 {
 public:
-	Bus(const ResourceId& id)
+	Bus(const AudioBusId& id)
 		: m_id(id)
 	{ }
 	
-	const ResourceId& id() const { return m_id; }
+	const AudioBusId& id() const { return m_id; }
 
 private:
-	ResourceId m_id;
+	AudioBusId m_id;
 };
 
 typedef boost::unordered_map<std::string,Bus> BusMap;

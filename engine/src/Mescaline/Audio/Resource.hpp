@@ -1,71 +1,23 @@
 #ifndef Mescaline_Audio_Resource_hpp_included
 #define Mescaline_Audio_Resource_hpp_included
 
-#include <Mescaline/Audio/API.hpp>
-
-#include <boost/assert.hpp>
-#include <boost/intrusive/unordered_set.hpp>
-#include <boost/intrusive_ptr.hpp>
 #include <boost/utility.hpp>
+#include <stdexcept>
+#include <vector>
 
 namespace Mescaline { namespace Audio
 {
-    typedef uint32_t URID;
-
-    class ResourceId
-    {
-    public:
-        ResourceId()
-            : m_id(InvalidId)
-        { }
-        explicit ResourceId(uint32_t id)
-            : m_id(id)
-        { BOOST_ASSERT( id != InvalidId ); }
-        ResourceId(const ResourceId& other)
-            : m_id(other.m_id)
-        { }
-
-        operator uint32_t() const
-            { return m_id; }
-        operator bool() const
-            { return m_id != InvalidId; }
-
-        friend bool operator==(const ResourceId& a, const ResourceId& b)
-            { return a.m_id == b.m_id; }
-
-        friend bool operator!=(const ResourceId& a, const ResourceId& b)
-            { return a.m_id != b.m_id; }
-
-        friend bool operator<(const ResourceId& a, const ResourceId& b)
-            { return a.m_id < b.m_id; }
-
-        friend bool operator>(const ResourceId& a, const ResourceId& b)
-            { return a.m_id > b.m_id; }
-
-        friend std::size_t hash_value(const ResourceId& x)
-            { return std::size_t(x.m_id); }
-
-    protected:
-        static const uint32_t InvalidId = 0;
-
-    private:
-        uint32_t m_id;
-    };
-
     class Environment;
 
-    /// Resource class.
+    /// Resource base class.
     //
-    // Resources are /always/ created in the RT thread and can /only/
-    // be retained or released from the RT thread.
-    class Resource : public boost::intrusive::unordered_set_base_hook<>
-                   , public boost::noncopyable
+    // A resource has a reference to its environment and a unique id.
+    template <class Id> class Resource : public boost::noncopyable
     {
     public:
-        Resource(Environment& env, const ResourceId& id)
+        Resource(Environment& env, const Id& id)
             : m_env(env)
             , m_id(id)
-            , m_refCount(1)
         { }
         virtual ~Resource()
         { }
@@ -74,125 +26,62 @@ namespace Mescaline { namespace Audio
         const Environment& env() const { return m_env; }
         Environment& env() { return m_env; }
 
-//        virtual URID typeId() const = 0;
-        const ResourceId& id() const { return m_id; }
-
-        friend bool operator==(const Resource& a, const Resource& b)
-            { return a.id() == b.id(); }
-
-        friend std::size_t hash_value(const Resource& x)
-            { return hash_value(x.id()); }
-
-        typedef boost::intrusive_ptr<Resource> Handle;
-
-		virtual void handleRequest(const API::Request& request);
-
-    protected:
-        /// Free the resource. This is called when the resource's reference count
-        // drops to zero and should free the resource in the correct thread.
-        //
-        // For instance, Nodes are destroyed in the realtime thread, while AudioBuses
-        // defer their destruction to the non-realtime thread.
-        virtual void free();
-
-    protected:
-        friend class ResourceMap;
-        friend void intrusive_ptr_add_ref(Resource*);
-        friend void intrusive_ptr_release(Resource*);
-
-        typedef uint32_t RefCount;
-
-        RefCount refCount() const
-        { return m_refCount; }
-
-        void retain()
-        { m_refCount++; }
-
-        void release()
-        {
-            m_refCount--;
-            if (m_refCount == 0) {
-                this->free();
-            }
-        }
+        /// Return unique id.
+        const Id& id() const { return m_id; }
 
     private:
         Environment&    m_env;
-        ResourceId      m_id;
-        RefCount        m_refCount;
+        Id              m_id;
     };
 
-    void intrusive_ptr_add_ref(Resource* x);
-    void intrusive_ptr_release(Resource* x);
-
-    class ResourceMap
+    /// Simple map for holding pointers to resources.
+    //
+    // Also provides unique id allocation facility.
+    template <class Id, class T> class ResourceMap
     {
     public:
-        ResourceMap()
-            : m_map(bucket_traits(m_buckets, kNumBuckets))
+        ResourceMap(size_t size)
+            : m_elems(size, nullptr)
         { }
-
-        void insert(Resource& resource)
+        ~ResourceMap()
         {
-            BOOST_ASSERT_MSG( resource.refCount() == 1, "Expected vanilla resource" );
-            Map::insert_commit_data commit;
-            std::pair<Map::iterator,bool> result = m_map.insert_check(resource.id(), KeyHasher(), KeyValueEqual(), commit);
-            BOOST_ASSERT_MSG( result.second, "Duplicate resource ID" );
-            m_map.insert_commit(resource, commit);
-        }
-
-        void remove(Resource& resource)
-        {
-            size_t n = m_map.erase(resource);
-            BOOST_ASSERT_MSG( n > 0, "Invalid resource" );
-            BOOST_ASSERT_MSG( n == 1, "Resource map inconsistency" );
-            resource.release();
-        }
-
-        bool includes(const ResourceId& id)
-        {
-            return m_map.find(id, KeyHasher(), KeyValueEqual()) != m_map.end();
-        }
-
-        Resource::Handle lookup(const ResourceId& id)
-        {
-            Map::iterator it = m_map.find(id, KeyHasher(), KeyValueEqual());
-            BOOST_ASSERT_MSG( it != m_map.end(), "Invalid resource ID" );
-            return Resource::Handle(&*it);
-        }
-
-        ResourceId nextId()
-        {
-            // TODO: Find better algorithm.
-            const uint32_t invalid = ResourceId();
-            uint32_t id0 = m_map.size();
-            uint32_t id = id0 + 1;
-            while ((includes(ResourceId(id)) || id == invalid) && id != id0) {
-                id++;
+            for (T*& a : m_elems) {
+                delete a;
             }
-            BOOST_ASSERT_MSG( id != id0, "No more free resource IDs" );
-            return ResourceId(id);
+        }
+
+        size_t size() const
+        {
+            return m_elems.size();
+        }
+
+        Id nextId()
+        {
+            for (size_t i=0; i < m_elems.size(); i++) {
+                if (m_elems[i] == nullptr) {
+                    return static_cast<Id>(i);
+                }
+            }
+            throw std::runtime_error("No free ids");
+        }
+
+        void insert(const Id& id, T* a)
+        {
+            m_elems[id] = a;
+        }
+
+        void remove(const Id& id)
+        {
+            m_elems[id] = nullptr;
+        }
+
+        T* lookup(const Id& id)
+        {
+            return m_elems[id];
         }
 
     private:
-        typedef boost::intrusive::unordered_set<Resource>::bucket_type bucket_type;
-        typedef boost::intrusive::unordered_set<Resource>::bucket_traits bucket_traits;
-        typedef boost::intrusive::unordered_set<Resource, boost::intrusive::power_2_buckets<true> > Map;
-
-        typedef boost::hash<ResourceId> KeyHasher;
-        struct KeyValueEqual
-        {
-            bool operator()(const ResourceId& key, const Resource& value) const
-            {
-                return key == value.id();
-            }
-        };
-
-        static const size_t kNumBuckets = 1024;
-        // NOTE: Order is important here; m_buckets needs to be initialized
-        //       before m_map in the constructor.
-        bucket_type m_buckets[kNumBuckets];
-        Map         m_map;
+        std::vector<T*> m_elems;
     };
 }; };
 

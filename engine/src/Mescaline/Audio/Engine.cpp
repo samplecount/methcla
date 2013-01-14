@@ -53,7 +53,10 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_plugins(pluginManager)
-    , m_rootNode(0)
+    , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
+    , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
+    , m_nodes(options.maxNumNodes)
+    , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
     , m_epoch(0)
     , m_commandChannel(8192)
     , m_commandEngine(8192)
@@ -66,27 +69,45 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     m_uris.patch_subject = mapUri(LV2_PATCH__subject);
     m_uris.patch_body = mapUri(LV2_PATCH__body);
 
-    m_rootNode = Group::construct(*this, nextResourceId(), 0);
-
     const Epoch prevEpoch = epoch() - 1;
 
     m_audioInputChannels.reserve(options.numHardwareInputChannels);
-    for (size_t i=0; i < options.numHardwareInputChannels; i++) {
-        ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
-        addResource(*bus);
+    for (uint32_t i=0; i < options.numHardwareInputChannels; i++) {
+        ExternalAudioBus* bus = new ExternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
+        m_audioBuses.insert(bus->id(), bus);
         m_audioInputChannels.push_back(bus);
     }
 
     m_audioOutputChannels.reserve(options.numHardwareOutputChannels);
-    for (size_t i=0; i < options.numHardwareOutputChannels; i++) {
-        ExternalAudioBus* bus = new ExternalAudioBus(*this, nextResourceId(), blockSize(), prevEpoch);
-        addResource(*bus);
+    for (uint32_t i=0; i < options.numHardwareOutputChannels; i++) {
+        ExternalAudioBus* bus = new ExternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
+        m_audioBuses.insert(bus->id(), bus);
         m_audioOutputChannels.push_back(bus);
+    }
+
+    for (uint32_t i=options.numHardwareInputChannels+options.numHardwareOutputChannels; i < m_freeAudioBuses.size(); i++) {
+        AudioBus* bus = new InternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
+        m_freeAudioBuses.insert(bus->id(), bus);
     }
 }
 
 Environment::~Environment()
 {
+}
+
+AudioBus* Environment::audioBus(const AudioBusId& id)
+{
+    return m_audioBuses.lookup(id);
+}
+
+AudioBus& Environment::externalAudioOutput(size_t index)
+{
+    return *m_audioOutputChannels[index];
+}
+
+AudioBus& Environment::externalAudioInput(size_t index)
+{
+    return *m_audioInputChannels[index];
 }
 
 template <class T> class RealtimeCommand : public Command
@@ -153,16 +174,6 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     }
 
     m_epoch++;
-}
-
-void Environment::addResource(Resource& resource)
-{
-    m_resources.insert(resource);
-}
-
-void Environment::removeResource(Resource& resource)
-{
-    m_resources.remove(resource);
 }
 
 void Environment::performRequest(API::Request* request)

@@ -5,13 +5,32 @@
 
 using namespace Mescaline::Audio;
 
-Node::~Node()
+Node::Node(Environment& env, Group* target, AddAction addAction)
+    : Resource(env, env.nodes().nextId())
 {
-    // TODO: This needs to be different for different resources because removeResource is not realtime safe!
-//    environment().removeResource(*this);
+	env.nodes().insert(id(), this);
+	if (target == nullptr) {
+		m_parent = nullptr;
+	} else {
+		switch (addAction) {
+			case kAddToHead:
+				m_parent = target;
+				target->addToHead(*this);
+				break;
+			case kAddToTail:
+				m_parent = target;
+				target->addToTail(*this);
+				break;
+		}
+	}
 }
 
-void Node::operator delete(void* ptr)
+Node::~Node()
 {
-    allocated_super::destroy(ptr);
+	env().nodes().remove(id());
+}
+
+void Node::free()
+{
+	delete this;
 }

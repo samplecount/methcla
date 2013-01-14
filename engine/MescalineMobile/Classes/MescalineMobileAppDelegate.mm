@@ -29,7 +29,7 @@ public:
     MyLoader()
         : Mescaline::Audio::Plugin::StaticLoader(descriptorFunctions())
     {
-        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
+//        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
     }
 
     static Mescaline::Audio::Plugin::StaticLoader::DescriptorFunctionMap descriptorFunctions()
@@ -57,9 +57,8 @@ public:
         // Create sine instance
         const Mescaline::Audio::Plugin::Manager::PluginHandle& def = env().plugins().lookup(
             "http://mescaline.puesnada.es/lv2/plugins/sine" );
-        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(env(), env().nextResourceId(), env().rootNode(), *def);
-        env().rootNode()->addToTail(*synth);
-        synth->mapOutput(0, env().audioBus(Mescaline::Audio::ResourceId(3)), Mescaline::Audio::kOut);
+        Mescaline::Audio::Synth* synth = m_osc = Mescaline::Audio::Synth::construct(env(), env().rootNode(), Mescaline::Audio::Node::kAddToTail, *def);
+        synth->mapOutput(0, env().externalAudioOutput(0).id(), Mescaline::Audio::kOut);
 
 //        const Mescaline::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
 //        Mescaline::Audio::Synth* scope = Mescaline::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);

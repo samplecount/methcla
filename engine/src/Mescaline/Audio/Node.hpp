@@ -5,17 +5,18 @@
 #include <Mescaline/Memory/Manager.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
+#include <boost/serialization/strong_typedef.hpp>
 #include <boost/utility.hpp>
 
 namespace Mescaline { namespace Audio {
 
-    typedef int32_t NodeId;
+    BOOST_STRONG_TYPEDEF(uint32_t, NodeId);
     // const NodeId InvalidNodeId = -1;
 
     class Environment;
     class Group;
 
-    class Node : public Resource
+    class Node : public Resource<NodeId>
                , public Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment>
                , public boost::intrusive::list_base_hook<>
     {
@@ -23,11 +24,18 @@ namespace Mescaline { namespace Audio {
         typedef Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment> allocated_super;
 
     public:
-        Node(Environment& env, const ResourceId& id, Group* parent)
-            : Resource(env, id)
-            , m_parent(parent)
-        { }
+        enum AddAction
+        {
+            kAddToHead
+          , kAddToTail
+          // , kAddBefore
+          // , kAddAfter
+          // , kReplace
+        };
+
         virtual ~Node();
+        //* Free a node.
+        virtual void free();
 
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
@@ -37,10 +45,10 @@ namespace Mescaline { namespace Audio {
         virtual void process(size_t numFrames) = 0;
 
     protected:
-        void operator delete(void* ptr);
+        Node(Environment& env, Group* target, AddAction addAction);
 
     private:
-        Group*          m_parent;
+        Group* m_parent;
     };
 
     typedef boost::intrusive::list<Node> NodeList;
