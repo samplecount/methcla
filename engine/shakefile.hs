@@ -381,11 +381,11 @@ cBuildFlags_IOS developer sdkVersion =
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator developer =
-    prefix ^= Just (platformDeveloperPath developer "iPhoneSimulator" </> "usr")
-  $ compilerCmd ^= "llvm-gcc"
+    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
+  $ compilerCmd ^= "clang"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
-  $ linkerCmd ^= "llvm-g++"
+  $ linkerCmd ^= "clang++"
   $ linker ^= osxLinker
   $ defaultCToolChain
 
