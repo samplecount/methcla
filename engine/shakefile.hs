@@ -499,7 +499,8 @@ engineBuildFlags target =
 -- | Build flags common to all targets
 mescalineCommonBuildFlags :: CBuildFlags -> CBuildFlags
 mescalineCommonBuildFlags = appendL compilerFlags [
-    (Just C, flag "-std=c99")
+    (Just C, flag "-std=c11")
+  , (Just Cpp, flag "-std=c++11")
   , (Nothing, flag "-Wall")
   , (Nothing, flag "-fvisibility=hidden")
   , (Just Cpp, flag "-fvisibility-inlines-hidden")
