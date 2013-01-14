@@ -76,6 +76,7 @@ public:
 class Loader
 {
 public:
+    virtual ~Loader() { }
     virtual boost::shared_ptr<Binary> load(const LilvPlugin* plugin) = 0;
 };
 
