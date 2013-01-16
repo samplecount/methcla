@@ -587,6 +587,7 @@ mescalineLib target = do
               , "Mescaline/Audio/Resource.cpp"
               , "Mescaline/Audio/Synth.cpp"
               , "Mescaline/Audio/SynthDef.cpp"
+              , "Mescaline/LV2/URIDMap.cpp"
               , "Mescaline/Memory/Manager.cpp"
               , "Mescaline/Memory.cpp"
               ]
