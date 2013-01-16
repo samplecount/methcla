@@ -459,7 +459,7 @@ void cycleOscilloscopeLines()
         const size_t atomSize = sizeof(LV2_Atom_String) + strlen(*it) + 1;
         LV2_Atom* atom = (LV2_Atom*)malloc(lv2_atom_pad_size(atomSize));
         LV2_Atom_Forge forge;
-        lv2_atom_forge_init(&forge, m_engine->env().plugins().lv2UridMap());
+        lv2_atom_forge_init(&forge, m_engine->env().uriMap().lv2Map());
         lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
         BOOST_ASSERT( lv2_atom_forge_string(&forge, *it, strlen(*it)) != 0 );
 //        m_engine->env().sendRequest(atom);

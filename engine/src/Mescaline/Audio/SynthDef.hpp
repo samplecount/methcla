@@ -1,11 +1,11 @@
 #ifndef MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 #define MESCALINE_AUDIO_SYNTHDEF_HPP_INCLUDED
 
+#include <Mescaline/LV2/URIDMap.hpp>
 #include <Mescaline/Utility/Hash.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
 #include <cstring>
@@ -268,33 +268,6 @@ private:
     uint32_t                            m_numControlOutputs;
 };
 
-class UriMap
-{
-public:
-    UriMap();
-
-    LV2_URID map(const char* uri);
-    const char* unmap(LV2_URID urid) const;
-
-private:
-    LV2_URID insert(const char* uri);
-
-private:
-    typedef boost::unordered_map<
-                const char*
-              , LV2_URID
-              , Mescaline::Utility::Hash::string_hash
-              , Mescaline::Utility::Hash::string_equal_to >
-            UriToId;
-    typedef boost::unordered_map<
-                LV2_URID
-              , const char* >
-            IdToUri;
-    
-    UriToId m_uriToId;
-    IdToUri m_idToUri;
-};
-
 class Manager : boost::noncopyable
 {
 public:
@@ -317,11 +290,8 @@ public:
     const PluginHandle& lookup(const char* uri) const;
 
     // Uri mapping
-    const UriMap& uriMap() const { return m_uriMap; }
-	UriMap& uriMap() { return m_uriMap; }
-
-    LV2_URID_Map* lv2UridMap();
-    LV2_URID_Unmap* lv2UridUnmap();
+    const LV2::URIDMap& uriMap() const { return m_uriMap; }
+	LV2::URIDMap& uriMap() { return m_uriMap; }
 
 private:
     void addFeature(const char* uri, void* data=0);
@@ -339,9 +309,7 @@ private:
     LilvWorld*      m_world;
     Features        m_features;
     Map             m_plugins;
-    UriMap          m_uriMap;
-    LV2_URID_Map    m_lv2UridMap;
-    LV2_URID_Unmap  m_lv2UridUnmap;
+    LV2::URIDMap    m_uriMap;
 };
 
 };

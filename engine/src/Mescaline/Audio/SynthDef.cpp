@@ -294,45 +294,6 @@ LV2_Handle Plugin::construct(void* location, double sampleRate) const
 //    return *m_descriptor;
 //}
 
-UriMap::UriMap()
-{ }
-
-LV2_URID UriMap::insert(const char* uri)
-{
-    LV2_URID urid = m_uriToId.size() + 1;
-    if (urid == 0)
-        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("No more URIDs left"));
-    m_uriToId[uri] = urid;
-    m_idToUri[urid] = uri;
-    return urid;
-}
-
-LV2_URID UriMap::map(const char* uri)
-{
-    UriToId::const_iterator it = m_uriToId.find(uri);
-    return it == m_uriToId.end()
-            ? insert(uri)
-            : it->second;
-}
-
-const char* UriMap::unmap(LV2_URID urid) const
-{
-    IdToUri::const_iterator it = m_idToUri.find(urid);
-    return it == m_idToUri.end() ? 0 : it->second;
-}
-
-static LV2_URID UriMap_map(LV2_URID_Map_Handle handle,
-                           const char*         uri)
-{
-    return static_cast<UriMap*>(handle)->map(uri);
-}
-
-static const char* UriMap_unmap(LV2_URID_Unmap_Handle handle,
-                                LV2_URID              urid)
-{
-    return static_cast<UriMap*>(handle)->unmap(urid);
-}
-
 void Manager::addFeature(const char* uri, void* data)
 {
     LV2_Feature* f = new LV2_Feature;
@@ -357,13 +318,9 @@ Manager::Manager(Loader& loader)
     addFeature( PUESNADA_URI "/ext/rt-instantiate#rtInstantiation" );
 
     // http://lv2plug.in/ns/ext/urid
-    m_lv2UridMap.handle = &m_uriMap;
-    m_lv2UridMap.map = UriMap_map;
-    addFeature( LV2_URID_MAP_URI, &m_lv2UridMap );
+    addFeature( LV2_URID_MAP_URI, m_uriMap.lv2Map() );
 
-    m_lv2UridUnmap.handle = &m_uriMap;
-    m_lv2UridUnmap.unmap = UriMap_unmap;
-    addFeature( LV2_URID_UNMAP_URI, &m_lv2UridUnmap );
+    addFeature( LV2_URID_UNMAP_URI, m_uriMap.lv2Unmap() );
 }
 
 Manager::~Manager()
@@ -413,16 +370,6 @@ void Manager::loadPlugins()
             m_plugins[plugin->uri()] = plugin;
         }
     }
-}
-
-LV2_URID_Map* Manager::lv2UridMap()
-{
-    return &m_lv2UridMap;
-}
-
-LV2_URID_Unmap* Manager::lv2UridUnmap()
-{
-    return &m_lv2UridUnmap;
 }
 
 Node::Node(LilvNode* node)

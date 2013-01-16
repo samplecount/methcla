@@ -174,6 +174,13 @@ namespace Mescaline { namespace Audio
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
 
+        // URIs and messages
+        const LV2::URIDMap& uriMap() const { return plugins().uriMap(); }
+        LV2::URIDMap& uriMap() { return plugins().uriMap(); }
+
+        LV2_URID mapUri(const char* uri) { return uriMap().map(uri); }
+        const char* unmapUri(LV2_URID urid) const { return uriMap().unmap(urid); }
+
         struct Uris
         {
             // atom
@@ -185,10 +192,6 @@ namespace Mescaline { namespace Audio
             LV2_URID patch_subject;
             LV2_URID patch_body;
         };
-
-        // URIs and messages
-        LV2_URID mapUri(const char* uri) { return plugins().uriMap().map(uri); }
-        const char* unmapUri(LV2_URID urid) const { return plugins().uriMap().unmap(urid); }
 
         const Uris& uris() const { return m_uris; }
         const LV2_Atom_Forge& atomForge() const { return m_forge; }
