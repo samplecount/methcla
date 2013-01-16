@@ -225,15 +225,16 @@ sourceTransform f cmd input = do
     return output
 
 dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
-dependencyFile target toolChain build input output = do
+dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         systemLoud (tool compilerCmd toolChain)
                 $  flag_ "-arch" (buildArch ^$ target)
-                ++ flags "-I" (systemIncludes ^$ build)
-                ++ flags_ "-iquote" (userIncludes ^$ build)
-                ++ (defineFlags build)
-                ++ (preprocessorFlags ^$ build)
+                ++ flags "-I" (systemIncludes ^$ buildFlags)
+                ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
+                ++ (defineFlags buildFlags)
+                ++ (preprocessorFlags ^$ buildFlags)
+                ++ (compilerFlagsFor (languageOf input) buildFlags)
                 ++ ["-MM", "-o", output, input]
 
 parseDependencies :: String -> [FilePath]
