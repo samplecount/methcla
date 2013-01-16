@@ -28,27 +28,6 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-// APICommand::APICommand(Environment& env, const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
-//     : Command(env, kNonRealtime)
-//     , API::Request(msg, handler, handlerData)
-// { }
-
-// APICommand::~APICommand()
-// { }
-
-// void APICommand::perform(Context context)
-// {
-//     BOOST_ASSERT_MSG( context == kRealtime, "APICommand::perform should only be called in the RT context" );
-//     env().performRequest(this);
-// }
-
-// void APICommand::respond(Context context, const LV2_Atom* msg)
-// {
-//     BOOST_ASSERT_MSG( context == kNonRealtime, "APICommand::respond should only be called in the NRT context" );
-//     API::Request::respond(msg);
-//     env().free(context, this);
-// }
-
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -108,29 +87,10 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
-// template <class T> class RealtimeCommand : public Command
-//                                          , public AllocatedBase<T, RTMemoryManager>
-// {
-// public:
-//     RealtimeCommand(Environment& env)
-//         : Command(env, kRealtime)
-//     { }
-// };
-
 void Environment::request(const LV2_Atom* msg, const MessageQueue::Respond& respond, void* data)
 {
     m_requests.send(msg, respond, data);
 }
-
-// void Environment::enqueue(Context context, Command* cmd)
-// {
-//     m_commandEngine.enqueue(context, cmd);
-// }
-
-// void Environment::free(Context context, Command* cmd)
-// {
-//     m_commandEngine.free(context, cmd);
-// }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
