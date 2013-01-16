@@ -3,7 +3,7 @@
 
 #include "Mescaline/Audio/IO/Client.hpp"
 #include "Mescaline/Audio/IO/Driver.hpp"
-#include "Mescaline/Audio/Plugin/Types.h"
+#include "Mescaline/Audio/Types.h"
 #include "Mescaline/Memory.hpp"
 
 #include <AudioUnit/AudioUnit.h>

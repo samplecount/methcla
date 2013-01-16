@@ -1,12 +1,11 @@
 #import  "MescalineMobileAppDelegate.h"
 #include "drawbuffer.hpp"
-#include "scope.hpp"
+//#include "scope.hpp"
 
 #include <Mescaline/Audio/Client.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/IO/RemoteIODriver.hpp>
 #include <Mescaline/Audio/Group.hpp>
-#include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Audio/Synth.hpp>
 #include <Mescaline/Audio/SynthDef.hpp>
 #include <Mescaline/Utility/MessageQueue.hpp>
@@ -21,8 +20,8 @@
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
-MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
-MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
+//MESCALINE_EXPORT void MESCALINE_INIT_FUNC(osc)(MescalineHost*);
+//MESCALINE_EXPORT void MESCALINE_INIT_FUNC(Scope)(MescalineHost*);
 
 class MyLoader : public Mescaline::Audio::Plugin::StaticLoader
 {
@@ -48,7 +47,7 @@ public:
     MyEngine(MyLoader* loader)
         : Mescaline::Audio::Engine(loader)
         , m_osc(0)
-        , m_scope(0)
+//        , m_scope(0)
     { }
 
     virtual void configure(const Mescaline::Audio::IO::Driver& driver)
@@ -69,11 +68,11 @@ public:
     }
 
     Mescaline::Audio::Synth* osc() { return m_osc; }
-    Mescaline::Audio::ScopeSynth* scope() { return m_scope; }
+//    Mescaline::Audio::ScopeSynth* scope() { return m_scope; }
 
 private:
     Mescaline::Audio::Synth* m_osc;
-    Mescaline::Audio::ScopeSynth* m_scope;
+//    Mescaline::Audio::ScopeSynth* m_scope;
 };
 
 @implementation aurioTouchAppDelegate
