@@ -30,10 +30,10 @@ LV2_Atom* Engine::request(const LV2_Atom* request)
 
 BusMap Engine::hwAudioBuses()
 {
-	LV2_Atom_Forge forge(env().atomForge());
-	LV2_Atom_Forge_Frame msg_frame;
-	LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(
-		&forge, &msg_frame, 1, env().mapUri("fuck you"));
+	// LV2_Atom_Forge forge(env().atomForge());
+	// LV2_Atom_Forge_Frame msg_frame;
+	// LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(
+	// 	&forge, &msg_frame, 1, env().mapUri("fuck you"));
 
 	// lv2_atom_forge_property_head(forge, uris->msg_body, 0);
 	// LV2_Atom_Forge_Frame body_frame;

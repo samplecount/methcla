@@ -194,7 +194,6 @@ namespace Mescaline { namespace Audio
         };
 
         const Uris& uris() const { return m_uris; }
-        const LV2_Atom_Forge& atomForge() const { return m_forge; }
 
         void request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData=0);
 
@@ -228,7 +227,6 @@ namespace Mescaline { namespace Audio
         CommandChannel<Command>             m_commandChannel;
         CommandEngine<Command>              m_commandEngine;
         Uris                                m_uris;
-        LV2_Atom_Forge                      m_forge;
     };
 
     class Engine : public IO::Client

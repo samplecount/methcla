@@ -61,7 +61,6 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_commandChannel(8192)
     , m_commandEngine(8192)
 {
-    lv2_atom_forge_init(&m_forge, pluginManager.lv2UridMap());
     m_uris.atom_Blank = mapUri(LV2_ATOM__Blank);
     m_uris.atom_Resource = mapUri(LV2_ATOM__Resource);
     m_uris.atom_Sequence = mapUri(LV2_ATOM__Sequence);
