@@ -1,8 +1,6 @@
 #include <Mescaline/Audio/Client.hpp>
 #include "Mescaline/Utility/Semaphore.hpp"
 
-#include <boost/bind.hpp>
-
 using namespace Mescaline::Audio::API::Client;
 
 Engine::Engine(Mescaline::Audio::Engine& engine)
