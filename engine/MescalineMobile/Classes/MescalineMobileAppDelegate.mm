@@ -9,6 +9,7 @@
 #include <Mescaline/Audio/Plugin/API.h>
 #include <Mescaline/Audio/Synth.hpp>
 #include <Mescaline/Audio/SynthDef.hpp>
+#include <Mescaline/Utility/MessageQueue.hpp>
 
 #include <AudioToolbox/AudioServices.h>
 #include <boost/thread.hpp>
@@ -462,7 +463,7 @@ void cycleOscilloscopeLines()
         lv2_atom_forge_init(&forge, m_engine->env().uriMap().lv2Map());
         lv2_atom_forge_set_buffer(&forge, (uint8_t*)atom, atomSize);
         BOOST_ASSERT( lv2_atom_forge_string(&forge, *it, strlen(*it)) != 0 );
-//        m_engine->env().sendRequest(atom);
+        m_engine->env().request(atom, 0, 0);
     }
 
 //    // If we are in a pinch event...

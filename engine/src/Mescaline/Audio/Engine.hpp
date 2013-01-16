@@ -3,13 +3,13 @@
 
 #include <Mescaline/Audio.hpp>
 #include <Mescaline/Audio/AudioBus.hpp>
-#include <Mescaline/Audio/API.hpp>
-#include <Mescaline/Audio/CommandEngine.hpp>
+// #include <Mescaline/Audio/API.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/Node.hpp>
 #include <Mescaline/Audio/SynthDef.hpp>
 #include <Mescaline/Exception.hpp>
 #include <Mescaline/Memory/Manager.hpp>
+#include <Mescaline/Utility/MessageQueue.hpp>
 
 #include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
@@ -60,68 +60,6 @@ namespace Mescaline { namespace Audio
 
     private:
         Nodes m_nodes;
-    };
-
-    class Environment;
-
-    class Command
-    {
-    public:
-        Command(Environment& env, Context context)
-            : m_env(env)
-            , m_context(context)
-        { }
-        virtual ~Command() { }
-
-        Environment& env() { return m_env; }
-        Context context() const { return m_context; }
-
-        virtual void perform(Context context) = 0;
-
-    private:
-        Environment&    m_env;
-        Context         m_context;
-    };
-
-    class APICommand : public Command
-                     , public API::Request
-    {
-    public:
-        APICommand(Environment& env, const LV2_Atom* atom, const API::HandleResponse& handler, void* handlerData);
-        virtual void perform(Context context);
-        virtual void respond(Context context, const LV2_Atom* atom);
-
-    private:
-        virtual ~APICommand();
-    };
-
-    class RTCommand : public Command
-                    , public Memory::Allocated<RTCommand, Memory::RTMemoryManager>
-    {
-    public:
-        RTCommand(Environment& env)
-            : Command(env, kRealtime)
-        { }
-    };
-
-    template <class T> class DeferredDeleteCommand : public RTCommand
-    {
-    public:
-        DeferredDeleteCommand(Environment& env, T* ptr)
-            : RTCommand(env)
-            , m_ptr(ptr)
-        { }
-
-        virtual void perform(Context context)
-        {
-            BOOST_ASSERT( context == kNonRealtime );
-            delete m_ptr;
-            m_ptr = 0;
-            env().free(context, this);
-        }
-
-    private:
-        T* m_ptr;
     };
 
     class Group;
@@ -195,18 +133,26 @@ namespace Mescaline { namespace Audio
 
         const Uris& uris() const { return m_uris; }
 
-        void request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData=0);
+        // Request queue
+        typedef Utility::MessageQueue<8192,8192> MessageQueue;
+        void request(const LV2_Atom* msg, const MessageQueue::Respond& respond, void* data);
 
-        // Commands
-        void enqueue(Context context, Command* cmd);
-        void free(Context context, Command* cmd);
+        // Worker thread
+        typedef Utility::WorkerThread<8192,8192> Worker;
+
+        LV2_Atom_Forge* prepare(const Worker::Perform& perform, void* data)
+        {
+            return m_worker.toWorker().prepare(perform, data);
+        }
+        void commit()
+        {
+            m_worker.toWorker().commit();
+        }
 
     protected:
-        friend class APICommand;
-        
-        void performRequest(API::Request* request);
-        void performMessage(API::Request* request, const LV2_Atom_Object* msg);
-        void performBundle(API::Request* request, const LV2_Atom_Sequence* bdl);
+        void handleRequest(MessageQueue::Message& request);
+        void handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg);
+        void handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl);
 
     protected:
         friend class Node;
@@ -224,8 +170,8 @@ namespace Mescaline { namespace Audio
         std::vector<ExternalAudioBus*>      m_audioInputChannels;
         std::vector<ExternalAudioBus*>      m_audioOutputChannels;
         Epoch                               m_epoch;
-        CommandChannel<Command>             m_commandChannel;
-        CommandEngine<Command>              m_commandEngine;
+        MessageQueue                        m_requests;
+        Worker                              m_worker;
         Uris                                m_uris;
     };
 

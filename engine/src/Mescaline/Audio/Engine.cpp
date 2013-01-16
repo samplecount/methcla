@@ -28,26 +28,26 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-APICommand::APICommand(Environment& env, const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
-    : Command(env, kNonRealtime)
-    , API::Request(msg, handler, handlerData)
-{ }
+// APICommand::APICommand(Environment& env, const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
+//     : Command(env, kNonRealtime)
+//     , API::Request(msg, handler, handlerData)
+// { }
 
-APICommand::~APICommand()
-{ }
+// APICommand::~APICommand()
+// { }
 
-void APICommand::perform(Context context)
-{
-    BOOST_ASSERT_MSG( context == kRealtime, "APICommand::perform should only be called in the RT context" );
-    env().performRequest(this);
-}
+// void APICommand::perform(Context context)
+// {
+//     BOOST_ASSERT_MSG( context == kRealtime, "APICommand::perform should only be called in the RT context" );
+//     env().performRequest(this);
+// }
 
-void APICommand::respond(Context context, const LV2_Atom* msg)
-{
-    BOOST_ASSERT_MSG( context == kNonRealtime, "APICommand::respond should only be called in the NRT context" );
-    API::Request::respond(msg);
-    env().free(context, this);
-}
+// void APICommand::respond(Context context, const LV2_Atom* msg)
+// {
+//     BOOST_ASSERT_MSG( context == kNonRealtime, "APICommand::respond should only be called in the NRT context" );
+//     API::Request::respond(msg);
+//     env().free(context, this);
+// }
 
 Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
@@ -58,8 +58,7 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_nodes(options.maxNumNodes)
     , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
     , m_epoch(0)
-    , m_commandChannel(8192)
-    , m_commandEngine(8192)
+    , m_worker(uriMap())
 {
     m_uris.atom_Blank = mapUri(LV2_ATOM__Blank);
     m_uris.atom_Resource = mapUri(LV2_ATOM__Resource);
@@ -109,46 +108,40 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
-template <class T> class RealtimeCommand : public Command
-                                         , public AllocatedBase<T, RTMemoryManager>
-{
-public:
-    RealtimeCommand(Environment& env)
-        : Command(env, kRealtime)
-    { }
-};
+// template <class T> class RealtimeCommand : public Command
+//                                          , public AllocatedBase<T, RTMemoryManager>
+// {
+// public:
+//     RealtimeCommand(Environment& env)
+//         : Command(env, kRealtime)
+//     { }
+// };
 
-
-void Environment::request(const LV2_Atom* msg, const API::HandleResponse& handler, void* handlerData)
+void Environment::request(const LV2_Atom* msg, const MessageQueue::Respond& respond, void* data)
 {
-    // std::cout << "Environment::request " << msg << " " << handler << " " << handlerData << "\n";
-    const size_t start = lv2_atom_pad_size(sizeof(APICommand));
-    const size_t size = lv2_atom_total_size(msg);
-    void* mem = alloc(start + size);
-    LV2_Atom* atom = reinterpret_cast<LV2_Atom*>(static_cast<char*>(mem) + start);
-    memcpy(atom, msg, size);
-    APICommand* cmd = new (mem) APICommand(*this, atom, handler, handlerData);
-    // APICommand* cmd = new APICommand(*this, msg, handler, handlerData);
-    m_commandChannel.enqueue(cmd);
+    m_requests.send(msg, respond, data);
 }
 
-void Environment::enqueue(Context context, Command* cmd)
-{
-    m_commandEngine.enqueue(context, cmd);
-}
+// void Environment::enqueue(Context context, Command* cmd)
+// {
+//     m_commandEngine.enqueue(context, cmd);
+// }
 
-void Environment::free(Context context, Command* cmd)
-{
-    m_commandEngine.free(context, cmd);
-}
+// void Environment::free(Context context, Command* cmd)
+// {
+//     m_commandEngine.free(context, cmd);
+// }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
 
     // Process external and non-realtime commands
-    m_commandChannel.perform();
-    m_commandEngine.perform(kRealtime);
+    MessageQueue::Message msg;
+    while (m_requests.next(msg)) {
+        handleRequest(msg);
+    }
+    m_worker.perform();
 
     size_t numInputs = m_audioInputChannels.size();
     size_t numOutputs = m_audioOutputChannels.size();
@@ -175,23 +168,23 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
-void Environment::performRequest(API::Request* request)
+void Environment::handleRequest(MessageQueue::Message& request)
 {
-    const LV2_Atom* atom = request->request();
+    const LV2_Atom* atom = request.payload();
     cout << "Message: " << atom << endl
          << "    atom size: " << atom->size << endl
          << "    atom type: " << atom->type << endl
          << "    atom uri:  " << unmapUri(atom->type) << endl;
     if (   (atom->type == uris().atom_Blank)
         || (atom->type == uris().atom_Resource))
-        performMessage(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
+        handleMessageRequest(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
     else if (atom->type == uris().atom_Sequence)
-        performBundle(request, reinterpret_cast<const LV2_Atom_Sequence*>(atom));
+        handleSequenceRequest(request, reinterpret_cast<const LV2_Atom_Sequence*>(atom));
     else
         BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("Invalid request type"));
 }
 
-void Environment::performMessage(API::Request* request, const LV2_Atom_Object* msg)
+void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg)
 {
     const char* atom_type = unmapUri(msg->atom.type);
     const char* uri_type = unmapUri(msg->body.otype);
@@ -206,7 +199,7 @@ void Environment::performMessage(API::Request* request, const LV2_Atom_Object* m
     }
 }
 
-void Environment::performBundle(API::Request* request, const LV2_Atom_Sequence* bdl)
+void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl)
 {
 }
 
