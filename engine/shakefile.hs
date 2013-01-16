@@ -590,6 +590,7 @@ mescalineLib target = do
               , "Mescaline/Memory/Manager.cpp"
               , "Mescaline/Memory.cpp"
               ]
+            ++ [ "external_libraries/zix/ring.c" ]
             -- plugins
             ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
             -- platform dependent
