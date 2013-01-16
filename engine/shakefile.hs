@@ -206,7 +206,7 @@ compilerFlagsFor lang = concat
                       . getL compilerFlags
     where f l (Nothing, x) = Just x
           f l (Just l', x) | l == l' = Just x
-          f l _ = Nothing
+                           | otherwise = Nothing
 
 type CBuildEnv = (CToolChain, CBuildFlags)
 
