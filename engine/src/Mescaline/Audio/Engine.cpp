@@ -136,11 +136,10 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
 
-    // Process external and non-realtime commands
-    MessageQueue::Message msg;
-    while (m_requests.next(msg)) {
-        handleRequest(msg);
-    }
+    // Process external requests
+    processRequests();
+
+    // Process non-realtime commands
     m_worker.perform();
 
     size_t numInputs = m_audioInputChannels.size();
@@ -166,6 +165,14 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     }
 
     m_epoch++;
+}
+
+void Environment::processRequests()
+{
+    MessageQueue::Message msg;
+    while (m_requests.next(msg)) {
+        handleRequest(msg);
+    }
 }
 
 void Environment::handleRequest(MessageQueue::Message& request)

@@ -150,6 +150,7 @@ namespace Mescaline { namespace Audio
         }
 
     protected:
+        void processRequests();
         void handleRequest(MessageQueue::Message& request);
         void handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg);
         void handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl);
