@@ -5,8 +5,9 @@
 #include <Mescaline/Audio/Engine.hpp>
 
 #include <boost/intrusive/list.hpp>
-#include <boost/thread/locks.hpp>
 #include <boost/utility.hpp>
+
+#include <thread>
 
 namespace Mescaline { namespace Audio {
 
@@ -67,7 +68,7 @@ public:
         AudioBus* bus = env.audioBus(busId());
 
         if (bus != nullptr) {
-            boost::shared_lock<AudioBus::Lock> lock(bus->lock());
+            std::lock_guard<AudioBus::Lock> lock(bus->lock());
             if (bus->epoch() == env.epoch()) {
                 memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
             } else {
@@ -111,7 +112,7 @@ public:
 
         if (bus != nullptr) {
             const Epoch epoch = env.epoch();
-            boost::lock_guard<AudioBus::Lock> lock(bus->lock());
+            std::lock_guard<AudioBus::Lock> lock(bus->lock());
             if (bus->epoch() == epoch) {
                 // Accumulate
                 sample_t* dst = bus->data();

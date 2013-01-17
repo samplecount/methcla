@@ -2,6 +2,8 @@
 #define MESCALINE_MEMORY_HPP_INCLUDED
 
 #include <Mescaline/Exception.hpp>
+#include <memory>
+#include <stdexcept>
 
 namespace Mescaline { namespace Memory {
 
@@ -11,63 +13,69 @@ public:
     static const size_t kAlignment = alignment;
     static const size_t kMask = ~(kAlignment - 1);
 
-    BOOST_STATIC_ASSERT_MSG( (kAlignment & (kAlignment - 1)) == 0, "Alignment must be a power of two" );
-    BOOST_STATIC_ASSERT_MSG( kAlignment >= sizeof(void*), "Alignment must be >= sizeof(void*)" );
+    static_assert( (kAlignment & (kAlignment - 1)) == 0, "Alignment must be a power of two" );
+    static_assert( kAlignment >= sizeof(nullptr), "Alignment must be >= sizeof(nullptr)" );
 
-#   define MESCALINE_ISALIGNED(alignment, size) \
-        (((size) & Mescaline::Memory::Alignment< alignment >::kMask) == (size))
-#   define MESCALINE_ALIGN(alignment, size) \
-        (((size) + (alignment)) & Mescaline::Memory::Alignment< alignment >::kMask)
-#   define MESCALINE_PADDING(alignment, size) \
-        (MESCALINE_ALIGN(alignment, size) - (size))
-
-    // C++0x generalized constant expressions (supported from gcc 4.6)
-    /* constexpr */ inline static size_t isAligned(size_t size) { return MESCALINE_ISALIGNED(kAlignment, size); }
-    /* constexpr */ inline static size_t align(size_t size)     { return MESCALINE_ALIGN(kAlignment, size); }
-    /* constexpr */ inline static size_t padding(size_t size)   { return MESCALINE_PADDING(kAlignment, size); }
+    constexpr inline static size_t isAligned(size_t size)
+    {
+        return (size & kMask) == size;
+    }
+    constexpr inline static size_t align(size_t size)
+    {
+        return (size + alignment) & kMask;
+    }
+    constexpr inline static size_t padding(size_t size)
+    {
+        return align(size) - size;
+    }
 };
 
 /// Default alignment, corresponding to the size of a pointer.
-static const size_t kDefaultAlignment = sizeof(void*);
+static const size_t kDefaultAlignment = sizeof(nullptr);
 /// Alignment needed for data accessed by SIMD instructions.
 static const size_t kSIMDAlignment = 16;
 
 // Primitives
-inline static void* alloc(size_t numBytes) throw(MemoryAllocationFailure)
+inline static void* alloc(size_t size)
+    throw(std::invalid_argument, std::bad_alloc)
 {
-    void* ptr = ::malloc(numBytes);
-    if (ptr == 0)
-        BOOST_THROW_EXCEPTION(Mescaline::MemoryAllocationFailure());
+    if (size == 0)
+        BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
+    void* ptr = ::malloc(size);
+    if (ptr == nullptr)
+        BOOST_THROW_EXCEPTION(std::bad_alloc());
     return ptr;
 }
 
-inline static void free(void* ptr) throw(MemoryAllocationFailure)
+inline static void free(void* ptr)
 {
-    if (ptr != 0)
+    if (ptr != nullptr)
         ::free(ptr);
 }
 
-template <size_t align> void* allocAligned(size_t numBytes)
-    throw(MemoryAllocationFailure)
+template <size_t align> void* allocAligned(size_t size)
+    throw(std::invalid_argument, std::bad_alloc)
 {
+    if (size == 0)
+        BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
     void* ptr;
-    int err = posix_memalign(&ptr, align, numBytes);
+    int err = posix_memalign(&ptr, align, size);
     if (err != 0)
-        BOOST_THROW_EXCEPTION(Mescaline::MemoryAllocationFailure());
+        BOOST_THROW_EXCEPTION(std::bad_alloc());
     return ptr;
 }
 
 // Wrappers
-template <typename T> T* allocOf(size_t numElems=1)
-    throw(MemoryAllocationFailure)
+template <typename T> T* allocOf(size_t n=1)
+    throw(std::invalid_argument, std::bad_alloc)
 {
-    return static_cast<T*>(alloc(numElems * sizeof(T)));
+    return static_cast<T*>(alloc(n * sizeof(T)));
 }
 
-template <typename T, size_t align> T* allocAlignedOf(size_t numElems=1)
-    throw(MemoryAllocationFailure)
+template <typename T, size_t align=alignof(T)> T* allocAlignedOf(size_t n=1)
+    throw(std::invalid_argument, std::bad_alloc)
 {
-    return static_cast<T*>(allocAligned<align>(numElems * sizeof(T)));
+    return static_cast<T*>(allocAligned<align>(n * sizeof(T)));
 }
 
 }; };

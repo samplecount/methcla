@@ -18,6 +18,8 @@ import           System.FilePath.Find
 import           System.IO
 import           System.Process (readProcess)
 
+import Debug.Trace
+
 under :: FilePath -> [FilePath] -> [FilePath]
 under dir = map prepend
     where prepend ""   = dir
@@ -362,6 +364,10 @@ getSystemVersion =
   (intercalate "." . take 2 . splitOn ".")
     <$> readProcess "sw_vers" ["-productVersion"] ""
 
+iosMinVersion :: String
+iosMinVersion = "50000"
+--iosMinVersion = "40200"
+
 cToolChain_IOS :: DeveloperPath -> CToolChain
 cToolChain_IOS developer =
     prefix ^= Just (platformDeveloperPath developer "iPhoneOS" </> "usr")
@@ -374,8 +380,8 @@ cToolChain_IOS developer =
 
 cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  $ appendL preprocessorFlags
+    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . appendL preprocessorFlags
             [ "-isysroot"
             , platformSDKPath developer "iPhoneOS" sdkVersion ]
   $ defaultCBuildFlags
@@ -392,8 +398,8 @@ cToolChain_IOS_Simulator developer =
 
 cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS_Simulator developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just "40200")]
-  $ appendL preprocessorFlags
+    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . appendL preprocessorFlags
             [ "-isysroot"
             , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
   $ defaultCBuildFlags
@@ -419,7 +425,7 @@ cBuildFlags_MacOSX developer sdkVersion =
     appendL preprocessorFlags [
       "-isysroot"
     , platformSDKPath developer "MacOSX" sdkVersion ]
-  $ appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
+  . appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
   $ defaultCBuildFlags
 
 -- ====================================================================
@@ -501,7 +507,7 @@ engineBuildFlags target =
 mescalineCommonBuildFlags :: CBuildFlags -> CBuildFlags
 mescalineCommonBuildFlags = appendL compilerFlags [
     (Just C, flag "-std=c11")
-  , (Just Cpp, flag "-std=c++11")
+  , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
   , (Nothing, flag "-fvisibility=hidden")
   , (Just Cpp, flag "-fvisibility-inlines-hidden")
@@ -517,20 +523,21 @@ mescalineSharedBuildFlags = libraries ^= [ "m" ]
 
 mescalineLib :: CTarget -> IO Library
 mescalineLib target = do
-    boostSrc <- find always
-                    (    extension ==? ".cpp"
-                     &&? (not . isSuffixOf "win32") <$> directory
-                     &&? (not . isSuffixOf "test/src") <$> directory
-                     -- FIXME: linking `filesystem' into a shared library fails with:
-                     --     Undefined symbols for architecture x86_64:
-                     --       "vtable for boost::filesystem::detail::utf8_codecvt_facet", referenced from:
-                     --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in v2_path.cpp.o
-                     --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in path.cpp.o
-                     --       NOTE: a missing vtable usually means the first non-inline virtual member function has no definition.
-                     &&? (not . elem "filesystem/" . splitPath) <$> filePath
-                     &&? (fileName /=? "utf8_codecvt_facet.cpp")
-                    )
-                    boostDir
+    --boostSrc <- find always
+    --                (    extension ==? ".cpp"
+    --                 &&? (not . isSuffixOf "win32") <$> directory
+    --                 &&? (not . isSuffixOf "test/src") <$> directory
+    --                 -- FIXME: linking `filesystem' into a shared library fails with:
+    --                 --     Undefined symbols for architecture x86_64:
+    --                 --       "vtable for boost::filesystem::detail::utf8_codecvt_facet", referenced from:
+    --                 --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in v2_path.cpp.o
+    --                 --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in path.cpp.o
+    --                 --       NOTE: a missing vtable usually means the first non-inline virtual member function has no definition.
+    --                 &&? (not . elem "filesystem/" . splitPath) <$> filePath
+    --                 &&? (not . elem "thread/" . splitPath) <$> filePath
+    --                 &&? (fileName /=? "utf8_codecvt_facet.cpp")
+    --                )
+    --                boostDir
     return $ Library "mescaline" $ [
         -- serd
         sourceTree serdBuildFlags $ sourceFiles $
@@ -572,11 +579,28 @@ mescalineLib target = do
               , "ui.c"
               , "util.c"
               , "world.c"
-              -- FIXME: Make sure at runtime that this is actually the same as sord/src/zix/tree.c
+              -- FIXME: Make sure during compilation that this is actually the same as sord/src/zix/tree.c?
               --, "zix/tree.c"
               ]
         -- boost
-      , sourceTree boostBuildFlags $ sourceFiles boostSrc
+      , sourceTree boostBuildFlags $ sourceFiles $
+            under (boostDir </> "libs") [
+                "date_time/src/gregorian/date_generators.cpp"
+              , "date_time/src/gregorian/greg_month.cpp"
+              , "date_time/src/gregorian/greg_weekday.cpp"
+              , "date_time/src/gregorian/gregorian_types.cpp"
+              , "date_time/src/posix_time/posix_time_types.cpp"
+              , "exception/src/clone_current_exception_non_intrusive.cpp"
+              , "filesystem/src/codecvt_error_category.cpp"
+              , "filesystem/src/operations.cpp"
+              , "filesystem/src/path.cpp"
+              , "filesystem/src/path_traits.cpp"
+              , "filesystem/src/portability.cpp"
+              , "filesystem/src/unique_path.cpp"
+              --, "filesystem/src/utf8_codecvt_facet.cpp"
+              , "filesystem/src/windows_file_codecvt.cpp"
+              , "system/src/error_code.cpp"
+              ]
         -- engine
       , sourceTree (engineBuildFlags target) $ sourceFiles $
             under "src" [

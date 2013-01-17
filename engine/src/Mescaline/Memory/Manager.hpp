@@ -37,7 +37,7 @@ template <class T, class Allocator, size_t align=kDefaultAlignment> class Alloca
     struct Chunk
     {
         Allocator*  alloc;
-        char        padding[MESCALINE_PADDING(align, sizeof(Allocator*))];
+        char        padding[Alignment<align>::padding(sizeof(alloc))];
         char        data[];
     };
 
@@ -48,7 +48,7 @@ protected:
     {
         Chunk* chunk = static_cast<Chunk*>(allocator.template allocAligned<align>(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
-        BOOST_ASSERT( MESCALINE_ISALIGNED(align, reinterpret_cast<size_t>(chunk->data)) );
+        BOOST_ASSERT( Alignment<align>::isAligned(reinterpret_cast<size_t>(chunk->data)) );
         return chunk->data;
     }
     static void destroy(void* ptr)
@@ -62,7 +62,7 @@ protected:
     void* operator new(size_t);
 };
 
-template <class T, class Allocator, size_t align=kDefaultAlignment> class Allocated
+template <class T, class Allocator, size_t align=kDefaultAlignment>class Allocated
     : public AllocatedBase<T, Allocator, align>
 {
     typedef AllocatedBase<T, Allocator, align> super;

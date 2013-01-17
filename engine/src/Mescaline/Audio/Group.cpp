@@ -1,6 +1,5 @@
 #include <Mescaline/Audio/Engine.hpp>
 #include <Mescaline/Audio/Group.hpp>
-#include <boost/foreach.hpp>
 
 using namespace Mescaline::Audio;
 
@@ -24,5 +23,5 @@ void Group::free()
 
 void Group::process(size_t numFrames)
 {
-    BOOST_FOREACH(Node& node, m_children) { node.process(numFrames); }
+    for (Node& node : m_children) { node.process(numFrames); }
 }

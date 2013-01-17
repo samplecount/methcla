@@ -37,7 +37,7 @@ namespace Mescaline { namespace Audio
     /// Simple map for holding pointers to resources.
     //
     // Also provides unique id allocation facility.
-    template <class Id, class T> class ResourceMap
+    template <class Id, class T> class ResourceMap : boost::noncopyable
     {
     public:
         ResourceMap(size_t size)

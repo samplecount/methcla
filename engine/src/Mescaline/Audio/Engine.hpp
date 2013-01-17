@@ -3,7 +3,6 @@
 
 #include <Mescaline/Audio.hpp>
 #include <Mescaline/Audio/AudioBus.hpp>
-// #include <Mescaline/Audio/API.hpp>
 #include <Mescaline/Audio/IO/Client.hpp>
 #include <Mescaline/Audio/Node.hpp>
 #include <Mescaline/Audio/SynthDef.hpp>
@@ -11,7 +10,6 @@
 #include <Mescaline/Memory/Manager.hpp>
 #include <Mescaline/Utility/MessageQueue.hpp>
 
-#include <boost/unordered_map.hpp>
 #include <boost/utility.hpp>
 
 #include <cstddef>

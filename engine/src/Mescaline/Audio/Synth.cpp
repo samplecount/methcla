@@ -97,8 +97,9 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
 {
     typedef Alignment<kSIMDAlignment> BufferAlignment;
 
-    BOOST_STATIC_ASSERT(   (allocated_super::kAlignment >= BufferAlignment::kAlignment)
-                        && ((allocated_super::kAlignment % BufferAlignment::kAlignment) == 0) );
+    static_assert(   (allocated_super::kAlignment >= BufferAlignment::kAlignment)
+                  && ((allocated_super::kAlignment % BufferAlignment::kAlignment) == 0)
+                 , "allocated_super::kAlignment multiple of kSIMDAlignment" );
 
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( BufferAlignment::isAligned(env.blockSize() * sizeof(sample_t))
@@ -201,21 +202,15 @@ void Synth::process(size_t numFrames)
     const size_t blockSize = env.blockSize();
 
     sample_t* const inputBuffers = m_audioBuffers;
-    for ( AudioInputConnections::iterator it = m_audioInputConnections.begin()
-        ; it != m_audioInputConnections.end()
-        ; it++ )
-    {
-        it->read(env, numFrames, inputBuffers + it->index() * blockSize);
+    for (auto& x : m_audioInputConnections) {
+        x.read(env, numFrames, inputBuffers + x.index() * blockSize);
     }
 
     m_synthDef.run(m_synth, numFrames);
 
     sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
-    for ( AudioOutputConnections::iterator it = m_audioOutputConnections.begin()
-        ; it != m_audioOutputConnections.end()
-        ; it++ )
-    {
-        it->write(env, numFrames, outputBuffers + it->index() * blockSize);
+    for (auto& x : m_audioOutputConnections) {
+        x.write(env, numFrames, outputBuffers + x.index() * blockSize);
     }
 
     // Reset triggers

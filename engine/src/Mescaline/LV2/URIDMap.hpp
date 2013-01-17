@@ -1,10 +1,12 @@
 #ifndef Mescaline_LV2_URIDMap_hpp_included
 #define Mescaline_LV2_URIDMap_hpp_included
 
-#include <boost/unordered_map.hpp>
-#include <boost/utility.hpp>
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include <Mescaline/Utility/Hash.hpp>
+
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+
+#include <boost/utility.hpp>
+#include <unordered_map>
 
 namespace Mescaline { namespace LV2 {
 
@@ -23,13 +25,13 @@ private:
     LV2_URID insert(const char* uri);
 
 private:
-    typedef boost::unordered_map<
+    typedef std::unordered_map<
                 const char*
               , LV2_URID
               , Mescaline::Utility::Hash::string_hash
               , Mescaline::Utility::Hash::string_equal_to >
             UriToId;
-    typedef boost::unordered_map<
+    typedef std::unordered_map<
                 LV2_URID
               , const char* >
             IdToUri;

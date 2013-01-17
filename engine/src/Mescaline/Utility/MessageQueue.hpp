@@ -1,11 +1,11 @@
 #ifndef Mescaline_Utility_MessageQueue_hpp_included
 #define Mescaline_Utility_MessageQueue_hpp_included
 
-#include <boost/array.hpp>
-#include <boost/atomic.hpp>
-#include <boost/function.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <array>
+#include <atomic>
+#include <functional>
+#include <thread>
+
 #include <boost/utility.hpp>
 
 #include <Mescaline/LV2/URIDMap.hpp>
@@ -81,8 +81,8 @@ public:
     void send(const LV2_Atom* payload, const Respond& respond, void* data)
     {
         MessageHeader header(respond, data);
-        uint8_t* buffer = m_writeBuffer.c_array();
-        boost::lock_guard<boost::mutex> lock(m_writeMutex);
+        uint8_t* buffer = m_writeBuffer.data();
+        std::lock_guard<std::mutex> lock(m_writeMutex);
         memcpy(buffer, &header, sizeof(MessageHeader));
         BOOST_ASSERT( sizeof(LV2_Atom) + payload->size <= m_writeBuffer.size() - sizeof(MessageHeader) );
         memcpy(buffer + sizeof(MessageHeader), payload, sizeof(LV2_Atom) + payload->size);
@@ -91,7 +91,7 @@ public:
 
     bool next(Message& msg)
     {
-        uint8_t* buffer = m_readBuffer.c_array();
+        uint8_t* buffer = m_readBuffer.data();
         const size_t headerSize = m_queue.read(buffer, sizeof(MessageHeader) + sizeof(LV2_Atom));
         BOOST_ASSERT( headerSize == 0 || headerSize == sizeof(MessageHeader) + sizeof(LV2_Atom) );        
         if (headerSize != 0) {
@@ -107,9 +107,9 @@ public:
 
 private:
     RingBuffer                          m_queue;
-    boost::mutex                        m_writeMutex;
-    boost::array<uint8_t,bufferSize>    m_writeBuffer;
-    boost::array<uint8_t,bufferSize>    m_readBuffer;
+    std::mutex                        m_writeMutex;
+    std::array<uint8_t,bufferSize>    m_writeBuffer;
+    std::array<uint8_t,bufferSize>    m_readBuffer;
 };
 
 template <size_t queueSize, size_t bufferSize> class Worker : boost::noncopyable
@@ -144,7 +144,7 @@ public:
     class Writer : boost::noncopyable
     {
     public:
-        typedef boost::function<void()> CommitHook;
+        typedef std::function<void()> CommitHook;
 
         Writer(LV2::URIDMap& uriMap, const CommitHook& afterCommit)
             : m_queue(queueSize)
@@ -155,7 +155,7 @@ public:
 
         LV2_Atom_Forge* prepare(const Perform& perform, void* data)
         {
-            uint8_t* buffer = m_writeBuffer.c_array();
+            uint8_t* buffer = m_writeBuffer.data();
             Message msg(perform, data);
             memcpy(buffer, &msg, sizeof(Message));
             lv2_atom_forge_set_buffer(&m_forge, buffer + sizeof(Message), m_writeBuffer.size() - sizeof(Message));
@@ -164,7 +164,7 @@ public:
 
         void commit()
         {
-            uint8_t* buffer = m_writeBuffer.c_array();            
+            uint8_t* buffer = m_writeBuffer.data();            
             LV2_Atom* atom = reinterpret_cast<LV2_Atom*>(buffer + sizeof(Message));
             const size_t size = sizeof(Message) + sizeof(LV2_Atom) + atom->size;
             const size_t written = m_queue.write(buffer, size);
@@ -175,7 +175,7 @@ public:
     protected:
         RingBuffer                          m_queue;
         LV2_Atom_Forge                      m_forge;
-        boost::array<uint8_t,bufferSize>    m_writeBuffer;
+        std::array<uint8_t,bufferSize>    m_writeBuffer;
         CommitHook                          m_afterCommit;
     };
 
@@ -187,10 +187,10 @@ public:
         { }
         RingBuffer& queue() { return this->m_queue; }
         size_t readBufferSize() const { return m_readBuffer.size(); }
-        uint8_t* readBuffer() { return m_readBuffer.c_array(); }
+        uint8_t* readBuffer() { return m_readBuffer.data(); }
 
     private:
-        boost::array<uint8_t,bufferSize> m_readBuffer;
+        std::array<uint8_t,bufferSize> m_readBuffer;
     };
 
     Worker(LV2::URIDMap& uriMap)
@@ -242,11 +242,11 @@ public:
         : Worker<queueSize,bufferSize>(uriMap)
         , m_continue(true)
     {
-        m_thread = boost::thread(&WorkerThread::process, this);
+        m_thread = std::thread(&WorkerThread::process, this);
     }
     ~WorkerThread()
     {
-        m_continue.store(false, boost::memory_order_acquire);
+        m_continue.store(false, std::memory_order_acquire);
         m_sem.post();
         m_thread.join();
     }
@@ -256,7 +256,7 @@ private:
     {
         for (;;) {
             m_sem.wait();
-            bool cont = m_continue.load(boost::memory_order_release);
+            bool cont = m_continue.load(std::memory_order_release);
             if (cont) {
                 this->work();
             } else {
@@ -271,9 +271,9 @@ private:
     }
 
 private:
-    boost::thread       m_thread;
+    std::thread       m_thread;
     Semaphore           m_sem;
-    boost::atomic<bool> m_continue;
+    std::atomic<bool> m_continue;
 };
 
 }; };

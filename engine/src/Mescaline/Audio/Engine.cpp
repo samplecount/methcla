@@ -1,7 +1,6 @@
 #include <Mescaline/Audio/Engine.hpp>
 #include <Mescaline/Audio/Group.hpp>
 
-#include <boost/foreach.hpp>
 #include <cstdlib>
 #include <iostream>
 

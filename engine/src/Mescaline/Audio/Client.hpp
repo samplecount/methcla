@@ -3,8 +3,8 @@
 
 #include "Mescaline/Audio/Engine.hpp"
 
-#include <boost/unordered_map.hpp>
 #include <string>
+#include <unordered_map>
 
 namespace Mescaline { namespace Audio { namespace API { namespace Client {
 
@@ -21,7 +21,7 @@ private:
 	AudioBusId m_id;
 };
 
-typedef boost::unordered_map<std::string,Bus> BusMap;
+typedef std::unordered_map<std::string,Bus> BusMap;
 
 class Engine
 {

@@ -1,11 +1,10 @@
 #include "Mescaline/Exception.hpp"
 #include "Mescaline/Audio/SynthDef.hpp"
 
-#include <boost/scoped_ptr.hpp>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <utility>
 
 #include "serd/serd.h"
@@ -28,23 +27,23 @@ StaticLoader::StaticLoader(const DescriptorFunctionMap& functions)
     : m_functions(functions)
 { }
 
-shared_ptr<Binary> StaticLoader::load(const LilvPlugin* plugin)
+std::shared_ptr<Binary> StaticLoader::load(const LilvPlugin* plugin)
 {
     const char* uri = lilv_node_as_uri(lilv_plugin_get_uri(plugin));
 
     if (uri == 0)
-        return boost::shared_ptr<Mescaline::Audio::Plugin::Binary>();
+        return std::shared_ptr<Mescaline::Audio::Plugin::Binary>();
 
     DescriptorFunctionMap::iterator f = m_functions.find(uri);
     if (f == m_functions.end())
-        return boost::shared_ptr<Mescaline::Audio::Plugin::Binary>();
+        return std::shared_ptr<Mescaline::Audio::Plugin::Binary>();
 
-    boost::shared_ptr<Binary> result(new StaticBinary(f->second));
+    std::shared_ptr<Binary> result(new StaticBinary(f->second));
     
     return result;
 }
 
-//Descriptor* Descriptor::load(shared_ptr<Binary> binary, const LilvPlugin* plugin)
+//Descriptor* Descriptor::load(std::shared_ptr<Binary> binary, const LilvPlugin* plugin)
 //{
 //    LV2_Descriptor_Function df = binary->descriptorFunction();
 //    Descriptor* result = 0;
@@ -85,18 +84,18 @@ shared_ptr<Binary> StaticLoader::load(const LilvPlugin* plugin)
 //    return result;
 //}
 //
-//Descriptor::Descriptor(shared_ptr<Binary> binary, const LV2_Descriptor* descriptor)
+//Descriptor::Descriptor(std::shared_ptr<Binary> binary, const LV2_Descriptor* descriptor)
 //    : m_binary(binary)
 //    , m_descriptor(descriptor)
 //{ }
 
-typedef pair<const LV2_Descriptor*, shared_ptr<Binary> > PluginDescriptor;
+typedef pair<const LV2_Descriptor*, std::shared_ptr<Binary> > PluginDescriptor;
 
 static optional<PluginDescriptor> loadPlugin(Loader& loader, const LilvPlugin* plugin)
 {
-    shared_ptr<Binary> binary(loader.load(plugin));
+    std::shared_ptr<Binary> binary(loader.load(plugin));
 
-    if (binary == boost::shared_ptr<Binary>())
+    if (binary == std::shared_ptr<Binary>())
         return optional<PluginDescriptor>();
 
     LV2_Descriptor_Function df = binary->descriptorFunction();
@@ -319,16 +318,14 @@ Manager::Manager(Loader& loader)
 
     // http://lv2plug.in/ns/ext/urid
     addFeature( LV2_URID_MAP_URI, m_uriMap.lv2Map() );
-
     addFeature( LV2_URID_UNMAP_URI, m_uriMap.lv2Unmap() );
 }
 
 Manager::~Manager()
 {
     lilv_world_free(m_world);
-    BOOST_FOREACH(const LV2_Feature* f, m_features) {
+    for (const LV2_Feature* f : m_features)
         delete f;
-    }
 }
 
 const LV2_Feature* const* Manager::features()
@@ -366,7 +363,7 @@ void Manager::loadPlugins()
             && lilv_nodes_contains(extensions->impl(), rtInstantiateInterface->impl()) )
         {
             cout << "Loading plugin " << uri << " ... " << endl;
-            boost::shared_ptr<Plugin> plugin(new Plugin(*this, lilvPlugin));
+            std::shared_ptr<Plugin> plugin(new Plugin(*this, lilvPlugin));
             m_plugins[plugin->uri()] = plugin;
         }
     }

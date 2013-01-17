@@ -5,11 +5,11 @@
 #include <Mescaline/Utility/Hash.hpp>
 
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
-
 #include <cstring>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "lilv/lilv.h"
@@ -77,7 +77,7 @@ class Loader
 {
 public:
     virtual ~Loader() { }
-    virtual boost::shared_ptr<Binary> load(const LilvPlugin* plugin) = 0;
+    virtual std::shared_ptr<Binary> load(const LilvPlugin* plugin) = 0;
 };
 
 class StaticBinary : public Binary
@@ -93,11 +93,11 @@ private:
 class StaticLoader : public Loader
 {
 public:
-    typedef boost::unordered_map<std::string, LV2_Descriptor_Function>
+    typedef std::unordered_map<std::string, LV2_Descriptor_Function>
             DescriptorFunctionMap;
 
     StaticLoader(const DescriptorFunctionMap& functions);
-    virtual boost::shared_ptr<Binary> load(const LilvPlugin* plugin);
+    virtual std::shared_ptr<Binary> load(const LilvPlugin* plugin);
 
 private:
     DescriptorFunctionMap m_functions;
@@ -106,7 +106,7 @@ private:
 //class Descriptor
 //{
 //public:
-//    static Descriptor* load(boost::shared_ptr<Binary> binary, const LilvPlugin* plugin);
+//    static Descriptor* load(std::shared_ptr<Binary> binary, const LilvPlugin* plugin);
 //
 //    const char* uri() const { return m_descriptor->URI; }
 //
@@ -116,10 +116,10 @@ private:
 //    }
 //
 //protected:
-//    Descriptor(boost::shared_ptr<Binary> binary, const LV2_Descriptor* descriptor);
+//    Descriptor(std::shared_ptr<Binary> binary, const LV2_Descriptor* descriptor);
 //
 //private:
-//    boost::shared_ptr<Binary> m_binary;
+//    std::shared_ptr<Binary> m_binary;
 //    const LV2_Descriptor* m_descriptor;
 //};
 
@@ -135,7 +135,7 @@ private:
     LilvNode* m_impl;
 };
 
-typedef boost::shared_ptr<Node> NodePtr;
+typedef std::shared_ptr<Node> NodePtr;
 
 class Nodes : boost::noncopyable
 {
@@ -149,7 +149,7 @@ private:
     LilvNodes* m_impl;
 };
 
-typedef boost::shared_ptr<Nodes> NodesPtr;
+typedef std::shared_ptr<Nodes> NodesPtr;
 
 // class Constructor
 // {
@@ -257,7 +257,7 @@ public:
 private:
     const LilvPlugin*                   m_plugin;
     const LV2_Descriptor*               m_descriptor;
-    boost::shared_ptr<Binary>           m_binary;
+    std::shared_ptr<Binary>           m_binary;
     const char*                         m_bundlePath;
     const LV2_Feature* const*           m_features;
     const LV2_RT_Instantiate_Interface* m_constructor;
@@ -285,7 +285,7 @@ public:
     void loadPlugins();
 
     // Plugin access
-    typedef boost::shared_ptr<Plugin> PluginHandle;
+    typedef std::shared_ptr<Plugin> PluginHandle;
 
     const PluginHandle& lookup(const char* uri) const;
 
@@ -296,7 +296,7 @@ public:
 private:
     void addFeature(const char* uri, void* data=0);
 
-    typedef boost::unordered_map<
+    typedef std::unordered_map<
                 const char*
               , PluginHandle
               , Mescaline::Utility::Hash::string_hash
