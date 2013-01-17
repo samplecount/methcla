@@ -10,6 +10,7 @@
 #include <Mescaline/Memory/Manager.hpp>
 #include <Mescaline/Utility/MessageQueue.hpp>
 
+#include <boost/filesystem.hpp>
 #include <boost/utility.hpp>
 
 #include <cstddef>
@@ -177,7 +178,7 @@ namespace Mescaline { namespace Audio
     class Engine : public IO::Client
     {
     public:
-        Engine(Plugin::Loader* pluginLoader);
+        Engine(Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory);
         virtual ~Engine();
 
         virtual void configure(const IO::Driver& driver);

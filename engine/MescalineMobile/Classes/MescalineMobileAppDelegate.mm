@@ -12,6 +12,7 @@
 
 #include <AudioToolbox/AudioServices.h>
 
+#include <boost/filesystem.hpp>
 #include <iostream>
 
 #include "lilv/lilv.h"
@@ -44,10 +45,17 @@ class MyEngine : public Mescaline::Audio::Engine
 {
 public:
     MyEngine(MyLoader* loader)
-        : Mescaline::Audio::Engine(loader)
+        : Mescaline::Audio::Engine(loader, lv2BundleDirectory())
         , m_osc(0)
 //        , m_scope(0)
     { }
+
+    static boost::filesystem::path lv2BundleDirectory()
+    {
+        NSString* resources = [[NSBundle mainBundle] resourcePath];
+        NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
+        return boost::filesystem::path([bundles UTF8String]);
+    }
 
     virtual void configure(const Mescaline::Audio::IO::Driver& driver)
     {

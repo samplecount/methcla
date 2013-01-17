@@ -282,7 +282,7 @@ public:
 
     // Plugin discovery and loading
     Loader& loader() { return m_loader; }
-    void loadPlugins();
+    void loadPlugins(const boost::filesystem::path& directory);
 
     // Plugin access
     typedef std::shared_ptr<Plugin> PluginHandle;

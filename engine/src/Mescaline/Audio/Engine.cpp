@@ -169,12 +169,12 @@ void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV
 {
 }
 
-Engine::Engine(Plugin::Loader* pluginLoader)
+Engine::Engine(Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory)
     : m_pluginLoader(pluginLoader)
     , m_pluginManager(*pluginLoader)
     , m_env(0)
 {
-    m_pluginManager.loadPlugins();
+    m_pluginManager.loadPlugins(lv2Directory);
 }
 
 Engine::~Engine()

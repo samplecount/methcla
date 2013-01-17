@@ -338,12 +338,14 @@ const Manager::PluginHandle& Manager::lookup(const char* uri) const
     return m_plugins.find(uri)->second;
 }
 
-void Manager::loadPlugins()
+void Manager::loadPlugins(const boost::filesystem::path& directory)
 {
     NodePtr extensionData(newUri(LV2_CORE_URI "#extensionData"));
     NodePtr hardRTCapable(newUri(LV2_CORE_URI "#hardRTCapable"));
     NodePtr rtInstantiation(newUri(PUESNADA_URI "/ext/rt-instantiate#rtInstantiation"));
     NodePtr rtInstantiateInterface(newUri(PUESNADA_URI "/ext/rt-instantiate#Interface"));
+
+    setenv("LV2_PATH", directory.c_str(), true);
 
     lilv_world_load_all(m_world);
     const LilvPlugins* plugins = lilv_world_get_all_plugins(m_world);
