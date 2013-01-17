@@ -11,7 +11,6 @@
 #include <Mescaline/Utility/MessageQueue.hpp>
 
 #include <AudioToolbox/AudioServices.h>
-#include <boost/thread.hpp>
 
 #include <iostream>
 
