@@ -4,13 +4,13 @@
 using namespace Mescaline::LV2;
 
 static LV2_URID URIDMap_map(LV2_URID_Map_Handle handle,
-                           const char*         uri)
+                            const char*         uri)
 {
     return static_cast<URIDMap*>(handle)->map(uri);
 }
 
 static const char* URIDMap_unmap(LV2_URID_Unmap_Handle handle,
-                                LV2_URID              urid)
+                                 LV2_URID              urid)
 {
     return static_cast<URIDMap*>(handle)->unmap(urid);
 }
