@@ -4,6 +4,7 @@
 #include "Mescaline/Audio/IO/Client.hpp"
 #include "Mescaline/Audio/IO/Driver.hpp"
 #include "Mescaline/Audio/Types.h"
+#include "Mescaline/Exception.hpp"
 #include "Mescaline/Memory.hpp"
 
 #include <AudioUnit/AudioUnit.h>
@@ -13,6 +14,9 @@
 
 namespace Mescaline { namespace Audio { namespace IO
 {
+	struct OSStatusInfoTag { };
+	typedef boost::error_info<OSStatusInfoTag,OSStatus> OSStatusInfo;
+
     class RemoteIODriver : public Driver
     {
     public:
@@ -29,7 +33,13 @@ namespace Mescaline { namespace Audio { namespace IO
 
     private:
         static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
-        static OSStatus RenderCallback(void                         *inRefCon, 
+        static OSStatus InputCallback(void                         *inRefCon,
+                                      AudioUnitRenderActionFlags   *ioActionFlags,
+                                      const AudioTimeStamp         *inTimeStamp,
+                                      UInt32                       inBusNumber,
+                                      UInt32                       inNumberFrames,
+                                      AudioBufferList              *ioData);
+        static OSStatus RenderCallback(void                         *inRefCon,
                                        AudioUnitRenderActionFlags   *ioActionFlags, 
                                        const AudioTimeStamp         *inTimeStamp, 
                                        UInt32                       inBusNumber, 
@@ -44,7 +54,6 @@ namespace Mescaline { namespace Audio { namespace IO
         AudioUnit           m_rioUnit;
         sample_t**          m_inputBuffers;
         sample_t**          m_outputBuffers;
-        AudioBufferList*    m_CAInputBuffers;
     };
 }; }; };
 
