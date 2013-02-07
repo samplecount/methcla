@@ -735,6 +735,8 @@ optionsToShake opts = shakeOptions {
 -- ====================================================================
 -- Commandline targets
 
+iOS_SDK = "6.1"
+
 maybeRemoveDirectoryRecursive d =
 	Dir.doesDirectoryExist d >>= flip when (Dir.removeDirectoryRecursive d)
 
@@ -749,7 +751,7 @@ targetSpecs = [
             buildFlags = applyBuildConfiguration env configurations
                        . mescalineStaticBuidFlags
                        . mescalineCommonBuildFlags
-                       $ cBuildFlags_IOS developer "6.0"
+                       $ cBuildFlags_IOS developer iOS_SDK
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
@@ -765,7 +767,7 @@ targetSpecs = [
             buildFlags = applyBuildConfiguration env configurations
                        . mescalineStaticBuidFlags
                        . mescalineCommonBuildFlags
-                       $ cBuildFlags_IOS_Simulator developer "6.0"
+                       $ cBuildFlags_IOS_Simulator developer iOS_SDK
         libmescaline <- mescalineLib target
         shake $ do
             let libs = [ libmescaline ]
