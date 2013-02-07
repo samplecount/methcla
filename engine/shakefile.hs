@@ -495,8 +495,8 @@ engineBuildFlags target =
          , "external_libraries/boost_lockfree" ] )
 
 -- | Build flags common to all targets
-mescalineCommonBuildFlags :: CBuildFlags -> CBuildFlags
-mescalineCommonBuildFlags = appendL compilerFlags [
+methclaCommonBuildFlags :: CBuildFlags -> CBuildFlags
+methclaCommonBuildFlags = appendL compilerFlags [
     (Just C, flag "-std=c11")
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
@@ -505,15 +505,15 @@ mescalineCommonBuildFlags = appendL compilerFlags [
   ]
 
 -- | Build flags for static library
-mescalineStaticBuidFlags :: CBuildFlags -> CBuildFlags
-mescalineStaticBuidFlags = id
+methclaStaticBuidFlags :: CBuildFlags -> CBuildFlags
+methclaStaticBuidFlags = id
 
 -- | Build flags for shared library
-mescalineSharedBuildFlags :: CBuildFlags -> CBuildFlags
-mescalineSharedBuildFlags = libraries ^= [ "m" ]
+methclaSharedBuildFlags :: CBuildFlags -> CBuildFlags
+methclaSharedBuildFlags = libraries ^= [ "m" ]
 
-mescalineLib :: CTarget -> IO Library
-mescalineLib target = do
+methclaLib :: CTarget -> IO Library
+methclaLib target = do
     --boostSrc <- find always
     --                (    extension ==? ".cpp"
     --                 &&? (not . isSuffixOf "win32") <$> directory
@@ -529,7 +529,7 @@ mescalineLib target = do
     --                 &&? (fileName /=? "utf8_codecvt_facet.cpp")
     --                )
     --                boostDir
-    return $ Library "mescaline" $ [
+    return $ Library "methcla" $ [
         -- serd
         sourceTree serdBuildFlags $ sourceFiles $
             under (serdDir </> "src") [
@@ -595,27 +595,27 @@ mescalineLib target = do
         -- engine
       , sourceTree (engineBuildFlags target) $ sourceFiles $
             under "src" [
-                "Mescaline/Audio/AudioBus.cpp"
-              , "Mescaline/Audio/Client.cpp"
-              , "Mescaline/Audio/Engine.cpp"
-              , "Mescaline/Audio/Group.cpp"
-              , "Mescaline/Audio/Node.cpp"
-              , "Mescaline/Audio/Resource.cpp"
-              , "Mescaline/Audio/Synth.cpp"
-              , "Mescaline/Audio/SynthDef.cpp"
-              , "Mescaline/LV2/URIDMap.cpp"
-              , "Mescaline/Memory/Manager.cpp"
-              , "Mescaline/Memory.cpp"
+                "Methcla/Audio/AudioBus.cpp"
+              , "Methcla/Audio/Client.cpp"
+              , "Methcla/Audio/Engine.cpp"
+              , "Methcla/Audio/Group.cpp"
+              , "Methcla/Audio/Node.cpp"
+              , "Methcla/Audio/Resource.cpp"
+              , "Methcla/Audio/Synth.cpp"
+              , "Methcla/Audio/SynthDef.cpp"
+              , "Methcla/LV2/URIDMap.cpp"
+              , "Methcla/Memory/Manager.cpp"
+              , "Methcla/Memory.cpp"
               ]
             ++ [ "external_libraries/zix/ring.c" ]
             -- plugins
-            ++ [ "lv2/puesnada.es/plugins/sine.lv2/sine.cpp" ]
+            ++ [ "lv2/methc.la/plugins/sine.lv2/sine.cpp" ]
             -- platform dependent
             ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
-                then under "platform/ios" [ "Mescaline/Audio/IO/RemoteIODriver.cpp" ]
+                then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
                 else if (buildTarget ^$ target) `elem` [MacOSX]
-                     then under "platform/jack" [ "Mescaline/API.cpp"
-                                                , "Mescaline/Audio/IO/JackDriver.cpp" ]
+                     then under "platform/jack" [ "Methcla/API.cpp"
+                                                , "Methcla/Audio/IO/JackDriver.cpp" ]
                      else [])
         ]
 
@@ -740,12 +740,12 @@ targetSpecs = [
         let target = mkCTarget IOS "armv7"
             toolChain = cToolChain_IOS developer
             buildFlags = applyBuildConfiguration env configurations
-                       . mescalineStaticBuidFlags
-                       . mescalineCommonBuildFlags
+                       . methclaStaticBuidFlags
+                       . methclaCommonBuildFlags
                        $ cBuildFlags_IOS developer iOS_SDK
-        libmescaline <- mescalineLib target
+        libmethcla <- methclaLib target
         shake $ do
-            let libs = [ libmescaline ]
+            let libs = [ libmethcla ]
                 lib = staticLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
             want =<< mapM lib libs
@@ -756,12 +756,12 @@ targetSpecs = [
         let target = mkCTarget IOS_Simulator "i386"
             toolChain = cToolChain_IOS_Simulator developer
             buildFlags = applyBuildConfiguration env configurations
-                       . mescalineStaticBuidFlags
-                       . mescalineCommonBuildFlags
+                       . methclaStaticBuidFlags
+                       . methclaCommonBuildFlags
                        $ cBuildFlags_IOS_Simulator developer iOS_SDK
-        libmescaline <- mescalineLib target
+        libmethcla <- methclaLib target
         shake $ do
-            let libs = [ libmescaline ]
+            let libs = [ libmethcla ]
                 lib = staticLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
             want =<< mapM lib libs
@@ -775,12 +775,12 @@ targetSpecs = [
             toolChain = cToolChain_MacOSX developer
             buildFlags = applyBuildConfiguration env configurations
                        . jackBuildFlags
-                       . mescalineSharedBuildFlags
-                       . mescalineCommonBuildFlags
+                       . methclaSharedBuildFlags
+                       . methclaCommonBuildFlags
                        $ cBuildFlags_MacOSX developer sdkVersion
-        libmescaline <- mescalineLib target
+        libmethcla <- methclaLib target
         shake $ do
-            let libs = [ libmescaline ]
+            let libs = [ libmethcla ]
                 lib = sharedLibrary env target toolChain buildFlags
                 libFile = libBuildPath env target
             want =<< mapM lib libs

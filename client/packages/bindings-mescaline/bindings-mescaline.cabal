@@ -9,7 +9,7 @@ Copyright:              Copyright (c) Stefan Kersten 2012
 Author:                 Stefan Kersten <sk@puesnada.es>
 Maintainer:             Stefan Kersten <sk@puesnada.es>
 Stability:              experimental
-Homepage:               http://mescaline.puesnada.es
+Homepage:               http://methc.la
 Tested-With:            GHC == 7.0.3
 Build-Type:             Simple
 Cabal-Version:          >= 1.6

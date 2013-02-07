@@ -1,9 +1,10 @@
-# Haskell client libraries and scripts
+# Methcla - Mobile sound engine
 
-This directory contains various Haskell libraries and scripts that are used to
-control the Mescaline audio engine.
+Methcla is a light-weight, efficient sound engine for mobile devices, see our [website](http://methc.la) for the full picture.
 
-### Building the sound engine
+## Building the sound engine
+
+Our build system is written in Haskell and you need to install at least the [Haskell platform](http://www.haskell.org/platform/) and [cabal-dev](http://hackage.haskell.org/package/cabal-dev) before building Methcla.
 
 In the `engine` subdirectory execute
 
@@ -19,30 +20,14 @@ To get a list of possible targets
 
     ./shake
 
-
 To clean everything
 
     ./shake clean
 
-### Building the client libraries and scripts
+Use the `-j` flag for parallel builds:
 
-Change to the `client` directory and initialize the build environment with
+    ./shake -j4 ios
 
-    $ cabal-meta install
+## Examples
 
-Then build the Haskell code with
-
-    $ cabal install
-
-Executables will be installed in `../.virthualenv/bin/`.
-
-## Running the server sound engine
-
-The server sound engine can be run with
-
-    $ .virthualenv/bin/streamero-sound-engine -?
-
-for a list of options.
-
-The engine expects a Unix domain socket file to be passed on the command line;
-if omitted, the program will start in interactive mode.
+is an example XCode project that builds the engine for iOS devices and plays back a simple sine synth.

@@ -1,6 +1,0 @@
-{"request":"AddSound","id":0,"type":"sample","path":"/Users/sk/Music/schtief.wav","loop":true}
-{"request":"AddSound","id":1,"type":"sample","path":"/Users/sk/Music/mhmhm.wav","loop":true}
-{"request":"AddSound","id":2,"type":"sample","path":"/Users/sk/Music/dam.wav","loop":false,"event":true}
-{"request":"AddLocation","id":0,"position":{"latitude":48.2,"longitude":11.2},"radius":10.2,"sounds":[0,1,2]}
-{"request":"AddListener","id":"0","position":{"latitude":48.200001,"longitude":11.200001},"stream_url":"http://localhost:8000/soundscape/stream-0"}
-{"request":"PlaySound","listener":"0","sound":2}

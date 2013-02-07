@@ -1,5 +1,5 @@
-#include <Mescaline/Faust.hpp>
-#include <Mescaline/Audio/Plugin/API.hpp>
+#include <Methcla/Faust.hpp>
+#include <Methcla/Audio/Plugin/API.hpp>
 
 #include <boost/type_traits.hpp>
 
@@ -9,7 +9,7 @@
 #include <string>
 
 using namespace Faust;
-using namespace Mescaline::Audio;
+using namespace Methcla::Audio;
 using namespace std;
 
 #define FAUSTFLOAT sample_t
@@ -73,7 +73,7 @@ public:
 
     virtual void addButton(const char*, float* zone)
     {
-        Plugin::MetaData* md = addInputZone(zone, kMescalineControlTrigger);
+        Plugin::MetaData* md = addInputZone(zone, kMethclaControlTrigger);
         md->insert("min", 0.f);
         md->insert("max", 1.f);
         md->insert("step", 1.f);
@@ -165,7 +165,7 @@ protected:
         return it->second;
     }
 
-    Plugin::MetaData* addInputZone(float* zone, MescalineControlFlags flags=kMescalineControlFlags)
+    Plugin::MetaData* addInputZone(float* zone, MethclaControlFlags flags=kMethclaControlFlags)
     {
         BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate input zone" );
         Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
@@ -174,7 +174,7 @@ protected:
         return getMetaData(zone);
     }
 
-    Plugin::MetaData* addOutputZone(float* zone, MescalineControlFlags flags=kMescalineControlFlags)
+    Plugin::MetaData* addOutputZone(float* zone, MethclaControlFlags flags=kMethclaControlFlags)
     {
         BOOST_ASSERT_MSG( m_controlSpecs.find(zone) == m_controlSpecs.end(), "duplicate output zone" );
         Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
@@ -258,14 +258,14 @@ private:
     size_t      m_currentControlOutput;
 };
 
-class MescalineFaustSynth : public MescalineSynth
+class MethclaFaustSynth : public MethclaSynth
 {
 public:
-    MescalineFaustSynth(MescalineHost* host, const Plugin::SynthDef<MescalineFaustSynth>* synthDef)
-        : m_controlInputs(reinterpret_cast<float**>(reinterpret_cast<char*>(this) + sizeof(MescalineFaustSynth)))
+    MethclaFaustSynth(MethclaHost* host, const Plugin::SynthDef<MethclaFaustSynth>* synthDef)
+        : m_controlInputs(reinterpret_cast<float**>(reinterpret_cast<char*>(this) + sizeof(MethclaFaustSynth)))
         , m_controlOutputs(m_controlInputs + synthDef->numControlInputs)
     {
-        m_dsp.instanceInit(MescalineHostGetSampleRate(host));
+        m_dsp.instanceInit(MethclaHostGetSampleRate(host));
         ControlAllocator ui(m_controlInputs, m_controlOutputs);
         m_dsp.buildUserInterface(&ui);
     }
@@ -290,10 +290,10 @@ private:
     float**     m_controlOutputs;
 };
 
-#define MESCALINE_TO_STRING(x) #x
-#define MESCALINE_STRINGIFY(x) MESCALINE_TO_STRING(x)
+#define METHCLA_TO_STRING(x) #x
+#define METHCLA_STRINGIFY(x) METHCLA_TO_STRING(x)
 
-class SynthDef : public Plugin::SynthDef<MescalineFaustSynth>
+class SynthDef : public Plugin::SynthDef<MethclaFaustSynth>
 {
 public:
     SynthDef( const char* name
@@ -301,7 +301,7 @@ public:
             , size_t numAudioOutputs
             , const vector<Plugin::ControlSpec*>& controlInputs
             , const vector<Plugin::ControlSpec*>& controlOutputs )
-        : Plugin::SynthDef<MescalineFaustSynth>(
+        : Plugin::SynthDef<MethclaFaustSynth>(
             name
           , numAudioInputs
           , numAudioOutputs
@@ -309,7 +309,7 @@ public:
           , controlOutputs
           , getMetaData() )
     {
-        instanceSize = sizeof(MescalineFaustSynth)
+        instanceSize = sizeof(MethclaFaustSynth)
                         // Reserve space for the control pointers
                         + (numControlInputs + numControlOutputs) * sizeof(float*);
     }
@@ -326,22 +326,22 @@ private:
     string m_name;
 };
 
-MESCALINE_EXPORT void MESCALINE_INIT_FUNC(FAUSTCLASS)(MescalineHost* host)
+METHCLA_EXPORT void METHCLA_INIT_FUNC(FAUSTCLASS)(MethclaHost* host)
 {
     FAUSTCLASS* dsp = new FAUSTCLASS;
     try {
         ControlSpecAllocator ui;
-        dsp->init(MescalineHostGetSampleRate(host));
+        dsp->init(MethclaHostGetSampleRate(host));
         dsp->buildUserInterface(&ui);
         ui.finish();
-        MescalineSynthDef* def =
+        MethclaSynthDef* def =
             new SynthDef(
-                MESCALINE_STRINGIFY(FAUSTCLASS)
+                METHCLA_STRINGIFY(FAUSTCLASS)
               , dsp->getNumInputs()
               , dsp->getNumOutputs()
               , ui.controlInputSpecs()
               , ui.controlOutputSpecs() );
-        MescalineHostRegisterSynthDef(host, def);
+        MethclaHostRegisterSynthDef(host, def);
     } catch (...) {
         delete dsp;
         throw;
