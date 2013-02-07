@@ -364,53 +364,13 @@ getSystemVersion =
   (intercalate "." . take 2 . splitOn ".")
     <$> readProcess "sw_vers" ["-productVersion"] ""
 
-iosMinVersion :: String
-iosMinVersion = "50000"
---iosMinVersion = "40200"
-
-cToolChain_IOS :: DeveloperPath -> CToolChain
-cToolChain_IOS developer =
-    prefix ^= Just (platformDeveloperPath developer "iPhoneOS" </> "usr")
-  $ compilerCmd ^= "llvm-gcc"
-  $ archiverCmd ^= "libtool"
-  $ archiver ^= osxArchiver
-  $ linkerCmd ^= "llvm-g++"
-  $ linker ^= osxLinker
-  $ defaultCToolChain
-
-cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
-cBuildFlags_IOS developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  . appendL preprocessorFlags
-            [ "-isysroot"
-            , platformSDKPath developer "iPhoneOS" sdkVersion ]
-  $ defaultCBuildFlags
-
-cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
-cToolChain_IOS_Simulator developer =
-    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
+cToolChain_MacOSX :: DeveloperPath -> CToolChain
+cToolChain_MacOSX developer =
+    prefix ^= Just (developerPath developer </> "usr")
   $ compilerCmd ^= "clang"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
   $ linkerCmd ^= "clang++"
-  $ linker ^= osxLinker
-  $ defaultCToolChain
-
-cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
-cBuildFlags_IOS_Simulator developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  . appendL preprocessorFlags
-            [ "-isysroot"
-            , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
-  $ defaultCBuildFlags
-
-cToolChain_MacOSX :: DeveloperPath -> CToolChain
-cToolChain_MacOSX developer =
-    prefix ^= Just (developerPath developer </> "usr")
-  $ compilerCmd ^= "llvm-gcc"
-  $ archiverCmd ^= "libtool"
-  $ archiver ^= osxArchiver
-  $ linkerCmd ^= "llvm-g++"
   $ linker ^= osxLinker
   $ defaultCToolChain
 
@@ -426,6 +386,37 @@ cBuildFlags_MacOSX developer sdkVersion =
       "-isysroot"
     , platformSDKPath developer "MacOSX" sdkVersion ]
   . appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
+  $ defaultCBuildFlags
+
+iosMinVersion :: String
+iosMinVersion = "50000"
+--iosMinVersion = "40200"
+
+cToolChain_IOS :: DeveloperPath -> CToolChain
+cToolChain_IOS developer =
+    -- prefix ^= Just (platformDeveloperPath developer "iPhoneOS" </> "usr")
+    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
+  $ cToolChain_MacOSX developer
+
+cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
+cBuildFlags_IOS developer sdkVersion =
+    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . appendL preprocessorFlags
+            [ "-isysroot"
+            , platformSDKPath developer "iPhoneOS" sdkVersion ]
+  $ defaultCBuildFlags
+
+cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
+cToolChain_IOS_Simulator developer =
+    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
+  $ cToolChain_MacOSX developer
+
+cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
+cBuildFlags_IOS_Simulator developer sdkVersion =
+    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . appendL preprocessorFlags
+            [ "-isysroot"
+            , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
   $ defaultCBuildFlags
 
 -- ====================================================================
