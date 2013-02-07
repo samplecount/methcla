@@ -735,9 +735,12 @@ optionsToShake opts = shakeOptions {
 -- ====================================================================
 -- Commandline targets
 
+maybeRemoveDirectoryRecursive d =
+	Dir.doesDirectoryExist d >>= flip when (Dir.removeDirectoryRecursive d)
+
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
-    ( "clean", const (Dir.removeDirectoryRecursive . getL buildPrefix) )
+    ( "clean", const (maybeRemoveDirectoryRecursive . getL buildPrefix) )
   , ( "ios",
     \shake env -> do
         developer <- getDeveloperPath
