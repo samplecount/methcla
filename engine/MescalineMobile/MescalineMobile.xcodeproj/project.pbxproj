@@ -7,85 +7,119 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1D3623260D0F684500981E51 /* MescalineMobileAppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */; };
-		1D3623EC0D0F72F000981E51 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */; };
-		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
-		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
-		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
-		28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28AD733E0D9D9553002E5188 /* MainWindow.xib */; };
-		53A6DCAC1522486B0069A07A /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A6DCAB1522486B0069A07A /* libmescaline.a */; };
-		53EAEA8216A8463700380DD3 /* lv2 in Resources */ = {isa = PBXBuildFile; fileRef = 53E8B0AB16A8429D00C5BB02 /* lv2 */; };
-		A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = A15CFB1C0DE4A8C600FB5D08 /* icon.png */; };
-		A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */; };
-		A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */; };
-		A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */; };
-		F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */; };
-		F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */; };
+		A5A044DA16C3C8A400B84E4E /* libmescaline.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A044D916C3C8A400B84E4E /* libmescaline.a */; };
+		A5D0BA7C16C2C2C600C3A046 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		A5D0BA7D16C2C2C600C3A046 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
+		A5D0BA7E16C2C2C600C3A046 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */; };
+		A5D0BA8016C2C2C600C3A046 /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5D0BA7F16C2C2C600C3A046 /* GLKit.framework */; };
+		A5D0BA8116C2C2C600C3A046 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */; };
+		A5D0BA8716C2C2C600C3A046 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA8516C2C2C600C3A046 /* InfoPlist.strings */; };
+		A5D0BA8916C2C2C600C3A046 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = A5D0BA8816C2C2C600C3A046 /* main.mm */; };
+		A5D0BA8D16C2C2C600C3A046 /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = A5D0BA8C16C2C2C600C3A046 /* AppDelegate.mm */; };
+		A5D0BA8F16C2C2C600C3A046 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA8E16C2C2C600C3A046 /* Default.png */; };
+		A5D0BA9116C2C2C600C3A046 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9016C2C2C600C3A046 /* Default@2x.png */; };
+		A5D0BA9316C2C2C600C3A046 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9216C2C2C600C3A046 /* Default-568h@2x.png */; };
+		A5D0BA9516C2C2C600C3A046 /* Shader.fsh in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9416C2C2C600C3A046 /* Shader.fsh */; };
+		A5D0BA9716C2C2C600C3A046 /* Shader.vsh in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9616C2C2C600C3A046 /* Shader.vsh */; };
+		A5D0BA9A16C2C2C600C3A046 /* ViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A5D0BA9916C2C2C600C3A046 /* ViewController.mm */; };
+		A5D0BA9D16C2C2C600C3A046 /* ViewController_iPhone.xib in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9B16C2C2C600C3A046 /* ViewController_iPhone.xib */; };
+		A5D0BAA016C2C2C600C3A046 /* ViewController_iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BA9E16C2C2C600C3A046 /* ViewController_iPad.xib */; };
+		A5D0BAA816C2C2C700C3A046 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5D0BAA716C2C2C700C3A046 /* SenTestingKit.framework */; };
+		A5D0BAA916C2C2C700C3A046 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		A5D0BAAA16C2C2C700C3A046 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
+		A5D0BAB216C2C2C700C3A046 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BAB016C2C2C700C3A046 /* InfoPlist.strings */; };
+		A5D0BAB516C2C2C700C3A046 /* MethclaTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A5D0BAB416C2C2C700C3A046 /* MethclaTests.m */; };
+		A5D0BABC16C2C5E700C3A046 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */; };
+		A5D0BABE16C2C66600C3A046 /* lv2 in Resources */ = {isa = PBXBuildFile; fileRef = 53E8B0AB16A8429D00C5BB02 /* lv2 */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A5A044D716C3C6D500B84E4E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5D0BA7116C2B32800C3A046;
+			remoteInfo = methcla;
+		};
+		A5D0BAAB16C2C2C700C3A046 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5D0BA7A16C2C2C500C3A046;
+			remoteInfo = Methcla;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		1D3623240D0F684500981E51 /* MescalineMobileAppDelegate.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; fileEncoding = 4; path = MescalineMobileAppDelegate.h; sourceTree = "<group>"; };
-		1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = MescalineMobileAppDelegate.mm; sourceTree = "<group>"; };
 		1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		1D6058910D05DD3D006BFB54 /* Mescaline.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Mescaline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = MainWindow.xib; path = ../MainWindow.xib; sourceTree = "<group>"; };
-		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MescalineMobile_Prefix.pch; sourceTree = "<group>"; };
-		538A754E148FCF1E00C47BF1 /* scope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = scope.cpp; sourceTree = "<group>"; };
-		538A754F148FCF1E00C47BF1 /* scope.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = scope.hpp; sourceTree = "<group>"; };
-		53A6DCAB1522486B0069A07A /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = ../build/debug/ios_simulator/i386/libmescaline.a; sourceTree = "<group>"; };
-		53BB8E2E147EC774002E3B51 /* osc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = osc.cpp; sourceTree = "<group>"; };
-		53C6B16614FE24DF0087DDD6 /* Node.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Node.cpp; sourceTree = "<group>"; };
-		53C6B16E14FE28810087DDD6 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		53C6B17014FE28810087DDD6 /* test_node.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = test_node.1; sourceTree = "<group>"; };
 		53E8B0AB16A8429D00C5BB02 /* lv2 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lv2; path = ../lv2; sourceTree = "<group>"; };
 		53EAEA8416A84D7E00380DD3 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../src; sourceTree = "<group>"; };
-		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Info.plist; sourceTree = "<group>"; };
-		A15CFB1C0DE4A8C600FB5D08 /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
-		A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAGLView.m; sourceTree = "<group>"; };
-		A16C46DD0DE37EC400F4A0B3 /* EAGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAGLView.h; sourceTree = "<group>"; };
 		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = drawbuffer.cpp; sourceTree = "<group>"; };
-		F712EAAF0DF0FEAF003F7B58 /* drawbuffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = drawbuffer.hpp; sourceTree = "<group>"; };
+		A52CEE2B16C162E0008D8457 /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../platform; sourceTree = "<group>"; };
+		A5A044D616C3C3CE00B84E4E /* Engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
+		A5A044D916C3C8A400B84E4E /* libmescaline.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmescaline.a; path = ../build/debug/ios/armv7/libmescaline.a; sourceTree = "<group>"; };
+		A5D0BA7B16C2C2C500C3A046 /* Methcla.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Methcla.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5D0BA7F16C2C2C600C3A046 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
+		A5D0BA8416C2C2C600C3A046 /* Methcla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Methcla-Info.plist"; sourceTree = "<group>"; };
+		A5D0BA8616C2C2C600C3A046 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A5D0BA8816C2C2C600C3A046 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		A5D0BA8A16C2C2C600C3A046 /* Methcla-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Methcla-Prefix.pch"; sourceTree = "<group>"; };
+		A5D0BA8B16C2C2C600C3A046 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		A5D0BA8C16C2C2C600C3A046 /* AppDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppDelegate.mm; sourceTree = "<group>"; };
+		A5D0BA8E16C2C2C600C3A046 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		A5D0BA9016C2C2C600C3A046 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		A5D0BA9216C2C2C600C3A046 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		A5D0BA9416C2C2C600C3A046 /* Shader.fsh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = Shader.fsh; path = Shaders/Shader.fsh; sourceTree = "<group>"; };
+		A5D0BA9616C2C2C600C3A046 /* Shader.vsh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = Shader.vsh; path = Shaders/Shader.vsh; sourceTree = "<group>"; };
+		A5D0BA9816C2C2C600C3A046 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		A5D0BA9916C2C2C600C3A046 /* ViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ViewController.mm; sourceTree = "<group>"; };
+		A5D0BA9C16C2C2C600C3A046 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPhone.xib; sourceTree = "<group>"; };
+		A5D0BA9F16C2C2C600C3A046 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPad.xib; sourceTree = "<group>"; };
+		A5D0BAA616C2C2C600C3A046 /* MethclaTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MethclaTests.octest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5D0BAA716C2C2C700C3A046 /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
+		A5D0BAAF16C2C2C700C3A046 /* MethclaTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "MethclaTests-Info.plist"; sourceTree = "<group>"; };
+		A5D0BAB116C2C2C700C3A046 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A5D0BAB316C2C2C700C3A046 /* MethclaTests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MethclaTests.h; sourceTree = "<group>"; };
+		A5D0BAB416C2C2C700C3A046 /* MethclaTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MethclaTests.m; sourceTree = "<group>"; };
 		F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		1D60588F0D05DD3D006BFB54 /* Frameworks */ = {
+		A5D0BA7816C2C2C500C3A046 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
-				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
-				1D3623EC0D0F72F000981E51 /* CoreGraphics.framework in Frameworks */,
-				F7E58EDA0DCFD988006C4A2F /* AudioToolbox.framework in Frameworks */,
-				A16C47120DE37F9E00F4A0B3 /* OpenGLES.framework in Frameworks */,
-				A16C473F0DE3801700F4A0B3 /* QuartzCore.framework in Frameworks */,
-				53A6DCAC1522486B0069A07A /* libmescaline.a in Frameworks */,
+				A5D0BABC16C2C5E700C3A046 /* AudioToolbox.framework in Frameworks */,
+				A5D0BA7C16C2C2C600C3A046 /* UIKit.framework in Frameworks */,
+				A5D0BA7D16C2C2C600C3A046 /* Foundation.framework in Frameworks */,
+				A5D0BA7E16C2C2C600C3A046 /* CoreGraphics.framework in Frameworks */,
+				A5D0BA8016C2C2C600C3A046 /* GLKit.framework in Frameworks */,
+				A5D0BA8116C2C2C600C3A046 /* OpenGLES.framework in Frameworks */,
+				A5A044DA16C3C8A400B84E4E /* libmescaline.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A5D0BAA216C2C2C600C3A046 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5D0BAA816C2C2C700C3A046 /* SenTestingKit.framework in Frameworks */,
+				A5D0BAA916C2C2C700C3A046 /* UIKit.framework in Frameworks */,
+				A5D0BAAA16C2C2C700C3A046 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		080E96DDFE201D6D7F000001 /* Classes */ = {
-			isa = PBXGroup;
-			children = (
-				A16C46DD0DE37EC400F4A0B3 /* EAGLView.h */,
-				A16C46DC0DE37EC400F4A0B3 /* EAGLView.m */,
-				1D3623240D0F684500981E51 /* MescalineMobileAppDelegate.h */,
-				1D3623250D0F684500981E51 /* MescalineMobileAppDelegate.mm */,
-			);
-			path = Classes;
-			sourceTree = "<group>";
-		};
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1D6058910D05DD3D006BFB54 /* Mescaline.app */,
+				A5D0BA7B16C2C2C500C3A046 /* Methcla.app */,
+				A5D0BAA616C2C2C600C3A046 /* MethclaTests.octest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -93,42 +127,16 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				A5A044D916C3C8A400B84E4E /* libmescaline.a */,
+				A52CEE2B16C162E0008D8457 /* platform */,
 				53EAEA8416A84D7E00380DD3 /* src */,
 				53E8B0AB16A8429D00C5BB02 /* lv2 */,
-				53A6DCAB1522486B0069A07A /* libmescaline.a */,
-				53C6B16514FE24BE0087DDD6 /* tests */,
-				080E96DDFE201D6D7F000001 /* Classes */,
-				29B97315FDCFA39411CA2CEA /* Other Sources */,
-				29B97317FDCFA39411CA2CEA /* Resources */,
-				53C6B16D14FE28810087DDD6 /* test-node */,
+				A5D0BA8216C2C2C600C3A046 /* Methcla */,
+				A5D0BAAD16C2C2C700C3A046 /* MethclaTests */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
 			name = CustomTemplate;
-			sourceTree = "<group>";
-		};
-		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
-			isa = PBXGroup;
-			children = (
-				538A754E148FCF1E00C47BF1 /* scope.cpp */,
-				538A754F148FCF1E00C47BF1 /* scope.hpp */,
-				53BB8E2E147EC774002E3B51 /* osc.cpp */,
-				F712EAAF0DF0FEAF003F7B58 /* drawbuffer.hpp */,
-				F712EAAE0DF0FEAF003F7B58 /* drawbuffer.cpp */,
-				32CA4F630368D1EE00C91783 /* MescalineMobile_Prefix.pch */,
-				29B97316FDCFA39411CA2CEA /* main.m */,
-			);
-			name = "Other Sources";
-			sourceTree = "<group>";
-		};
-		29B97317FDCFA39411CA2CEA /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				A15CFB1C0DE4A8C600FB5D08 /* icon.png */,
-				28AD733E0D9D9553002E5188 /* MainWindow.xib */,
-				8D1107310486CEB800E47090 /* Info.plist */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
@@ -140,49 +148,119 @@
 				1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */,
 				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
 				1D30AB110D05D00D00671497 /* Foundation.framework */,
+				A5D0BA7F16C2C2C600C3A046 /* GLKit.framework */,
+				A5D0BAA716C2C2C700C3A046 /* SenTestingKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		53C6B16514FE24BE0087DDD6 /* tests */ = {
+		A5D0BA8216C2C2C600C3A046 /* Methcla */ = {
 			isa = PBXGroup;
 			children = (
-				53C6B16614FE24DF0087DDD6 /* Node.cpp */,
+				A5D0BA8B16C2C2C600C3A046 /* AppDelegate.h */,
+				A5D0BA8C16C2C2C600C3A046 /* AppDelegate.mm */,
+				A5D0BA9416C2C2C600C3A046 /* Shader.fsh */,
+				A5D0BA9616C2C2C600C3A046 /* Shader.vsh */,
+				A5D0BA9816C2C2C600C3A046 /* ViewController.h */,
+				A5D0BA9916C2C2C600C3A046 /* ViewController.mm */,
+				A5A044D616C3C3CE00B84E4E /* Engine.h */,
+				A5D0BA9B16C2C2C600C3A046 /* ViewController_iPhone.xib */,
+				A5D0BA9E16C2C2C600C3A046 /* ViewController_iPad.xib */,
+				A5D0BA8316C2C2C600C3A046 /* Supporting Files */,
 			);
-			name = tests;
-			path = ../tests;
+			path = Methcla;
 			sourceTree = "<group>";
 		};
-		53C6B16D14FE28810087DDD6 /* test-node */ = {
+		A5D0BA8316C2C2C600C3A046 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				53C6B16E14FE28810087DDD6 /* main.cpp */,
-				53C6B17014FE28810087DDD6 /* test_node.1 */,
+				A5D0BA8416C2C2C600C3A046 /* Methcla-Info.plist */,
+				A5D0BA8516C2C2C600C3A046 /* InfoPlist.strings */,
+				A5D0BA8816C2C2C600C3A046 /* main.mm */,
+				A5D0BA8A16C2C2C600C3A046 /* Methcla-Prefix.pch */,
+				A5D0BA8E16C2C2C600C3A046 /* Default.png */,
+				A5D0BA9016C2C2C600C3A046 /* Default@2x.png */,
+				A5D0BA9216C2C2C600C3A046 /* Default-568h@2x.png */,
 			);
-			path = "test-node";
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		A5D0BAAD16C2C2C700C3A046 /* MethclaTests */ = {
+			isa = PBXGroup;
+			children = (
+				A5D0BAB316C2C2C700C3A046 /* MethclaTests.h */,
+				A5D0BAB416C2C2C700C3A046 /* MethclaTests.m */,
+				A5D0BAAE16C2C2C700C3A046 /* Supporting Files */,
+			);
+			path = MethclaTests;
+			sourceTree = "<group>";
+		};
+		A5D0BAAE16C2C2C700C3A046 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				A5D0BAAF16C2C2C700C3A046 /* MethclaTests-Info.plist */,
+				A5D0BAB016C2C2C700C3A046 /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
-/* Begin PBXNativeTarget section */
-		1D6058900D05DD3D006BFB54 /* Mescaline */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Mescaline" */;
+/* Begin PBXLegacyTarget section */
+		A5D0BA7116C2B32800C3A046 /* methcla */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "\"${PROJECT_DIR}/build_methcla.sh\" \"${PROJECT_DIR}/..\"";
+			buildConfigurationList = A5D0BA7216C2B32800C3A046 /* Build configuration list for PBXLegacyTarget "methcla" */;
 			buildPhases = (
-				5383602415079C610032BB86 /* ShellScript */,
-				53EAEA8316A8464000380DD3 /* ShellScript */,
-				1D60588D0D05DD3D006BFB54 /* Resources */,
-				1D60588E0D05DD3D006BFB54 /* Sources */,
-				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+			);
+			buildToolPath = /bin/sh;
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = methcla;
+			passBuildSettingsInEnvironment = 1;
+			productName = methcla;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXNativeTarget section */
+		A5D0BA7A16C2C2C500C3A046 /* Methcla */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5D0BAB616C2C2C700C3A046 /* Build configuration list for PBXNativeTarget "Methcla" */;
+			buildPhases = (
+				A5D0BA7716C2C2C500C3A046 /* Sources */,
+				A5D0BA7816C2C2C500C3A046 /* Frameworks */,
+				A5D0BABD16C2C63A00C3A046 /* Touch LV2 directory */,
+				A5D0BA7916C2C2C500C3A046 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A5A044D816C3C6D500B84E4E /* PBXTargetDependency */,
 			);
-			name = Mescaline;
-			productName = aurioTouch;
-			productReference = 1D6058910D05DD3D006BFB54 /* Mescaline.app */;
+			name = Methcla;
+			productName = Methcla;
+			productReference = A5D0BA7B16C2C2C500C3A046 /* Methcla.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A5D0BAA516C2C2C600C3A046 /* MethclaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5D0BAB916C2C2C700C3A046 /* Build configuration list for PBXNativeTarget "MethclaTests" */;
+			buildPhases = (
+				A5D0BAA116C2C2C600C3A046 /* Sources */,
+				A5D0BAA216C2C2C600C3A046 /* Frameworks */,
+				A5D0BAA316C2C2C600C3A046 /* Resources */,
+				A5D0BAA416C2C2C600C3A046 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A5D0BAAC16C2C2C700C3A046 /* PBXTargetDependency */,
+			);
+			name = MethclaTests;
+			productName = MethclaTests;
+			productReference = A5D0BAA616C2C2C600C3A046 /* MethclaTests.octest */;
+			productType = "com.apple.product-type.bundle";
 		};
 /* End PBXNativeTarget section */
 
@@ -201,31 +279,48 @@
 				Japanese,
 				French,
 				German,
+				en,
 			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1D6058900D05DD3D006BFB54 /* Mescaline */,
+				A5D0BA7116C2B32800C3A046 /* methcla */,
+				A5D0BA7A16C2C2C500C3A046 /* Methcla */,
+				A5D0BAA516C2C2C600C3A046 /* MethclaTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		1D60588D0D05DD3D006BFB54 /* Resources */ = {
+		A5D0BA7916C2C2C500C3A046 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
-				A15CFB1D0DE4A8C600FB5D08 /* icon.png in Resources */,
-				53EAEA8216A8463700380DD3 /* lv2 in Resources */,
+				A5D0BA8716C2C2C600C3A046 /* InfoPlist.strings in Resources */,
+				A5D0BA8F16C2C2C600C3A046 /* Default.png in Resources */,
+				A5D0BA9116C2C2C600C3A046 /* Default@2x.png in Resources */,
+				A5D0BA9316C2C2C600C3A046 /* Default-568h@2x.png in Resources */,
+				A5D0BA9516C2C2C600C3A046 /* Shader.fsh in Resources */,
+				A5D0BA9716C2C2C600C3A046 /* Shader.vsh in Resources */,
+				A5D0BA9D16C2C2C600C3A046 /* ViewController_iPhone.xib in Resources */,
+				A5D0BAA016C2C2C600C3A046 /* ViewController_iPad.xib in Resources */,
+				A5D0BABE16C2C66600C3A046 /* lv2 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A5D0BAA316C2C2C600C3A046 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5D0BAB216C2C2C700C3A046 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		5383602415079C610032BB86 /* ShellScript */ = {
+		A5D0BAA416C2C2C600C3A046 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -236,74 +331,177 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd .. && ./shake -j`sysctl -n hw.ncpu` ios-simulator";
-			showEnvVarsInLog = 0;
+			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
 		};
-		53EAEA8316A8464000380DD3 /* ShellScript */ = {
+		A5D0BABD16C2C63A00C3A046 /* Touch LV2 directory */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
+			name = "Touch LV2 directory";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "touch -cm ${SRCROOT}/../lv2";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		1D60588E0D05DD3D006BFB54 /* Sources */ = {
+		A5D0BA7716C2C2C500C3A046 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D60589B0D05DD56006BFB54 /* main.m in Sources */,
-				1D3623260D0F684500981E51 /* MescalineMobileAppDelegate.mm in Sources */,
-				A16C46DE0DE37EC400F4A0B3 /* EAGLView.m in Sources */,
-				F712EAB00DF0FEAF003F7B58 /* drawbuffer.cpp in Sources */,
+				A5D0BA8916C2C2C600C3A046 /* main.mm in Sources */,
+				A5D0BA8D16C2C2C600C3A046 /* AppDelegate.mm in Sources */,
+				A5D0BA9A16C2C2C600C3A046 /* ViewController.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A5D0BAA116C2C2C600C3A046 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5D0BAB516C2C2C700C3A046 /* MethclaTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		A5A044D816C3C6D500B84E4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5D0BA7116C2B32800C3A046 /* methcla */;
+			targetProxy = A5A044D716C3C6D500B84E4E /* PBXContainerItemProxy */;
+		};
+		A5D0BAAC16C2C2C700C3A046 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5D0BA7A16C2C2C500C3A046 /* Methcla */;
+			targetProxy = A5D0BAAB16C2C2C700C3A046 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		A5D0BA8516C2C2C600C3A046 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5D0BA8616C2C2C600C3A046 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		A5D0BA9B16C2C2C600C3A046 /* ViewController_iPhone.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5D0BA9C16C2C2C600C3A046 /* en */,
+			);
+			name = ViewController_iPhone.xib;
+			sourceTree = "<group>";
+		};
+		A5D0BA9E16C2C2C600C3A046 /* ViewController_iPad.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5D0BA9F16C2C2C600C3A046 /* en */,
+			);
+			name = ViewController_iPad.xib;
+			sourceTree = "<group>";
+		};
+		A5D0BAB016C2C2C700C3A046 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A5D0BAB116C2C2C700C3A046 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
-		1D6058940D05DD3E006BFB54 /* Debug */ = {
+		A5D0BA7316C2B32800C3A046 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = MescalineMobile_Prefix.pch;
-				HEADER_SEARCH_PATHS = (
-					../src,
-					../platform/ios,
-					../external_libraries,
-					../external_libraries/boost,
-					../external_libraries/boost_lockfree,
-					../external_libraries/lv2,
-				);
-				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
-				LIBRARY_SEARCH_PATHS = (
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
 					"$(inherited)",
-					"\"$(SRCROOT)/../build/debug/ios_simulator/i386\"",
 				);
-				PRODUCT_NAME = Mescaline;
-				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv";
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
 			};
 			name = Debug;
 		};
-		1D6058950D05DD3E006BFB54 /* Release */ = {
+		A5D0BA7416C2B32800C3A046 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+		A5D0BAB716C2C2C700C3A046 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = armv7;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = MescalineMobile_Prefix.pch;
+				GCC_PREFIX_HEADER = "Methcla/Methcla-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					../src,
 					../platform/ios,
@@ -312,14 +510,124 @@
 					../external_libraries/boost_lockfree,
 					../external_libraries/lv2,
 				);
-				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../build/release/ios_simulator/i386\"",
+					"\"$(SRCROOT)/../build/debug/ios/armv7\"",
 				);
-				PRODUCT_NAME = Mescaline;
+				OTHER_LDFLAGS = "-lmescaline";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		A5D0BAB816C2C2C700C3A046 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = armv7;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Methcla/Methcla-Prefix.pch";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				HEADER_SEARCH_PATHS = (
+					../src,
+					../platform/ios,
+					../external_libraries,
+					../external_libraries/boost,
+					../external_libraries/boost_lockfree,
+					../external_libraries/lv2,
+				);
+				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../build/debug/ios/armv7\"",
+				);
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				OTHER_LDFLAGS = "-lmescaline";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				USER_HEADER_SEARCH_PATHS = ".. ../external_libraries/lilv";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		A5D0BABA16C2C2C700C3A046 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/Methcla.app/Methcla";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
+					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Methcla/Methcla-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				INFOPLIST_FILE = "MethclaTests/MethclaTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = octest;
+			};
+			name = Debug;
+		};
+		A5D0BABB16C2C2C700C3A046 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/Methcla.app/Methcla";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
+					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Methcla/Methcla-Prefix.pch";
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				INFOPLIST_FILE = "MethclaTests/MethclaTests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = octest;
 			};
 			name = Release;
 		};
@@ -370,11 +678,29 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "Mescaline" */ = {
+		A5D0BA7216C2B32800C3A046 /* Build configuration list for PBXLegacyTarget "methcla" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1D6058940D05DD3E006BFB54 /* Debug */,
-				1D6058950D05DD3E006BFB54 /* Release */,
+				A5D0BA7316C2B32800C3A046 /* Debug */,
+				A5D0BA7416C2B32800C3A046 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A5D0BAB616C2C2C700C3A046 /* Build configuration list for PBXNativeTarget "Methcla" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5D0BAB716C2C2C700C3A046 /* Debug */,
+				A5D0BAB816C2C2C700C3A046 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A5D0BAB916C2C2C700C3A046 /* Build configuration list for PBXNativeTarget "MethclaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5D0BABA16C2C2C700C3A046 /* Debug */,
+				A5D0BABB16C2C2C700C3A046 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
