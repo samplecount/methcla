@@ -1,6 +1,6 @@
 /*
   LV2 Realtime Instantiate Extension
-  Copyright 2012 Stefan Kersten <http://puesnada.es>
+  Copyright 2012-2013 Stefan Kersten <stefan@samplecount.com>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above

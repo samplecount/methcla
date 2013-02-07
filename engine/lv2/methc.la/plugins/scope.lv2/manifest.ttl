@@ -1,18 +1,16 @@
-# LV2 Bundle Manifest
-#
-# All LV2 plugins are installed as "bundles", a directory with a particular
-# format.  Inside the bundle, the entry point is a file called "manifest.ttl".
-# This file lists what plugins are in this bundle, and which files are (.so,
-# .ttl, etc.) are associated with those plugins.
-#
-# Hosts read bundles' manifest.ttl to discover what plugins (and other
-# resources) are available.  Manifest files should be as small as possible for
-# performance reasons.
-#
-# The syntax of this file (and most other LV2 data files) is a language called
-# Turtle ("Turse RDF Triple Language").[1]  RDF[3] is a data model that
-# expresses the relationship between things as (subject, predicate, object)
-# triples.  Turtle is a simple, terse, abbreviated syntax for RDF.
+# Copyright 2012-2013 Samplecount S.L.
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # Namespace Prefixes
 
