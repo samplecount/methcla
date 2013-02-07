@@ -381,7 +381,7 @@ getSystemVersion =
 
 cToolChain_MacOSX :: DeveloperPath -> CToolChain
 cToolChain_MacOSX developer =
-    prefix ^= Just (developerPath developer </> "usr")
+    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
   $ compilerCmd ^= "clang"
   $ archiverCmd ^= "libtool"
   $ archiver ^= osxArchiver
@@ -408,10 +408,7 @@ iosMinVersion = "50000"
 --iosMinVersion = "40200"
 
 cToolChain_IOS :: DeveloperPath -> CToolChain
-cToolChain_IOS developer =
-    -- prefix ^= Just (platformDeveloperPath developer "iPhoneOS" </> "usr")
-    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
-  $ cToolChain_MacOSX developer
+cToolChain_IOS = cToolChain_MacOSX
 
 cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS developer sdkVersion =
@@ -422,9 +419,7 @@ cBuildFlags_IOS developer sdkVersion =
   $ defaultCBuildFlags
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
-cToolChain_IOS_Simulator developer =
-    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
-  $ cToolChain_MacOSX developer
+cToolChain_IOS_Simulator = cToolChain_MacOSX
 
 cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS_Simulator developer sdkVersion =
