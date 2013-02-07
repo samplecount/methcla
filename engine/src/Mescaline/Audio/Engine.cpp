@@ -101,8 +101,8 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     // Process non-realtime commands
     m_worker.perform();
 
-    size_t numInputs = m_audioInputChannels.size();
-    size_t numOutputs = m_audioOutputChannels.size();
+    const size_t numInputs = m_audioInputChannels.size();
+    const size_t numOutputs = m_audioOutputChannels.size();
 
     // Connect input and output buses
     for (size_t i=0; i < numInputs; i++) {
