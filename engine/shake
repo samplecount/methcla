@@ -15,9 +15,10 @@ rtsopts="+RTS -N -RTS"
 function shakeit()
 {
 	./cabal-dev/bin/shakefile $rtsopts "$@" 2>&1 | tee errors.err
+	return ${PIPESTATUS[0]}
 }
 
 case $1 in
-	update) shift ; cabal-dev install "$@" || exit 1 ;;
-	*) shakeit "$@" || exit 1 ;;
+	update) shift ; cabal-dev install "$@" ;;
+	*) shakeit "$@" ;;
 esac
