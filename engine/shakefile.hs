@@ -12,15 +12,16 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 import           Control.Applicative ((<$>))
+import           Control.Lens hiding (Action, (<.>))
 import           Control.Monad
-import           Development.Shake
+import           Data.Monoid
+import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Char (toLower)
-import           Data.Lens.Common
-import           Data.Lens.Template
 import           Data.List (intercalate, intersperse, isInfixOf, isSuffixOf)
 import           Data.List.Split (splitOn)
 import           Data.Maybe
@@ -34,6 +35,9 @@ import           System.IO
 import           System.Process (readProcess)
 
 import Debug.Trace
+
+{-# DEPRECATE ^$ #-}
+(^$) = flip (^.)
 
 under :: FilePath -> [FilePath] -> [FilePath]
 under dir = map prepend
@@ -55,20 +59,14 @@ flags :: String -> [String] -> [String]
 flags f = map (f++)
 
 -- Lens utils
-appendL :: Lens a [b] -> [b] -> a -> a
-appendL l bs a = setL l (getL l a ++ bs) a
-
-prependL :: Lens a [b] -> [b] -> a -> a
-prependL l bs a = setL l (bs ++ getL l a) a
-
-combineL :: Lens a FilePath -> FilePath -> a -> FilePath
-combineL l p a = getL l a </> p
+append l n = over l (`mappend` n)
+prepend l n = over l (n `mappend`)
 
 -- Shake utils
-(?=>) :: FilePath -> (FilePath -> Action ()) -> Rules ()
+(?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Rules ()
 f ?=> a = (equalFilePath f) ?> a
 
-systemLoud :: FilePath -> [String] -> Action ()
+systemLoud :: FilePath -> [String] -> Shake.Action ()
 systemLoud cmd args = do
     putQuiet $ unwords $ [cmd] ++ args
     system' cmd args
@@ -78,7 +76,7 @@ data Env = Env {
   , _buildPrefix :: FilePath
   } deriving (Show)
 
-$( makeLens ''Env )
+makeLenses ''Env
 
 mkEnv :: String -> FilePath -> Env
 mkEnv = Env
@@ -98,16 +96,17 @@ data CTarget = CTarget {
   , _buildArch :: String
   } deriving (Show)
 
-$( makeLens ''CTarget )
+makeLenses ''CTarget
 
 mkCTarget :: Target -> String -> CTarget
 mkCTarget target arch = CTarget target arch
 
 buildDir :: Env -> CTarget -> FilePath
-buildDir env target = (buildPrefix ^$ env)
-                  </> map toLower (buildConfiguration ^$ env)
-                  </> (targetString (buildTarget ^$ target))
-                  </> (buildArch ^$ target)
+buildDir env target =
+      (env ^. buildPrefix)
+  </> map toLower (env ^. buildConfiguration)
+  </> (targetString (target ^. buildTarget))
+  </> (target ^. buildArch)
 
 
 data CLanguage = C | Cpp | ObjC | ObjCpp
@@ -144,9 +143,9 @@ data CBuildFlags = CBuildFlags {
   , _archiverFlags :: [String]
   } deriving (Show)
 
-$( makeLenses [''CBuildFlags] )
+makeLenses ''CBuildFlags
 
-type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Action ()
+type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Shake.Action ()
 type Archiver = Linker
 
 data CToolChain = CToolChain {
@@ -158,13 +157,13 @@ data CToolChain = CToolChain {
   , _linker :: LinkResult -> Linker
   }
 
-$( makeLenses [''CToolChain] )
+makeLenses ''CToolChain
 
 defaultArchiver :: Archiver
 defaultArchiver target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool archiverCmd toolChain)
-        $ archiverFlags `getL` buildFlags
+        $ buildFlags ^. archiverFlags
         ++ [output]
         ++ inputs
 
@@ -172,7 +171,7 @@ defaultLinker :: Linker
 defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linkerCmd toolChain)
-          $  linkerFlags `getL` buildFlags
+          $  buildFlags ^. linkerFlags
           ++ flags "-L" (libraryPath ^$ buildFlags)
           ++ flags "-l" (libraries ^$ buildFlags)
           ++ flag_ "-o" output
@@ -189,10 +188,10 @@ defaultCToolChain =
       , _linker = \link target toolChain ->
             case link of
                 Executable -> defaultLinker target toolChain
-                _          -> defaultLinker target toolChain . appendL linkerFlags (flag "-shared")
+                _          -> defaultLinker target toolChain . append linkerFlags (flag "-shared")
       }
 
-tool :: (Lens CToolChain String) -> CToolChain -> FilePath
+tool :: (Getter CToolChain String) -> CToolChain -> FilePath
 tool f toolChain = maybe cmd (flip combine ("bin" </> cmd))
                          (prefix ^$ toolChain)
     where cmd = f ^$ toolChain
@@ -214,13 +213,13 @@ defaultCBuildFlags =
       }
 
 defineFlags :: CBuildFlags -> [String]
-defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . getL defines
+defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . flip (^.) defines
 
 compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
 compilerFlagsFor lang = concat
                       . maybe (map snd . filter (isNothing.fst))
                               (mapMaybe . f) lang
-                      . getL compilerFlags
+                      . flip (^.) compilerFlags
     where f l (Nothing, x) = Just x
           f l (Just l', x) | l == l' = Just x
                            | otherwise = Nothing
@@ -228,7 +227,7 @@ compilerFlagsFor lang = concat
 type CBuildEnv = (CToolChain, CBuildFlags)
 
 
-sed :: String -> FilePath -> FilePath -> Action ()
+sed :: String -> FilePath -> FilePath -> Shake.Action ()
 sed command input output = do
     need [input]
     (stdout, stderr) <- systemOutput "sed" ["-e", command, input]
@@ -276,7 +275,7 @@ staticObject target toolChain buildFlags input deps output = do
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain . appendL compilerFlags [(Nothing, flag "-fPIC")]
+sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, flag "-fPIC")]
 
 data SourceTree b = SourceTree (b -> b) [(FilePath, [FilePath])]
 
@@ -345,7 +344,7 @@ osxArchiver :: Archiver
 osxArchiver target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool archiverCmd toolChain)
-          $  archiverFlags `getL` buildFlags
+          $  buildFlags ^. archiverFlags
           ++ flag "-static"
           ++ flag_ "-o" output
           ++ inputs
@@ -354,8 +353,8 @@ osxLinker :: LinkResult -> Linker
 osxLinker link target toolChain =
     case link of
         Executable     -> defaultLinker target toolChain
-        SharedLibrary  -> defaultLinker target toolChain . prependL linkerFlags (flag "-dynamiclib")
-        DynamicLibrary -> defaultLinker target toolChain . prependL linkerFlags (flag "-bundle")
+        SharedLibrary  -> defaultLinker target toolChain . prepend linkerFlags (flag "-dynamiclib")
+        DynamicLibrary -> defaultLinker target toolChain . prepend linkerFlags (flag "-bundle")
 
 newtype DeveloperPath = DeveloperPath { developerPath :: FilePath }
 
@@ -381,26 +380,26 @@ getSystemVersion =
 
 cToolChain_MacOSX :: DeveloperPath -> CToolChain
 cToolChain_MacOSX developer =
-    prefix ^= Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
-  $ compilerCmd ^= "clang"
-  $ archiverCmd ^= "libtool"
-  $ archiver ^= osxArchiver
-  $ linkerCmd ^= "clang++"
-  $ linker ^= osxLinker
+    prefix .~ Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
+  $ compilerCmd .~ "clang"
+  $ archiverCmd .~ "libtool"
+  $ archiver .~ osxArchiver
+  $ linkerCmd .~ "clang++"
+  $ linker .~ osxLinker
   $ defaultCToolChain
 
 cToolChain_MacOSX_gcc :: DeveloperPath -> CToolChain
 cToolChain_MacOSX_gcc developer =
-    compilerCmd ^= "gcc"
-  $ linkerCmd ^= "g++"
+    compilerCmd .~ "gcc"
+  $ linkerCmd .~ "g++"
   $ cToolChain_MacOSX developer
 
 cBuildFlags_MacOSX :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_MacOSX developer sdkVersion =
-    appendL preprocessorFlags [
+    append preprocessorFlags [
       "-isysroot"
     , platformSDKPath developer "MacOSX" sdkVersion ]
-  . appendL compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
+  . append compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersion))]
   $ defaultCBuildFlags
 
 iosMinVersion :: String
@@ -412,8 +411,8 @@ cToolChain_IOS = cToolChain_MacOSX
 
 cBuildFlags_IOS :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  . appendL preprocessorFlags
+    append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . append preprocessorFlags
             [ "-isysroot"
             , platformSDKPath developer "iPhoneOS" sdkVersion ]
   $ defaultCBuildFlags
@@ -423,8 +422,8 @@ cToolChain_IOS_Simulator = cToolChain_MacOSX
 
 cBuildFlags_IOS_Simulator :: DeveloperPath -> String -> CBuildFlags
 cBuildFlags_IOS_Simulator developer sdkVersion =
-    appendL defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  . appendL preprocessorFlags
+    append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+  . append preprocessorFlags
             [ "-isysroot"
             , platformSDKPath developer "iPhoneSimulator" sdkVersion ]
   $ defaultCBuildFlags
@@ -448,7 +447,7 @@ serdDir :: FilePath
 serdDir = externalLibrary "serd"
 
 serdBuildFlags :: CBuildFlags -> CBuildFlags
-serdBuildFlags = appendL userIncludes
+serdBuildFlags = append userIncludes
                     [ serdDir, serdDir </> "src"
                     , externalLibraries ]
 
@@ -456,7 +455,7 @@ sordDir :: FilePath
 sordDir = externalLibrary "sord"
 
 sordBuildFlags :: CBuildFlags -> CBuildFlags
-sordBuildFlags = appendL userIncludes
+sordBuildFlags = append userIncludes
                     [ sordDir, sordDir </> "src"
                     , serdDir
                     , externalLibraries ]
@@ -465,7 +464,7 @@ sratomDir :: FilePath
 sratomDir = externalLibrary "sratom"
 
 sratomBuildFlags :: CBuildFlags -> CBuildFlags
-sratomBuildFlags = appendL userIncludes
+sratomBuildFlags = append userIncludes
                     [ sratomDir
                     , serdDir
                     , sordDir
@@ -476,7 +475,7 @@ lilvDir :: FilePath
 lilvDir = externalLibrary "lilv"
 
 lilvBuildFlags :: CBuildFlags -> CBuildFlags
-lilvBuildFlags = appendL userIncludes
+lilvBuildFlags = append userIncludes
                     [ lilvDir, lilvDir </> "src"
                     , serdDir
                     , sordDir
@@ -485,11 +484,11 @@ lilvBuildFlags = appendL userIncludes
                     , lv2Dir ]
 
 boostBuildFlags :: CBuildFlags -> CBuildFlags
-boostBuildFlags = appendL systemIncludes [ boostDir ]
+boostBuildFlags = append systemIncludes [ boostDir ]
 
 engineBuildFlags :: CTarget -> CBuildFlags -> CBuildFlags
 engineBuildFlags target =
-    appendL userIncludes
+    append userIncludes
       ( ["."]
      ++ [ "external_libraries" ]
      ++ [ "external_libraries/lv2" ]
@@ -499,14 +498,14 @@ engineBuildFlags target =
             MacOSX        -> [ "platform/jack" ]
             -- _             -> []
      ++ [ serdDir, sordDir, lilvDir ] )
-  . appendL systemIncludes
+  . append systemIncludes
        ( [ "src" ]
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
 
 -- | Build flags common to all targets
 methclaCommonBuildFlags :: CBuildFlags -> CBuildFlags
-methclaCommonBuildFlags = appendL compilerFlags [
+methclaCommonBuildFlags = append compilerFlags [
     (Just C, flag "-std=c11")
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
@@ -520,7 +519,7 @@ methclaStaticBuidFlags = id
 
 -- | Build flags for shared library
 methclaSharedBuildFlags :: CBuildFlags -> CBuildFlags
-methclaSharedBuildFlags = libraries ^= [ "m" ]
+methclaSharedBuildFlags = libraries .~ [ "m" ]
 
 methclaLib :: CTarget -> IO Library
 methclaLib target = do
@@ -646,11 +645,11 @@ applyBuildConfiguration env = applyConfiguration (buildConfiguration ^$ env)
 configurations :: [Configuration]
 configurations = [
     ( "release",
-        appendL compilerFlags [(Nothing, flag "-O2")]
-      . appendL defines [("NDEBUG", Nothing)]
+        append compilerFlags [(Nothing, flag "-O2")]
+      . append defines [("NDEBUG", Nothing)]
     )
   , ( "debug",
-        appendL compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")]
+        append compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")]
     )
   ]
 
@@ -661,7 +660,7 @@ pkgConfig :: String -> IO (CBuildFlags -> CBuildFlags)
 pkgConfig pkg = do
     cflags <- parseFlags <$> readProcess "pkg-config" ["--cflags", pkg] ""
     lflags <- parseFlags <$> readProcess "pkg-config" ["--libs", pkg] ""
-    return $ appendL compilerFlags [(Nothing, cflags)] . appendL linkerFlags lflags
+    return $ append compilerFlags [(Nothing, cflags)] . append linkerFlags lflags
     where
         parseFlags = map (dropSuffix "\\") . words . head . lines
         dropSuffix s x = if s `isSuffixOf` x
@@ -701,27 +700,27 @@ defaultOptions defaultConfig = Options {
   , _targets = []
   }
 
-$( makeLenses [''Options] )
+makeLenses ''Options
  
 arguments :: [String] -> [String] -> Mode Options
 arguments cs ts =
     mode "shake" (defaultOptions "debug") "Shake build system"
          (flagArg (updList ts targets) "TARGET..") $
-         [ flagHelpSimple (setL help True)
+         [ flagHelpSimple (set help True)
          , flagReq ["verbosity","v"] (upd verbosity . read) "VERBOSITY" "Verbosity"
          , flagOpt "1" ["jobs","j"] (upd jobs . read) "NUMBER" "Number of parallel jobs"
          , flagReq ["output", "o"] (upd output) "DIRECTORY" "Build products output directory"
-         , flagBool ["report", "r"] (setL report) "Generate build report"
+         , flagBool ["report", "r"] (set report) "Generate build report"
          , flagReq ["config", "c"] (updEnum cs configuration) "CONFIGURATION" "Configuration"
          ]
-          -- ++ flagsVerbosity (setL verbosity)
+          -- ++ flagsVerbosity (set verbosity)
     where
-        upd what x = Right . setL what x
+        upd what x = Right . set what x
         updList xs what x = if x `elem` xs
-                            then Right . modL what (++[x])
+                            then Right . over what (++[x])
                             else const $ Left $ show x ++ " not in " ++ show xs
         updEnum xs what x = if x `elem` xs
-                            then Right . setL what x
+                            then Right . set what x
                             else const $ Left $ show x ++ " not in " ++ show xs
 
 optionsToShake :: Options -> ShakeOptions
@@ -743,7 +742,7 @@ maybeRemoveDirectoryRecursive d =
 
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
-    ( "clean", const (maybeRemoveDirectoryRecursive . getL buildPrefix) )
+    ( "clean", const (maybeRemoveDirectoryRecursive . flip (^.) buildPrefix) )
   , ( "ios",
     \shake env -> do
         developer <- getDeveloperPath

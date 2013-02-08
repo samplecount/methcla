@@ -22,8 +22,7 @@ Executable shakefile
   Build-Depends:
       base >= 4 && < 5
     , cmdargs
-    , data-lens
-    , data-lens-template
+    , lens
     , directory
     , filemanip
     , filepath
