@@ -14,11 +14,11 @@
 
 #include <Methcla/Audio/Engine.hpp>
 #include <Methcla/Audio/Group.hpp>
+#include <Methcla/Audio/Synth.hpp>
 
 #include <cstdlib>
 #include <iostream>
 
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
 using namespace Methcla;
@@ -51,14 +51,8 @@ Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
     , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
     , m_epoch(0)
     , m_worker(uriMap())
+    , m_uris(uriMap())
 {
-    m_uris.atom_Blank = mapUri(LV2_ATOM__Blank);
-    m_uris.atom_Resource = mapUri(LV2_ATOM__Resource);
-    m_uris.atom_Sequence = mapUri(LV2_ATOM__Sequence);
-    m_uris.patch_Insert = mapUri(LV2_PATCH_PREFIX "Insert");
-    m_uris.patch_subject = mapUri(LV2_PATCH__subject);
-    m_uris.patch_body = mapUri(LV2_PATCH__body);
-
     const Epoch prevEpoch = epoch() - 1;
 
     m_audioInputChannels.reserve(options.numHardwareInputChannels);
@@ -144,10 +138,17 @@ void Environment::processRequests()
 {
     MessageQueue::Message msg;
     while (m_requests.next(msg)) {
-        handleRequest(msg);
+        try {
+            handleRequest(msg);
+        } catch(Exception& e) {
+            // TODO: Send Error response
+            std::cerr << "Exception caught in handleRequest()\n";
+        }
     }
 }
 
+/*
+*/
 void Environment::handleRequest(MessageQueue::Message& request)
 {
     const LV2_Atom* atom = request.payload();
@@ -155,8 +156,7 @@ void Environment::handleRequest(MessageQueue::Message& request)
          << "    atom size: " << atom->size << endl
          << "    atom type: " << atom->type << endl
          << "    atom uri:  " << unmapUri(atom->type) << endl;
-    if (   (atom->type == uris().atom_Blank)
-        || (atom->type == uris().atom_Resource))
+    if (uris().isObject(atom))
         handleMessageRequest(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
     else if (atom->type == uris().atom_Sequence)
         handleSequenceRequest(request, reinterpret_cast<const LV2_Atom_Sequence*>(atom));
@@ -166,21 +166,60 @@ void Environment::handleRequest(MessageQueue::Message& request)
 
 void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg)
 {
-    const char* atom_type = unmapUri(msg->atom.type);
-    const char* uri_type = unmapUri(msg->body.otype);
-    if (msg->atom.type == uris().atom_Blank) {
-        cout << atom_type << " " << msg->body.id << " " << uri_type << endl;
-    } else {
-        const char* uri_id = unmapUri(msg->body.id);
-        cout << atom_type << " " << uri_id << " " << uri_type << endl;
-    }
-    LV2_ATOM_OBJECT_FOREACH(msg, prop) {
-        cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
+    // const char* atom_type = unmapUri(msg->atom.type);
+    // const char* uri_type = unmapUri(msg->body.otype);
+    // if (msg->atom.type == uris().atom_Blank) {
+    //     cout << atom_type << " " << msg->body.id << " " << uri_type << endl;
+    // } else {
+    //     const char* uri_id = unmapUri(msg->body.id);
+    //     cout << atom_type << " " << uri_id << " " << uri_type << endl;
+    // }
+    // LV2_ATOM_OBJECT_FOREACH(msg, prop) {
+    //     cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
+    // }
+    const LV2_Atom* subjectAtom = nullptr;
+    const LV2_Atom* bodyAtom = nullptr;
+    LV2_URID requestType = msg->body.otype;
+
+    int matches = lv2_atom_object_get(
+                    msg
+                  , uris().patch_subject, &subjectAtom
+                  , uris().patch_body, &bodyAtom
+                  , nullptr );
+
+    BOOST_ASSERT_MSG( subjectAtom != nullptr, "Message must have subject property" );
+
+    const LV2_Atom_Object* subject = uris().toObject(subjectAtom);
+    BOOST_ASSERT_MSG( subject != nullptr, "Subject must be an object" );
+    const LV2_Atom_Object* body = uris().toObject(bodyAtom);
+
+    if (requestType == uris().patch_Insert) {
+        if (subject->body.otype == uris().methcla_Target) {
+            // get add target specification
+
+            // get plugin URI
+            const LV2_Atom* pluginAtom = nullptr;
+            lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom);
+            BOOST_ASSERT_MSG( pluginAtom != nullptr, "methcla:plugin property not found" );
+            BOOST_ASSERT_MSG( pluginAtom->type == uris().atom_URID, "methcla:plugin property value must be a URID" );
+
+            // get params from body
+
+            // uris().methcla_plugin
+            const Plugin::Manager::PluginHandle& def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
+            Synth* synth = Synth::construct(*this, rootNode(), Node::kAddToTail, *def);
+
+            // send reply with synth ID (from NRT thread)
+            // tja ...
+        } else {
+            std::cerr << "Insert: subject must be a Target\n";
+        }
     }
 }
 
 void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl)
 {
+    std::cerr << "Sequence requests not supported yet\n";
 }
 
 Engine::Engine(Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory)

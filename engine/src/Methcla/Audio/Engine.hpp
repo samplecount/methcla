@@ -32,6 +32,9 @@
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
+#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
+
+#define METHCLA_ENGINE_PREFIX "http://methc.la/engine#"
 
 namespace Methcla { namespace Audio
 {
@@ -76,6 +79,57 @@ namespace Methcla { namespace Audio
     };
 
     class Group;
+
+    // Mapped URIs needed by the realtime thread
+    struct Uris
+    {
+        // atom
+        const LV2_URID atom_Blank;
+        const LV2_URID atom_Resource;
+        const LV2_URID atom_Sequence;
+        const LV2_URID atom_URID;
+        // patch
+        const LV2_URID patch_Insert;
+        const LV2_URID patch_subject;
+        const LV2_URID patch_body;
+        // methcla
+        const LV2_URID methcla_Group;
+        const LV2_URID methcla_Synth;
+        const LV2_URID methcla_Target;
+        const LV2_URID methcla_addToHead;
+        const LV2_URID methcla_addToTail;
+        const LV2_URID methcla_plugin;
+
+        Uris(LV2::URIDMap& uris)
+            : atom_Blank    ( uris.map(LV2_ATOM__Blank) )
+            , atom_Resource ( uris.map(LV2_ATOM__Resource) )
+            , atom_Sequence ( uris.map(LV2_ATOM__Sequence) )
+            , atom_URID     ( uris.map(LV2_ATOM__URID) )
+            , patch_Insert  ( uris.map(LV2_PATCH_PREFIX "Insert") )
+            , patch_subject ( uris.map(LV2_PATCH__subject) )
+            , patch_body    ( uris.map(LV2_PATCH__body) )
+            , methcla_Group ( uris.map(METHCLA_ENGINE_PREFIX "Group") )
+            , methcla_Synth ( uris.map(METHCLA_ENGINE_PREFIX "Synth") )
+            , methcla_Target ( uris.map(METHCLA_ENGINE_PREFIX "Target") )
+            , methcla_addToHead ( uris.map(METHCLA_ENGINE_PREFIX "addToHead") )
+            , methcla_addToTail ( uris.map(METHCLA_ENGINE_PREFIX "addToTail") )
+            , methcla_plugin ( uris.map(METHCLA_ENGINE_PREFIX "plugin") )
+        { }
+
+        bool isObject(const LV2_Atom* atom) const
+        {
+            return (atom->type == atom_Blank)
+                || (atom->type == atom_Resource);
+        }
+        const LV2_Atom_Object* toObject(const LV2_Atom* atom) const
+        {
+            return isObject(atom) ? reinterpret_cast<const LV2_Atom_Object*>(atom) : nullptr;
+        }
+        bool isNode(const LV2_Atom_Object* obj) const
+        {
+            return (obj->body.otype == methcla_Group) || (obj->body.otype == methcla_Synth);
+        }
+    };
 
     class Environment : public boost::noncopyable
     {
@@ -131,18 +185,6 @@ namespace Methcla { namespace Audio
 
         LV2_URID mapUri(const char* uri) { return uriMap().map(uri); }
         const char* unmapUri(LV2_URID urid) const { return uriMap().unmap(urid); }
-
-        struct Uris
-        {
-            // atom
-            LV2_URID atom_Blank;
-            LV2_URID atom_Resource;
-            LV2_URID atom_Sequence;
-            // patch
-            LV2_URID patch_Insert;
-            LV2_URID patch_subject;
-            LV2_URID patch_body;
-        };
 
         const Uris& uris() const { return m_uris; }
 
