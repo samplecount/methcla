@@ -54,9 +54,11 @@ static void release( LV2_Descriptor* descriptor )
 }
 
 static LV2_Handle
-placement_instantiate(const LV2_Descriptor* descriptor
-                     , void*                location
-                     , double               sampleRate)
+placement_instantiate( const LV2_Descriptor*     descriptor
+                     , double                    sampleRate
+                     , const char*               /* bundlePath */
+                     , const LV2_Feature* const* /* features */
+                     , void*                     location )
 {
     Sine* sine = (Sine*)location;
     sine->freqToPhaseInc = 2.*M_PI/sampleRate;
@@ -65,16 +67,15 @@ placement_instantiate(const LV2_Descriptor* descriptor
 
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
-            double                    rate,
-            const char*               bundle_path,
+            double                    sampleRate,
+            const char*               bundlePath,
             const LV2_Feature* const* features)
 {
-    initialize(const_cast<LV2_Descriptor*>(descriptor), bundle_path, features);
+    initialize(const_cast<LV2_Descriptor*>(descriptor), bundlePath, features);
     void* location = malloc(instance_size(descriptor));
-    return location == 0 ? 0 : placement_instantiate(
-                                    descriptor
-                                  , location
-                                  , rate );
+    return location == 0
+            ? 0
+            : placement_instantiate(descriptor, sampleRate, bundlePath, features, location);
 }
 
 static void

@@ -35,6 +35,7 @@
 
 typedef struct
 {
+    /* FIXME: Why isn't descriptor const? What's the purpose of initialize/release? */
     void (*initialize)(LV2_Descriptor *                   descriptor,
                        const char *                       bundle_path,
                        const LV2_Feature *const *         features);
@@ -44,9 +45,10 @@ typedef struct
     uint32_t (*instance_alignment)(const LV2_Descriptor * descriptor);
 
     LV2_Handle (*instantiate)(const LV2_Descriptor *      descriptor,
-                              void *                      location,
-                              double                      sample_rate);
+                              double                      sample_rate,
+                              const char *                bundle_path,
+                              const LV2_Feature *const *  features,
+                              void *                      location);
 } LV2_RT_Instantiate_Interface;
-
 
 #endif /* LV2_RT_INSTANTIATE_H */

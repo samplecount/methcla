@@ -241,7 +241,7 @@ public:
     size_t numControlInputs  () const { return m_numControlInputs;  }
     size_t numControlOutputs () const { return m_numControlOutputs; }
 
-    LV2_Handle construct(void* location, double sampleRate) const;
+    LV2_Handle construct(void* location, double sampleRate, const LV2_Feature* const* features=nullptr) const;
 
     void destroy(LV2_Handle instance) const
     {

@@ -297,9 +297,10 @@ size_t Plugin::instanceAlignment() const
     return m_constructor->instance_alignment(m_descriptor);    
 }
 
-LV2_Handle Plugin::construct(void* location, double sampleRate) const
+LV2_Handle Plugin::construct(void* location, double sampleRate, const LV2_Feature* const* features) const
 {
-    return m_constructor->instantiate(m_descriptor, location, sampleRate);
+    LV2_Feature* nullFeatures[1] = { nullptr };
+    return m_constructor->instantiate(m_descriptor, sampleRate, m_bundlePath, features == nullptr ? nullFeatures : features, location);
 }
 
 //const Descriptor& Plugin::descriptor() const
