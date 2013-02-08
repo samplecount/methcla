@@ -78,7 +78,7 @@ public:
 
         // Create sine instance
         const Methcla::Audio::Plugin::Manager::PluginHandle& def = env().plugins().lookup(
-            "http://methc.la/lv2/plugins/sine" );
+            env().mapUri("http://methc.la/lv2/plugins/sine") );
         Methcla::Audio::Synth* synth = m_osc = Methcla::Audio::Synth::construct(env(), env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
         synth->mapOutput(0, env().externalAudioOutput(0).id(), Methcla::Audio::kOut);
 

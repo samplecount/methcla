@@ -271,7 +271,7 @@ public:
 private:
     const LilvPlugin*                   m_plugin;
     const LV2_Descriptor*               m_descriptor;
-    std::shared_ptr<Binary>           m_binary;
+    std::shared_ptr<Binary>             m_binary;
     const char*                         m_bundlePath;
     const LV2_Feature* const*           m_features;
     const LV2_RT_Instantiate_Interface* m_constructor;
@@ -301,7 +301,7 @@ public:
     // Plugin access
     typedef std::shared_ptr<Plugin> PluginHandle;
 
-    const PluginHandle& lookup(const char* uri) const;
+    const PluginHandle& lookup(LV2_URID urid) const;
 
     // Uri mapping
     const LV2::URIDMap& uriMap() const { return m_uriMap; }
@@ -310,12 +310,13 @@ public:
 private:
     void addFeature(const char* uri, void* data=0);
 
-    typedef std::unordered_map<
-                const char*
-              , PluginHandle
-              , Methcla::Utility::Hash::string_hash
-              , Methcla::Utility::Hash::string_equal_to >
-            Map;
+    // typedef std::unordered_map<
+    //             const char*
+    //           , PluginHandle
+    //           , Methcla::Utility::Hash::string_hash
+    //           , Methcla::Utility::Hash::string_equal_to >
+    //         Map;
+    typedef std::unordered_map<LV2_URID, PluginHandle> Map;
 
 private:
     typedef std::vector<const LV2_Feature*> Features;

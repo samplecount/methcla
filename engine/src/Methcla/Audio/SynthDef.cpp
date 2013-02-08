@@ -347,9 +347,9 @@ const LV2_Feature* const* Manager::features()
     return &m_features[0];
 }
 
-const Manager::PluginHandle& Manager::lookup(const char* uri) const
+const Manager::PluginHandle& Manager::lookup(LV2_URID urid) const
 {
-    return m_plugins.find(uri)->second;
+    return m_plugins.find(urid)->second;
 }
 
 void Manager::loadPlugins(const boost::filesystem::path& directory)
@@ -380,7 +380,7 @@ void Manager::loadPlugins(const boost::filesystem::path& directory)
         {
             cout << "Loading plugin " << uri << " ... " << endl;
             std::shared_ptr<Plugin> plugin(new Plugin(*this, lilvPlugin));
-            m_plugins[plugin->uri()] = plugin;
+            m_plugins[uriMap().map(plugin->uri())] = plugin;
         }
     }
 }
