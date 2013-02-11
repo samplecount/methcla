@@ -186,7 +186,7 @@ Plugin::Plugin(PluginManager& manager, const LilvPlugin* plugin)
         m_binary = pd->second;
 
         NodePtr extensionData(manager.newUri(LV2_CORE_URI "#extensionData"));
-        NodesPtr extensions(new Nodes(lilv_plugin_get_value(plugin, extensionData->impl())));
+        NodesPtr extensions(std::make_shared<Nodes>(lilv_plugin_get_value(plugin, extensionData->impl())));
         
         m_constructor = static_cast<const LV2_RT_Instantiate_Interface*>(
                             m_descriptor->extension_data(LV2_RT_INSTANTIATE__INTERFACE) );
@@ -297,10 +297,10 @@ void PluginManager::loadPlugins(const boost::filesystem::path& directory)
         const LilvPlugin* lilvPlugin = lilv_plugins_get(plugins, it);
         const char* uri = lilv_node_as_uri(lilv_plugin_get_uri(lilvPlugin));
 
-        NodesPtr allFeatures(new Nodes(lilv_plugin_get_supported_features(lilvPlugin)));
-        NodesPtr requiredFeatures(new Nodes(lilv_plugin_get_required_features(lilvPlugin)));
-        NodesPtr optionalFeatures(new Nodes(lilv_plugin_get_optional_features(lilvPlugin)));
-        NodesPtr extensions(new Nodes(lilv_plugin_get_value(lilvPlugin, extensionData->impl())));
+        NodesPtr allFeatures(std::make_shared<Nodes>(lilv_plugin_get_supported_features(lilvPlugin)));
+        NodesPtr requiredFeatures(std::make_shared<Nodes>(lilv_plugin_get_required_features(lilvPlugin)));
+        NodesPtr optionalFeatures(std::make_shared<Nodes>(lilv_plugin_get_optional_features(lilvPlugin)));
+        NodesPtr extensions(std::make_shared<Nodes>(lilv_plugin_get_value(lilvPlugin, extensionData->impl())));
 
         if (   lilv_nodes_contains(allFeatures->impl(), hardRTCapable->impl())
             && lilv_nodes_contains(allFeatures->impl(), rtInstantiation->impl())
