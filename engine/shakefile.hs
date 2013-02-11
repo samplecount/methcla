@@ -499,7 +499,7 @@ engineBuildFlags target =
             -- _             -> []
      ++ [ serdDir, sordDir, lilvDir ] )
   . append systemIncludes
-       ( [ "src" ]
+       ( [ "include", "src" ]
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
 
@@ -604,7 +604,8 @@ methclaLib target = do
         -- engine
       , sourceTree (engineBuildFlags target) $ sourceFiles $
             under "src" [
-                "Methcla/Audio/AudioBus.cpp"
+                "Methcla/API.cpp"
+              , "Methcla/Audio/AudioBus.cpp"
               , "Methcla/Audio/Client.cpp"
               , "Methcla/Audio/Engine.cpp"
               , "Methcla/Audio/Group.cpp"
@@ -624,8 +625,7 @@ methclaLib target = do
             ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
                 else if (buildTarget ^$ target) `elem` [MacOSX]
-                     then under "platform/jack" [ "Methcla/API.cpp"
-                                                , "Methcla/Audio/IO/JackDriver.cpp" ]
+                     then under "platform/jack" [ "Methcla/Audio/IO/JackDriver.cpp" ]
                      else [])
         ]
 
