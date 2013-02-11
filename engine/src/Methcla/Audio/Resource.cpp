@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Methcla/Audio/Resource.hpp>
+#include "Methcla/Audio/Resource.hpp"
 
 using namespace Methcla::Audio;

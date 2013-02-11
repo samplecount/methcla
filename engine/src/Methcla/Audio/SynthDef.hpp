@@ -15,10 +15,10 @@
 #ifndef METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 #define METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 
-#include <Methcla/Lilv.hpp>
-#include <Methcla/LV2/URIDMap.hpp>
-#include <Methcla/Plugin/Loader.hpp>
-#include <Methcla/Utility/Hash.hpp>
+#include "Methcla/Lilv.hpp"
+#include "Methcla/LV2/URIDMap.hpp"
+#include "Methcla/Plugin/Loader.hpp"
+#include "Methcla/Utility/Hash.hpp"
 
 #include <boost/filesystem.hpp>
 #include <boost/utility.hpp>

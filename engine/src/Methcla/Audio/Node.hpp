@@ -15,8 +15,8 @@
 #ifndef METHCLA_AUDIO_NODE_HPP_INCLUDED
 #define METHCLA_AUDIO_NODE_HPP_INCLUDED
 
-#include <Methcla/Audio/Resource.hpp>
-#include <Methcla/Memory/Manager.hpp>
+#include "Methcla/Audio/Resource.hpp"
+#include "Methcla/Memory/Manager.hpp"
 #include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/serialization/strong_typedef.hpp>

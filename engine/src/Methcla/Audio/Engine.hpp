@@ -15,14 +15,14 @@
 #ifndef METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 #define METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 
-#include <Methcla/Audio.hpp>
-#include <Methcla/Audio/AudioBus.hpp>
-#include <Methcla/Audio/IO/Client.hpp>
-#include <Methcla/Audio/Node.hpp>
-#include <Methcla/Audio/SynthDef.hpp>
-#include <Methcla/Exception.hpp>
-#include <Methcla/Memory/Manager.hpp>
-#include <Methcla/Utility/MessageQueue.hpp>
+#include "Methcla/Audio.hpp"
+#include "Methcla/Audio/AudioBus.hpp"
+#include "Methcla/Audio/IO/Client.hpp"
+#include "Methcla/Audio/Node.hpp"
+#include "Methcla/Audio/SynthDef.hpp"
+#include "Methcla/Exception.hpp"
+#include "Methcla/Memory/Manager.hpp"
+#include "Methcla/Utility/MessageQueue.hpp"
 
 #include <boost/filesystem.hpp>
 #include <boost/utility.hpp>

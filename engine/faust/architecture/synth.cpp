@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Methcla/Faust.hpp>
-#include <Methcla/Audio/Plugin/API.hpp>
+#include "Methcla/Faust.hpp"
+#include "Methcla/Audio/Plugin/API.hpp"
 
 #include <boost/type_traits.hpp>
 

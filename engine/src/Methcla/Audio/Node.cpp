@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Methcla/Audio/Engine.hpp>
-#include <Methcla/Audio/Group.hpp>
-#include <Methcla/Audio/Node.hpp>
-#include <Methcla/Audio/Synth.hpp>
+#include "Methcla/Audio/Engine.hpp"
+#include "Methcla/Audio/Group.hpp"
+#include "Methcla/Audio/Node.hpp"
+#include "Methcla/Audio/Synth.hpp"
 
 using namespace Methcla::Audio;
 

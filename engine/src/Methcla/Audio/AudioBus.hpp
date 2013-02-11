@@ -15,8 +15,8 @@
 #ifndef METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED
 #define METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED
 
-#include <Methcla/Audio.hpp>
-#include <Methcla/Audio/Resource.hpp>
+#include "Methcla/Audio.hpp"
+#include "Methcla/Audio/Resource.hpp"
 
 #include <boost/serialization/strong_typedef.hpp>
 

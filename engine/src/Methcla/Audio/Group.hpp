@@ -15,7 +15,7 @@
 #ifndef METHCLA_AUDIO_GROUP_HPP_INCLUDED
 #define METHCLA_AUDIO_GROUP_HPP_INCLUDED
 
-#include <Methcla/Audio/Node.hpp>
+#include "Methcla/Audio/Node.hpp"
 
 namespace Methcla { namespace Audio {
 

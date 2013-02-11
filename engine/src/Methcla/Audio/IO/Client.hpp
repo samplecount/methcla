@@ -15,8 +15,8 @@
 #ifndef METHCLA_AUDIO_IO_CLIENT_HPP_INCLUDED
 #define METHCLA_AUDIO_IO_CLIENT_HPP_INCLUDED
 
-#include <Methcla/Audio.hpp>
-#include <Methcla/Audio/IO/Driver.hpp>
+#include "Methcla/Audio.hpp"
+#include "Methcla/Audio/IO/Driver.hpp"
 #include <boost/cstdint.hpp>
 
 namespace Methcla { namespace Audio { namespace IO

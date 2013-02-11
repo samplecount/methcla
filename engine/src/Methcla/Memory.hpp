@@ -15,7 +15,7 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
-#include <Methcla/Exception.hpp>
+#include "Methcla/Exception.hpp"
 #include <memory>
 #include <stdexcept>
 

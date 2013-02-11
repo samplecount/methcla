@@ -489,17 +489,20 @@ boostBuildFlags = append systemIncludes [ boostDir ]
 engineBuildFlags :: CTarget -> CBuildFlags -> CBuildFlags
 engineBuildFlags target =
     append userIncludes
-      ( ["."]
-     ++ [ "external_libraries" ]
-     ++ [ "external_libraries/lv2" ]
+      ( -- Library headers
+        [ ".", "src" ]
+        -- Platform specific modules
      ++ case buildTarget ^$ target of
             IOS           -> [ "platform/ios" ]
             IOS_Simulator -> [ "platform/ios" ]
             MacOSX        -> [ "platform/jack" ]
-            -- _             -> []
+        -- LV2 libraries
+     ++ [ "external_libraries", "external_libraries/lv2" ]
      ++ [ serdDir, sordDir, lilvDir ] )
   . append systemIncludes
-       ( [ "include", "src" ]
+       ( -- API headers
+         [ "include" ]
+         -- Boost
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ] )
 

@@ -22,9 +22,9 @@
 
 #include <boost/utility.hpp>
 
-#include <Methcla/LV2/URIDMap.hpp>
-#include <Methcla/Utility/RingBuffer.hpp>
-#include <Methcla/Utility/Semaphore.hpp>
+#include "Methcla/LV2/URIDMap.hpp"
+#include "Methcla/Utility/RingBuffer.hpp"
+#include "Methcla/Utility/Semaphore.hpp"
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"

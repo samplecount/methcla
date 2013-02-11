@@ -15,8 +15,8 @@
 #ifndef METHCLA_AUDIO_SYNTH_HPP_INCLUDED
 #define METHCLA_AUDIO_SYNTH_HPP_INCLUDED
 
-#include <Methcla/Audio/AudioBus.hpp>
-#include <Methcla/Audio/Engine.hpp>
+#include "Methcla/Audio/AudioBus.hpp"
+#include "Methcla/Audio/Engine.hpp"
 
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>

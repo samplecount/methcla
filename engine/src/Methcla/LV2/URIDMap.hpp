@@ -15,7 +15,7 @@
 #ifndef METHCLA_LV2_URIDMAP_HPP_INCLUDED
 #define METHCLA_LV2_URIDMAP_HPP_INCLUDED
 
-#include <Methcla/Utility/Hash.hpp>
+#include "Methcla/Utility/Hash.hpp"
 
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 

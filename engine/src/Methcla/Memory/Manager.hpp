@@ -15,8 +15,8 @@
 #ifndef METHCLA_MEMORY_MANAGER_HPP_INCLUDED
 #define METHCLA_MEMORY_MANAGER_HPP_INCLUDED
 
-#include <Methcla/Exception.hpp>
-#include <Methcla/Memory.hpp>
+#include "Methcla/Exception.hpp"
+#include "Methcla/Memory.hpp"
 
 #include <boost/cstdint.hpp>
 //#include <boost/lockfree/fifo.hpp>

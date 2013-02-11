@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <Methcla/Exception.hpp>
-#include <Methcla/LV2/URIDMap.hpp>
+#include "Methcla/Exception.hpp"
+#include "Methcla/LV2/URIDMap.hpp"
 
 using namespace Methcla::LV2;
 
