@@ -38,21 +38,15 @@
 //METHCLA_EXPORT void METHCLA_INIT_FUNC(osc)(MethclaHost*);
 //METHCLA_EXPORT void METHCLA_INIT_FUNC(Scope)(MethclaHost*);
 
-class MyLoader : public Methcla::Audio::Plugin::StaticLoader
+class MyLoader : public Methcla::Plugin::StaticLoader
 {
 public:
     MyLoader()
-        : Methcla::Audio::Plugin::StaticLoader(descriptorFunctions())
     {
 //        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
-    }
-
-    static Methcla::Audio::Plugin::StaticLoader::DescriptorFunctionMap descriptorFunctions()
-    {
-        Methcla::Audio::Plugin::StaticLoader::DescriptorFunctionMap dfs;
         extern const LV2_Descriptor* methcla_sine_lv2_descriptor(uint32_t index);
-        dfs["http://methc.la/lv2/plugins/sine"] = methcla_sine_lv2_descriptor;
-        return dfs;
+        Methcla::Plugin::StaticBinary library("lv2_descriptor", reinterpret_cast<Methcla::Plugin::Function>(methcla_sine_lv2_descriptor));
+        addModule("http://methc.la/lv2/plugins/sine", library);
     }
 };
 
@@ -77,7 +71,7 @@ public:
         Methcla::Audio::Engine::configure(driver);
 
         // Create sine instance
-        const Methcla::Audio::Plugin::Manager::PluginHandle& def = env().plugins().lookup(
+        const Methcla::Audio::PluginManager::PluginHandle& def = env().plugins().lookup(
             env().mapUri("http://methc.la/lv2/plugins/sine") );
         Methcla::Audio::Synth* synth = m_osc = Methcla::Audio::Synth::construct(env(), env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
         synth->mapOutput(0, env().externalAudioOutput(0).id(), Methcla::Audio::kOut);

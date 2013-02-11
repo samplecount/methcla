@@ -155,11 +155,11 @@ namespace Methcla { namespace Audio
             size_t numHardwareOutputChannels;
         };
 
-        Environment(Plugin::Manager& pluginManager, const Options& options);
+        Environment(PluginManager& pluginManager, const Options& options);
         ~Environment();
 
-        const Plugin::Manager& plugins() const { return m_plugins; }
-        Plugin::Manager& plugins() { return m_plugins; }
+        const PluginManager& plugins() const { return m_plugins; }
+        PluginManager& plugins() { return m_plugins; }
 
         Group* rootNode() { return m_rootNode; }
 
@@ -218,7 +218,7 @@ namespace Methcla { namespace Audio
         const size_t                        m_sampleRate;
         const size_t                        m_blockSize;
         Memory::RTMemoryManager             m_rtMem;
-        Plugin::Manager&                    m_plugins;
+        PluginManager&                      m_plugins;
         ResourceMap<AudioBusId,AudioBus>    m_audioBuses;
         ResourceMap<AudioBusId,AudioBus>    m_freeAudioBuses;
         ResourceMap<NodeId,Node>            m_nodes;
@@ -234,7 +234,7 @@ namespace Methcla { namespace Audio
     class Engine : public IO::Client
     {
     public:
-        Engine(Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory);
+        Engine(Methcla::Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory);
         virtual ~Engine();
 
         virtual void configure(const IO::Driver& driver);
@@ -252,9 +252,9 @@ namespace Methcla { namespace Audio
         }
 
     private:
-        Plugin::Loader*     m_pluginLoader;
-        Plugin::Manager     m_pluginManager;
-        Environment*        m_env;
+        Methcla::Plugin::Loader* m_pluginLoader;
+        PluginManager            m_pluginManager;
+        Environment*             m_env;
     };
 }; };
 

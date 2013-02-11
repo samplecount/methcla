@@ -615,6 +615,7 @@ methclaLib target = do
               , "Methcla/LV2/URIDMap.cpp"
               , "Methcla/Memory/Manager.cpp"
               , "Methcla/Memory.cpp"
+              , "Methcla/Plugin/Loader.cpp"
               ]
             ++ [ "external_libraries/zix/ring.c" ]
             -- plugins

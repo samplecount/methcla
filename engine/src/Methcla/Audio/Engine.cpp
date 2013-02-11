@@ -41,7 +41,7 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-Environment::Environment(Plugin::Manager& pluginManager, const Options& options)
+Environment::Environment(PluginManager& pluginManager, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_plugins(pluginManager)
@@ -206,7 +206,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             // get params from body
 
             // uris().methcla_plugin
-            const Plugin::Manager::PluginHandle& def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
+            const PluginManager::PluginHandle& def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
             Synth* synth = Synth::construct(*this, rootNode(), Node::kAddToTail, *def);
 
             // send reply with synth ID (from NRT thread)
@@ -222,7 +222,7 @@ void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV
     std::cerr << "Sequence requests not supported yet\n";
 }
 
-Engine::Engine(Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory)
+Engine::Engine(Methcla::Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory)
     : m_pluginLoader(pluginLoader)
     , m_pluginManager(*pluginLoader)
     , m_env(0)
