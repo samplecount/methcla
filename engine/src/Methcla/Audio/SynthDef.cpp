@@ -30,16 +30,19 @@ using namespace std;
 
 typedef pair<const LV2_Descriptor*, std::shared_ptr<Methcla::Plugin::Binary> > PluginDescriptor;
 
-static optional<PluginDescriptor> loadPlugin(std::shared_ptr<Methcla::Plugin::Loader> loader, const LilvPlugin* plugin)
+static optional<PluginDescriptor> loadPlugin(const Methcla::Plugin::SymbolTable& symbolTable, const LilvPlugin* plugin)
 {
     const std::string pluginUri(lilv_node_as_uri(lilv_plugin_get_uri(plugin)));
-    const boost::filesystem::path libraryPath(lilv_uri_to_path(lilv_node_as_uri(lilv_plugin_get_library_uri(plugin))));
-    std::shared_ptr<Methcla::Plugin::Binary> binary(loader->load(pluginUri, libraryPath));
+    // const boost::filesystem::path libraryPath(lilv_uri_to_path(lilv_node_as_uri(lilv_plugin_get_library_uri(plugin))));
+    // std::shared_ptr<Methcla::Plugin::Binary> binary(loader->load(pluginUri, libraryPath));
+    auto binary = nullptr;
 
-    if (binary == std::shared_ptr<Methcla::Plugin::Binary>())
-        return optional<PluginDescriptor>();
+    // if (binary == std::shared_ptr<Methcla::Plugin::Binary>())
+        // return optional<PluginDescriptor>();
 
-    LV2_Descriptor_Function df = reinterpret_cast<LV2_Descriptor_Function>(binary->symbol("lv2_descriptor"));
+    LV2_Descriptor_Function df = reinterpret_cast<LV2_Descriptor_Function>(symbolTable.lookup(pluginUri, "lv2_descriptor"));
+    if (df == nullptr) return optional<PluginDescriptor>();
+
     const LV2_Descriptor* result = 0;
     
     for (uint32_t i = 0; true; ++i) {
@@ -80,28 +83,6 @@ static optional<PluginDescriptor> loadPlugin(std::shared_ptr<Methcla::Plugin::Lo
         : optional<PluginDescriptor>(PluginDescriptor(result, binary));
 }
 
-
-// PlacementConstructor::PlacementConstructor
-//     ( const LV2_Descriptor* descriptor
-//     , const LV2_Placement_Instantiate_Interface* interface )
-//     : Constructor(descriptor)
-//     , m_interface(interface)
-// { }
-// 
-// size_t PlacementConstructor::instanceSize() const
-// {
-//     return m_interface->instance_size(descriptor());
-// }
-// 
-// size_t PlacementConstructor::instanceAlignment() const
-// {
-//     return m_interface->instance_alignment(descriptor());
-// }
-// 
-// void PlacementConstructor::construct(double sampleRate) const
-// {
-// }
-
 Methcla::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* symbol
                     , float minValue, float maxValue, float defaultValue )
     : Port(type, index, symbol)
@@ -111,7 +92,6 @@ Methcla::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* sym
 { }
 
 #define LV2_CORE_URI "http://lv2plug.in/ns/lv2core"
-#define PUESNADA_URI "http://methc.la/lv2"
 
 Plugin::Plugin(PluginManager& manager, const LilvPlugin* plugin)
     : m_plugin(plugin)
@@ -180,7 +160,7 @@ Plugin::Plugin(PluginManager& manager, const LilvPlugin* plugin)
         }
     }
 
-    optional<PluginDescriptor> pd = loadPlugin(manager.loader(), m_plugin);
+    optional<PluginDescriptor> pd = loadPlugin(manager.symbolTable(), m_plugin);
     if (pd) {
         m_descriptor = pd->first;
         m_binary = pd->second;
@@ -243,8 +223,8 @@ void PluginManager::addFeature(const char* uri, void* data)
     m_features.push_back(f);
 }
 
-PluginManager::PluginManager(std::shared_ptr<Methcla::Plugin::Loader> loader)
-    : m_loader(loader)
+PluginManager::PluginManager(const Methcla_Library_Symbol* symbols)
+    : m_symbolTable(symbols)
 {
     m_world = lilv_world_new();
     if (m_world == 0)
@@ -256,7 +236,7 @@ PluginManager::PluginManager(std::shared_ptr<Methcla::Plugin::Loader> loader)
     addFeature( LV2_CORE_URI "#hardRTCapable" );
 
     // http://methc.la/lv2/ext/rt-instantiate#rtInstantiation
-    addFeature( PUESNADA_URI "/ext/rt-instantiate#rtInstantiation" );
+    addFeature( METHCLA_LV2_URI "/ext/rt-instantiate#rtInstantiation" );
 
     // http://lv2plug.in/ns/ext/urid
     addFeature( LV2_URID_MAP_URI, m_uriMap.lv2Map() );
@@ -284,8 +264,8 @@ void PluginManager::loadPlugins(const boost::filesystem::path& directory)
 {
     NodePtr extensionData(newUri(LV2_CORE_URI "#extensionData"));
     NodePtr hardRTCapable(newUri(LV2_CORE_URI "#hardRTCapable"));
-    NodePtr rtInstantiation(newUri(PUESNADA_URI "/ext/rt-instantiate#rtInstantiation"));
-    NodePtr rtInstantiateInterface(newUri(PUESNADA_URI "/ext/rt-instantiate#Interface"));
+    NodePtr rtInstantiation(newUri(METHCLA_LV2_URI "/ext/rt-instantiate#rtInstantiation"));
+    NodePtr rtInstantiateInterface(newUri(METHCLA_LV2_URI "/ext/rt-instantiate#Interface"));
 
     setenv("LV2_PATH", directory.c_str(), true);
 

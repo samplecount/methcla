@@ -13,120 +13,99 @@
 // limitations under the License.
 
 #include <methcla/engine.h>
-
-#include "Methcla/Audio/Client.hpp"
-#include "Methcla/Audio/IO/Client.hpp"
-#include "Methcla/Audio/Group.hpp"
-#include "Methcla/Audio/Synth.hpp"
+#include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
+
+#include <boost/filesystem.hpp>
 
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <unordered_map>
 
-#include "lilv/lilv.h"
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
-// class MyLoader : public Methcla::Audio::Plugin::StaticLoader
-// {
-// public:
-//     MyLoader()
-//         : Methcla::Audio::Plugin::StaticLoader(descriptorFunctions())
-//     {
-//         const char* bundlePath = getenv("METHCLA_LV2_PATH");
-//         if (bundlePath) {
-//             setenv("LV2_PATH", bundlePath, 1);
-//         } else {
-//             setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
-//         }
-//     }
-// 
-//     static Methcla::Audio::Plugin::StaticLoader::DescriptorFunctionMap descriptorFunctions()
-//     {
-//         Methcla::Audio::Plugin::StaticLoader::DescriptorFunctionMap dfs;
-//         extern const LV2_Descriptor* puesnada_sine_lv2_descriptor(uint32_t index);
-//         dfs["http://methc.la/lv2/plugins/sine"] = puesnada_sine_lv2_descriptor;
-//         return dfs;
-//     }
-// };
-// 
-// class MyEngine : public Methcla::Audio::Engine
-// {
-// public:
-//     MyEngine(MyLoader* loader)
-//         : Methcla::Audio::Engine(loader)
-//     { }
-// 
-//     virtual void configure(const Methcla::Audio::IO::Driver& driver)
-//     {
-//         Methcla::Audio::Engine::configure(driver);
-// 
-//         // Create sine instance
-//         const Methcla::Audio::Plugin::Manager::PluginHandle& def = env().plugins().lookup(
-//             "http://methc.la/lv2/plugins/sine" );
-//         Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(env(), env().nextResourceId(), env().rootNode(), *def);
-//         env().rootNode()->addToTail(*synth);
-//         synth->mapOutput(0, env().audioBus(Methcla::Audio::ResourceId(3)), Methcla::Audio::kOut);
-// 
-// //        const Methcla::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
-// //        Methcla::Audio::Synth* scope = Methcla::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);
-// //        environment()->rootNode()->addToTail(*scope);
-// //        scope->mapInput(0, Methcla::Audio::AudioBusId(Methcla::Audio::AudioBusId::kOutput, 0), Methcla::Audio::kIn);
-// //        m_scope = scope->synth<Methcla::Audio::ScopeSynth>();
-//     }
-// };
-// 
-// using namespace std;
-// 
-// struct Methcla_Engine
-// {
-//     Methcla::Audio::Engine*     m_engine;
-//     Methcla::Audio::IO::Driver* m_audioDriver;
-// };
-// 
-// Methcla_Engine* Methcla_Engine_new()
-// {
-//     // cout << "Methcla_Engine_new" << endl;
-//     Methcla_Engine* engine = new Methcla_Engine;
-//     engine->m_engine = new MyEngine(new MyLoader());
-//     engine->m_audioDriver = new Methcla::Audio::IO::JackDriver(engine->m_engine);
-//     return engine;
-// }
-// 
-// void Methcla_Engine_free(Methcla_Engine* engine)
-// {
-//     // cout << "Methcla_Engine_free" << endl;
-//     Methcla_Engine_stop(engine);
-//     delete engine->m_engine;
-//     delete engine->m_audioDriver;
-//     delete engine;
-// }
-// 
-// void Methcla_Engine_start(Methcla_Engine* engine)
-// {
-//     // cout << "Methcla_Engine_start" << endl;
-//     engine->m_audioDriver->start();
-// }
-// 
-// void Methcla_Engine_stop(Methcla_Engine* engine)
-// {
-//     // cout << "Methcla_Engine_stop" << endl;
-//     engine->m_audioDriver->stop();
-// }
-// 
-// LV2_URID Methcla_Engine_mapUri(Methcla_Engine* engine, const char* uri)
-// {
-//   return engine->m_engine->env().mapUri(uri);
-// }
-// 
-// const char* Methcla_Engine_unmapUri(Methcla_Engine* engine, LV2_URID urid)
-// {
-//   return engine->m_engine->env().unmapUri(urid);
-// }
-// 
-// void Methcla_Engine_request(Methcla_Engine* engine, const LV2_Atom* request, Methcla_HandleResponse handler, void* handlerData)
-// {
-//     engine->m_engine->env().request(request, handler, handlerData);
-// }
+class Options
+{
+public:
+    Options(const Methcla_Option* options)
+    {
+        for (const Methcla_Option* cur = options; cur->uri != nullptr; cur++) {
+            m_options[cur->uri] = cur->value;
+        }
+    }
+
+    template <typename T> T lookup(const std::string& uri, const T& def=nullptr)
+    {
+        auto it = m_options.find(uri);
+        return it == m_options.end() ? def : static_cast<T>(it->second);
+    }
+
+private:
+    typedef std::unordered_map<std::string,const void*> OptionMap;
+    OptionMap m_options;
+};
+
+struct Methcla_Engine
+{
+    Methcla_Engine(const char* backend_uri, const Methcla_Option* inOptions, const Methcla_Library_Symbol* symbols)
+        : m_pluginManager(symbols)
+    {
+        Options options(inOptions);
+        const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__LV2_PATH));
+        m_engine = new Methcla::Audio::Engine(m_pluginManager, lv2Path);
+    }
+    ~Methcla_Engine()
+    {
+        delete m_engine;
+    }
+
+    Methcla::Audio::PluginManager m_pluginManager;
+    Methcla::Audio::Engine*       m_engine;
+};
+
+Methcla_Engine* methcla_engine_new_with_backend(const char* backend_uri, const Methcla_Option* options, const Methcla_Library_Symbol* symbol_table)
+{
+    // cout << "Methcla_Engine_new" << endl;
+    return new Methcla_Engine(backend_uri, options, symbol_table);
+}
+
+void Methcla_Engine_free(Methcla_Engine* engine)
+{
+    // cout << "Methcla_Engine_free" << endl;
+    methcla_engine_stop(engine);
+    delete engine;
+}
+
+void methcla_engine_start(Methcla_Engine* engine)
+{
+    // cout << "Methcla_Engine_start" << endl;
+    engine->m_engine->start();
+}
+
+void methcla_engine_stop(Methcla_Engine* engine)
+{
+    // cout << "Methcla_Engine_stop" << endl;
+    engine->m_engine->stop();
+}
+
+LV2_URID methcla_engine_map_uri(Methcla_Engine* engine, const char* uri)
+{
+    return engine->m_pluginManager.uriMap().map(uri);
+}
+
+const char* methcla_engine_unmap_uri(Methcla_Engine* engine, LV2_URID urid)
+{
+    return engine->m_pluginManager.uriMap().unmap(urid);
+}
+
+void methcla_engine_request(Methcla_Engine* engine, const LV2_Atom* request, Methcla_Response_Handler handler, void* handler_data)
+{
+    // engine->m_engine->env().request(request, handler, handlerData);
+}
+
+void* methcla_engine_impl(Methcla_Engine* engine)
+{
+    return engine->m_engine;
+}

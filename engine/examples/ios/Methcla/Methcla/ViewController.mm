@@ -106,7 +106,7 @@ GLfloat gCubeVertexData[216] =
 
 @implementation ViewController
 {
-    Methcla::Audio::Engine* m_engine;
+    Methcla_Engine* m_engine;
 }
 
 - (void)viewDidLoad
@@ -127,8 +127,8 @@ GLfloat gCubeVertexData[216] =
 
     try {
         // Initialize and configure the audio session
-        m_engine = new MyEngine(std::make_shared<MyLoader>());
-        m_engine->start();
+        m_engine = makeEngine();
+        methcla_engine_start(m_engine);
     } catch (boost::exception& e) {
         if (OSStatus const* err = boost::get_error_info<Methcla::Audio::IO::OSStatusInfo>(e)) {
             std::cerr <<

@@ -15,6 +15,8 @@
 #ifndef METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 #define METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 
+#include <methcla/engine.h>
+
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/AudioBus.hpp"
 #include "Methcla/Audio/IO/Driver.hpp"
@@ -33,8 +35,6 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-
-#define METHCLA_ENGINE_PREFIX "http://methc.la/engine#"
 
 namespace Methcla { namespace Audio
 {
@@ -234,7 +234,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(std::shared_ptr<Methcla::Plugin::Loader> loader, const boost::filesystem::path& lv2Directory);
+        Engine(PluginManager& pluginManager, const boost::filesystem::path& lv2Directory);
         virtual ~Engine();
 
         Environment& env()
@@ -254,7 +254,6 @@ namespace Methcla { namespace Audio
 
     private:
         IO::Driver*     m_driver;
-        PluginManager   m_pluginManager;
         Environment*    m_env;
     };
 }; };

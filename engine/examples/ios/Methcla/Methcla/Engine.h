@@ -15,6 +15,8 @@
 #ifndef MethclaMobile_Engine_h
 #define MethclaMobile_Engine_h
 
+#include <methcla/engine.h>
+
 #include <Methcla/Audio/Engine.hpp>
 #include <Methcla/Audio/IO/RemoteIODriver.hpp> // NOTE: for OSStatusInfo only
 #include <Methcla/Audio/Group.hpp>
@@ -32,55 +34,33 @@
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
-//METHCLA_EXPORT void METHCLA_INIT_FUNC(osc)(MethclaHost*);
-//METHCLA_EXPORT void METHCLA_INIT_FUNC(Scope)(MethclaHost*);
-
-class MyLoader : public Methcla::Plugin::StaticLoader
+Methcla_Engine* makeEngine()
 {
-public:
-    MyLoader()
-    {
-//        setenv("LV2_PATH", "/Users/sk/Library/Audio/Plug-Ins/LV2", 1);
-        extern const LV2_Descriptor* methcla_sine_lv2_descriptor(uint32_t index);
-        Methcla::Plugin::StaticBinary library("lv2_descriptor", reinterpret_cast<Methcla::Plugin::Function>(methcla_sine_lv2_descriptor));
-        addModule("http://methc.la/lv2/plugins/sine", library);
-    }
-};
+    NSString* resources = [[NSBundle mainBundle] resourcePath];
+    NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
 
-class MyEngine : public Methcla::Audio::Engine
-{
-public:
-    MyEngine(std::shared_ptr<MyLoader> loader)
-        : Methcla::Audio::Engine(loader, lv2BundleDirectory())
-        , m_osc(0)
-//        , m_scope(0)
-    {
-        // Create sine instance
-        const Methcla::Audio::PluginManager::PluginHandle& def = env().plugins().lookup(
-            env().mapUri("http://methc.la/lv2/plugins/sine") );
-        Methcla::Audio::Synth* synth = m_osc = Methcla::Audio::Synth::construct(env(), env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
-        synth->mapOutput(0, env().externalAudioOutput(0).id(), Methcla::Audio::kOut);
+    const char* lv2Path = [bundles UTF8String];
+    Methcla_Option options[2] = {
+        { METHCLA_OPTION__LV2_PATH, lv2Path }
+        , METHCLA_END_OPTIONS };
 
-//        const Methcla::Audio::SynthDef& scopeDef = environment()->lookupSynthDef("scope");
-//        Methcla::Audio::Synth* scope = Methcla::Audio::Synth::construct(*environment(), 2, environment()->rootNode(), scopeDef);
-//        environment()->rootNode()->addToTail(*scope);
-//        scope->mapInput(0, Methcla::Audio::AudioBusId(Methcla::Audio::AudioBusId::kOutput, 0), Methcla::Audio::kIn);
-//        m_scope = scope->synth<Methcla::Audio::ScopeSynth>();
-    }
+    extern const LV2_Descriptor* methcla_sine_lv2_descriptor(uint32_t index);
+    Methcla_Library_Symbol symbols[2] = {
+        { METHCLA_LV2_URI "/plugins/sine", "lv2_descriptor", (Methcla_Library_Function)methcla_sine_lv2_descriptor }
+        , METHCLA_END_SYMBOLS };
 
-    static boost::filesystem::path lv2BundleDirectory()
-    {
-        NSString* resources = [[NSBundle mainBundle] resourcePath];
-        NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
-        return boost::filesystem::path([bundles UTF8String]);
-    }
+    Methcla_Engine* theEngine = methcla_engine_new_with_backend("", options, symbols);
 
-    Methcla::Audio::Synth* osc() { return m_osc; }
-//    Methcla::Audio::ScopeSynth* scope() { return m_scope; }
+    Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(methcla_engine_impl(theEngine));
 
-private:
-    Methcla::Audio::Synth* m_osc;
-//    Methcla::Audio::ScopeSynth* m_scope;
-};
+    const Methcla::Audio::PluginManager::PluginHandle& def = engine->env().plugins().lookup(
+        engine->env().mapUri(METHCLA_LV2_URI "/plugins/sine") );
+    Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(
+        engine->env(), engine->env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
+
+    synth->mapOutput(0, engine->env().externalAudioOutput(0).id(), Methcla::Audio::kOut);
+
+    return theEngine;
+}
 
 #endif

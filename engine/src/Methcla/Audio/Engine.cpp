@@ -223,8 +223,7 @@ void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV
 }
 
 
-Engine::Engine(std::shared_ptr<Methcla::Plugin::Loader> pluginLoader, const boost::filesystem::path& lv2Directory)
-    : m_pluginManager(pluginLoader)
+Engine::Engine(PluginManager& pluginManager, const boost::filesystem::path& lv2Directory)
 {
     m_driver = IO::defaultPlatformDriver();
     m_driver->setProcessCallback(processCallback, this);
@@ -234,9 +233,9 @@ Engine::Engine(std::shared_ptr<Methcla::Plugin::Loader> pluginLoader, const boos
     options.blockSize = m_driver->bufferSize();
     options.numHardwareInputChannels = m_driver->numInputs();
     options.numHardwareOutputChannels = m_driver->numOutputs();
-    m_env = new Environment(m_pluginManager, options);
+    m_env = new Environment(pluginManager, options);
 
-    m_pluginManager.loadPlugins(lv2Directory);
+    pluginManager.loadPlugins(lv2Directory);
 }
 
 Engine::~Engine()

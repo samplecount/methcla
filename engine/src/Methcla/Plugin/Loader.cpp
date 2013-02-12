@@ -26,3 +26,23 @@ std::shared_ptr<Binary> StaticLoader::load(const std::string& uri, const boost::
 {
     return m_modules.at(uri);
 }
+
+std::string mkSymbol(const std::string& uri, const std::string& name)
+{
+    return uri + ":" + name;
+}
+
+SymbolTable::SymbolTable(const Methcla_Library_Symbol* symbols)
+{
+    if (symbols != nullptr) {
+        for (const Methcla_Library_Symbol* cur = symbols; cur->uri != nullptr; cur++) {
+            m_symbols[mkSymbol(cur->uri, cur->name)] = cur->function;
+        }
+    }
+}
+
+Function SymbolTable::lookup(const std::string& uri, const std::string& name) const
+{
+    auto it = m_symbols.find(mkSymbol(uri, name));
+    return it == m_symbols.end() ? nullptr : it->second;
+}

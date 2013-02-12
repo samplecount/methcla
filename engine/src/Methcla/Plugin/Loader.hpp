@@ -15,6 +15,8 @@
 #ifndef METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 #define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 
+#include <methcla/engine.h>
+
 #include <boost/filesystem.hpp>
 #include <memory>
 #include <string>
@@ -22,7 +24,7 @@
 
 namespace Methcla { namespace Plugin {
 
-typedef void (*Function)();
+typedef Methcla_Library_Function Function;
 
 //* Dynamically loaded binary module
 class Binary
@@ -76,6 +78,18 @@ private:
             ModuleMap;
 
     ModuleMap m_modules;
+};
+
+class SymbolTable
+{
+public:
+    SymbolTable(const Methcla_Library_Symbol* symbols);
+
+    Function lookup(const std::string& uri, const std::string& name) const;
+
+private:
+    typedef std::unordered_map<std::string,Function> SymbolMap;
+    SymbolMap m_symbols;
 };
 
 }; };

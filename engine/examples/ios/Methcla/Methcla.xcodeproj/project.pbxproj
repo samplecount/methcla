@@ -503,6 +503,7 @@
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
+					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/src",
 					"$(METHCLA_SOURCE)/platform/ios",
 					"$(METHCLA_SOURCE)/external_libraries",
@@ -545,6 +546,7 @@
 				GCC_PREFIX_HEADER = "Methcla/Methcla-Prefix.pch";
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
+					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/src",
 					"$(METHCLA_SOURCE)/platform/ios",
 					"$(METHCLA_SOURCE)/external_libraries",
