@@ -14,6 +14,7 @@
 
 #import "ViewController.h"
 #include "Engine.h"
+#include <memory>
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -105,8 +106,7 @@ GLfloat gCubeVertexData[216] =
 
 @implementation ViewController
 {
-    Methcla::Audio::IO::Driver*   m_audioDriver;
-    Methcla::Audio::Engine*       m_engine;
+    Methcla::Audio::Engine* m_engine;
 }
 
 - (void)viewDidLoad
@@ -127,9 +127,8 @@ GLfloat gCubeVertexData[216] =
 
     try {
         // Initialize and configure the audio session
-        m_engine = new MyEngine(new MyLoader());
-        m_audioDriver = new Methcla::Audio::IO::RemoteIODriver(m_engine);
-        m_audioDriver->start();
+        m_engine = new MyEngine(std::make_shared<MyLoader>());
+        m_engine->start();
     } catch (boost::exception& e) {
         if (OSStatus const* err = boost::get_error_info<Methcla::Audio::IO::OSStatusInfo>(e)) {
             std::cerr <<

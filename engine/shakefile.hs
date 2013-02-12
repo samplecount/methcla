@@ -612,6 +612,7 @@ methclaLib target = do
               , "Methcla/Audio/Client.cpp"
               , "Methcla/Audio/Engine.cpp"
               , "Methcla/Audio/Group.cpp"
+              , "Methcla/Audio/IO/Driver.cpp"
               , "Methcla/Audio/Node.cpp"
               , "Methcla/Audio/Resource.cpp"
               , "Methcla/Audio/Synth.cpp"

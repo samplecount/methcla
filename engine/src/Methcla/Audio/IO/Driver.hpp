@@ -15,6 +15,7 @@
 #ifndef METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 #define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 
+#include "Methcla/Audio.hpp"
 #include "Methcla/Exception.hpp"
 #include <boost/cstdint.hpp>
 
@@ -22,18 +23,15 @@ namespace Methcla { namespace Audio { namespace IO
 {
 struct Exception : virtual Methcla::Exception { };
 
-class Client;
-
 class Driver
 {
 public:
-    Driver(Client* client)
-        : m_client(client)
-    { }
-    virtual ~Driver()
-    { }
+    typedef void (*ProcessCallback)(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs);
 
-    Client* client() { return m_client; }
+    Driver();
+    virtual ~Driver();
+
+    void setProcessCallback(ProcessCallback callback, void* data);
 
     virtual double sampleRate() const = 0;
     virtual size_t numInputs() const = 0;
@@ -43,9 +41,21 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
 
+protected:
+    void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
+    
 private:
-    Client* m_client;
+    struct Process
+    {
+        ProcessCallback callback;
+        void*           data;
+    };
+
+    Process m_process;
 };
+
+//* Instantiate the default driver for the current platform.
+Driver* defaultPlatformDriver();
 
 }; }; };
 

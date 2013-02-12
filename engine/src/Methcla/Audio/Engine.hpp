@@ -17,7 +17,7 @@
 
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/AudioBus.hpp"
-#include "Methcla/Audio/IO/Client.hpp"
+#include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
@@ -231,30 +231,31 @@ namespace Methcla { namespace Audio
         Uris                                m_uris;
     };
 
-    class Engine : public IO::Client
+    class Engine
     {
     public:
-        Engine(Methcla::Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory);
+        Engine(std::shared_ptr<Methcla::Plugin::Loader> loader, const boost::filesystem::path& lv2Directory);
         virtual ~Engine();
 
-        virtual void configure(const IO::Driver& driver);
-        virtual void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
-    
         Environment& env()
         {
-            BOOST_ASSERT( m_env != 0 );
             return *m_env;
         }
         const Environment& env() const
         {
-            BOOST_ASSERT( m_env != 0 );
             return *m_env;
         }
 
+        void start();
+        void stop();
+
     private:
-        Methcla::Plugin::Loader* m_pluginLoader;
-        PluginManager            m_pluginManager;
-        Environment*             m_env;
+        static void processCallback(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs);
+
+    private:
+        IO::Driver*     m_driver;
+        PluginManager   m_pluginManager;
+        Environment*    m_env;
     };
 }; };
 

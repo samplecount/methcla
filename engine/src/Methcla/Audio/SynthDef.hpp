@@ -144,7 +144,7 @@ private:
 class PluginManager : boost::noncopyable
 {
 public:
-    PluginManager(Methcla::Plugin::Loader& loader);
+    PluginManager(std::shared_ptr<Methcla::Plugin::Loader> loader);
     ~PluginManager();
 
     // Features
@@ -154,7 +154,7 @@ public:
     Lilv::NodePtr newUri(const char* uri);
 
     // Plugin discovery and loading
-    Methcla::Plugin::Loader& loader() { return m_loader; }
+    std::shared_ptr<Methcla::Plugin::Loader> loader() { return m_loader; }
     void loadPlugins(const boost::filesystem::path& directory);
 
     // Plugin access
@@ -178,12 +178,12 @@ private:
     typedef std::unordered_map<LV2_URID, PluginHandle> Map;
 
 private:
-    typedef std::vector<const LV2_Feature*> Features;
-    Methcla::Plugin::Loader&    m_loader;
-    LilvWorld*                  m_world;
-    Features                    m_features;
-    Map                         m_plugins;
-    LV2::URIDMap                m_uriMap;
+    typedef std::vector<const LV2_Feature*>  Features;
+    std::shared_ptr<Methcla::Plugin::Loader> m_loader;
+    LilvWorld*                               m_world;
+    Features                                 m_features;
+    Map                                      m_plugins;
+    LV2::URIDMap                             m_uriMap;
 };
 
 }; };

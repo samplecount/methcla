@@ -15,11 +15,8 @@
 #ifndef MethclaMobile_Engine_h
 #define MethclaMobile_Engine_h
 
-#include <Methcla/Audio/Client.hpp>
 #include <Methcla/Audio/Engine.hpp>
-#include <Methcla/Audio/IO/Client.hpp>
-#include <Methcla/Audio/IO/Driver.hpp>
-#include <Methcla/Audio/IO/RemoteIODriver.hpp>
+#include <Methcla/Audio/IO/RemoteIODriver.hpp> // NOTE: for OSStatusInfo only
 #include <Methcla/Audio/Group.hpp>
 #include <Methcla/Audio/Synth.hpp>
 #include <Methcla/Audio/SynthDef.hpp>
@@ -53,23 +50,11 @@ public:
 class MyEngine : public Methcla::Audio::Engine
 {
 public:
-    MyEngine(MyLoader* loader)
+    MyEngine(std::shared_ptr<MyLoader> loader)
         : Methcla::Audio::Engine(loader, lv2BundleDirectory())
         , m_osc(0)
 //        , m_scope(0)
-    { }
-
-    static boost::filesystem::path lv2BundleDirectory()
     {
-        NSString* resources = [[NSBundle mainBundle] resourcePath];
-        NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
-        return boost::filesystem::path([bundles UTF8String]);
-    }
-
-    virtual void configure(const Methcla::Audio::IO::Driver& driver)
-    {
-        Methcla::Audio::Engine::configure(driver);
-
         // Create sine instance
         const Methcla::Audio::PluginManager::PluginHandle& def = env().plugins().lookup(
             env().mapUri("http://methc.la/lv2/plugins/sine") );
@@ -81,6 +66,13 @@ public:
 //        environment()->rootNode()->addToTail(*scope);
 //        scope->mapInput(0, Methcla::Audio::AudioBusId(Methcla::Audio::AudioBusId::kOutput, 0), Methcla::Audio::kIn);
 //        m_scope = scope->synth<Methcla::Audio::ScopeSynth>();
+    }
+
+    static boost::filesystem::path lv2BundleDirectory()
+    {
+        NSString* resources = [[NSBundle mainBundle] resourcePath];
+        NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
+        return boost::filesystem::path([bundles UTF8String]);
     }
 
     Methcla::Audio::Synth* osc() { return m_osc; }

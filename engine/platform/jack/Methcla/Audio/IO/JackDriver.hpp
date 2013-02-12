@@ -15,7 +15,6 @@
 #ifndef METHCLA_AUDIO_IO_JACKDRIVER_HPP
 #define METHCLA_AUDIO_IO_JACKDRIVER_HPP
 
-#include "Methcla/Audio/IO/Client.hpp"
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Plugin/Types.h"
 #include "Methcla/Memory.hpp"
@@ -30,7 +29,7 @@ namespace Methcla { namespace Audio { namespace IO
     class JackDriver : public Driver
     {
     public:
-        JackDriver(Client* client) throw (IO::Exception);
+        JackDriver() throw (IO::Exception);
         virtual ~JackDriver();
 
         virtual double sampleRate() const { return m_sampleRate; }

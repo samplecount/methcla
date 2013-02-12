@@ -45,9 +45,8 @@ static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRa
 	desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
 }
 
-RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
-    : Driver(client)
-    , m_numInputs(2)
+RemoteIODriver::RemoteIODriver() throw (IO::Exception)
+    : m_numInputs(2)
     , m_numOutputs(2)
     , m_inputBuffers(0)
     , m_outputBuffers(0)
@@ -288,9 +287,6 @@ RemoteIODriver::RemoteIODriver(Client* client) throw (IO::Exception)
         m_outputBuffers[i] =
             Methcla::Memory::allocAlignedOf<sample_t,Methcla::Memory::kSIMDAlignment>(m_bufferSize);
     }
-
-    // Initialize client
-    client->configure(*this);
 }
 
 RemoteIODriver::~RemoteIODriver()
@@ -404,7 +400,7 @@ OSStatus RemoteIODriver::RenderCallback(
 		AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
 
 	    // Run DSP graph
-        self->client()->process(inNumberFrames, inputBuffers, outputBuffers);
+        self->process(inNumberFrames, inputBuffers, outputBuffers);
 
 	    // Convert and interleave output
 		for (UInt32 curChan = 0; curChan < numOutputs; curChan++) {
@@ -423,4 +419,9 @@ OSStatus RemoteIODriver::RenderCallback(
 	}
 
     return noErr;
+}
+
+Driver* Methcla::Audio::IO::defaultPlatformDriver()
+{
+    return new RemoteIODriver();
 }

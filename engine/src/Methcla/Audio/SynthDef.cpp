@@ -30,11 +30,11 @@ using namespace std;
 
 typedef pair<const LV2_Descriptor*, std::shared_ptr<Methcla::Plugin::Binary> > PluginDescriptor;
 
-static optional<PluginDescriptor> loadPlugin(Methcla::Plugin::Loader& loader, const LilvPlugin* plugin)
+static optional<PluginDescriptor> loadPlugin(std::shared_ptr<Methcla::Plugin::Loader> loader, const LilvPlugin* plugin)
 {
     const std::string pluginUri(lilv_node_as_uri(lilv_plugin_get_uri(plugin)));
     const boost::filesystem::path libraryPath(lilv_uri_to_path(lilv_node_as_uri(lilv_plugin_get_library_uri(plugin))));
-    std::shared_ptr<Methcla::Plugin::Binary> binary(loader.load(pluginUri, libraryPath));
+    std::shared_ptr<Methcla::Plugin::Binary> binary(loader->load(pluginUri, libraryPath));
 
     if (binary == std::shared_ptr<Methcla::Plugin::Binary>())
         return optional<PluginDescriptor>();
@@ -243,7 +243,7 @@ void PluginManager::addFeature(const char* uri, void* data)
     m_features.push_back(f);
 }
 
-PluginManager::PluginManager(Methcla::Plugin::Loader& loader)
+PluginManager::PluginManager(std::shared_ptr<Methcla::Plugin::Loader> loader)
     : m_loader(loader)
 {
     m_world = lilv_world_new();

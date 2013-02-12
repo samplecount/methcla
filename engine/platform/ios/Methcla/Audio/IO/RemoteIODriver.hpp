@@ -15,7 +15,6 @@
 #ifndef METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 #define METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 
-#include "Methcla/Audio/IO/Client.hpp"
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Types.h"
 #include "Methcla/Exception.hpp"
@@ -34,7 +33,7 @@ namespace Methcla { namespace Audio { namespace IO
     class RemoteIODriver : public Driver
     {
     public:
-        RemoteIODriver(Client* client) throw (IO::Exception);
+        RemoteIODriver() throw (IO::Exception);
         virtual ~RemoteIODriver();
 
         virtual double sampleRate() const { return m_sampleRate; }

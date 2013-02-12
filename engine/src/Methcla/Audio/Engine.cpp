@@ -222,32 +222,41 @@ void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV
     std::cerr << "Sequence requests not supported yet\n";
 }
 
-Engine::Engine(Methcla::Plugin::Loader* pluginLoader, const boost::filesystem::path& lv2Directory)
-    : m_pluginLoader(pluginLoader)
-    , m_pluginManager(*pluginLoader)
-    , m_env(0)
+
+Engine::Engine(std::shared_ptr<Methcla::Plugin::Loader> pluginLoader, const boost::filesystem::path& lv2Directory)
+    : m_pluginManager(pluginLoader)
 {
+    m_driver = IO::defaultPlatformDriver();
+    m_driver->setProcessCallback(processCallback, this);
+
+    Environment::Options options;
+    options.sampleRate = m_driver->sampleRate();
+    options.blockSize = m_driver->bufferSize();
+    options.numHardwareInputChannels = m_driver->numInputs();
+    options.numHardwareOutputChannels = m_driver->numOutputs();
+    m_env = new Environment(m_pluginManager, options);
+
     m_pluginManager.loadPlugins(lv2Directory);
 }
 
 Engine::~Engine()
 {
+    stop();
     delete m_env;
-    delete m_pluginLoader;
+    delete m_driver;
 }
 
-void Engine::configure(const IO::Driver& driver)
+void Engine::start()
 {
-    delete m_env;
-    Environment::Options options;
-    options.sampleRate = driver.sampleRate();
-    options.blockSize = driver.bufferSize();
-    options.numHardwareInputChannels = driver.numInputs();
-    options.numHardwareOutputChannels = driver.numOutputs();
-    m_env = new Environment(m_pluginManager, options);
+    m_driver->start();
 }
 
-void Engine::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
+void Engine::stop()
 {
-    if (m_env) m_env->process(numFrames, inputs, outputs);
+    m_driver->stop();
+}
+
+void Engine::processCallback(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs)
+{
+    static_cast<Engine*>(data)->m_env->process(numFrames, inputs, outputs);
 }

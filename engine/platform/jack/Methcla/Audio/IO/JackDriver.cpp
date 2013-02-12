@@ -23,9 +23,8 @@ using namespace std;
 struct tag_jack_status_t { };
 typedef boost::error_info<tag_jack_status_t,jack_status_t> OSStatusInfo;
 
-JackDriver::JackDriver(Client* client) throw (IO::Exception)
-    : Driver(client)
-    , m_sampleRate(0)
+JackDriver::JackDriver() throw (IO::Exception)
+    : m_sampleRate(0)
     , m_bufferSize(0)
 {
     jack_status_t status;
@@ -71,8 +70,6 @@ JackDriver::JackDriver(Client* client) throw (IO::Exception)
     jack_set_process_callback(m_jackClient, processCallback, this);
     jack_set_sample_rate_callback(m_jackClient, sampleRateCallback, this);
     jack_set_buffer_size_callback(m_jackClient, bufferSizeCallback, this);
-
-    client->configure(*this);
 }
 
 JackDriver::~JackDriver()
@@ -134,7 +131,7 @@ int JackDriver::processCallback(jack_nframes_t nframes, void* arg)
     // }
 
     // Run DSP graph
-    self->client()->process(nframes, self->m_inputBuffers, self->m_outputBuffers);
+    self->process(nframes, self->m_inputBuffers, self->m_outputBuffers);
 
     return 0;
 }
@@ -147,4 +144,9 @@ void JackDriver::start()
 void JackDriver::stop()
 {
     jack_deactivate(m_jackClient);
+}
+
+Driver* Methcla::Audio::IO::defaultPlatformDriver()
+{
+    return new JackDriver();
 }
