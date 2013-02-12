@@ -92,7 +92,6 @@ public:
     const char* name() const;
 
     size_t instanceSize      () const;
-    size_t instanceAlignment () const;
 
     size_t numPorts() const { return m_ports.size(); }
     const FloatPort& port(size_t i) const { return m_ports.at(i); }

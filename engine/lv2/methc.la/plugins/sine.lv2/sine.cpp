@@ -38,44 +38,16 @@ static uint32_t instance_size(const LV2_Descriptor* descriptor)
     return sizeof(Sine);
 }
 
-static uint32_t instance_alignment(const LV2_Descriptor* descriptor)
-{
-    return __alignof__(Sine);
-}
-
-static void initialize( LV2_Descriptor* descriptor
-                      , const char* bundle_path
-                      , const LV2_Feature* const* features)
-{
-}
-
-static void release( LV2_Descriptor* descriptor )
-{
-}
-
 static LV2_Handle
-placement_instantiate( const LV2_Descriptor*     descriptor
-                     , double                    sampleRate
-                     , const char*               /* bundlePath */
-                     , const LV2_Feature* const* /* features */
-                     , void*                     location )
+instantiate( const LV2_Descriptor*     descriptor
+           , double                    sampleRate
+           , const char*               /* bundlePath */
+           , const LV2_Feature* const* /* features */
+           , void*                     location )
 {
     Sine* sine = (Sine*)location;
     sine->freqToPhaseInc = 2.*M_PI/sampleRate;
     return (LV2_Handle)sine;
-}
-
-static LV2_Handle
-instantiate(const LV2_Descriptor*     descriptor,
-            double                    sampleRate,
-            const char*               bundlePath,
-            const LV2_Feature* const* features)
-{
-    initialize(const_cast<LV2_Descriptor*>(descriptor), bundlePath, features);
-    void* location = malloc(instance_size(descriptor));
-    return location == 0
-            ? 0
-            : placement_instantiate(descriptor, sampleRate, bundlePath, features, location);
 }
 
 static void
@@ -132,11 +104,8 @@ cleanup(LV2_Handle instance)
 }
 
 static const LV2_RT_Instantiate_Interface rtiInterface = {
-    initialize
-  , release
-  , instance_size
-  , instance_alignment
-  , placement_instantiate
+    instance_size
+  , instantiate
 };
 
 const void*
@@ -150,7 +119,7 @@ extension_data(const char* uri)
 
 static const LV2_Descriptor descriptor = {
     SINE_URI,
-    instantiate,
+    lv2_rt_instantiate_default_instantiate,
     connect_port,
     activate,
     run,

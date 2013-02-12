@@ -39,35 +39,15 @@ static uint32_t instance_size(const LV2_Descriptor* descriptor)
     return sizeof(Scope);
 }
 
-static uint32_t instance_alignment(const LV2_Descriptor* descriptor)
-{
-    return __alignof__(Scope);
-}
-
-static LV2_Handle
-placement_instantiate(const LV2_Descriptor*     descriptor,
-                      void*                     location,
-                      double                    rate,
-                      const char*               bundle_path,
-                      const LV2_Feature* const* features)
-{
-    Scope* scope = new (location) Scope();
-    return (LV2_Handle)scope;
-}
-
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
+            void*                     location,
             double                    rate,
             const char*               bundle_path,
             const LV2_Feature* const* features)
 {
-    void* location = malloc(instance_size(descriptor));
-    return location == 0 ? 0 : placement_instantiate(
-                                    descriptor
-                                  , location
-                                  , rate
-                                  , bundle_path
-                                  , features );
+    Scope* scope = new (location) Scope();
+    return (LV2_Handle)scope;
 }
 
 static void
@@ -121,8 +101,7 @@ cleanup(LV2_Handle instance)
 
 static const LV2_RT_Instantiate_Interface rtiInterface = {
    instance_size
- , instance_alignment
- , placement_instantiate
+ , instantiate
 };
 
 const void*
@@ -136,7 +115,7 @@ extension_data(const char* uri)
 
 static const LV2_Descriptor descriptor = {
     SINE_URI,
-    instantiate,
+    lv2_rt_instantiate_default_instantiate,
     connect_port,
     activate,
     run,

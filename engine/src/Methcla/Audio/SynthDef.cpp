@@ -167,14 +167,12 @@ Plugin::Plugin(PluginManager& manager, const LilvPlugin* plugin)
 
         NodePtr extensionData(manager.newUri(LV2_CORE_URI "#extensionData"));
         NodesPtr extensions(std::make_shared<Nodes>(lilv_plugin_get_value(plugin, extensionData->impl())));
-        
+
         m_constructor = static_cast<const LV2_RT_Instantiate_Interface*>(
                             m_descriptor->extension_data(LV2_RT_INSTANTIATE__INTERFACE) );
-        m_constructor->initialize(const_cast<LV2_Descriptor*>(m_descriptor), m_bundlePath, m_features);
 
         cout << "Plugin descriptor for " << uri() << " loaded (" << m_descriptor << "):"
              << "    instance size: " << instanceSize() << endl
-             << "    instance alignment: " << instanceAlignment() << endl
              << "    control inputs: " << numControlInputs() << endl
              << "    control outputs: " << numControlOutputs() << endl
              << "    audio inputs: " << numAudioInputs() << endl
@@ -197,11 +195,6 @@ const char* Plugin::name() const
 size_t Plugin::instanceSize() const
 {
     return m_constructor->instance_size(m_descriptor);
-}
-
-size_t Plugin::instanceAlignment() const
-{
-    return m_constructor->instance_alignment(m_descriptor);    
 }
 
 LV2_Handle Plugin::construct(void* location, double sampleRate, const LV2_Feature* const* features) const
