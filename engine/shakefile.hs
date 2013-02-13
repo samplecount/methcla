@@ -253,8 +253,8 @@ configurations = [
 -- ====================================================================
 -- Commandline targets
 
-iOS_SDK :: String
-iOS_SDK = "6.1"
+iOS_SDK :: SDKVersion
+iOS_SDK = SDKVersion "6.1"
 
 maybeRemoveDirectoryRecursive :: FilePath -> IO ()
 maybeRemoveDirectoryRecursive d =
