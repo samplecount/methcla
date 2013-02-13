@@ -20,6 +20,7 @@ import           Control.Monad
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
+import           Shakefile.C.OSX
 import           System.Console.CmdArgs.Explicit
 import qualified System.Directory as Dir
 import           System.FilePath.Find
