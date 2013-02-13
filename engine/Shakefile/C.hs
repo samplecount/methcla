@@ -178,12 +178,13 @@ defaultArchiveFileName :: String -> FilePath
 defaultArchiveFileName = ("lib"++) . (<.> "a")
 
 defaultLinker :: Linker
-defaultLinker _ toolChain buildFlags inputs output = do
+defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flags "-L" (libraryPath ^$ buildFlags)
-          ++ flags "-l" (libraries ^$ buildFlags)
+          ++ flag_ "-arch" (target ^. buildArch)
+          ++ flags "-L" (buildFlags ^. libraryPath)
+          ++ flags "-l" (buildFlags ^. libraries)
           ++ flag_ "-o" output
           ++ inputs
 
