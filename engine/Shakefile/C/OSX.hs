@@ -93,7 +93,7 @@ cBuildFlags_MacOSX developer sdkVersion =
   $ osxDefaultCBuildFlags developer (SDK macOSX sdkVersion)
 
 iosMinVersion :: String
-iosMinVersion = "50000"
+iosMinVersion = "50000" -- Required for C++11
 --iosMinVersion = "40200"
 
 cToolChain_IOS :: DeveloperPath -> CToolChain
