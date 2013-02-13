@@ -1,7 +1,7 @@
 module Shakefile.C.OSX where
 
 import           Control.Applicative ((<$>))
-import           Control.Lens
+import           Control.Lens hiding ((<.>))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.List (intercalate)
@@ -50,6 +50,11 @@ getSystemVersion =
   (intercalate "." . take 2 . splitOn ".")
     <$> readProcess "sw_vers" ["-productVersion"] ""
 
+osxLinkResultFileName :: LinkResult -> String -> FilePath
+osxLinkResultFileName Executable = id
+osxLinkResultFileName SharedLibrary = ("lib"++) . (<.> "dylib")
+osxLinkResultFileName DynamicLibrary =            (<.> "dylib")
+
 cToolChain_MacOSX :: DeveloperPath -> CToolChain
 cToolChain_MacOSX developer =
     prefix .~ Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
@@ -58,6 +63,7 @@ cToolChain_MacOSX developer =
   $ archiver .~ osxArchiver
   $ linkerCmd .~ "clang++"
   $ linker .~ osxLinker
+  $ linkResultFileName .~ osxLinkResultFileName 
   $ defaultCToolChain
 
 cToolChain_MacOSX_gcc :: DeveloperPath -> CToolChain

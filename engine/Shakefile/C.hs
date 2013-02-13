@@ -157,8 +157,11 @@ data CToolChain = CToolChain {
   , _compilerCmd :: String
   , _archiverCmd :: String
   , _archiver :: Archiver
+  , _archiveFileName :: String -> FilePath
   , _linkerCmd :: String
   , _linker :: LinkResult -> Linker
+  -- Not sure whether this should be someplace else
+  , _linkResultFileName :: LinkResult -> String -> FilePath
   }
 
 makeLenses ''CToolChain
@@ -171,6 +174,9 @@ defaultArchiver _ toolChain buildFlags inputs output = do
         ++ [output]
         ++ inputs
 
+defaultArchiveFileName :: String -> FilePath
+defaultArchiveFileName = ("lib"++) . (<.> "a")
+
 defaultLinker :: Linker
 defaultLinker _ toolChain buildFlags inputs output = do
     need inputs
@@ -181,6 +187,11 @@ defaultLinker _ toolChain buildFlags inputs output = do
           ++ flag_ "-o" output
           ++ inputs
 
+defaultLinkResultFileName :: LinkResult -> String -> FilePath
+defaultLinkResultFileName Executable = id
+defaultLinkResultFileName SharedLibrary = ("lib"++) . (<.> "so")
+defaultLinkResultFileName DynamicLibrary =            (<.> "so")
+
 defaultCToolChain :: CToolChain
 defaultCToolChain =
     CToolChain {
@@ -188,11 +199,13 @@ defaultCToolChain =
       , _compilerCmd = "gcc"
       , _archiverCmd = "ar"
       , _archiver = defaultArchiver
+      , _archiveFileName = defaultArchiveFileName
       , _linkerCmd = "gcc"
       , _linker = \link target toolChain ->
             case link of
                 Executable -> defaultLinker target toolChain
                 _          -> defaultLinker target toolChain . append linkerFlags (flag "-shared")
+      , _linkResultFileName = defaultLinkResultFileName
       }
 
 tool :: (Getter CToolChain String) -> CToolChain -> FilePath
@@ -294,12 +307,6 @@ data Library = Library {
   , libSources :: [SourceTree CBuildFlags]
   }
 
-staticLibFileName :: String -> FilePath
-staticLibFileName = ("lib"++) . (<.> "a")
-
-sharedLibFileName :: String -> FilePath
-sharedLibFileName = ("lib"++) . (<.> "dylib")
-
 libBuildDir :: Env -> CTarget -> FilePath -> FilePath
 libBuildDir env target libFileName = buildDir env target </> map tr (libFileName)
     where tr '.' = '_'
@@ -325,21 +332,34 @@ cLibrary object link libFileName env target toolChain buildFlags lib = do
     libPath ?=> link target toolChain buildFlags (concat objects)
     return libPath
 
+-- | Rule for building a static library.
 staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
 staticLibrary env target toolChain =
     cLibrary
         staticObject
-        (archiver ^$ toolChain)
-        (staticLibFileName . libName)
+        (toolChain ^. archiver)
+        ((toolChain ^. archiveFileName) . libName)
         env target toolChain
 
+-- | Rule for building a shared library.
 sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
 sharedLibrary env target toolChain =
     cLibrary
         sharedObject
-        ((linker ^$ toolChain) SharedLibrary)
-        (sharedLibFileName . libName)
+        ((toolChain ^. linker) linkResult)
+        ((toolChain ^. linkResultFileName) linkResult . libName)
         env target toolChain
+    where linkResult = SharedLibrary
+
+-- | Rule for building a dynamic library.
+dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+dynamicLibrary env target toolChain =
+    cLibrary
+        sharedObject
+        ((toolChain ^. linker) linkResult)
+        ((toolChain ^. linkResultFileName) linkResult . libName)
+        env target toolChain
+    where linkResult = DynamicLibrary
 
 -- ====================================================================
 -- Configurations
