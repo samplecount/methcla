@@ -27,21 +27,21 @@
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef BUILDING_DLL
-    #ifdef __GNUC__
+  #if defined(BUILDING_DLL)
+    #if defined(__GNUC__) || defined(__clang__)
       #define METHCLA_VISIBLE __attribute__ ((dllexport))
     #else
       #define METHCLA_VISIBLE __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
     #endif
   #else
-    #ifdef __GNUC__
+    #if defined(__GNUC__) || defined(__clang__)
       #define METHCLA_VISIBLE __attribute__ ((dllimport))
     #else
       #define METHCLA_VISIBLE __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
     #endif
   #endif
 #else
-  #if __GNUC__ >= 4
+  #if (__GNUC__ >= 4) || (defined(__clang__) && (__clang_major__ >= 4))
     #define METHCLA_VISIBLE __attribute__ ((visibility ("default")))
   #else
     #define METHCLA_VISIBLE
