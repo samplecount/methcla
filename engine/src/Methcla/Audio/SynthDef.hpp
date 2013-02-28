@@ -81,12 +81,28 @@ private:
     float   m_defaultValue;
 };
 
+//* LV2 plugin library.
+class PluginLibrary
+{
+public:
+    PluginLibrary( const std::shared_ptr<Methcla::Plugin::Library>& lib
+                 , const char* bundlePath
+                 , const LV2_Feature* const* features);
+
+	const LV2_Descriptor* get(uint32_t index);
+
+private:
+    std::shared_ptr<Methcla::Plugin::Library> m_lib;
+    LV2_Descriptor_Function m_descFunc;
+    const LV2_Lib_Descriptor* m_libDesc;
+};
+
 class PluginManager;
 
 class Plugin : boost::noncopyable
 {
 public:
-    Plugin(PluginManager& manager, const LilvPlugin* plugin);
+    Plugin(PluginManager& manager, std::shared_ptr<PluginLibrary> library, const LilvPlugin* plugin);
 
     const char* uri() const;
     const char* name() const;
@@ -129,9 +145,9 @@ public:
     }
 
 private:
+    std::shared_ptr<PluginLibrary>              m_library;
     const LilvPlugin*                           m_plugin;
     const LV2_Descriptor*                       m_descriptor;
-    std::shared_ptr<Methcla::Plugin::Binary>    m_binary;
     const char*                                 m_bundlePath;
     const LV2_Feature* const*                   m_features;
     const LV2_RT_Instantiate_Interface*         m_constructor;
@@ -145,7 +161,7 @@ private:
 class PluginManager : boost::noncopyable
 {
 public:
-    PluginManager(const Methcla_Library_Symbol* symbols);
+    PluginManager();
     ~PluginManager();
 
     // Features
@@ -155,13 +171,10 @@ public:
     Lilv::NodePtr newUri(const char* uri);
 
     // Plugin discovery and loading
-    const Methcla::Plugin::SymbolTable& symbolTable() { return m_symbolTable; }
     void loadPlugins(const boost::filesystem::path& directory);
 
     // Plugin access
-    typedef std::shared_ptr<Plugin> PluginHandle;
-
-    const PluginHandle& lookup(LV2_URID urid) const;
+    const std::shared_ptr<Plugin>& lookup(LV2_URID urid) const;
 
     // Uri mapping
     const LV2::URIDMap& uriMap() const { return m_uriMap; }
@@ -170,20 +183,15 @@ public:
 private:
     void addFeature(const char* uri, void* data=0);
 
-    // typedef std::unordered_map<
-    //             const char*
-    //           , PluginHandle
-    //           , Methcla::Utility::Hash::string_hash
-    //           , Methcla::Utility::Hash::string_equal_to >
-    //         Map;
-    typedef std::unordered_map<LV2_URID, PluginHandle> Map;
-
-private:
     typedef std::vector<const LV2_Feature*> Features;
-    Methcla::Plugin::SymbolTable            m_symbolTable;
+    typedef std::unordered_map<std::string,std::shared_ptr<PluginLibrary>> LibraryMap;
+    typedef std::unordered_map<LV2_URID,std::shared_ptr<Plugin>> PluginMap;
+
     LilvWorld*                              m_world;
     Features                                m_features;
-    Map                                     m_plugins;
+    Methcla::Plugin::StaticLoader           m_loader;
+    LibraryMap                              m_libs;
+    PluginMap                               m_plugins;
     LV2::URIDMap                            m_uriMap;
 };
 

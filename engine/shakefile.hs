@@ -201,7 +201,7 @@ methclaLib target = do
               , "filesystem/src/path_traits.cpp"
               , "filesystem/src/portability.cpp"
               , "filesystem/src/unique_path.cpp"
-              --, "filesystem/src/utf8_codecvt_facet.cpp"
+              , "filesystem/src/utf8_codecvt_facet.cpp"
               , "filesystem/src/windows_file_codecvt.cpp"
               , "system/src/error_code.cpp"
               ]

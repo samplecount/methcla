@@ -206,7 +206,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             // get params from body
 
             // uris().methcla_plugin
-            const PluginManager::PluginHandle& def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
+            const std::shared_ptr<Plugin> def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
             Synth* synth = Synth::construct(*this, rootNode(), Node::kAddToTail, *def);
 
             // send reply with synth ID (from NRT thread)

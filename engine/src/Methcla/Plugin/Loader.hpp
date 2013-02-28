@@ -16,81 +16,95 @@
 #define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 
 #include <methcla/engine.h>
+#include "Methcla/Exception.hpp"
 
 #include <boost/filesystem.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
+// Put this in a separate header
+#include <boost/filesystem.hpp>
+#include <boost/functional/hash.hpp>
+
+namespace std
+{
+    template<> struct hash<boost::filesystem::path>
+    {
+        size_t operator()(const boost::filesystem::path& p) const
+        {
+            return boost::filesystem::hash_value(p);
+        }
+    };
+}
+
 namespace Methcla { namespace Plugin {
 
 typedef Methcla_Library_Function Function;
 
 //* Dynamically loaded binary module
-class Binary
+class Library
 {
 public:
-    virtual ~Binary() { }
+    virtual ~Library() { }
     virtual Function symbol(const std::string& name) = 0;
 };
+
 
 //* Dynamic loader.
 class Loader
 {
 public:
     virtual ~Loader() { }
-    //* Load the binary module for a plugin URI and a module path.
-    virtual std::shared_ptr<Binary> load(const std::string& uri, const boost::filesystem::path& path) = 0;
+    virtual std::shared_ptr<Library> open(const boost::filesystem::path& path) throw (Exception) = 0;
 };
 
 // These are for systems without dynamically loadable modules.
 
 //* Static binary module.
-class StaticBinary : public Binary
+class StaticLibrary : public Library
 {
 public:
-    StaticBinary() = default;
-    StaticBinary(const StaticBinary&) = default;
-    StaticBinary(const std::string& name, Function symbol);
+    // typedef std::unordered_map<std::string,Methcla_Library_Function> SymbolMap;
 
-    //* Add a function symbol.
-    void addSymbol(const std::string& name, Function symbol);
+    StaticLibrary() = default;
+    StaticLibrary(const StaticLibrary&) = default;
+    // StaticLibrary(const SymbolMap& symbols);
+    StaticLibrary(const std::string& prefix);
 
     virtual Function symbol(const std::string& name) override;
 
 private:
-    typedef std::unordered_map<std::string,Function> SymbolMap;
-    SymbolMap m_symbols;
+    // SymbolMap m_symbols;
+    std::string m_prefix;
 };
 
-//* Static binary loader.
+//* Static library loader.
 class StaticLoader : public Loader
 {
 public:
-    //* Add a binary module.
-    void addModule(const std::string& uri, const StaticBinary& module);
+    //* Add a library.
+    void addLibrary(const boost::filesystem::path& path, const std::string& symbolPrefix);
 
-    //* There can only be a single binary module registered for a given plugin URI (the module path is ignored).
-    virtual std::shared_ptr<Binary> load(const std::string& uri, const boost::filesystem::path& path) override;
-
-private:
-    typedef std::unordered_map<std::string,std::shared_ptr<Binary>>
-            ModuleMap;
-
-    ModuleMap m_modules;
-};
-
-class SymbolTable
-{
-public:
-    SymbolTable(const Methcla_Library_Symbol* symbols);
-
-    Function lookup(const std::string& uri, const std::string& name) const;
+    virtual std::shared_ptr<Library> open(const boost::filesystem::path& path) throw (Exception) override;
 
 private:
-    typedef std::unordered_map<std::string,Function> SymbolMap;
-    SymbolMap m_symbols;
+    typedef std::unordered_map<boost::filesystem::path,std::shared_ptr<Library>>
+            LibraryMap;
+    LibraryMap m_libs;
 };
+
+// class SymbolTable
+// {
+// public:
+//     SymbolTable(const Methcla_Library_Symbol* symbols);
+// 
+//     Function lookup(const std::string& uri, const std::string& name) const;
+// 
+// private:
+//     typedef std::unordered_map<std::string,Function> SymbolMap;
+//     SymbolMap m_symbols;
+// };
 
 }; };
 

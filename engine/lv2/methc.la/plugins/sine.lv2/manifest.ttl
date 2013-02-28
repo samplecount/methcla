@@ -15,13 +15,15 @@
 # Namespace Prefixes
 
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix staticLoader: <http://methc.la/lv2/ext/static-loader#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 # Data (list of resources in this bundle, hence "manifest")
 
 <http://methc.la/lv2/plugins/sine>
 	a lv2:Plugin ;
-	lv2:binary <sine.so> ;
+	lv2:binary <sine.dylib> ;
+  staticLoader:symbolPrefix "methcla_lv2_plugins_sine_" ;
 	rdfs:seeAlso <sine.ttl> .
 
 # Explanation

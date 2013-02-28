@@ -50,7 +50,7 @@ private:
 struct Methcla_Engine
 {
     Methcla_Engine(const char* backend_uri, const Methcla_Option* inOptions, const Methcla_Library_Symbol* symbols)
-        : m_pluginManager(symbols)
+        // : m_pluginManager(symbols)
     {
         Options options(inOptions);
         const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__LV2_PATH));
