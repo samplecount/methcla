@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <methcla/engine.h>
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,8 +43,8 @@ static uint32_t instance_size(const LV2_Descriptor* descriptor)
 static LV2_Handle
 instantiate( const LV2_Descriptor*     descriptor
            , double                    sampleRate
-           , const char*               /* bundlePath */
-           , const LV2_Feature* const* /* features */
+           , const char*               bundlePath
+           , const LV2_Feature* const* features
            , void*                     location )
 {
     Sine* sine = (Sine*)location;
@@ -128,9 +130,10 @@ static const LV2_Descriptor descriptor = {
     extension_data
 };
 
-LV2_SYMBOL_EXPORT
-const LV2_Descriptor*
-methcla_sine_lv2_descriptor(uint32_t index)
+// LV2_SYMBOL_EXPORT
+METHCLA_EXPORT const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index) __attribute__((used));
+
+const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index)
 {
     switch (index) {
     case 0:
@@ -139,3 +142,6 @@ methcla_sine_lv2_descriptor(uint32_t index)
         return NULL;
     }
 }
+
+// volatile __attribute__((used)) LV2_Descriptor_Function dummy = methcla_lv2_plugins_sine_lv2_descriptor;
+volatile void* fuckMe = (void*)methcla_lv2_plugins_sine_lv2_descriptor;

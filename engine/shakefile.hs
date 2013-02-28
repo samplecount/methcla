@@ -15,6 +15,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+import           Control.Applicative
 import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad
 import           Development.Shake as Shake
@@ -224,7 +225,7 @@ methclaLib target = do
               ]
             ++ [ "external_libraries/zix/ring.c" ]
             -- plugins
-            ++ [ "lv2/methc.la/plugins/sine.lv2/sine.cpp" ]
+            ++ [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
             -- platform dependent
             ++ (if (buildTarget ^$ target) `elem` [IOS, IOS_Simulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
@@ -232,6 +233,11 @@ methclaLib target = do
                      then under "platform/jack" [ "Methcla/Audio/IO/JackDriver.cpp" ]
                      else [])
         ]
+
+plugins target = [
+    -- TODO: Provide more SourceTree combinators
+    Library "sine" [ sourceTree (engineBuildFlags target) $ sourceFiles [ "lv2/methc.la/plugins/sine.lv2/sine.c" ] ]
+  ]
 
 -- ====================================================================
 -- Configurations
@@ -272,12 +278,10 @@ targetSpecs = [
                        . methclaStaticBuidFlags
                        . methclaCommonBuildFlags
                        $ cBuildFlags_IOS developer iOS_SDK
-        libmethcla <- methclaLib target
+        methclaLib' <- methclaLib target
         shake $ do
-            let libs = [ libmethcla ]
-                lib = staticLibrary env target toolChain buildFlags
-                libFile = libBuildPath env target
-            want =<< mapM lib libs
+            want =<< (:[]) <$> staticLibrary env target toolChain buildFlags methclaLib'
+            -- want =<< mapM (dynamicLibrary env target toolChain buildFlags) (plugins target)
     )
   , ( "ios-simulator",
     \shake env -> do
