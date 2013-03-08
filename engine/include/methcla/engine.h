@@ -17,38 +17,9 @@
 #ifndef METHCLA_ENGINE_H_INCLUDED
 #define METHCLA_ENGINE_H_INCLUDED
 
+#include <methcla/common.h>
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-
-#if defined(__cplusplus)
-#   define METHCLA_C_LINKAGE extern "C"
-#else
-#   define METHCLA_C_LINKAGE
-#endif
-
-#if defined _WIN32 || defined __CYGWIN__
-  #if defined(BUILDING_DLL)
-    #if defined(__GNUC__) || defined(__clang__)
-      #define METHCLA_VISIBLE __attribute__ ((dllexport))
-    #else
-      #define METHCLA_VISIBLE __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-    #endif
-  #else
-    #if defined(__GNUC__) || defined(__clang__)
-      #define METHCLA_VISIBLE __attribute__ ((dllimport))
-    #else
-      #define METHCLA_VISIBLE __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
-    #endif
-  #endif
-#else
-  #if (__GNUC__ >= 4) || (defined(__clang__) && (__clang_major__ >= 4))
-    #define METHCLA_VISIBLE __attribute__ ((visibility ("default")))
-  #else
-    #define METHCLA_VISIBLE
-  #endif
-#endif
-
-#define METHCLA_EXPORT METHCLA_C_LINKAGE METHCLA_VISIBLE
 
 #define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
 #define METHCLA_LV2_URI         "http://methc.la/lv2"
