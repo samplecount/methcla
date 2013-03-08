@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ static const LV2_Descriptor* loadPlugin(const std::shared_ptr<PluginLibrary>& li
         if (ld == nullptr) {
             break;
         }
-        
+
         // Parse bundle URI to use as base URI
         const LilvNode* bundle_uri     = lilv_plugin_get_bundle_uri(plugin);
         const char*     bundle_uri_str = lilv_node_as_uri(bundle_uri);
@@ -59,7 +59,7 @@ static const LV2_Descriptor* loadPlugin(const std::shared_ptr<PluginLibrary>& li
         if (serd_uri_parse((const uint8_t*)bundle_uri_str, &base_uri)) {
             break;
         }
-        
+
         // Resolve library plugin URI against base URI
         SerdURI  abs_uri;
         SerdNode abs_uri_node = serd_node_new_uri_from_string(
@@ -67,7 +67,7 @@ static const LV2_Descriptor* loadPlugin(const std::shared_ptr<PluginLibrary>& li
         if (!abs_uri_node.buf) {
             break;
         }
-        
+
         if (strcmp((const char*)abs_uri_node.buf,
                    lilv_node_as_uri(lilv_plugin_get_uri(plugin))) == 0) {
             result = ld;
@@ -77,7 +77,7 @@ static const LV2_Descriptor* loadPlugin(const std::shared_ptr<PluginLibrary>& li
             serd_node_free(&abs_uri_node);
         }
     }
-    
+
     return result;
 }
 
@@ -89,20 +89,39 @@ Methcla::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* sym
     , m_defaultValue(isnan(defaultValue) ? 0 : defaultValue)
 { }
 
-PluginLibrary::PluginLibrary(
-    const std::shared_ptr<Methcla::Plugin::Library>& lib,
-    const char* bundlePath,
-    const LV2_Feature* const* features)
-    : m_lib(lib),
-      m_descFunc(nullptr),
-      m_libDesc(nullptr)
+std::shared_ptr<PluginLibrary> PluginLibrary::create(const char* bundlePath, const LV2_Feature* const* features, std::shared_ptr<Methcla::Plugin::Library> lib)
 {
-    m_descFunc = reinterpret_cast<LV2_Descriptor_Function>(m_lib->symbol("lv2_descriptor"));
-    if (m_descFunc == nullptr) {
-        auto ldf = reinterpret_cast<LV2_Lib_Descriptor_Function>(m_lib->symbol("lv2_lib_descriptor"));
-        m_libDesc = ldf(bundlePath, features);
-        BOOST_ASSERT_MSG( m_libDesc != nullptr, "lv2_lib_descriptor failed" );
+    auto df = reinterpret_cast<LV2_Descriptor_Function>(lib->symbol("lv2_descriptor"));
+
+    if (df == nullptr) {
+        auto ldf = reinterpret_cast<LV2_Lib_Descriptor_Function>(lib->symbol("lv2_lib_descriptor"));
+        if (ldf == nullptr)
+            return nullptr;
+        auto desc = ldf(bundlePath, features);
+        if (desc == nullptr)
+            return nullptr;
+        return std::make_shared<PluginLibrary>(desc, lib);
+    } else {
+        return std::make_shared<PluginLibrary>(df, lib);
     }
+}
+
+PluginLibrary::~PluginLibrary()
+{
+    if (m_libDesc != nullptr) {
+        m_libDesc->cleanup(m_libDesc->handle);
+    }
+}
+
+std::shared_ptr<PluginLibrary> PluginLibrary::create(const char* bundlePath, const LV2_Feature* const* features, LV2_Lib_Descriptor_Function ldf)
+{
+    auto desc = ldf(bundlePath, features);
+    return std::make_shared<PluginLibrary>(desc, nullptr);
+}
+
+std::shared_ptr<PluginLibrary> PluginLibrary::create(LV2_Descriptor_Function df)
+{
+    return std::make_shared<PluginLibrary>(df, nullptr);
 }
 
 Plugin::Plugin(PluginManager& manager, std::shared_ptr<PluginLibrary> library, const LilvPlugin* plugin)
@@ -199,7 +218,7 @@ const char* Plugin::uri() const
 {
     return lilv_node_as_uri(lilv_plugin_get_uri(m_plugin));
 }
- 
+
 const char* Plugin::name() const
 {
     return lilv_node_as_string(lilv_plugin_get_name(m_plugin));
@@ -229,12 +248,13 @@ void PluginManager::addFeature(const char* uri, void* data)
     m_features.push_back(f);
 }
 
-PluginManager::PluginManager()
+PluginManager::PluginManager(const StaticLibraryMap& libs)
+    : m_staticLibs(libs)
 {
     m_world = lilv_world_new();
     if (m_world == 0)
         BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("`lilv_world_new' failed"));
-    
+
     // Initialize features
 
     // http://lv2plug.in/ns/lv2core#hardRTCapable
@@ -280,7 +300,7 @@ void PluginManager::loadPlugins(const boost::filesystem::path& directory)
 
     LILV_FOREACH(plugins, it, plugins) {
         const LilvPlugin* lilvPlugin = lilv_plugins_get(plugins, it);
-        const char* uri = lilv_node_as_uri(lilv_plugin_get_uri(lilvPlugin));
+        const char* pluginUri = lilv_node_as_uri(lilv_plugin_get_uri(lilvPlugin));
 
         NodesPtr allFeatures(std::make_shared<Nodes>(lilv_plugin_get_supported_features(lilvPlugin)));
         NodesPtr requiredFeatures(std::make_shared<Nodes>(lilv_plugin_get_required_features(lilvPlugin)));
@@ -291,35 +311,40 @@ void PluginManager::loadPlugins(const boost::filesystem::path& directory)
             && lilv_nodes_contains(allFeatures->impl(), rtInstantiation->impl())
             && lilv_nodes_contains(extensions->impl(), rtInstantiateInterface->impl()) )
         {
-            cout << "Loading plugin " << uri << " ... " << endl;
+            cout << "Loading plugin " << pluginUri << " ... " << endl;
 
             // load and initialize library if necessary
             const char* libUri = lilv_node_as_uri(lilv_plugin_get_library_uri(lilvPlugin));
             const char* bundlePath = lilv_uri_to_path(lilv_node_as_uri(lilv_plugin_get_bundle_uri(lilvPlugin)));
 
             // Add library symbol prefix for static loader
-    		// <plugin> staticLoader:symbolPrefix ?prefix
-            LilvNode* symbolPrefixPred = lilv_new_uri(m_world, "http://methc.la/lv2/ext/static-loader#symbolPrefix");
-            std::string symbolPrefix;
+            // <plugin> staticLoader:symbolPrefix ?prefix
+            //LilvNode* symbolPrefixPred = lilv_new_uri(m_world, "http://methc.la/lv2/ext/static-loader#symbolPrefix");
+            //std::string symbolPrefix;
 
-            LilvNodes* results =
-                lilv_world_find_nodes(m_world, lilv_plugin_get_uri(lilvPlugin), symbolPrefixPred, nullptr);
+            //LilvNodes* results =
+                //lilv_world_find_nodes(m_world, lilv_plugin_get_uri(lilvPlugin), symbolPrefixPred, nullptr);
 
-            LILV_FOREACH(nodes, i, results) {
-                const LilvNode* node = lilv_nodes_get(results, i);
-                if (lilv_node_is_string(node)) {
-                    symbolPrefix = lilv_node_as_string(node);
-                }
-            }
-            lilv_nodes_free(results);
-            lilv_node_free(symbolPrefixPred);
+            //LILV_FOREACH(nodes, i, results) {
+                //const LilvNode* node = lilv_nodes_get(results, i);
+                //if (lilv_node_is_string(node)) {
+                    //symbolPrefix = lilv_node_as_string(node);
+                //}
+            //}
+            //lilv_nodes_free(results);
+            //lilv_node_free(symbolPrefixPred);
 
-            m_loader.addLibrary(boost::filesystem::path(lilv_uri_to_path(libUri)), symbolPrefix);
+            //m_loader.addLibrary(boost::filesystem::path(lilv_uri_to_path(libUri)), symbolPrefix);
 
             auto libIter = m_libs.find(libUri);
             if (libIter == m_libs.end()) {
-                auto lib = m_loader.open(lilv_uri_to_path(libUri));
-                libIter = m_libs.insert(std::make_pair(libUri, std::make_shared<PluginLibrary>(lib, bundlePath, features()))).first;
+                auto staticLib = m_staticLibs.find(pluginUri);
+                if (staticLib != m_staticLibs.end()) {
+                    libIter = m_libs.insert(std::make_pair(libUri, PluginLibrary::create(bundlePath, features(), staticLib->second))).first;
+                } else {
+                    auto lib = m_loader.open(lilv_uri_to_path(libUri));
+                    libIter = m_libs.insert(std::make_pair(libUri, PluginLibrary::create(bundlePath, features(), lib))).first;
+                }
             }
 
             auto plugin = make_shared<Plugin>(*this, libIter->second, lilvPlugin);

@@ -35,6 +35,8 @@
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
+#include "lv2/methc.la/plugins/sine.lv2/sine.h"
+
 //extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index);
 extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index) __attribute__((used));
 
@@ -44,9 +46,12 @@ Methcla_Engine* makeEngine()
     NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
 
     const char* lv2Path = [bundles UTF8String];
-    Methcla_Option options[2] = {
-        { METHCLA_OPTION__LV2_PATH, lv2Path }
-        , METHCLA_END_OPTIONS };
+    Methcla_LV2_Library libs[] = { METHCLA_LV2_PLUGINS_SINE_LIB, METHCLA_END_LIBRARIES };
+
+    Methcla_Option options[] = {
+        { METHCLA_OPTION__LV2_PATH, lv2Path },
+        { METHCLA_OPTION__LV2_LIBRARIES, libs },
+          METHCLA_END_OPTIONS };
 
 //    volatile void* fuckMe = (void*)methcla_lv2_plugins_sine_lv2_descriptor;
 
@@ -54,9 +59,8 @@ Methcla_Engine* makeEngine()
 //    Methcla_Library_Symbol symbols[2] = {
 //        { METHCLA_LV2_URI "/plugins/sine", "lv2_descriptor", (Methcla_Library_Function)methcla_sine_lv2_descriptor }
 //        , METHCLA_END_SYMBOLS };
-    Methcla_Library_Symbol symbols[1] = { METHCLA_END_SYMBOLS };
 
-    Methcla_Engine* theEngine = methcla_engine_new_with_backend("", options, symbols);
+    Methcla_Engine* theEngine = methcla_engine_new(options);
 
     Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(methcla_engine_impl(theEngine));
 

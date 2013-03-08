@@ -18,10 +18,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
-#include "lv2/methc.la/ext/rt-instantiate/rt-instantiate.h"
+#include <methcla/common.h>
 
-#define SINE_URI "http://methc.la/lv2/plugins/sine"
+#include "lv2/methc.la/ext/rt-instantiate/rt-instantiate.h"
+#include "lv2/methc.la/plugins/sine.lv2/sine.h"
 
 typedef enum {
     SINE_FREQ   = 0,
@@ -90,7 +90,7 @@ run(LV2_Handle instance, uint32_t numFrames)
         output[k] = sin(phase);
         phase += phaseInc;
     }
-    
+
     sine->phase = phase;
 }
 
@@ -120,7 +120,7 @@ extension_data(const char* uri)
 }
 
 static const LV2_Descriptor descriptor = {
-    SINE_URI,
+    METHCLA_LV2_PLUGINS_SINE_URI,
     lv2_rt_instantiate_default_instantiate,
     connect_port,
     activate,
@@ -130,10 +130,7 @@ static const LV2_Descriptor descriptor = {
     extension_data
 };
 
-// LV2_SYMBOL_EXPORT
-METHCLA_EXPORT const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index) __attribute__((used));
-
-const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index)
+static const LV2_Descriptor* lib_get_plugin(LV2_Lib_Handle handle, uint32_t index)
 {
     switch (index) {
     case 0:
@@ -143,5 +140,19 @@ const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index)
     }
 }
 
-// volatile __attribute__((used)) LV2_Descriptor_Function dummy = methcla_lv2_plugins_sine_lv2_descriptor;
-volatile void* fuckMe = (void*)methcla_lv2_plugins_sine_lv2_descriptor;
+static void lib_cleanup(LV2_Lib_Handle handle)
+{
+}
+
+static const LV2_Lib_Descriptor libDescriptor = {
+    NULL,
+    sizeof(LV2_Lib_Descriptor),
+    lib_cleanup,
+    lib_get_plugin
+};
+
+METHCLA_EXPORT const LV2_Lib_Descriptor* methcla_lv2_plugins_sine_lv2_lib_descriptor(const char* bundlePath, const LV2_Feature* const* features)
+{
+    return &libDescriptor;
+}
+

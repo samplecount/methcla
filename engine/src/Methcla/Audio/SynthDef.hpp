@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,11 +85,23 @@ private:
 class PluginLibrary
 {
 public:
-    PluginLibrary( const std::shared_ptr<Methcla::Plugin::Library>& lib
-                 , const char* bundlePath
-                 , const LV2_Feature* const* features);
+    PluginLibrary(const LV2_Descriptor_Function descFunc, std::shared_ptr<Methcla::Plugin::Library> library=nullptr)
+        : m_lib(library)
+        , m_descFunc(descFunc)
+        , m_libDesc(nullptr)
+    { }
+    PluginLibrary(const LV2_Lib_Descriptor* libDesc, std::shared_ptr<Methcla::Plugin::Library> library=nullptr)
+        : m_lib(library)
+        , m_descFunc(nullptr)
+        , m_libDesc(libDesc)
+    { }
+    ~PluginLibrary();
 
-	const LV2_Descriptor* get(uint32_t index);
+    static std::shared_ptr<PluginLibrary> create(const char* bundlePath, const LV2_Feature* const* features, std::shared_ptr<Methcla::Plugin::Library> library);
+    static std::shared_ptr<PluginLibrary> create(const char* bundlePath, const LV2_Feature* const* features, LV2_Lib_Descriptor_Function library);
+    static std::shared_ptr<PluginLibrary> create(LV2_Descriptor_Function library);
+
+    const LV2_Descriptor* get(uint32_t index);
 
 private:
     std::shared_ptr<Methcla::Plugin::Library> m_lib;
@@ -133,7 +145,7 @@ public:
     {
         if (m_descriptor->deactivate) m_descriptor->deactivate(instance);
     }
-    
+
     void connectPort(LV2_Handle instance, uint32_t port, void* data) const
     {
         m_descriptor->connect_port(instance, port, data);
@@ -161,7 +173,9 @@ private:
 class PluginManager : boost::noncopyable
 {
 public:
-    PluginManager();
+    typedef std::unordered_map<std::string,LV2_Lib_Descriptor_Function> StaticLibraryMap;
+
+    PluginManager(const StaticLibraryMap& libs=StaticLibraryMap());
     ~PluginManager();
 
     // Features
@@ -190,6 +204,7 @@ private:
     LilvWorld*                              m_world;
     Features                                m_features;
     Methcla::Plugin::StaticLoader           m_loader;
+    StaticLibraryMap                        m_staticLibs;
     LibraryMap                              m_libs;
     PluginMap                               m_plugins;
     LV2::URIDMap                            m_uriMap;

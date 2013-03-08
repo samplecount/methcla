@@ -18,28 +18,25 @@
 #define METHCLA_ENGINE_H_INCLUDED
 
 #include <methcla/common.h>
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 
 #define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
 #define METHCLA_LV2_URI         "http://methc.la/lv2"
 
-//* Generic function pointer.
-typedef void (*Methcla_Library_Function)();
-
-struct Methcla_Library_Symbol
+struct Methcla_LV2_Library
 {
-    const char*              uri;       //*< Resource the symbol is defined for.
-    const char*              name;      //*< Symbol name.
-    Methcla_Library_Function function;  //*< Symbol function address.
+    const char*                 plugin;    //*< Plugin URI (e.g. "http://methc.la/lv2/plugins/sine").
+    LV2_Lib_Descriptor_Function function;  //*< Symbol function address.
 };
-typedef struct Methcla_Library_Symbol Methcla_Library_Symbol;
+typedef struct Methcla_LV2_Library Methcla_LV2_Library;
 
-#define METHCLA_END_SYMBOLS { NULL, NULL, NULL }
+#define METHCLA_END_LIBRARIES { NULL, NULL }
 
 struct Methcla_Option
 {
-    const char* uri;    //*< Option URI.
+    const char* key;    //*< Option key URI.
     const void* value;  //*< Option value.
 };
 typedef struct Methcla_Option Methcla_Option;
@@ -50,10 +47,11 @@ typedef struct Methcla_Option Methcla_Option;
 #define METHCLA_OPTIONS_PREFIX METHCLA_OPTIONS_URI "#"
 
 #define METHCLA_OPTION__LV2_PATH METHCLA_OPTIONS_PREFIX "lv2Path"
+#define METHCLA_OPTION__LV2_LIBRARIES METHCLA_OPTIONS_PREFIX "lv2Libraries"
 
 typedef struct Methcla_Engine Methcla_Engine;
 
-METHCLA_EXPORT Methcla_Engine* methcla_engine_new_with_backend(const char* backend_uri, const Methcla_Option* options, const Methcla_Library_Symbol* symbol_table);
+METHCLA_EXPORT Methcla_Engine* methcla_engine_new(const Methcla_Option* options);
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
 METHCLA_EXPORT void methcla_engine_start(Methcla_Engine* engine);
