@@ -18,6 +18,8 @@
 #ifndef LV2_RT_INSTANTIATE_H
 #define LV2_RT_INSTANTIATE_H
 
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
+
 #define LV2_RT_INSTANTIATE_URI        "http://methc.la/lv2/ext/rt-instantiate"
 #define LV2_RT_INSTANTIATE__INTERFACE LV2_RT_INSTANTIATE_URI "#Interface"
 
