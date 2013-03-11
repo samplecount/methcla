@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@
 #include <functional>
 #include <thread>
 
+#include <boost/lockfree/ringbuffer.hpp>
 #include <boost/utility.hpp>
 
 #include "Methcla/LV2/URIDMap.hpp"
@@ -31,99 +32,66 @@
 
 namespace Methcla { namespace Utility {
 
-/// MWSR queue for sending commands to the engine.
-template <size_t queueSize, size_t bufferSize> class MessageQueue : boost::noncopyable
+//* MWSR queue for sending commands to the engine.
+// Request payload lifetime: from request until response callback.
+// Caller is responsible for freeing request payload after the response callback has been called.
+template <size_t queueSize> class MessageQueue : boost::noncopyable
 {
 public:
-    MessageQueue()
-        : m_queue(queueSize)
-    { }
+    typedef void (*Respond)(void* data, LV2_Atom* request, const LV2_Atom* response);
 
-    typedef void (*Respond)(void* data, const LV2_Atom* payload);
-
-    class alignas(sizeof(LV2_Atom)) MessageHeader
-    {
-    public:
-        MessageHeader()
-            : m_respond(nullptr)
-            , m_data(nullptr)
-        { }
-        MessageHeader(const Respond& respond, void* data)
-            : m_respond(respond)
-            , m_data(data)
-        { }
-        MessageHeader(const MessageHeader& other)
-            : m_respond(other.m_respond)
-            , m_data(other.m_data)
-        { }
-
-        void respond(const LV2_Atom* response)
-        {
-            if (m_respond != nullptr)
-                m_respond(m_data, response);
-        }
-
-    private:
-        Respond m_respond;
-        void*   m_data;
-    };
-
-    static_assert( sizeof(MessageHeader) % sizeof(LV2_Atom) == 0
-                 , "sizeof(MessageHeader) multiple of sizeof(LV2_Atom)" );
-
-    class Message : public MessageHeader
+    class Message
     {
     public:
         Message()
-            : m_payload(nullptr)
+            : m_respond(nullptr)
+            , m_data(nullptr)
+            , m_request(nullptr)
         { }
-        Message(const MessageHeader& header, const LV2_Atom* payload)
-            : MessageHeader(header)
-            , m_payload(payload)
+        Message(Respond respond, void* data, const LV2_Atom* request)
+            : m_respond(respond)
+            , m_data(data)
+            , m_request(request)
         { }
-        Message(const Message& other)
-            : MessageHeader(other)
-            , m_payload(other.m_payload)
-        { }
+        Message(const Message& other) = default;
 
-        const LV2_Atom* payload() const { return m_payload; }
+        const LV2_Atom* payload() const
+        {
+            return m_request;
+        }
+
+        void respond(const LV2_Atom* response)
+        {
+            // Only allow to respond once
+            BOOST_ASSERT( m_request != nullptr );
+            m_respond(m_data, const_cast<LV2_Atom*>(m_request), response);
+            m_request = nullptr;
+        }
 
     private:
-        const LV2_Atom* m_payload;
+        Respond         m_respond;
+        void*           m_data;
+        const LV2_Atom* m_request;
     };
 
-    void send(const LV2_Atom* payload, const Respond& respond, void* data)
+    void send(Respond respond, void* data, const LV2_Atom* request)
     {
-        MessageHeader header(respond, data);
-        uint8_t* buffer = m_writeBuffer.data();
+        Message msg(respond, data, request);
         std::lock_guard<std::mutex> lock(m_writeMutex);
-        memcpy(buffer, &header, sizeof(MessageHeader));
-        BOOST_ASSERT( sizeof(LV2_Atom) + payload->size <= m_writeBuffer.size() - sizeof(MessageHeader) );
-        memcpy(buffer + sizeof(MessageHeader), payload, sizeof(LV2_Atom) + payload->size);
-        m_queue.write(buffer, sizeof(MessageHeader) + sizeof(LV2_Atom) + payload->size);
+        bool success = m_queue.enqueue(msg);
+        BOOST_ASSERT( success );
     }
 
     bool next(Message& msg)
     {
-        uint8_t* buffer = m_readBuffer.data();
-        const size_t headerSize = m_queue.read(buffer, sizeof(MessageHeader) + sizeof(LV2_Atom));
-        BOOST_ASSERT( headerSize == 0 || headerSize == sizeof(MessageHeader) + sizeof(LV2_Atom) );        
-        if (headerSize != 0) {
-            MessageHeader* header = reinterpret_cast<MessageHeader*>(buffer);
-            LV2_Atom* payload = reinterpret_cast<LV2_Atom*>(buffer + sizeof(MessageHeader));
-            const size_t payloadSize = m_queue.read(buffer + headerSize, payload->size);
-            BOOST_ASSERT( payloadSize == payload->size );
-            msg = Message(*header, payload);
-            return true;
-        }
-        return false;
+        size_t n = m_queue.dequeue(&msg);
+        return n == 1;
     }
 
 private:
-    RingBuffer                          m_queue;
-    std::mutex                        m_writeMutex;
-    std::array<uint8_t,bufferSize>    m_writeBuffer;
-    std::array<uint8_t,bufferSize>    m_readBuffer;
+    typedef boost::lockfree::ringbuffer<Message,queueSize> Queue;
+    Queue      m_queue;
+    std::mutex m_writeMutex;
 };
 
 template <size_t queueSize, size_t bufferSize> class Worker : boost::noncopyable
@@ -178,7 +146,7 @@ public:
 
         void commit()
         {
-            uint8_t* buffer = m_writeBuffer.data();            
+            uint8_t* buffer = m_writeBuffer.data();
             LV2_Atom* atom = reinterpret_cast<LV2_Atom*>(buffer + sizeof(Message));
             const size_t size = sizeof(Message) + sizeof(LV2_Atom) + atom->size;
             const size_t written = m_queue.write(buffer, size);

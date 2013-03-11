@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,7 @@ namespace Methcla { namespace Audio
     // {
     // public:
     //     typedef sample_t ValueType;
-    // 
+    //
     // private:
     //     BusId       m_id;
     //     Epoch       m_epoch;
@@ -189,8 +189,8 @@ namespace Methcla { namespace Audio
         const Uris& uris() const { return m_uris; }
 
         // Request queue
-        typedef Utility::MessageQueue<8192,8192> MessageQueue;
-        void request(const LV2_Atom* msg, const MessageQueue::Respond& respond, void* data);
+        typedef Utility::MessageQueue<8192> MessageQueue;
+        void request(MessageQueue::Respond respond, void* data, const LV2_Atom* msg);
 
         // Worker thread
         typedef Utility::WorkerThread<8192,8192> Worker;

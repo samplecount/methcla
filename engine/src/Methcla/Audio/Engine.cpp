@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,9 +94,9 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
-void Environment::request(const LV2_Atom* msg, const MessageQueue::Respond& respond, void* data)
+void Environment::request(MessageQueue::Respond respond, void* data, const LV2_Atom* msg)
 {
-    m_requests.send(msg, respond, data);
+    m_requests.send(respond, data, msg);
 }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
@@ -120,10 +120,10 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     for (size_t i=0; i < numOutputs; i++) {
         m_audioOutputChannels[i]->setData(outputs[i]);
     }
-    
+
     // Run DSP graph
     m_rootNode->process(numFrames);
-    
+
     // Zero outputs that haven't been written to
     for (size_t i=0; i < numOutputs; i++) {
         if (m_audioOutputChannels[i]->epoch() != epoch()) {

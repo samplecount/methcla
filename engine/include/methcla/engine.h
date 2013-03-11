@@ -60,8 +60,9 @@ METHCLA_EXPORT void methcla_engine_stop(Methcla_Engine* engine);
 METHCLA_EXPORT LV2_URID methcla_engine_map_uri(Methcla_Engine* engine, const char* uri);
 METHCLA_EXPORT const char* methcla_engine_unmap_uri(Methcla_Engine* engine, LV2_URID urid);
 
-typedef void (*Methcla_Response_Handler)(const LV2_Atom* response, void* data);
-METHCLA_EXPORT void methcla_engine_request(Methcla_Engine* engine, const LV2_Atom* request, Methcla_Response_Handler handler, void* handler_data);
+typedef void (*Methcla_Response_Handler)(void* handler_data, LV2_Atom* request, const LV2_Atom* response);
+
+METHCLA_EXPORT void methcla_engine_request(Methcla_Engine* engine, Methcla_Response_Handler handler, void* handler_data, const LV2_Atom* request);
 
 //* Temporarily exported.
 METHCLA_EXPORT void* methcla_engine_impl(Methcla_Engine* engine);
