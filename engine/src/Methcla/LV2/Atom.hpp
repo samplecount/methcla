@@ -220,7 +220,8 @@ namespace Methcla { namespace LV2 {
 
         template <typename T> T cast(const LV2_Atom* atom) const
         {
-            return static_cast<T>(atom);
+            checkType(atom, m_forge.Chunk, LV2_ATOM__Chunk);
+            return reinterpret_cast<T>(LV2_ATOM_BODY(atom));
         }
 
         const LV2_Atom_Forge& forge()
@@ -281,12 +282,6 @@ namespace Methcla { namespace LV2 {
     {
         checkType(atom, m_forge.String, LV2_ATOM__String);
         return reinterpret_cast<const char*>(LV2_ATOM_BODY(atom));
-    }
-
-    template <> const void* Parser::cast(const LV2_Atom* atom) const
-    {
-        checkType(atom, m_forge.Chunk, LV2_ATOM__Chunk);
-        return LV2_ATOM_BODY(atom);
     }
 
     template <> const LV2_Atom_Object* Parser::cast(const LV2_Atom* atom) const

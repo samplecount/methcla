@@ -163,7 +163,7 @@ static void sendReply(void* data, const LV2_Atom* payload, Environment::Worker::
     const LV2::Parser& parser = *static_cast<const LV2::Parser*>(data);
     auto tuple = parser.cast<const LV2_Atom_Tuple*>(payload);
     auto iter = lv2_atom_tuple_begin(tuple);
-    auto msg = static_cast<const Environment::MessageQueue::Message*>(parser.cast<const void*>(iter));
+    auto msg = parser.cast<const Environment::MessageQueue::Message*>(iter);
     auto response = lv2_atom_tuple_next(iter);
     msg->respond(response);
 }
