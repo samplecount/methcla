@@ -17,6 +17,7 @@
 #include "Methcla/Audio/Synth.hpp"
 #include "Methcla/LV2/Atom.hpp"
 
+#include <boost/current_function.hpp>
 #include <cstdlib>
 #include <iostream>
 
@@ -54,6 +55,7 @@ Environment::Environment(PluginManager& pluginManager, const Options& options)
     , m_worker(uriMap())
     , m_uris(uriMap())
     , m_parser(uriMap().lv2Map())
+    , m_printer(uriMap().lv2Map(), uriMap().lv2Unmap())
 {
     const Epoch prevEpoch = epoch() - 1;
 
@@ -199,10 +201,12 @@ void Environment::processRequests()
 void Environment::handleRequest(MessageQueue::Message& request)
 {
     const LV2_Atom* atom = request.payload();
-    cout << "Message: " << atom << endl
-         << "    atom size: " << atom->size << endl
-         << "    atom type: " << atom->type << endl
-         << "    atom uri:  " << unmapUri(atom->type) << endl;
+    std::cout << BOOST_CURRENT_FUNCTION << std::endl;
+    m_printer.print(std::cout, atom, 4);
+    //cout << "Message: " << atom << endl
+         //<< "    atom size: " << atom->size << endl
+         //<< "    atom type: " << atom->type << endl
+         //<< "    atom uri:  " << unmapUri(atom->type) << endl;
     if (m_parser.isObject(atom))
         handleMessageRequest(request, m_parser.cast<const LV2_Atom_Object*>(atom));
     else if (m_parser.isSequence(atom))
@@ -213,17 +217,6 @@ void Environment::handleRequest(MessageQueue::Message& request)
 
 void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg)
 {
-    // const char* atom_type = unmapUri(msg->atom.type);
-    // const char* uri_type = unmapUri(msg->body.otype);
-    // if (msg->atom.type == uris().atom_Blank) {
-    //     cout << atom_type << " " << msg->body.id << " " << uri_type << endl;
-    // } else {
-    //     const char* uri_id = unmapUri(msg->body.id);
-    //     cout << atom_type << " " << uri_id << " " << uri_type << endl;
-    // }
-    // LV2_ATOM_OBJECT_FOREACH(msg, prop) {
-    //     cout << "  " << unmapUri(prop->key) << " " << prop->context << ": " << unmapUri(prop->value.type) << endl;
-    // }
     const LV2_Atom* subjectAtom = nullptr;
     const LV2_Atom* bodyAtom = nullptr;
     const LV2_URID requestType = msg->body.otype;

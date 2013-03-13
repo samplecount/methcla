@@ -266,6 +266,7 @@ namespace Methcla { namespace Audio
         Worker                              m_worker;
         Uris                                m_uris;
         LV2::Parser                         m_parser;
+        LV2::Printer                        m_printer;
     };
 
     class Engine

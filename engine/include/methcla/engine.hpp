@@ -18,7 +18,9 @@
 #include <methcla/engine.h>
 #include "Methcla/LV2/Atom.hpp"
 
+#include <boost/current_function.hpp>
 #include <future>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -37,6 +39,7 @@ namespace Methcla
         Engine(const Methcla_Option* options)
             : m_engine(methcla_engine_new(options))
             , m_map({ m_engine, engineMapUri })
+            , m_unmap({ m_engine, engineUnmapUri })
             , m_forge(&m_map)
             , m_parser(&m_map)
         { }
@@ -70,10 +73,13 @@ namespace Methcla
             return methcla_engine_unmap_uri(m_engine, urid);
         }
 
-        LV2_Atom* request(LV2_Atom* payload)
+        LV2_Atom* request(LV2_Atom* request)
         {
+            std::cout << BOOST_CURRENT_FUNCTION << std::endl;
+            print(std::cout, request, 4);
+
             std::promise<LV2_Atom*> sink;
-            methcla_engine_request(m_engine, responseHandler, &sink, payload);
+            methcla_engine_request(m_engine, responseHandler, &sink, request);
             return sink.get_future().get();
         }
 
@@ -85,6 +91,12 @@ namespace Methcla
         const LV2::Parser& parser()
         {
             return m_parser;
+        }
+
+        void print(std::ostream& out, const LV2_Atom* atom, size_t indent=0)
+        {
+            LV2::Printer(&m_map, &m_unmap).print(out, atom, indent);
+            out << std::endl;
         }
 
     private:
@@ -108,9 +120,15 @@ namespace Methcla
             return methcla_engine_map_uri(static_cast<Methcla_Engine*>(handle), uri);
         }
 
+        static const char* engineUnmapUri(LV2_URID_Unmap_Handle handle, LV2_URID urid)
+        {
+            return methcla_engine_unmap_uri(static_cast<Methcla_Engine*>(handle), urid);
+        }
+
     private:
         Methcla_Engine* m_engine;
         LV2_URID_Map    m_map;
+        LV2_URID_Unmap  m_unmap;
         LV2::Forge      m_forge;
         LV2::Parser     m_parser;
     };
@@ -141,9 +159,10 @@ namespace Methcla
             }
         }
 
-        auto responseAtom = std::unique_ptr<LV2_Atom, FreeDeleter<LV2_Atom>>(engine.request(reinterpret_cast<LV2_Atom*>(buffer)));
+        LV2_Atom* requestAtom = reinterpret_cast<LV2_Atom*>(buffer);
+        auto responseAtom = std::unique_ptr<LV2_Atom, FreeDeleter<LV2_Atom>>(engine.request(requestAtom));
         auto response = engine.parser().cast<const LV2_Atom_Object*>(responseAtom.get());
-        NodeId nodeId;
+
         if (LV2::isa(response, engine.map_uri(LV2_PATCH_PREFIX "Ack"))) {
             LV2_Atom* idAtom = nullptr;
             lv2_atom_object_get(response, engine.map_uri(METHCLA_ENGINE_PREFIX "id"), &idAtom, nullptr);

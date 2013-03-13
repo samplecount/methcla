@@ -16,6 +16,7 @@
 #define METHCLA_LV2_ATOM_HPP_INCLUDED
 
 #include <cassert>
+#include <ostream>
 #include <stdexcept>
 #include <sstream>
 #include <string>
@@ -222,6 +223,11 @@ namespace Methcla { namespace LV2 {
             return static_cast<T>(atom);
         }
 
+        const LV2_Atom_Forge& forge()
+        {
+            return m_forge;
+        }
+
     private:
         void argumentError(const char* typeName) const
         {
@@ -301,6 +307,90 @@ namespace Methcla { namespace LV2 {
         checkType(atom, m_forge.Sequence, LV2_ATOM__Sequence);
         return reinterpret_cast<const LV2_Atom_Sequence*>(atom);
     }
+
+    class Printer : public Parser
+    {
+    public:
+        Printer(LV2_URID_Map* map, const LV2_URID_Unmap* unmap)
+            : Parser(map)
+            , m_unmap(*unmap)
+        { }
+
+        void print(std::ostream& out, const LV2_Atom* atom, size_t level=0)
+        {
+                   if (isa(atom, forge().Int)) {
+                indent(out, level);
+                out << cast<int32_t>(atom);
+            } else if (isa(atom, forge().Long)) {
+                indent(out, level);
+                out << cast<int64_t>(atom);
+            } else if (isa(atom, forge().Float)) {
+                indent(out, level);
+                out << cast<float>(atom);
+            } else if (isa(atom, forge().Double)) {
+                indent(out, level);
+                out << cast<double>(atom);
+            } else if (isa(atom, forge().String)) {
+                indent(out, level);
+                out << '"' << cast<const char*>(atom) << '"';
+            } else if (isa(atom, forge().URID)) {
+                indent(out, level);
+                out << '<' << unmap(cast<LV2_URID>(atom)) << '>';
+            } else if (isTuple(atom)) {
+                indent(out, level);
+                out << '[' << std::endl;
+                const LV2_Atom_Tuple* tuple = cast<const LV2_Atom_Tuple*>(atom);
+                for (LV2_Atom* (iter) = lv2_atom_tuple_begin(tuple);
+                     !lv2_atom_tuple_is_end(LV2_ATOM_BODY(tuple), (atom)->size, (iter));
+                     (iter) = lv2_atom_tuple_next(iter)) {
+                    print(out, iter, level+4);
+                    out << std::endl;
+                }
+                indent(out, level);
+                out << ']';
+            //} else if (isSequence(atom)) {
+            } else if (isObject(atom)) {
+                indent(out, level);
+                const LV2_Atom_Object* object = cast<const LV2_Atom_Object*>(atom);
+                if (isResource(object))
+                    out << "<" << unmap(object->body.id) << "> ";
+                //else if (isBlank(object))
+                    //out << "[] ";
+                out << '{' << std::endl;
+                indent(out, level+4);
+                out << "<rdf:type>:" << std::endl;
+                indent(out, level+8);
+                out << '<' << unmap(object->body.otype) << '>' << std::endl;
+                LV2_ATOM_OBJECT_FOREACH(object, iter) {
+                    indent(out, level+4);
+                    out << '<' << unmap(iter->key) << ">:" << std::endl;
+                    print(out, &iter->value, level+8);
+                    out << std::endl;
+                }
+                indent(out, level);
+                out << '}';
+            } else {
+                indent(out, level);
+                out << "<Atom " << atom->type << ">";
+            }
+        }
+
+    private:
+        const char* unmap(LV2_URID urid) const
+        {
+            return m_unmap.unmap(m_unmap.handle, urid);
+        }
+
+        static void indent(std::ostream& stream, size_t n)
+        {
+            for (size_t i=0; i < n; i++) {
+                stream << ' ';
+            }
+        }
+
+    private:
+        LV2_URID_Unmap m_unmap;
+    };
 
     //
 // class ObjectIterator
