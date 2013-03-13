@@ -46,6 +46,7 @@ class Connection : public boost::noncopyable
 public:
     Connection(size_t index, ConnectionType type)
         : m_index(index)
+        , m_busId(-1)
         , m_type(type)
     { }
 
