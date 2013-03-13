@@ -60,12 +60,10 @@ public:
             return m_request;
         }
 
-        void respond(const LV2_Atom* response)
+        void respond(const LV2_Atom* response) const
         {
-            // Only allow to respond once
-            BOOST_ASSERT( m_request != nullptr );
+            // Only allowed to respond once
             m_respond(m_data, const_cast<LV2_Atom*>(m_request), response);
-            m_request = nullptr;
         }
 
     private:
