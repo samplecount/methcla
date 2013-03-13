@@ -112,9 +112,9 @@ const char* methcla_engine_unmap_uri(Methcla_Engine* engine, LV2_URID urid)
     return engine->m_pluginManager->uriMap().unmap(urid);
 }
 
-void methcla_engine_request(Methcla_Engine* engine, const LV2_Atom* request, Methcla_Response_Handler handler, void* handler_data)
+void methcla_engine_request(Methcla_Engine* engine, Methcla_Response_Handler handler, void* handler_data, const LV2_Atom* request)
 {
-    // engine->m_engine->env().request(request, handler, handlerData);
+    engine->m_engine->env().request(handler, handler_data, request);
 }
 
 void* methcla_engine_impl(Methcla_Engine* engine)
