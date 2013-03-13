@@ -40,7 +40,7 @@ Synth::Synth( Environment& env
 {
     const size_t blockSize = env.blockSize();
 
-    // Unitialized audio connection memory
+    // Uninitialized audio connection memory
     AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
     AudioOutputConnection* audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
 
