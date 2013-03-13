@@ -91,7 +91,7 @@ namespace Methcla { namespace Audio
 
         T* lookup(const Id& id)
         {
-            return m_elems[id];
+            return (id >= Id(0) && id < m_elems.size()) ? m_elems[id] : nullptr;
         }
 
     private:
