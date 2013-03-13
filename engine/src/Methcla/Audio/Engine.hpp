@@ -141,30 +141,6 @@ namespace Methcla { namespace Audio
             , methcla_target ( uris.map(METHCLA_ENGINE_PREFIX "target") )
         { }
 
-        bool isBlank(const LV2_Atom* atom) const
-        {
-            return atom->type == atom_Blank;
-        }
-        bool isResource(const LV2_Atom* atom) const
-        {
-            return atom->type == atom_Resource;
-        }
-        bool isObject(const LV2_Atom* atom) const
-        {
-            return isBlank(atom) || isResource(atom);
-        }
-        const LV2_Atom_Object* toObject(const LV2_Atom* atom) const
-        {
-            return isObject(atom) ? reinterpret_cast<const LV2_Atom_Object*>(atom) : nullptr;
-        }
-        bool isBlank(const LV2_Atom_Object* object) const
-        {
-            return isBlank(reinterpret_cast<const LV2_Atom*>(object));
-        }
-        bool isResource(const LV2_Atom_Object* object) const
-        {
-            return isResource(reinterpret_cast<const LV2_Atom*>(object));
-        }
         bool isNode(const LV2_Atom_Object* obj) const
         {
             return (obj->body.otype == methcla_Group) || (obj->body.otype == methcla_Synth);
