@@ -235,8 +235,8 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                   , uris().patch_body, &bodyAtom
                   , nullptr );
 
-    checkProperty(subjectAtom, LV2_PATCH_PREFIX "subject");
-    checkProperty(bodyAtom, LV2_PATCH_PREFIX "body");
+    checkProperty(subjectAtom, LV2_PATCH__subject);
+    checkProperty(bodyAtom, LV2_PATCH__body);
 
     const LV2_Atom_Object* subject = m_parser.cast<const LV2_Atom_Object*>(subjectAtom);
     const LV2_Atom_Object* body = m_parser.cast<const LV2_Atom_Object*>(bodyAtom);
@@ -257,6 +257,8 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
         Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
 
         if (requestType == uris().patch_Insert) {
+            Node* node = nullptr;
+
             if (LV2::isa(body, uris().methcla_Synth)) {
                 // Get plugin URI
                 const LV2_Atom* pluginAtom = nullptr;
@@ -266,33 +268,38 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
 
                 // get params and bus mappings from body
 
-                // uris().methcla_plugin
                 const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
-                Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
-                // Send reply with synth ID (from NRT thread)
-                ::LV2::Forge forge(*prepare(sendReply, &m_parser));
+                node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
+            } else if (LV2::isa(body, uris().methcla_Group)) {
+                node = Group::construct(*this, targetGroup, Node::kAddToTail);
+            } else {
+                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("invalid body type for " LV2_PATCH__Insert) );
+            }
+
+            // Send reply with node id (from NRT thread)
+            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
+            {
+                ::LV2::TupleFrame frame(forge);
+                forgeReturnEnvelope(frame, uris(), request);
                 {
-                    ::LV2::TupleFrame frame(forge);
-                    forgeReturnEnvelope(frame, uris(), request);
+                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
+                    forge << ::LV2::Property(uris().patch_subject);
                     {
-                        ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
+                        ::LV2::ObjectFrame frame(forge, 0, uris().methcla_Node); // TODO: Use concrete node type
                         forge << ::LV2::Property(uris().methcla_id)
-                              << (int32_t)synth->id();
+                              << (int32_t)node->id();
                     }
                 }
-                commit();
-            //} else if (LV2::isa(body, uris().methcla_Group)) {
-            } else {
-                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("invalid body type for " LV2_PATCH_PREFIX "Insert") );
             }
+            commit();
         } else if (requestType == uris().patch_Delete) {
-
+            targetNode->free();
         } else if (requestType == uris().patch_Set) {
             // get params and bus mappings from body
         }
     } else {
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("unknown subject type for " LV2_PATCH_PREFIX "Request") );
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("unknown subject type for " LV2_PATCH__Request) );
     }
 }
 

@@ -36,6 +36,11 @@
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 
+// This is missing from patch.h
+#ifndef LV2_PATCH__Insert
+# define LV2_PATCH__Insert LV2_PATCH_PREFIX "Insert"
+#endif
+
 namespace Methcla { namespace Audio
 {
     // class ControlBus : boost::noncopyable
@@ -117,11 +122,11 @@ namespace Methcla { namespace Audio
             , atom_Resource ( uris.map(LV2_ATOM__Resource) )
             , atom_Sequence ( uris.map(LV2_ATOM__Sequence) )
             , atom_URID     ( uris.map(LV2_ATOM__URID) )
-            , patch_Ack     ( uris.map(LV2_PATCH_PREFIX "Ack") )
-            , patch_Delete  ( uris.map(LV2_PATCH_PREFIX "Delete") )
-            , patch_Error   ( uris.map(LV2_PATCH_PREFIX "Error") )
-            , patch_Insert  ( uris.map(LV2_PATCH_PREFIX "Insert") )
-            , patch_Set     ( uris.map(LV2_PATCH_PREFIX "Set") )
+            , patch_Ack     ( uris.map(LV2_PATCH__Ack) )
+            , patch_Delete  ( uris.map(LV2_PATCH__Delete) )
+            , patch_Error   ( uris.map(LV2_PATCH__Error) )
+            , patch_Insert  ( uris.map(LV2_PATCH__Insert) )
+            , patch_Set     ( uris.map(LV2_PATCH__Set) )
             , patch_subject ( uris.map(LV2_PATCH__subject) )
             , patch_body    ( uris.map(LV2_PATCH__body) )
             , methcla_Group ( uris.map(METHCLA_ENGINE_PREFIX "Group") )

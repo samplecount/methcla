@@ -224,6 +224,8 @@ namespace Methcla { namespace LV2 {
             return reinterpret_cast<T>(LV2_ATOM_BODY(atom));
         }
 
+        template <typename T> T get(const LV2_Atom_Object* object, LV2_URID key) const;
+
         const LV2_Atom_Forge& forge()
         {
             return m_forge;
@@ -301,6 +303,18 @@ namespace Methcla { namespace LV2 {
     {
         checkType(atom, m_forge.Sequence, LV2_ATOM__Sequence);
         return reinterpret_cast<const LV2_Atom_Sequence*>(atom);
+    }
+
+    template <typename T> T Parser::get(const LV2_Atom_Object* object, LV2_URID key) const
+    {
+        const LV2_Atom* value = nullptr;
+        lv2_atom_object_get(object, key, &value, nullptr);
+        if (value == nullptr) {
+            std::stringstream msg;
+            msg << "missing key " << key;
+            throw std::out_of_range(msg.str());
+        }
+        return cast<T>(value);
     }
 
     class Printer : public Parser

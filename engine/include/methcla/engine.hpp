@@ -29,6 +29,11 @@
 
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 
+// This is missing from patch.h
+#ifndef LV2_PATCH__Insert
+# define LV2_PATCH__Insert LV2_PATCH_PREFIX "Insert"
+#endif
+
 namespace Methcla
 {
     BOOST_STRONG_TYPEDEF(uint32_t, NodeId);
@@ -144,14 +149,14 @@ namespace Methcla
         LV2::Forge forge(engine.forge());
         forge.setBuffer(buffer, 8192);
         {
-            LV2::ObjectFrame frame(forge, 0, engine.map_uri(LV2_PATCH_PREFIX "Insert"));
-            forge << LV2::Property(engine.map_uri(LV2_PATCH_PREFIX "subject"));
+            LV2::ObjectFrame frame(forge, 0, engine.map_uri(LV2_PATCH__Insert));
+            forge << LV2::Property(engine.map_uri(LV2_PATCH__subject));
             {
                 LV2::ObjectFrame frame(forge, 0, engine.map_uri(METHCLA_ENGINE_PREFIX "Node"));
                 forge << LV2::Property(engine.map_uri(METHCLA_ENGINE_PREFIX "id"))
                       << int32_t(0);
             }
-            forge << LV2::Property(engine.map_uri(LV2_PATCH_PREFIX "body"));
+            forge << LV2::Property(engine.map_uri(LV2_PATCH__body));
             {
                 LV2::ObjectFrame frame(forge, 0, engine.map_uri(METHCLA_ENGINE_PREFIX "Synth"));
                 forge << LV2::Property(engine.map_uri(METHCLA_ENGINE_PREFIX "plugin"))
@@ -163,16 +168,16 @@ namespace Methcla
         auto responseAtom = std::unique_ptr<LV2_Atom, FreeDeleter<LV2_Atom>>(engine.request(requestAtom));
         auto response = engine.parser().cast<const LV2_Atom_Object*>(responseAtom.get());
 
-        if (LV2::isa(response, engine.map_uri(LV2_PATCH_PREFIX "Ack"))) {
-            LV2_Atom* idAtom = nullptr;
-            lv2_atom_object_get(response, engine.map_uri(METHCLA_ENGINE_PREFIX "id"), &idAtom, nullptr);
-            if (idAtom == nullptr)
-                throw std::runtime_error("missing id from response");
-            return NodeId(engine.parser().cast<int32_t>(idAtom));
-        } else if (LV2::isa(response, engine.map_uri(LV2_PATCH_PREFIX "Error"))) {
-            throw std::runtime_error("an error occured");
+        if (LV2::isa(response, engine.map_uri(LV2_PATCH__Ack))) {
+            auto subject = engine.parser().get<const LV2_Atom_Object*>(response, engine.map_uri(LV2_PATCH__subject));
+            return NodeId(engine.parser().get<int32_t>(subject, engine.map_uri(METHCLA_ENGINE_PREFIX "id")));
+        } else if (LV2::isa(response, engine.map_uri(LV2_PATCH__Error))) {
+            auto msg = engine.parser().get<const char*>(response, engine.map_uri(METHCLA_ENGINE_PREFIX "errorMessage"));
+            throw std::runtime_error(msg);
         } else {
-            throw std::runtime_error("an unknown error occured");
+            std::stringstream msg;
+            msg << "Unknown response type " << engine.unmap_uri(response->body.otype);
+            throw std::runtime_error(msg.str());
         }
     }
 };
