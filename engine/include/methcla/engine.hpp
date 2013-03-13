@@ -36,6 +36,9 @@ namespace Methcla
     public:
         Engine(const Methcla_Option* options)
             : m_engine(methcla_engine_new(options))
+            , m_map({ m_engine, engineMapUri })
+            , m_forge(&m_map)
+            , m_parser(&m_map)
         { }
         ~Engine()
         {
@@ -74,10 +77,14 @@ namespace Methcla
             return sink.get_future().get();
         }
 
-        LV2::Forge forge()
+        const LV2::Forge& forge()
         {
-            LV2_URID_Map map = { m_engine, engineMapUri };
-            return LV2::Forge(&map);
+            return m_forge;
+        }
+
+        const LV2::Parser& parser()
+        {
+            return m_parser;
         }
 
     private:
@@ -103,6 +110,9 @@ namespace Methcla
 
     private:
         Methcla_Engine* m_engine;
+        LV2_URID_Map    m_map;
+        LV2::Forge      m_forge;
+        LV2::Parser     m_parser;
     };
 
     template <class T> struct FreeDeleter
@@ -114,7 +124,7 @@ namespace Methcla
     {
         uint8_t* buffer = (uint8_t*)malloc(8192);
         LV2::Forge forge(engine.forge());
-        forge.set_buffer(buffer, 8192);
+        forge.setBuffer(buffer, 8192);
         {
             LV2::ObjectFrame frame(forge, 0, engine.map_uri(LV2_PATCH_PREFIX "Insert"));
             forge << LV2::Property(engine.map_uri(LV2_PATCH_PREFIX "subject"));
@@ -125,22 +135,22 @@ namespace Methcla
             }
             forge << LV2::Property(engine.map_uri(LV2_PATCH_PREFIX "body"));
             {
-                LV2::ObjectFrame frame(forge, 0, engine.map_uri(LV2_PATCH_PREFIX "Body")); // TODO: which object type for body?
+                LV2::ObjectFrame frame(forge, 0, engine.map_uri(METHCLA_ENGINE_PREFIX "Synth"));
                 forge << LV2::Property(engine.map_uri(METHCLA_ENGINE_PREFIX "plugin"))
                       << engine.map_uri(synthDef);
             }
         }
-        LV2_Atom* responseAtom = engine.request((LV2_Atom*)buffer);
-        auto response = std::unique_ptr<LV2_Atom_Object, FreeDeleter<LV2_Atom_Object>>((LV2_Atom_Object*)responseAtom);
+
+        auto responseAtom = std::unique_ptr<LV2_Atom, FreeDeleter<LV2_Atom>>(engine.request(reinterpret_cast<LV2_Atom*>(buffer)));
+        auto response = engine.parser().cast<const LV2_Atom_Object*>(responseAtom.get());
         NodeId nodeId;
-        if (response->body.otype == engine.map_uri(LV2_PATCH_PREFIX "Ack")) {
+        if (LV2::isa(response, engine.map_uri(LV2_PATCH_PREFIX "Ack"))) {
             LV2_Atom* idAtom = nullptr;
-            lv2_atom_object_get(response.get(), engine.map_uri(METHCLA_ENGINE_PREFIX "id"), &idAtom, nullptr);
-            if (idAtom == nullptr || (idAtom->type != engine.map_uri(LV2_ATOM__Int))) {
+            lv2_atom_object_get(response, engine.map_uri(METHCLA_ENGINE_PREFIX "id"), &idAtom, nullptr);
+            if (idAtom == nullptr)
                 throw std::runtime_error("missing id from response");
-            }
-            return NodeId(((LV2_Atom_Int*)idAtom)->body);
-        } else if (response->body.otype == engine.map_uri(LV2_PATCH_PREFIX "Error")) {
+            return NodeId(engine.parser().cast<int32_t>(idAtom));
+        } else if (LV2::isa(response, engine.map_uri(LV2_PATCH_PREFIX "Error"))) {
             throw std::runtime_error("an error occured");
         } else {
             throw std::runtime_error("an unknown error occured");

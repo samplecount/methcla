@@ -23,6 +23,7 @@
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/LV2/Atom.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
@@ -221,6 +222,7 @@ namespace Methcla { namespace Audio
         const char* unmapUri(LV2_URID urid) const { return uriMap().unmap(urid); }
 
         const Uris& uris() const { return m_uris; }
+        const LV2::Parser& parser() const { return m_parser; }
 
         // Request queue
         typedef Utility::MessageQueue<8192> MessageQueue;
@@ -263,6 +265,7 @@ namespace Methcla { namespace Audio
         MessageQueue                        m_requests;
         Worker                              m_worker;
         Uris                                m_uris;
+        LV2::Parser                         m_parser;
     };
 
     class Engine

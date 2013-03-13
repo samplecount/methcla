@@ -16,13 +16,15 @@
 #define METHCLA_LV2_ATOM_HPP_INCLUDED
 
 #include <cassert>
+#include <stdexcept>
+#include <sstream>
 #include <string>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 
-namespace LV2 {
+namespace Methcla { namespace LV2 {
 
     class Property
     {
@@ -49,8 +51,9 @@ namespace LV2 {
         {
             lv2_atom_forge_init(this, uridMap);
         }
+        Forge(const Forge& other) = default;
 
-        void set_buffer(uint8_t* data, uint32_t size)
+        void setBuffer(uint8_t* data, uint32_t size)
         {
             lv2_atom_forge_set_buffer(this, data, size);
         }
@@ -157,6 +160,148 @@ namespace LV2 {
         }
     };
 
+    //* Return true if atom is of the specified type.
+    bool isa(const LV2_Atom* atom, LV2_URID type)
+    {
+        return atom->type == type;
+    }
+
+    //* Return true if object is of the specified type.
+    bool isa(const LV2_Atom_Object* object, LV2_URID otype)
+    {
+        return object->body.otype == otype;
+    }
+
+    class Parser
+    {
+    public:
+        Parser(LV2_URID_Map* uridMap)
+        {
+            lv2_atom_forge_init(&m_forge, uridMap);
+        }
+        Parser(const Parser& other) = default;
+
+        bool isBlank(const LV2_Atom* atom) const
+        {
+            return isa(atom, m_forge.Blank);
+        }
+        bool isResource(const LV2_Atom* atom) const
+        {
+            return isa(atom, m_forge.Resource);
+        }
+        bool isObject(const LV2_Atom* atom) const
+        {
+            return isBlank(atom) || isResource(atom);
+        }
+        bool isTuple(const LV2_Atom* atom) const
+        {
+            return isa(atom, m_forge.Tuple);
+        }
+        bool isSequence(const LV2_Atom* atom) const
+        {
+            return isa(atom, m_forge.Sequence);
+        }
+
+        bool isBlank(const LV2_Atom_Object* object) const
+        {
+            return isBlank(reinterpret_cast<const LV2_Atom*>(object));
+        }
+        bool isResource(const LV2_Atom_Object* object) const
+        {
+            return isResource(reinterpret_cast<const LV2_Atom*>(object));
+        }
+
+        template <typename T> T cast(const LV2_Atom* atom, LV2_URID type, const char* typeName=nullptr) const
+        {
+            checkType(atom, type, typeName);
+            return reinterpret_cast<T>(atom);
+        }
+
+        template <typename T> T cast(const LV2_Atom* atom) const
+        {
+            return static_cast<T>(atom);
+        }
+
+    private:
+        void argumentError(const char* typeName) const
+        {
+            std::stringstream msg;
+            msg << "argument type error";
+            if (typeName != nullptr)
+                msg << ", expected " << typeName;
+            throw std::invalid_argument(msg.str());
+        }
+
+        void checkType(const LV2_Atom* atom, LV2_URID type, const char* typeName=nullptr) const
+        {
+            if (!isa(atom, type)) argumentError(typeName);
+        }
+
+    private:
+        LV2_Atom_Forge m_forge;
+    };
+
+    template <> int32_t Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Int, LV2_ATOM__Int);
+        return reinterpret_cast<const LV2_Atom_Int*>(atom)->body;
+    }
+
+    template <> int64_t Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Long, LV2_ATOM__Long);
+        return reinterpret_cast<const LV2_Atom_Long*>(atom)->body;
+    }
+
+    template <> float Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Float, LV2_ATOM__Float);
+        return reinterpret_cast<const LV2_Atom_Float*>(atom)->body;
+    }
+
+    template <> double Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Double, LV2_ATOM__Double);
+        return reinterpret_cast<const LV2_Atom_Double*>(atom)->body;
+    }
+
+    template <> LV2_URID Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.URID, LV2_ATOM__URID);
+        return reinterpret_cast<const LV2_Atom_URID*>(atom)->body;
+    }
+
+    template <> const char* Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.String, LV2_ATOM__String);
+        return reinterpret_cast<const char*>(LV2_ATOM_BODY(atom));
+    }
+
+    template <> const void* Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Chunk, LV2_ATOM__Chunk);
+        return LV2_ATOM_BODY(atom);
+    }
+
+    template <> const LV2_Atom_Object* Parser::cast(const LV2_Atom* atom) const
+    {
+        if (!isObject(atom))
+            argumentError(LV2_ATOM_PREFIX "Object");
+        return reinterpret_cast<const LV2_Atom_Object*>(atom);
+    }
+
+    template <> const LV2_Atom_Tuple* Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Tuple, LV2_ATOM__Tuple);
+        return reinterpret_cast<const LV2_Atom_Tuple*>(atom);
+    }
+
+    template <> const LV2_Atom_Sequence* Parser::cast(const LV2_Atom* atom) const
+    {
+        checkType(atom, m_forge.Sequence, LV2_ATOM__Sequence);
+        return reinterpret_cast<const LV2_Atom_Sequence*>(atom);
+    }
+
     //
 // class ObjectIterator
 //   : public boost::iterator_facade<
@@ -220,6 +365,6 @@ namespace LV2 {
 	//const LV2_Atom_Object_Body* m_impl;
 //};
 
-};
+}; };
 
 #endif // METHCLA_LV2_ATOM_HPP_INCLUDED

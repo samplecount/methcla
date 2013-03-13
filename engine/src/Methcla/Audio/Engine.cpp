@@ -53,6 +53,7 @@ Environment::Environment(PluginManager& pluginManager, const Options& options)
     , m_epoch(0)
     , m_worker(uriMap())
     , m_uris(uriMap())
+    , m_parser(uriMap().lv2Map())
 {
     const Epoch prevEpoch = epoch() - 1;
 
@@ -135,33 +136,32 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
-//struct ReturnEnvelope
-//{
-    //MessageQueue::Reply reply;
-    //void* data;
-    //const LV2_Atom* request;
-//};
-
 static void forgeReturnEnvelope(::LV2::Forge& forge, const Uris& uris, const Environment::MessageQueue::Message& msg)
 {
     forge.atom(sizeof(msg), uris.atom_Chunk);
     forge.write(&msg, sizeof(msg));
 }
 
-static void forgeException(::LV2::Forge& forge, const Uris& uris, const Exception& e)
+static void forgeError(::LV2::Forge& forge, const Uris& uris, const char* errorMessage)
 {
     ::LV2::ObjectFrame frame(forge, 0, uris.patch_Error);
-    const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
-    const std::string errorMessage = errorInfo == nullptr ? "Unknown error" : *errorInfo;
     forge << ::LV2::Property(uris.methcla_errorMessage)
           << errorMessage;
 }
 
-static void sendReply(void* /* data */, const LV2_Atom* payload, Environment::Worker::Writer& /* writer */)
+static void forgeException(::LV2::Forge& forge, const Uris& uris, const Exception& e)
 {
-    auto tuple = reinterpret_cast<const LV2_Atom_Tuple*>(payload);
+    const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
+    const char* errorMessage = errorInfo == nullptr ? "Unknown error" : errorInfo->c_str();
+    forgeError(forge, uris, errorMessage);
+}
+
+static void sendReply(void* data, const LV2_Atom* payload, Environment::Worker::Writer& /* writer */)
+{
+    const LV2::Parser& parser = *static_cast<const LV2::Parser*>(data);
+    auto tuple = parser.cast<const LV2_Atom_Tuple*>(payload);
     auto iter = lv2_atom_tuple_begin(tuple);
-    auto msg = reinterpret_cast<Environment::MessageQueue::Message*>(LV2_ATOM_BODY(iter));
+    auto msg = static_cast<const Environment::MessageQueue::Message*>(parser.cast<const void*>(iter));
     auto response = lv2_atom_tuple_next(iter);
     msg->respond(response);
 }
@@ -173,12 +173,21 @@ void Environment::processRequests()
         try {
             handleRequest(msg);
         } catch(Exception& e) {
-            // TODO: Send Error response
-            ::LV2::Forge forge(*prepare(sendReply, nullptr));
+            // Send Error response
+            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
             {
                 ::LV2::TupleFrame frame(forge);
                 forgeReturnEnvelope(frame, uris(), msg);
                 forgeException(frame, uris(), e);
+            }
+            commit();
+        } catch(std::exception& e) {
+            // Send Error response
+            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
+            {
+                ::LV2::TupleFrame frame(forge);
+                forgeReturnEnvelope(frame, uris(), msg);
+                forgeError(frame, uris(), e.what());
             }
             commit();
         }
@@ -194,10 +203,10 @@ void Environment::handleRequest(MessageQueue::Message& request)
          << "    atom size: " << atom->size << endl
          << "    atom type: " << atom->type << endl
          << "    atom uri:  " << unmapUri(atom->type) << endl;
-    if (uris().isObject(atom))
-        handleMessageRequest(request, reinterpret_cast<const LV2_Atom_Object*>(atom));
-    else if (atom->type == uris().atom_Sequence)
-        handleSequenceRequest(request, reinterpret_cast<const LV2_Atom_Sequence*>(atom));
+    if (m_parser.isObject(atom))
+        handleMessageRequest(request, m_parser.cast<const LV2_Atom_Object*>(atom));
+    else if (m_parser.isSequence(atom))
+        handleSequenceRequest(request, m_parser.cast<const LV2_Atom_Sequence*>(atom));
     else
         BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("Invalid request type"));
 }
@@ -228,19 +237,18 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
     if (subjectAtom == nullptr)
         BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("Message must have subject property") );
 
-    const LV2_Atom_Object* subject = uris().toObject(subjectAtom);
-    if (subject == nullptr)
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("Subject must be an object") );
-    const LV2_Atom_Object* body = uris().toObject(bodyAtom);
+    const LV2_Atom_Object* subject = m_parser.cast<const LV2_Atom_Object*>(subjectAtom);
+    const LV2_Atom_Object* body = m_parser.cast<const LV2_Atom_Object*>(bodyAtom);
 
     if (subject->body.otype == uris().methcla_Node) {
         const LV2_Atom* targetAtom = nullptr;
         lv2_atom_object_get(subject, uris().methcla_id, &targetAtom, nullptr);
         BOOST_ASSERT_MSG( targetAtom != nullptr, "methcla:id property not found" );
-        BOOST_ASSERT_MSG( targetAtom->type == uris().atom_Int, "methcla:id must be an Int" );
-        NodeId targetId(reinterpret_cast<const LV2_Atom_Int*>(targetAtom)->body);
+
+        NodeId targetId(m_parser.cast<int32_t>(targetAtom));
         Node* targetNode = m_nodes.lookup(targetId);
         BOOST_ASSERT_MSG( targetNode != nullptr, "target node not found" );
+
         Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
         Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
 
@@ -251,16 +259,16 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             const LV2_Atom* pluginAtom = nullptr;
             lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
             BOOST_ASSERT_MSG( pluginAtom != nullptr, "methcla:plugin property not found" );
-            BOOST_ASSERT_MSG( pluginAtom->type == uris().atom_URID, "methcla:plugin property value must be a URID" );
+            LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
 
             // get params from body
 
             // uris().methcla_plugin
-            const std::shared_ptr<Plugin> def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
+            const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
             Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
             // Send reply with synth ID (from NRT thread)
-            ::LV2::Forge forge(*prepare(sendReply, nullptr));
+            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
             {
                 ::LV2::TupleFrame frame(forge);
                 forgeReturnEnvelope(frame, uris(), request);
