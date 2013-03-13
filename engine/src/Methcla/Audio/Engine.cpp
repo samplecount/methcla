@@ -201,12 +201,10 @@ void Environment::processRequests()
 void Environment::handleRequest(MessageQueue::Message& request)
 {
     const LV2_Atom* atom = request.payload();
+
     std::cout << BOOST_CURRENT_FUNCTION << std::endl;
     m_printer.print(std::cout, atom, 4);
-    //cout << "Message: " << atom << endl
-         //<< "    atom size: " << atom->size << endl
-         //<< "    atom type: " << atom->type << endl
-         //<< "    atom uri:  " << unmapUri(atom->type) << endl;
+
     if (m_parser.isObject(atom))
         handleMessageRequest(request, m_parser.cast<const LV2_Atom_Object*>(atom));
     else if (m_parser.isSequence(atom))
