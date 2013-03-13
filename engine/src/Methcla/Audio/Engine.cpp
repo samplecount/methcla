@@ -226,7 +226,9 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                   , nullptr );
 
     if (subjectAtom == nullptr)
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("Message must have subject property") );
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing subject property") );
+    if (bodyAtom == nullptr)
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing body property") );
 
     const LV2_Atom_Object* subject = m_parser.cast<const LV2_Atom_Object*>(subjectAtom);
     const LV2_Atom_Object* body = m_parser.cast<const LV2_Atom_Object*>(bodyAtom);
@@ -234,11 +236,14 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
     if (subject->body.otype == uris().methcla_Node) {
         const LV2_Atom* targetAtom = nullptr;
         lv2_atom_object_get(subject, uris().methcla_id, &targetAtom, nullptr);
-        BOOST_ASSERT_MSG( targetAtom != nullptr, "methcla:id property not found" );
+        if (targetAtom == nullptr)
+            BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing id property") );
 
         NodeId targetId(m_parser.cast<int32_t>(targetAtom));
         Node* targetNode = m_nodes.lookup(targetId);
-        BOOST_ASSERT_MSG( targetNode != nullptr, "target node not found" );
+        if (targetNode == nullptr)
+            BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("target node not found")
+                                               << ErrorInfoNodeId(targetId) );
 
         Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
         Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
@@ -249,7 +254,8 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             // get plugin URI
             const LV2_Atom* pluginAtom = nullptr;
             lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
-            BOOST_ASSERT_MSG( pluginAtom != nullptr, "methcla:plugin property not found" );
+            if (pluginAtom == nullptr)
+                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing property methcla:plugin") );
             LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
 
             // get params from body
