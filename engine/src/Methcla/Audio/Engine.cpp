@@ -213,6 +213,16 @@ void Environment::handleRequest(MessageQueue::Message& request)
         BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("Invalid request type"));
 }
 
+static void missingProperty(const char* name)
+{
+    BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString(std::string("missing property ") + name) );
+}
+
+static void checkProperty(const LV2_Atom* atom, const char* name)
+{
+    if (atom == nullptr) missingProperty(name);
+}
+
 void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg)
 {
     const LV2_Atom* subjectAtom = nullptr;
@@ -225,19 +235,17 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                   , uris().patch_body, &bodyAtom
                   , nullptr );
 
-    if (subjectAtom == nullptr)
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing subject property") );
-    if (bodyAtom == nullptr)
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing body property") );
+    checkProperty(subjectAtom, LV2_PATCH_PREFIX "subject");
+    checkProperty(bodyAtom, LV2_PATCH_PREFIX "body");
 
     const LV2_Atom_Object* subject = m_parser.cast<const LV2_Atom_Object*>(subjectAtom);
     const LV2_Atom_Object* body = m_parser.cast<const LV2_Atom_Object*>(bodyAtom);
 
-    if (subject->body.otype == uris().methcla_Node) {
+    if (LV2::isa(subject, uris().methcla_Node)) {
+        // Get target node
         const LV2_Atom* targetAtom = nullptr;
         lv2_atom_object_get(subject, uris().methcla_id, &targetAtom, nullptr);
-        if (targetAtom == nullptr)
-            BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing id property") );
+        checkProperty(targetAtom, METHCLA_ENGINE_PREFIX "id");
 
         NodeId targetId(m_parser.cast<int32_t>(targetAtom));
         Node* targetNode = m_nodes.lookup(targetId);
@@ -249,38 +257,42 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
         Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
 
         if (requestType == uris().patch_Insert) {
-            // get add target specification
+            if (LV2::isa(body, uris().methcla_Synth)) {
+                // Get plugin URI
+                const LV2_Atom* pluginAtom = nullptr;
+                lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
+                checkProperty(pluginAtom, METHCLA_ENGINE_PREFIX "plugin");
+                LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
 
-            // get plugin URI
-            const LV2_Atom* pluginAtom = nullptr;
-            lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
-            if (pluginAtom == nullptr)
-                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("missing property methcla:plugin") );
-            LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
+                // get params and bus mappings from body
 
-            // get params from body
+                // uris().methcla_plugin
+                const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
+                Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
-            // uris().methcla_plugin
-            const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
-            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
-
-            // Send reply with synth ID (from NRT thread)
-            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
-            {
-                ::LV2::TupleFrame frame(forge);
-                forgeReturnEnvelope(frame, uris(), request);
+                // Send reply with synth ID (from NRT thread)
+                ::LV2::Forge forge(*prepare(sendReply, &m_parser));
                 {
-                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
-                    forge << ::LV2::Property(uris().methcla_id)
-                          << (int32_t)synth->id();
+                    ::LV2::TupleFrame frame(forge);
+                    forgeReturnEnvelope(frame, uris(), request);
+                    {
+                        ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
+                        forge << ::LV2::Property(uris().methcla_id)
+                              << (int32_t)synth->id();
+                    }
                 }
+                commit();
+            //} else if (LV2::isa(body, uris().methcla_Group)) {
+            } else {
+                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("invalid body type for " LV2_PATCH_PREFIX "Insert") );
             }
-            commit();
         } else if (requestType == uris().patch_Delete) {
 
         } else if (requestType == uris().patch_Set) {
-
+            // get params and bus mappings from body
         }
+    } else {
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("unknown subject type for " LV2_PATCH_PREFIX "Request") );
     }
 }
 
