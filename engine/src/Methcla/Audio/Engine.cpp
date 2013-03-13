@@ -312,7 +312,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             }
             commit();
         } else if (requestType == uris().patch_Set) {
-            // get params and bus mappings from body
+            // get add action, params and bus mappings from body
         }
     } else {
         BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("unknown subject type for " LV2_PATCH__Request) );
