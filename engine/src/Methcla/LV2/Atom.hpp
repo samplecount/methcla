@@ -122,6 +122,12 @@ namespace Methcla { namespace LV2 {
             lv2_atom_forge_property_head(this, x.key(), x.context());
             return *this;
         }
+
+        Forge& operator<<(const LV2_Atom* x)
+        {
+            lv2_atom_forge_raw(this, x, sizeof(LV2_Atom) + x->size);
+            return *this;
+        }
     };
 
     class Frame : public LV2_Atom_Forge_Frame
