@@ -138,8 +138,8 @@ GLfloat gCubeVertexData[216] =
         } else {
             std::cerr << diagnostic_information(e) << "\n";
         }
-    } catch (...) {
-        fprintf(stderr, "An unknown error occurred\n");
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
 }
 
