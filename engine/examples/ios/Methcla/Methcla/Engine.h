@@ -15,7 +15,7 @@
 #ifndef MethclaMobile_Engine_h
 #define MethclaMobile_Engine_h
 
-#include <methcla/engine.h>
+#include <methcla/engine.hpp>
 
 #include <Methcla/Audio/Engine.hpp>
 #include <Methcla/Audio/IO/RemoteIODriver.hpp> // NOTE: for OSStatusInfo only
@@ -40,7 +40,7 @@
 //extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index);
 extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index) __attribute__((used));
 
-Methcla_Engine* makeEngine()
+Methcla::Engine* makeEngine()
 {
     NSString* resources = [[NSBundle mainBundle] resourcePath];
     NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
@@ -60,16 +60,19 @@ Methcla_Engine* makeEngine()
 //        { METHCLA_LV2_URI "/plugins/sine", "lv2_descriptor", (Methcla_Library_Function)methcla_sine_lv2_descriptor }
 //        , METHCLA_END_SYMBOLS };
 
-    Methcla_Engine* theEngine = methcla_engine_new(options);
+    Methcla::Engine* theEngine = new Methcla::Engine(options);
+    theEngine->start();
 
-    Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(methcla_engine_impl(theEngine));
+    Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(theEngine->impl());
 
-    const std::shared_ptr<Methcla::Audio::Plugin> def = engine->env().plugins().lookup(
-        engine->env().mapUri(METHCLA_LV2_URI "/plugins/sine") );
-    Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(
-        engine->env(), engine->env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
+//    const std::shared_ptr<Methcla::Audio::Plugin> def = engine->env().plugins().lookup(
+//        engine->env().mapUri(METHCLA_LV2_URI "/plugins/sine") );
+//    Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(
+//        engine->env(), engine->env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
 
-    synth->mapOutput(0, engine->env().externalAudioOutput(0).id(), Methcla::Audio::kOut);
+    Methcla::NodeId synthId = Methcla::synth(*theEngine, METHCLA_LV2_URI "/plugins/sine");
+    
+//    synth->mapOutput(0, engine->env().externalAudioOutput(0).id(), Methcla::Audio::kOut);
 
     return theEngine;
 }
