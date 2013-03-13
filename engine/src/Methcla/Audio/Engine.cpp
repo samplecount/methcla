@@ -15,6 +15,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
+#include "Methcla/LV2/Atom.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -134,6 +135,37 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
+//struct ReturnEnvelope
+//{
+    //MessageQueue::Reply reply;
+    //void* data;
+    //const LV2_Atom* request;
+//};
+
+static void forgeReturnEnvelope(::LV2::Forge& forge, const Uris& uris, const Environment::MessageQueue::Message& msg)
+{
+    forge.atom(sizeof(msg), uris.atom_Chunk);
+    forge.write(&msg, sizeof(msg));
+}
+
+static void forgeException(::LV2::Forge& forge, const Uris& uris, const Exception& e)
+{
+    ::LV2::ObjectFrame frame(forge, 0, uris.patch_Error);
+    const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
+    const std::string errorMessage = errorInfo == nullptr ? "Unknown error" : *errorInfo;
+    forge << ::LV2::Property(uris.methcla_errorMessage)
+          << errorMessage;
+}
+
+static void sendReply(void* /* data */, const LV2_Atom* payload, Environment::Worker::Writer& /* writer */)
+{
+    auto tuple = reinterpret_cast<const LV2_Atom_Tuple*>(payload);
+    auto iter = lv2_atom_tuple_begin(tuple);
+    auto msg = reinterpret_cast<Environment::MessageQueue::Message*>(LV2_ATOM_BODY(iter));
+    auto response = lv2_atom_tuple_next(iter);
+    msg->respond(response);
+}
+
 void Environment::processRequests()
 {
     MessageQueue::Message msg;
@@ -142,7 +174,13 @@ void Environment::processRequests()
             handleRequest(msg);
         } catch(Exception& e) {
             // TODO: Send Error response
-            std::cerr << "Exception caught in handleRequest()\n";
+            ::LV2::Forge forge(*prepare(sendReply, nullptr));
+            {
+                ::LV2::TupleFrame frame(forge);
+                forgeReturnEnvelope(frame, uris(), msg);
+                forgeException(frame, uris(), e);
+            }
+            commit();
         }
     }
 }
@@ -179,7 +217,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
     // }
     const LV2_Atom* subjectAtom = nullptr;
     const LV2_Atom* bodyAtom = nullptr;
-    LV2_URID requestType = msg->body.otype;
+    const LV2_URID requestType = msg->body.otype;
 
     int matches = lv2_atom_object_get(
                     msg
@@ -187,19 +225,31 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                   , uris().patch_body, &bodyAtom
                   , nullptr );
 
-    BOOST_ASSERT_MSG( subjectAtom != nullptr, "Message must have subject property" );
+    if (subjectAtom == nullptr)
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("Message must have subject property") );
 
     const LV2_Atom_Object* subject = uris().toObject(subjectAtom);
-    BOOST_ASSERT_MSG( subject != nullptr, "Subject must be an object" );
+    if (subject == nullptr)
+        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("Subject must be an object") );
     const LV2_Atom_Object* body = uris().toObject(bodyAtom);
 
-    if (requestType == uris().patch_Insert) {
-        if (subject->body.otype == uris().methcla_Target) {
+    if (subject->body.otype == uris().methcla_Node) {
+        const LV2_Atom* targetAtom = nullptr;
+        lv2_atom_object_get(subject, uris().methcla_id, &targetAtom, nullptr);
+        BOOST_ASSERT_MSG( targetAtom != nullptr, "methcla:id property not found" );
+        BOOST_ASSERT_MSG( targetAtom->type == uris().atom_Int, "methcla:id must be an Int" );
+        NodeId targetId(reinterpret_cast<const LV2_Atom_Int*>(targetAtom)->body);
+        Node* targetNode = m_nodes.lookup(targetId);
+        BOOST_ASSERT_MSG( targetNode != nullptr, "target node not found" );
+        Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
+        Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
+
+        if (requestType == uris().patch_Insert) {
             // get add target specification
 
             // get plugin URI
             const LV2_Atom* pluginAtom = nullptr;
-            lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom);
+            lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
             BOOST_ASSERT_MSG( pluginAtom != nullptr, "methcla:plugin property not found" );
             BOOST_ASSERT_MSG( pluginAtom->type == uris().atom_URID, "methcla:plugin property value must be a URID" );
 
@@ -207,12 +257,24 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
 
             // uris().methcla_plugin
             const std::shared_ptr<Plugin> def = plugins().lookup(reinterpret_cast<const LV2_Atom_URID*>(pluginAtom)->body);
-            Synth* synth = Synth::construct(*this, rootNode(), Node::kAddToTail, *def);
+            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
-            // send reply with synth ID (from NRT thread)
-            // tja ...
-        } else {
-            std::cerr << "Insert: subject must be a Target\n";
+            // Send reply with synth ID (from NRT thread)
+            ::LV2::Forge forge(*prepare(sendReply, nullptr));
+            {
+                ::LV2::TupleFrame frame(forge);
+                forgeReturnEnvelope(frame, uris(), request);
+                {
+                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
+                    forge << ::LV2::Property(uris().methcla_id)
+                          << (int32_t)synth->id();
+                }
+            }
+            commit();
+        } else if (requestType == uris().patch_Delete) {
+
+        } else if (requestType == uris().patch_Set) {
+
         }
     }
 }

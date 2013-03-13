@@ -33,7 +33,6 @@
 #include <vector>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
 
 namespace Methcla { namespace Audio
@@ -85,45 +84,80 @@ namespace Methcla { namespace Audio
     {
         // atom
         const LV2_URID atom_Blank;
+        const LV2_URID atom_Chunk;
+        const LV2_URID atom_Int;
         const LV2_URID atom_Resource;
         const LV2_URID atom_Sequence;
         const LV2_URID atom_URID;
         // patch
+        const LV2_URID patch_Ack;
+        const LV2_URID patch_Delete;
+        const LV2_URID patch_Error;
         const LV2_URID patch_Insert;
+        const LV2_URID patch_Set;
         const LV2_URID patch_subject;
         const LV2_URID patch_body;
         // methcla
         const LV2_URID methcla_Group;
+        const LV2_URID methcla_Node;
         const LV2_URID methcla_Synth;
-        const LV2_URID methcla_Target;
+        const LV2_URID methcla_errorMessage;
+        const LV2_URID methcla_id;
+        const LV2_URID methcla_nodes;
         const LV2_URID methcla_addToHead;
         const LV2_URID methcla_addToTail;
         const LV2_URID methcla_plugin;
+        const LV2_URID methcla_target;
 
         Uris(LV2::URIDMap& uris)
             : atom_Blank    ( uris.map(LV2_ATOM__Blank) )
+            , atom_Chunk    ( uris.map(LV2_ATOM__Chunk) )
+            , atom_Int      ( uris.map(LV2_ATOM__Int) )
             , atom_Resource ( uris.map(LV2_ATOM__Resource) )
             , atom_Sequence ( uris.map(LV2_ATOM__Sequence) )
             , atom_URID     ( uris.map(LV2_ATOM__URID) )
+            , patch_Ack     ( uris.map(LV2_PATCH_PREFIX "Ack") )
+            , patch_Delete  ( uris.map(LV2_PATCH_PREFIX "Delete") )
+            , patch_Error   ( uris.map(LV2_PATCH_PREFIX "Error") )
             , patch_Insert  ( uris.map(LV2_PATCH_PREFIX "Insert") )
+            , patch_Set     ( uris.map(LV2_PATCH_PREFIX "Set") )
             , patch_subject ( uris.map(LV2_PATCH__subject) )
             , patch_body    ( uris.map(LV2_PATCH__body) )
             , methcla_Group ( uris.map(METHCLA_ENGINE_PREFIX "Group") )
+            , methcla_Node  ( uris.map(METHCLA_ENGINE_PREFIX "Node") )
             , methcla_Synth ( uris.map(METHCLA_ENGINE_PREFIX "Synth") )
-            , methcla_Target ( uris.map(METHCLA_ENGINE_PREFIX "Target") )
+            , methcla_errorMessage    ( uris.map(METHCLA_ENGINE_PREFIX "errorMessage") )
+            , methcla_id    ( uris.map(METHCLA_ENGINE_PREFIX "id") )
+            , methcla_nodes ( uris.map(METHCLA_ENGINE_PREFIX "nodes") )
             , methcla_addToHead ( uris.map(METHCLA_ENGINE_PREFIX "addToHead") )
             , methcla_addToTail ( uris.map(METHCLA_ENGINE_PREFIX "addToTail") )
             , methcla_plugin ( uris.map(METHCLA_ENGINE_PREFIX "plugin") )
+            , methcla_target ( uris.map(METHCLA_ENGINE_PREFIX "target") )
         { }
 
+        bool isBlank(const LV2_Atom* atom) const
+        {
+            return atom->type == atom_Blank;
+        }
+        bool isResource(const LV2_Atom* atom) const
+        {
+            return atom->type == atom_Resource;
+        }
         bool isObject(const LV2_Atom* atom) const
         {
-            return (atom->type == atom_Blank)
-                || (atom->type == atom_Resource);
+            return isBlank(atom) || isResource(atom);
         }
         const LV2_Atom_Object* toObject(const LV2_Atom* atom) const
         {
             return isObject(atom) ? reinterpret_cast<const LV2_Atom_Object*>(atom) : nullptr;
+        }
+        bool isBlank(const LV2_Atom_Object* object) const
+        {
+            return isBlank(reinterpret_cast<const LV2_Atom*>(object));
+        }
+        bool isResource(const LV2_Atom_Object* object) const
+        {
+            return isResource(reinterpret_cast<const LV2_Atom*>(object));
         }
         bool isNode(const LV2_Atom_Object* obj) const
         {
