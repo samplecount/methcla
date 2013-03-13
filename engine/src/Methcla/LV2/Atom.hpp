@@ -176,9 +176,9 @@ namespace Methcla { namespace LV2 {
     class Parser
     {
     public:
-        Parser(LV2_URID_Map* uridMap)
+        Parser(LV2_URID_Map* map)
         {
-            lv2_atom_forge_init(&m_forge, uridMap);
+            lv2_atom_forge_init(&m_forge, map);
         }
         Parser(const Parser& other) = default;
 
