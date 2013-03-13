@@ -298,6 +298,19 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
             commit();
         } else if (requestType == uris().patch_Delete) {
             targetNode->free();
+
+            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
+            {
+                ::LV2::TupleFrame frame(forge);
+                forgeReturnEnvelope(frame, uris(), request);
+                {
+                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
+                    // Return original subject
+                    forge << ::LV2::Property(uris().patch_subject)
+                          << subjectAtom;
+                }
+            }
+            commit();
         } else if (requestType == uris().patch_Set) {
             // get params and bus mappings from body
         }
