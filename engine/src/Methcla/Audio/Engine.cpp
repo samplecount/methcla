@@ -258,6 +258,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
 
         if (requestType == uris().patch_Insert) {
             Node* node = nullptr;
+            LV2_URID nodeType = uris().methcla_Node;
 
             if (LV2::isa(body, uris().methcla_Synth)) {
                 // Get plugin URI
@@ -266,13 +267,15 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                 checkProperty(pluginAtom, METHCLA_ENGINE_PREFIX "plugin");
                 LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
 
-                // get params and bus mappings from body
+                // get add action, params and bus mappings from body
 
                 const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
 
                 node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
+                nodeType = uris().methcla_Synth;
             } else if (LV2::isa(body, uris().methcla_Group)) {
                 node = Group::construct(*this, targetGroup, Node::kAddToTail);
+                nodeType = uris().methcla_Group;
             } else {
                 BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("invalid body type for " LV2_PATCH__Insert) );
             }
@@ -286,7 +289,7 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
                     ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
                     forge << ::LV2::Property(uris().patch_subject);
                     {
-                        ::LV2::ObjectFrame frame(forge, 0, uris().methcla_Node); // TODO: Use concrete node type
+                        ::LV2::ObjectFrame frame(forge, 0, nodeType);
                         forge << ::LV2::Property(uris().methcla_id)
                               << (int32_t)node->id();
                     }
