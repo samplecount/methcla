@@ -229,11 +229,10 @@ void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2
     const LV2_Atom* bodyAtom = nullptr;
     const LV2_URID requestType = msg->body.otype;
 
-    int matches = lv2_atom_object_get(
-                    msg
-                  , uris().patch_subject, &subjectAtom
-                  , uris().patch_body, &bodyAtom
-                  , nullptr );
+    lv2_atom_object_get( msg
+                       , uris().patch_subject, &subjectAtom
+                       , uris().patch_body, &bodyAtom
+                       , nullptr );
 
     checkProperty(subjectAtom, LV2_PATCH__subject);
     checkProperty(bodyAtom, LV2_PATCH__body);
