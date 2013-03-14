@@ -41,9 +41,6 @@ externalLibrary = combine externalLibraries
 lv2Dir :: FilePath
 lv2Dir = externalLibrary "lv2"
 
-boostDir :: FilePath
-boostDir = externalLibrary "boost"
-
 serdDir :: FilePath
 serdDir = externalLibrary "serd"
 
@@ -84,8 +81,14 @@ lilvBuildFlags = append userIncludes
                     , externalLibraries
                     , lv2Dir ]
 
+boostDir :: FilePath
+boostDir = externalLibrary "boost"
+
 boostBuildFlags :: CBuildFlags -> CBuildFlags
 boostBuildFlags = append systemIncludes [ boostDir ]
+
+tlsfDir :: FilePath
+tlsfDir = externalLibrary "tlsf"
 
 engineBuildFlags :: CTarget -> CBuildFlags -> CBuildFlags
 engineBuildFlags target =
@@ -105,7 +108,9 @@ engineBuildFlags target =
          [ "include" ]
          -- Boost
       ++ [ boostDir
-         , "external_libraries/boost_lockfree" ] )
+         , "external_libraries/boost_lockfree" ]
+         -- TLSF
+      ++ [ tlsfDir ] )
 
 -- | Build flags common to all targets
 methclaCommonBuildFlags :: CBuildFlags -> CBuildFlags
@@ -205,6 +210,9 @@ methclaLib target = do
               , "filesystem/src/windows_file_codecvt.cpp"
               , "system/src/error_code.cpp"
               ]
+        -- TLSF
+      , sourceTree id $ sourceFiles $ [
+            tlsfDir </> "tlsf.c" ]
         -- engine
       , sourceTree (engineBuildFlags target) $ sourceFiles $
             under "src" [

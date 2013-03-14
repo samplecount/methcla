@@ -19,6 +19,9 @@
 #include "Methcla/Memory.hpp"
 
 #include <boost/cstdint.hpp>
+#include <tlsf.h>
+#include <stdexcept>
+
 //#include <boost/lockfree/fifo.hpp>
 
 namespace Methcla { namespace Memory {
@@ -26,24 +29,79 @@ namespace Methcla { namespace Memory {
 class RTMemoryManager
 {
 public:
-    // Primitives
-    void* alloc(size_t numBytes)
-        throw(MemoryAllocationFailure)
-        { return Memory::alloc(numBytes); }
-    template <size_t align> void* allocAligned(size_t numBytes)
-        throw(MemoryAllocationFailure)
-        { return Memory::allocAligned<align>(numBytes); }
-    void free(void* ptr)
-        throw(MemoryAllocationFailure)
-        { Memory::free(ptr); }
+    RTMemoryManager(size_t poolSize)
+        : m_memory(nullptr)
+        , m_pool(nullptr)
+    {
+        m_memory = Memory::alloc(poolSize);
+        m_pool = tlsf_create(m_memory, poolSize);
+        if (m_pool == nullptr) {
+            Memory::free(m_memory);
+            BOOST_THROW_EXCEPTION(std::bad_alloc());
+        }
+    }
+    ~RTMemoryManager()
+    {
+        tlsf_destroy(m_pool);
+        Memory::free(m_memory);
+    }
 
-    // Wrappers
-    template <typename T> T* allocOf(size_t numElems=1)
-        throw(MemoryAllocationFailure)
-        { return Memory::allocOf<T>(numElems); }
-    template <typename T, size_t align> T* allocAlignedOf(size_t numElems=1)
-        throw(MemoryAllocationFailure)
-        { return Memory::allocAligned<T,align>(numElems); }
+    //* Allocate memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    void* alloc(size_t size)
+    {
+        if (size == 0)
+            BOOST_THROW_EXCEPTION(std::invalid_argument("allocation size must be greater than zero"));
+        void* ptr = tlsf_malloc(m_pool, size);
+        if (ptr == nullptr)
+            BOOST_THROW_EXCEPTION(std::bad_alloc());
+        return ptr;
+    }
+
+    //* Allocate aligned memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    template <size_t align> void* allocAligned(size_t size)
+    {
+        if (size == 0)
+            BOOST_THROW_EXCEPTION(std::invalid_argument("allocation size must be greater than zero"));
+        void* ptr = tlsf_memalign(m_pool, align, size);
+        if (ptr == nullptr)
+            BOOST_THROW_EXCEPTION(std::bad_alloc());
+        return ptr;
+    }
+
+    //* Free memory allocated by this allocator.
+    void free(void* ptr) noexcept
+    {
+        if (ptr != nullptr)
+            tlsf_free(m_pool, ptr);
+    }
+
+    //* Allocate memory for `n` elements of type `T`.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    template <typename T> T* allocOf(size_t n=1)
+    {
+        return static_cast<T*>(alloc(n * sizeof(T)));
+    }
+
+    //* Allocate aligned memory for `n` elements of type `T`.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    template <typename T, size_t align> T* allocAlignedOf(size_t n=1)
+    {
+        return static_cast<T*>(allocAligned<align>(n * sizeof(T)));
+    }
+
+private:
+    void*       m_memory;
+    tlsf_pool   m_pool;
 };
 
 template <class T, class Allocator, size_t align=kDefaultAlignment> class AllocatedBase

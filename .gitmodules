@@ -4,3 +4,6 @@
 [submodule "engine/external_libraries/boost_lockfree"]
 	path = engine/external_libraries/boost_lockfree
 	url = git://supercollider.git.sourceforge.net/gitroot/supercollider/boost-lockfree
+[submodule "engine/external_libraries/tlsf"]
+	path = engine/external_libraries/tlsf
+	url = https://github.com/samplecount/tlsf.git

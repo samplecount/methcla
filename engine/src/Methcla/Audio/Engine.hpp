@@ -153,7 +153,8 @@ namespace Methcla { namespace Audio
         struct Options
         {
             Options()
-                : maxNumNodes(1024)
+                : realtimeMemorySize(1024*1024)
+                , maxNumNodes(1024)
                 , maxNumAudioBuses(128)
                 , maxNumControlBuses(4096)
                 , sampleRate(44100)
@@ -162,6 +163,7 @@ namespace Methcla { namespace Audio
                 , numHardwareOutputChannels(2)
             { }
 
+            size_t realtimeMemorySize;
             size_t maxNumNodes;
             size_t maxNumAudioBuses;
             size_t maxNumControlBuses;
