@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,7 @@ public:
     void free(void* ptr)
         throw(MemoryAllocationFailure)
         { Memory::free(ptr); }
-    
+
     // Wrappers
     template <typename T> T* allocOf(size_t numElems=1)
         throw(MemoryAllocationFailure)
@@ -76,7 +76,7 @@ protected:
     void* operator new(size_t);
 };
 
-template <class T, class Allocator, size_t align=kDefaultAlignment>class Allocated
+template <class T, class Allocator, size_t align=kDefaultAlignment> class Allocated
     : public AllocatedBase<T, Allocator, align>
 {
     typedef AllocatedBase<T, Allocator, align> super;
@@ -108,11 +108,11 @@ public:
 // {
 // public:
 //     typedef void (*Destructor)(void* ptr);
-// 
+//
 //     DeferredMemoryManager(Manager& mem)
 //         : m_mem(mem)
 //     { }
-// 
+//
 //     void* malloc(size_t size)
 //     {
 //         Chunk* chunk;
@@ -135,23 +135,23 @@ public:
 //             /* SPIN */
 //         } while (!m_fifo.enqueue(chunk));
 //     }
-// 
+//
 // private:
 //     struct Chunk
 //     {
 //         Destructor  destroy;
 //         char        data[];
 //     };
-// 
+//
 //     Manager& m_mem;
 //     boost::lockfree::fifo<Chunk*> m_fifo;
 // };
-// 
+//
 // template <class T, class Manager> class AllocatedDeferredBase
 // {
 // public:
 //     typedef DeferredMemoryManager<Manager> Allocator;
-// 
+//
 //     void* operator new(size_t size, Allocator& alloc)
 //     {
 //         Chunk* chunk = static_cast<Chunk*>(alloc.malloc(sizeof(Chunk) + size));
@@ -162,25 +162,25 @@ public:
 //     {
 //         AllocatedDeferredBase<T, Manager>::free(ptr);
 //     }
-// 
+//
 //     void free()
 //     {
 //         AllocatedDeferredBase<T, Manager>::free(this);
 //     }
-// 
+//
 // protected:
 //     void operator delete(void*)
 //     {
 //         BOOST_ASSERT( false );
 //     }
-// 
+//
 // private:
 //     struct Chunk
 //     {
 //         Allocator* alloc;
 //         char       data[];
 //     };
-// 
+//
 //     static void destroy(void* ptr)
 //     {
 //         cout << "AllocatedDeferredBase::destroy" << endl;
@@ -194,7 +194,7 @@ public:
 //         BOOST_ASSERT( chunk->data == ptr );
 //         chunk->alloc->free(&destroy, chunk);
 //     }
-// 
+//
 //     void* operator new(size_t);
 // };
 
