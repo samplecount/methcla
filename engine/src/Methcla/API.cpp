@@ -49,15 +49,14 @@ private:
     OptionMap m_options;
 };
 
-static const char* kNoError = "no error";
-static const char* kBadAlloc = "memory allocation failure";
-static const char* kInvalidEngine = "invalid engine pointer";
+static const char* kNoErrorMsg = "no error";
+static const char* kBadAllocMsg = "memory allocation failure";
 
 struct Methcla_Engine
 {
     Methcla_Engine(const Methcla_Option* inOptions) noexcept
-        : m_error(false)
-        , m_errorMessage(kNoError)
+        : m_error(kMethcla_NoError)
+        , m_errorMessage(kNoErrorMsg)
     {
         Options options(inOptions);
         const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__LV2_PATH));
@@ -83,7 +82,7 @@ struct Methcla_Engine
 
     Methcla::Audio::PluginManager* m_pluginManager;
     Methcla::Audio::Engine*        m_engine;
-    bool                           m_error;
+    Methcla_Error                  m_error;
     const char*                    m_errorMessage;
     std::string                    m_errorBuffer;
 };
@@ -107,30 +106,34 @@ void methcla_engine_free(Methcla_Engine* engine)
     } catch(...) { }
 }
 
-bool methcla_engine_error(const Methcla_Engine* engine)
+Methcla_Error methcla_engine_error(const Methcla_Engine* engine)
 {
-    return engine == nullptr || engine->m_error;
+    return engine == nullptr ? kMethcla_BadAlloc : engine->m_error;
 }
 
 const char* methcla_engine_error_message(const Methcla_Engine* engine)
 {
-    return engine == nullptr ? kBadAlloc : (engine->m_error ? engine->m_errorMessage : kNoError);
+    return engine == nullptr
+            ? kBadAllocMsg
+            : (engine->m_error == kMethcla_NoError
+                ? kNoErrorMsg
+                : engine->m_errorMessage);
 }
 
 #define METHCLA_ENGINE_TRY \
-    if (engine == nullptr) { \
-        engine->m_error = true; \
-        engine->m_errorMessage = kInvalidEngine; \
-    } else { try
+    if (engine != nullptr) { \
+        engine->m_error = kMethcla_NoError; \
+        try
 
 #define METHCLA_ENGINE_CATCH \
     catch (std::exception& e) { \
-        engine->m_error = true; \
+        engine->m_error = kMethcla_Error; \
         try { \
             engine->m_errorBuffer = e.what(); \
             engine->m_errorMessage = engine->m_errorBuffer.c_str(); \
         } catch (std::bad_alloc) { \
-            engine->m_errorMessage = kBadAlloc; \
+            engine->m_error = kMethcla_BadAlloc; \
+            engine->m_errorMessage = kBadAllocMsg; \
         } \
     } }
 

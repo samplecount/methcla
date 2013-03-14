@@ -18,7 +18,6 @@
 #define METHCLA_ENGINE_H_INCLUDED
 
 #include <methcla/common.h>
-#include <stdbool.h>
 
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
@@ -56,7 +55,15 @@ typedef struct Methcla_Engine Methcla_Engine;
 METHCLA_EXPORT Methcla_Engine* methcla_engine_new(const Methcla_Option* options);
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
-METHCLA_EXPORT bool methcla_engine_error(const Methcla_Engine* engine);
+typedef enum Methcla_Error
+{
+    kMethcla_NoError,
+    kMethcla_InvalidArgument,
+    kMethcla_BadAlloc,
+    kMethcla_Error
+} Methcla_Error;
+
+METHCLA_EXPORT Methcla_Error methcla_engine_error(const Methcla_Engine* engine);
 METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine);
 
 METHCLA_EXPORT void methcla_engine_start(Methcla_Engine* engine);
