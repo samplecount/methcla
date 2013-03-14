@@ -16,7 +16,7 @@
 #define METHCLA_ENGINE_HPP_INCLUDED
 
 #include <methcla/engine.h>
-#include "Methcla/LV2/Atom.hpp"
+#include <methcla/lv2/atom.hpp>
 
 #include <boost/current_function.hpp>
 #include <future>

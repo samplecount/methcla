@@ -16,6 +16,7 @@
 #define METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 
 #include <methcla/engine.h>
+#include <methcla/lv2/atom.hpp>
 
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/AudioBus.hpp"
@@ -23,7 +24,6 @@
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
-#include "Methcla/LV2/Atom.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 

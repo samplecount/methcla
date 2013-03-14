@@ -129,15 +129,15 @@ GLfloat gCubeVertexData[216] =
         // Initialize and configure the audio session
         m_engine = makeEngine();
 //        m_engine->start();
-    } catch (boost::exception& e) {
-        if (OSStatus const* err = boost::get_error_info<Methcla::Audio::IO::OSStatusInfo>(e)) {
-            std::cerr <<
-                [[[NSError errorWithDomain: NSOSStatusErrorDomain
-                           code: *err
-                           userInfo: nil] localizedDescription] UTF8String] << "\n";
-        } else {
-            std::cerr << diagnostic_information(e) << "\n";
-        }
+//    } catch (boost::exception& e) {
+//        if (OSStatus const* err = boost::get_error_info<Methcla::Audio::IO::OSStatusInfo>(e)) {
+//            std::cerr <<
+//                [[[NSError errorWithDomain: NSOSStatusErrorDomain
+//                           code: *err
+//                           userInfo: nil] localizedDescription] UTF8String] << "\n";
+//        } else {
+//            std::cerr << diagnostic_information(e) << "\n";
+//        }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

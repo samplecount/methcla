@@ -16,29 +16,7 @@
 #define MethclaMobile_Engine_h
 
 #include <methcla/engine.hpp>
-
-#include <Methcla/Audio/Engine.hpp>
-#include <Methcla/Audio/IO/RemoteIODriver.hpp> // NOTE: for OSStatusInfo only
-#include <Methcla/Audio/Group.hpp>
-#include <Methcla/Audio/Synth.hpp>
-#include <Methcla/Audio/SynthDef.hpp>
-#include <Methcla/Utility/MessageQueue.hpp>
-
-#include <AudioToolbox/AudioServices.h>
-
-#include <boost/filesystem.hpp>
-#include <iostream>
-#include <memory>
-
-#include "lilv/lilv.h"
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
-
 #include "lv2/methc.la/plugins/sine.lv2/sine.h"
-
-//extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index);
-extern "C" const LV2_Descriptor* methcla_lv2_plugins_sine_lv2_descriptor(uint32_t index) __attribute__((used));
 
 Methcla::Engine* makeEngine()
 {
@@ -53,17 +31,10 @@ Methcla::Engine* makeEngine()
         { METHCLA_OPTION__LV2_LIBRARIES, libs },
           METHCLA_END_OPTIONS };
 
-//    volatile void* fuckMe = (void*)methcla_lv2_plugins_sine_lv2_descriptor;
-
-//    extern const LV2_Descriptor* methcla_sine_lv2_descriptor(uint32_t index);
-//    Methcla_Library_Symbol symbols[2] = {
-//        { METHCLA_LV2_URI "/plugins/sine", "lv2_descriptor", (Methcla_Library_Function)methcla_sine_lv2_descriptor }
-//        , METHCLA_END_SYMBOLS };
-
     Methcla::Engine* theEngine = new Methcla::Engine(options);
     theEngine->start();
 
-    Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(theEngine->impl());
+//    Methcla::Audio::Engine* engine = static_cast<Methcla::Audio::Engine*>(theEngine->impl());
 
 //    const std::shared_ptr<Methcla::Audio::Plugin> def = engine->env().plugins().lookup(
 //        engine->env().mapUri(METHCLA_LV2_URI "/plugins/sine") );

@@ -504,9 +504,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
-					"$(METHCLA_SOURCE)/src",
-					"$(METHCLA_SOURCE)/platform/ios",
-					"$(METHCLA_SOURCE)/external_libraries",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
 					"$(METHCLA_SOURCE)/external_libraries/lv2",
@@ -522,7 +519,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE) $(METHCLA_SOURCE)/external_libraries/lilv";
+				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE)";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -547,9 +544,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
-					"$(METHCLA_SOURCE)/src",
-					"$(METHCLA_SOURCE)/platform/ios",
-					"$(METHCLA_SOURCE)/external_libraries",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
 					"$(METHCLA_SOURCE)/external_libraries/lv2",
@@ -566,7 +560,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE) $(METHCLA_SOURCE)/external_libraries/lilv";
+				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE)";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};

@@ -15,7 +15,6 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
-#include "Methcla/LV2/Atom.hpp"
 
 #include <boost/current_function.hpp>
 #include <cstdlib>
