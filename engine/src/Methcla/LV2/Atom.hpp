@@ -218,18 +218,30 @@ namespace Methcla { namespace LV2 {
             return isResource(reinterpret_cast<const LV2_Atom*>(object));
         }
 
+        //* Cast an atom to type T with atom type `type` and throw
+        //  std::invalid_argument if the atom is of an incompatible type.
         template <typename T> T cast(const LV2_Atom* atom, LV2_URID type, const char* typeName=nullptr) const
         {
             checkType(atom, type, typeName);
             return reinterpret_cast<T>(atom);
         }
 
+        //* Cast an atom to type T and throw std::invalid_argument if the atom
+        //  is of an incompatible type.
         template <typename T> T cast(const LV2_Atom* atom) const
         {
             checkType(atom, m_forge.Chunk, LV2_ATOM__Chunk);
             return reinterpret_cast<T>(LV2_ATOM_BODY(atom));
         }
 
+        //* Cast an atom and return false if the conversion failed, true otherwise.
+        template <typename T> bool cast(const LV2_Atom* atom, T& out) const;
+
+        //* Cast an atom and return a default value if the conversion failed.
+        template <typename T> T cast(const LV2_Atom* atom, const T& def) const;
+
+        //* Retrieve the value of `key` in `object` and throw std::out_of_range
+        //  if `key` is not present.
         template <typename T> T get(const LV2_Atom_Object* object, LV2_URID key) const;
 
         const LV2_Atom_Forge& forge()
@@ -309,6 +321,25 @@ namespace Methcla { namespace LV2 {
     {
         checkType(atom, m_forge.Sequence, LV2_ATOM__Sequence);
         return reinterpret_cast<const LV2_Atom_Sequence*>(atom);
+    }
+
+    template <typename T> bool Parser::cast(const LV2_Atom* atom, T& out) const
+    {
+        bool success = false;
+        try {
+            out = cast<T>(atom);
+            success = true;
+        } catch (std::invalid_argument) {
+            success = false;
+        }
+        return success;
+    }
+
+    template <typename T> T Parser::cast(const LV2_Atom* atom, const T& def) const
+    {
+        T x;
+        bool success = cast(atom, x);
+        return success ? x : def;
     }
 
     template <typename T> T Parser::get(const LV2_Atom_Object* object, LV2_URID key) const
