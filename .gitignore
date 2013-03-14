@@ -16,3 +16,5 @@ dist/
 engine/external_libraries/install/
 .shake.database
 .shake.journal
+xcuserdata/
+*.xcworkspace/
