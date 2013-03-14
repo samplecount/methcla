@@ -22,6 +22,7 @@
 #include <future>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -47,7 +48,9 @@ namespace Methcla
             , m_unmap({ m_engine, engineUnmapUri })
             , m_forge(&m_map)
             , m_parser(&m_map, &m_unmap)
-        { }
+        {
+            check(m_engine);
+        }
         ~Engine()
         {
             methcla_engine_free(m_engine);
@@ -61,21 +64,27 @@ namespace Methcla
         void start()
         {
             methcla_engine_start(m_engine);
+            check(m_engine);
         }
 
         void stop()
         {
             methcla_engine_stop(m_engine);
+            check(m_engine);
         }
 
         LV2_URID map_uri(const char* uri)
         {
-            return methcla_engine_map_uri(m_engine, uri);
+            LV2_URID result = methcla_engine_map_uri(m_engine, uri);
+            check(m_engine);
+            return result;
         }
 
         const char* unmap_uri(LV2_URID urid)
         {
-            return methcla_engine_unmap_uri(m_engine, urid);
+            const char* result = methcla_engine_unmap_uri(m_engine, urid);
+            check(m_engine);
+            return result;
         }
 
         LV2_Atom* request(LV2_Atom* request)
@@ -85,6 +94,7 @@ namespace Methcla
 
             std::promise<LV2_Atom*> sink;
             methcla_engine_request(m_engine, responseHandler, &sink, request);
+            check(m_engine);
             return sink.get_future().get();
         }
 
@@ -105,6 +115,20 @@ namespace Methcla
         }
 
     private:
+        static void check(const Methcla_Engine* engine)
+        {
+            Methcla_Error err = methcla_engine_error(engine);
+            if (err != kMethcla_NoError) {
+                const char* msg = methcla_engine_error_message(engine);
+                if (err == kMethcla_InvalidArgument)
+                    throw std::invalid_argument(msg);
+                else if (err == kMethcla_BadAlloc)
+                    throw std::bad_alloc();
+                else
+                    throw std::runtime_error(msg);
+            }
+        }
+
         static void responseHandler(void* data, LV2_Atom* request, const LV2_Atom* inResponse)
         {
             auto sink = static_cast<std::promise<LV2_Atom*>*>(data);
