@@ -54,8 +54,7 @@ Environment::Environment(PluginManager& pluginManager, const Options& options)
     , m_epoch(0)
     , m_worker(uriMap())
     , m_uris(uriMap())
-    , m_parser(uriMap().lv2Map())
-    , m_printer(uriMap().lv2Map(), uriMap().lv2Unmap())
+    , m_parser(uriMap().lv2Map(), uriMap().lv2Unmap())
 {
     const Epoch prevEpoch = epoch() - 1;
 
@@ -203,7 +202,7 @@ void Environment::handleRequest(MessageQueue::Message& request)
     const LV2_Atom* atom = request.payload();
 
     std::cout << BOOST_CURRENT_FUNCTION << std::endl;
-    m_printer.print(std::cout, atom, 4);
+    m_parser.print(std::cout, atom, 4);
 
     if (m_parser.isObject(atom))
         handleMessageRequest(request, m_parser.cast<const LV2_Atom_Object*>(atom));

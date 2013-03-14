@@ -46,7 +46,7 @@ namespace Methcla
             , m_map({ m_engine, engineMapUri })
             , m_unmap({ m_engine, engineUnmapUri })
             , m_forge(&m_map)
-            , m_parser(&m_map)
+            , m_parser(&m_map, &m_unmap)
         { }
         ~Engine()
         {
@@ -100,7 +100,7 @@ namespace Methcla
 
         void print(std::ostream& out, const LV2_Atom* atom, size_t indent=0)
         {
-            LV2::Printer(&m_map, &m_unmap).print(out, atom, indent);
+            m_parser.print(out, atom, indent);
             out << std::endl;
         }
 
