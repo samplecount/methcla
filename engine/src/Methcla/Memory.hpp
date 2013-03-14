@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,9 +49,11 @@ static const size_t kDefaultAlignment = sizeof(nullptr);
 /// Alignment needed for data accessed by SIMD instructions.
 static const size_t kSIMDAlignment = 16;
 
-// Primitives
+//* Allocate memory of `size` bytes.
+//
+// @throw std::invalid_argument
+// @throw std::bad_alloc
 inline static void* alloc(size_t size)
-    throw(std::invalid_argument, std::bad_alloc)
 {
     if (size == 0)
         BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
@@ -61,14 +63,11 @@ inline static void* alloc(size_t size)
     return ptr;
 }
 
-inline static void free(void* ptr)
-{
-    if (ptr != nullptr)
-        ::free(ptr);
-}
-
+//* Allocate aligned memory of `size` bytes.
+//
+// @throw std::invalid_argument
+// @throw std::bad_alloc
 template <size_t align> void* allocAligned(size_t size)
-    throw(std::invalid_argument, std::bad_alloc)
 {
     if (size == 0)
         BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
@@ -79,15 +78,27 @@ template <size_t align> void* allocAligned(size_t size)
     return ptr;
 }
 
-// Wrappers
+//* Free memory allocated by this allocator.
+inline static void free(void* ptr) noexcept
+{
+    if (ptr != nullptr)
+        ::free(ptr);
+}
+
+//* Allocate memory for `n` elements of type `T`.
+//
+// @throw std::invalid_argument
+// @throw std::bad_alloc
 template <typename T> T* allocOf(size_t n=1)
-    throw(std::invalid_argument, std::bad_alloc)
 {
     return static_cast<T*>(alloc(n * sizeof(T)));
 }
 
+//* Allocate aligned memory for `n` elements of type `T`.
+//
+// @throw std::invalid_argument
+// @throw std::bad_alloc
 template <typename T, size_t align=alignof(T)> T* allocAlignedOf(size_t n=1)
-    throw(std::invalid_argument, std::bad_alloc)
 {
     return static_cast<T*>(allocAligned<align>(n * sizeof(T)));
 }
