@@ -18,6 +18,7 @@
 import           Control.Applicative
 import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad
+import           Data.Monoid (mconcat)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
@@ -130,24 +131,9 @@ methclaStaticBuidFlags = id
 methclaSharedBuildFlags :: CBuildFlags -> CBuildFlags
 methclaSharedBuildFlags = libraries .~ [ "m" ]
 
-methclaLib :: CTarget -> IO Library
-methclaLib target = do
-    --boostSrc <- find always
-    --                (    extension ==? ".cpp"
-    --                 &&? (not . isSuffixOf "win32") <$> directory
-    --                 &&? (not . isSuffixOf "test/src") <$> directory
-    --                 -- FIXME: linking `filesystem' into a shared library fails with:
-    --                 --     Undefined symbols for architecture x86_64:
-    --                 --       "vtable for boost::filesystem::detail::utf8_codecvt_facet", referenced from:
-    --                 --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in v2_path.cpp.o
-    --                 --           boost::filesystem::detail::utf8_codecvt_facet::utf8_codecvt_facet(unsigned long) in path.cpp.o
-    --                 --       NOTE: a missing vtable usually means the first non-inline virtual member function has no definition.
-    --                 &&? (not . elem "filesystem/" . splitPath) <$> filePath
-    --                 &&? (not . elem "thread/" . splitPath) <$> filePath
-    --                 &&? (fileName /=? "utf8_codecvt_facet.cpp")
-    --                )
-    --                boostDir
-    return $ Library "methcla" $ [
+methclaLib :: CTarget -> Library
+methclaLib target =
+    Library "methcla" $ [
         -- serd
         sourceTree serdBuildFlags $ sourceFiles $
             under (serdDir </> "src") [
@@ -272,7 +258,9 @@ iOS_SDK = SDKVersion "6.1"
 
 maybeRemoveDirectoryRecursive :: FilePath -> IO ()
 maybeRemoveDirectoryRecursive d =
-	Dir.doesDirectoryExist d >>= flip when (Dir.removeDirectoryRecursive d)
+    Dir.doesDirectoryExist d >>= flip when (Dir.removeDirectoryRecursive d)
+
+want1 = want . (:[])
 
 targetSpecs :: [(String, (Rules () -> IO ()) -> Env -> IO ())]
 targetSpecs = [
@@ -286,9 +274,7 @@ targetSpecs = [
                        . methclaStaticBuidFlags
                        . methclaCommonBuildFlags
                        $ cBuildFlags_IOS developer iOS_SDK
-        methclaLib' <- methclaLib target
-        shake $ do
-            want =<< (:[]) <$> staticLibrary env target toolChain buildFlags methclaLib'
+        shake $ want1 =<< staticLibrary env target toolChain buildFlags (methclaLib target)
             -- want =<< mapM (dynamicLibrary env target toolChain buildFlags) (plugins target)
     )
   , ( "ios-simulator",
@@ -300,12 +286,7 @@ targetSpecs = [
                        . methclaStaticBuidFlags
                        . methclaCommonBuildFlags
                        $ cBuildFlags_IOS_Simulator developer iOS_SDK
-        libmethcla <- methclaLib target
-        shake $ do
-            let libs = [ libmethcla ]
-                lib = staticLibrary env target toolChain buildFlags
-                libFile = libBuildPath env target
-            want =<< mapM lib libs
+        shake $ want1 =<< staticLibrary env target toolChain buildFlags (methclaLib target)
     )
   , ( "macosx",
     \shake env -> do
@@ -319,12 +300,7 @@ targetSpecs = [
                        . methclaSharedBuildFlags
                        . methclaCommonBuildFlags
                        $ cBuildFlags_MacOSX developer sdkVersion
-        libmethcla <- methclaLib target
-        shake $ do
-            let libs = [ libmethcla ]
-                lib = sharedLibrary env target toolChain buildFlags
-                libFile = libBuildPath env target
-            want =<< mapM lib libs
+        shake $ want1 =<< sharedLibrary env target toolChain buildFlags (methclaLib target)
     )
   , ( "tags",
     \shake env -> do
@@ -373,8 +349,8 @@ setLineBuffering = do
     hSetBuffering stdout LineBuffering
     hSetBuffering stderr LineBuffering
 
-main :: IO ()
-main = do
+main_ :: IO ()
+main_ = do
     let args = arguments (map fst configurations) (map fst targetSpecs)
     opts <- processArgs args
     let shakeIt = shake (optionsToShake opts)
@@ -387,3 +363,81 @@ main = do
                     putStrLn $ "Please chose a target:"
                     mapM_ (putStrLn . ("\t"++) . fst) targetSpecs
                 ts -> setLineBuffering >> processTargets shakeIt env ts
+
+clean = maybeRemoveDirectoryRecursive "build"
+
+mkRules :: IO (Rules ())
+mkRules = do
+    let env = mkEnv "debug" "build"
+    fmap mconcat $ sequence [
+        -- ios
+        do
+            developer <- liftIO getDeveloperPath
+            let target = mkCTarget IOS "armv7"
+                toolChain = cToolChain_IOS developer
+                buildFlags = applyBuildConfiguration env configurations
+                           . methclaStaticBuidFlags
+                           . methclaCommonBuildFlags
+                           $ cBuildFlags_IOS developer iOS_SDK
+            return $ do
+                x <- staticLibrary env target toolChain buildFlags (methclaLib target)
+                {-want [x]-}
+                return ()
+        -- want =<< mapM (dynamicLibrary env target toolChain buildFlags) (plugins target)
+        -- ios-simulator
+      , do
+            developer <- liftIO getDeveloperPath
+            let target = mkCTarget IOS_Simulator "i386"
+                toolChain = cToolChain_IOS_Simulator developer
+                buildFlags = applyBuildConfiguration env configurations
+                           . methclaStaticBuidFlags
+                           . methclaCommonBuildFlags
+                           $ cBuildFlags_IOS_Simulator developer iOS_SDK
+            return $ void $ staticLibrary env target toolChain buildFlags (methclaLib target)
+        -- macosx
+      , do
+            developer <- liftIO getDeveloperPath
+            sdkVersion <- liftIO getSystemVersion
+            jackBuildFlags <- liftIO $ pkgConfig "jack"
+            let target = mkCTarget MacOSX "x86_64"
+                toolChain = cToolChain_MacOSX developer
+                buildFlags = applyBuildConfiguration env configurations
+                           . jackBuildFlags
+                           . methclaSharedBuildFlags
+                           . methclaCommonBuildFlags
+                           $ cBuildFlags_MacOSX developer sdkVersion
+            return $ void $ sharedLibrary env target toolChain buildFlags (methclaLib target)
+        -- tags
+      , do
+            let and a b = do { as <- a; bs <- b; return $! as ++ bs }
+                files clause dir = find always clause dir
+                sourceFiles = files (extension ~~? ".h*" ||? extension ~~? ".c*")
+                tagFile = "../tags"
+                tagFiles = "../tagfiles"
+            return $ tagFile ?=> \output -> do
+                fs <- liftIO $
+                    find (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
+                        `and`
+                    files (extension ==? ".hpp") (externalLibraries </> "boost_lockfree")
+                        `and`
+                    files (extension ==? ".h") (lilvDir </> "lilv")
+                        `and`
+                    files (extension ==? ".h") (lv2Dir </> "lv2")
+                        `and`
+                    files (extension ==? ".h") (serdDir </> "serd")
+                        `and`
+                    files (extension ==? ".h") (sordDir </> "sord")
+                        `and`
+                    sourceFiles "lv2" `and` sourceFiles "platform" `and` sourceFiles "src"
+                need fs
+                writeFileLines tagFiles fs
+                systemLoud "ctags" $
+                    (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
+                 ++ flag_ "-f" output
+                 ++ flag_ "-L" tagFiles
+                -- FIXME: How to use bracket in the Action monad?
+                liftIO $ Dir.removeFile tagFiles
+        ]
+
+main = shakeWithArgs clean shakeOptions =<< mkRules
+
