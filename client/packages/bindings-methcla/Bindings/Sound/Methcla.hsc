@@ -15,7 +15,7 @@
 #include <bindings.dsl.h>
 #include <Mescaline/API.h>
 
-module Bindings.Sound.Mescaline where
+module Bindings.Sound.Methcla where
 
 import Data.Word (Word32)
 

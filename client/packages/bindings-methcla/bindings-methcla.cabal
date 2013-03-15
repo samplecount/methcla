@@ -12,17 +12,15 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-Name:                   bindings-mescaline
+Name:                   bindings-methcla
 Version:                0.0.0
-Synopsis:               Bindings to the Mescaline synthesis engine.
-Description:            This library provides low level bindings to the Mescaline synthesis engine.
-License:                GPL
--- License-File:           LICENSE
+Synopsis:               Bindings to the Methcla synthesis engine.
+Description:            This library provides low level bindings to the Methcla synthesis engine.
+License-File:           LICENSE.txt
 Category:               Sound
-Copyright:              Copyright (c) Stefan Kersten 2012
-Author:                 Stefan Kersten <sk@puesnada.es>
-Maintainer:             Stefan Kersten <sk@puesnada.es>
-Stability:              experimental
+Copyright:              Copyright (c) 2012-2013 Samplecount S.L.
+Author:                 Stefan Kersten <stefan@samplecount.com>
+Maintainer:             Stefan Kersten <stefan@samplecount.com>
 Homepage:               http://methc.la
 Tested-With:            GHC == 7.0.3
 Build-Type:             Simple
@@ -33,7 +31,7 @@ Cabal-Version:          >= 1.6
 
 Library
     Extensions:         ForeignFunctionInterface
-    Exposed-Modules:    Bindings.Sound.Mescaline
+    Exposed-Modules:    Bindings.Sound.Methcla
     -- C-Sources:            cbits/helper_functions.c
     Build-Depends:      base >= 3 && < 5
                       , bindings-DSL >= 1.0 && < 1.1
