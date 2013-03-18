@@ -14,9 +14,9 @@
 # limitations under the License.
 
 if [ -f "$HOME/.profile" ]; then
-	source "$HOME/.profile"
+    source "$HOME/.profile"
 elif [ -f "$HOME/.bash_login" ]; then
-	source "$HOME/.bash_login"
+    source "$HOME/.bash_login"
 fi
 
 # if [ -z "$VIRTHUALENV" -a -f "../.virthualenv/bin/activate" ]; then
@@ -27,11 +27,11 @@ rtsopts="+RTS -N -RTS"
 
 function shakeit()
 {
-	./cabal-dev/bin/shakefile $rtsopts "$@" 2>&1 | tee errors.err
-	return ${PIPESTATUS[0]}
+    ./cabal-dev/bin/shakefile $rtsopts "$@" 2>&1 | tee errors.err
+    return ${PIPESTATUS[0]}
 }
 
 case $1 in
-	update) shift ; cabal-dev install "$@" ;;
-	*) shakeit "$@" ;;
+    update) shift ; cabal-dev install "$@" ;;
+    *) shakeit "$@" ;;
 esac
