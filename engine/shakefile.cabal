@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-Name: engine
+Name: shakefile
 Version: 0.1.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
@@ -22,11 +22,10 @@ Executable shakefile
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5
-    , cmdargs
     , lens
     , directory
     , filemanip
     , filepath
     , process
-    , shake
+    , shake >= 0.10
     , split

@@ -23,18 +23,11 @@ import           Control.Monad
 import           Data.Monoid
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
-import           Data.Char (toLower)
 import           Data.List (isSuffixOf)
 import           Data.Maybe
-import           GHC.Conc (numCapabilities)
-import           System.Console.CmdArgs.Explicit
 import           System.Process (readProcess)
 
-import Debug.Trace
-
-{-# DEPRECATE ^$ #-}
-(^$) :: forall a c t b. Getting c a t c b -> a -> c
-(^$) = flip (^.)
+{-import Debug.Trace-}
 
 under :: FilePath -> [FilePath] -> [FilePath]
 under dir = map prependDir
@@ -72,46 +65,36 @@ f ?=> a = (equalFilePath f) ?> a
 
 systemLoud :: FilePath -> [String] -> Shake.Action ()
 systemLoud cmd args = do
-    putQuiet $ unwords $ [cmd] ++ args
+    {-putQuiet $ unwords $ [cmd] ++ args-}
+    {-system' cmd args-}
     system' cmd args
 
 data Env = Env {
-    _buildConfiguration :: String
-  , _buildPrefix :: FilePath
+    _buildPrefix :: FilePath
   } deriving (Show)
 
 makeLenses ''Env
 
-mkEnv :: String -> FilePath -> Env
-mkEnv = Env
-
-data Target =
-    IOS
-  | IOS_Simulator
-  | MacOSX
-  deriving (Eq, Show)
-
-targetString :: Target -> String
-targetString = map toLower . show
-
+defaultEnv :: Env
+defaultEnv = Env "."
 
 data CTarget = CTarget {
-    _buildTarget :: Target
-  , _buildArch :: String
+    _targetPlatform :: String
+  , _targetArch :: String
   } deriving (Show)
 
 makeLenses ''CTarget
 
-mkCTarget :: Target -> String -> CTarget
-mkCTarget target arch = CTarget target arch
+mkCTarget :: String -> String -> CTarget
+mkCTarget = CTarget
 
 buildDir :: Env -> CTarget -> FilePath
-buildDir env target =
-      (env ^. buildPrefix)
-  </> map toLower (env ^. buildConfiguration)
-  </> (targetString (target ^. buildTarget))
-  </> (target ^. buildArch)
-
+{-buildDir env target =-}
+      {-(env ^. buildPrefix)-}
+  {-</> map toLower (env ^. buildConfiguration)-}
+  {-</> (targetString (target ^. buildTarget))-}
+  {-</> (target ^. targetArch)-}
+buildDir env _ = env ^. buildPrefix
 
 data CLanguage = C | Cpp | ObjC | ObjCpp
                  deriving (Enum, Eq, Show)
@@ -182,7 +165,7 @@ defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flag_ "-arch" (target ^. buildArch)
+          ++ flag_ "-arch" (target ^. targetArch)
           ++ flags "-L" (buildFlags ^. libraryPath)
           ++ flags "-l" (buildFlags ^. libraries)
           ++ flag_ "-o" output
@@ -211,8 +194,8 @@ defaultCToolChain =
 
 tool :: (Getter CToolChain String) -> CToolChain -> FilePath
 tool f toolChain = maybe cmd (flip combine ("bin" </> cmd))
-                         (prefix ^$ toolChain)
-    where cmd = f ^$ toolChain
+                         (toolChain ^. prefix)
+    where cmd = toolChain ^. f
 
 
 
@@ -231,14 +214,14 @@ defaultCBuildFlags =
       }
 
 defineFlags :: CBuildFlags -> [String]
-defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b -> a++"="++b) b) . flip (^.) defines
+defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b' -> a++"="++b') b) . flip (^.) defines
 
 compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
 compilerFlagsFor lang = concat
                       . maybe (map snd . filter (isNothing.fst))
                               (mapMaybe . f) lang
                       . flip (^.) compilerFlags
-    where f l (Nothing, x) = Just x
+    where f _ (Nothing, x) = Just x
           f l (Just l', x) | l == l' = Just x
                            | otherwise = Nothing
 
@@ -263,11 +246,11 @@ dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         systemLoud (tool compilerCmd toolChain)
-                $  flag_ "-arch" (buildArch ^$ target)
-                ++ flags "-I" (systemIncludes ^$ buildFlags)
-                ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
+                $  flag_ "-arch" (target ^. targetArch)
+                ++ flags "-I" (buildFlags ^. systemIncludes)
+                ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
-                ++ (preprocessorFlags ^$ buildFlags)
+                ++ (buildFlags ^. preprocessorFlags)
                 ++ (compilerFlagsFor (languageOf input) buildFlags)
                 ++ ["-MM", "-o", output, input]
 
@@ -284,11 +267,11 @@ staticObject target toolChain buildFlags input deps output = do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         systemLoud (tool compilerCmd toolChain)
-                $  flag_ "-arch" (buildArch ^$ target)
-                ++ flags "-I" (systemIncludes ^$ buildFlags)
-                ++ flags_ "-iquote" (userIncludes ^$ buildFlags)
+                $  flag_ "-arch" (target ^. targetArch)
+                ++ flags "-I" (buildFlags ^. systemIncludes)
+                ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
-                ++ (preprocessorFlags ^$ buildFlags)
+                ++ (buildFlags ^. preprocessorFlags)
                 ++ (compilerFlagsFor (languageOf input) buildFlags)
                 ++ ["-c", "-o", output, input]
 
@@ -387,67 +370,3 @@ pkgConfig pkg = do
                          then reverse (drop (length s) (reverse x))
                          else x
 
--- ====================================================================
--- Commandline options
-
-getShakeOptions :: FilePath -> IO ShakeOptions
-getShakeOptions buildDir = do
-    nc <- return numCapabilities -- This has been changed to Control.Concurrent.getNumCapabilities in 7.?
-    return $ shakeOptions {
-        shakeVerbosity = Normal
-      , shakeThreads = nc
-      , shakeReport = Just (buildDir </> "report.html")
-      }
-
-data Options = Options {
-    _help :: Bool
-  , _verbosity :: Verbosity
-  , _jobs :: Int
-  , _output :: FilePath
-  , _report :: Bool
-  , _configuration :: String
-  , _targets :: [String]
-  } deriving (Show)
-
-defaultOptions :: String -> Options
-defaultOptions defaultConfig = Options {
-    _help = False
-  , _verbosity = Quiet
-  , _jobs = 1
-  , _output = "./build"
-  , _report = False
-  , _configuration = defaultConfig
-  , _targets = []
-  }
-
-makeLenses ''Options
- 
-arguments :: [String] -> [String] -> Mode Options
-arguments cs ts =
-    mode "shake" (defaultOptions "debug") "Shake build system"
-         (flagArg (updList ts targets) "TARGET..") $
-         [ flagHelpSimple (set help True)
-         , flagReq ["verbosity","v"] (upd verbosity . read) "VERBOSITY" "Verbosity"
-         , flagOpt "1" ["jobs","j"] (upd jobs . read) "NUMBER" "Number of parallel jobs"
-         , flagReq ["output", "o"] (upd output) "DIRECTORY" "Build products output directory"
-         , flagBool ["report", "r"] (set report) "Generate build report"
-         , flagReq ["config", "c"] (updEnum cs configuration) "CONFIGURATION" "Configuration"
-         ]
-          -- ++ flagsVerbosity (set verbosity)
-    where
-        upd what x = Right . set what x
-        updList xs what x = if x `elem` xs
-                            then Right . over what (++[x])
-                            else const $ Left $ show x ++ " not in " ++ show xs
-        updEnum xs what x = if x `elem` xs
-                            then Right . set what x
-                            else const $ Left $ show x ++ " not in " ++ show xs
-
-optionsToShake :: Options -> ShakeOptions
-optionsToShake opts = shakeOptions {
-    shakeThreads = jobs ^$ opts
-  , shakeVerbosity = verbosity ^$ opts
-  , shakeReport = if report ^$ opts
-                    then Just $ (output ^$ opts) </> "shake.html"
-                    else Nothing
-  }

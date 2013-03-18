@@ -510,11 +510,7 @@
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/../../../build/debug/ios/armv7\"",
-					"\"$(SRCROOT)/../../../build/debug/ios_simulator/i386\"",
-				);
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/../../../build/debug/iphoneos/armv7\"";
 				METHCLA_SOURCE = ../../..;
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -550,11 +546,7 @@
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/../../../build/debug/ios/armv7\"",
-					"\"$(SRCROOT)/../../../build/debug/ios_simulator/i386\"",
-				);
+				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/../../../build/debug/iphoneos/armv7\"";
 				METHCLA_SOURCE = ../../..;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				OTHER_LDFLAGS = "";
