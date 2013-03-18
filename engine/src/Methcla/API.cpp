@@ -127,8 +127,8 @@ const char* methcla_engine_error_message(const Methcla_Engine* engine)
 
 #define METHCLA_ENGINE_CATCH \
     catch (std::exception& e) { \
-        engine->m_error = kMethcla_Error; \
         try { \
+            engine->m_error = kMethcla_Error; \
             engine->m_errorBuffer = e.what(); \
             engine->m_errorMessage = engine->m_errorBuffer.c_str(); \
         } catch (std::bad_alloc) { \
