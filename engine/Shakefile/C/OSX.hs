@@ -39,8 +39,13 @@ platformDeveloperPath developer platform =
 
 newtype Platform = Platform String deriving (Show)
 
+macOSX :: Platform
 macOSX = Platform "MacOSX"
+
+iPhoneOS :: Platform
 iPhoneOS = Platform "iPhoneOS"
+
+iPhoneSimulator :: Platform
 iPhoneSimulator = Platform "iPhoneSimulator"
 
 newtype SDKVersion = SDKVersion { sdkVersionString :: String } deriving (Show)
