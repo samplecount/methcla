@@ -18,7 +18,8 @@ module Shakefile.C.PkgConfig (
 
 import Control.Applicative ((<$>))
 import Data.List (isSuffixOf)
-import Shakefile.C (CBuildFlags, append, compilerFlags, linkerFlags)
+import Shakefile.C (CBuildFlags, compilerFlags, linkerFlags)
+import Shakefile.Lens (append)
 import System.Process (readProcess)
 
 -- ====================================================================

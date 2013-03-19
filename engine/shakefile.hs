@@ -12,7 +12,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 import           Control.Lens hiding (Action, (<.>), under)
@@ -23,6 +22,7 @@ import           Shakefile.C
 import           Shakefile.C.OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
+import           Shakefile.Lens
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
 import           System.FilePath.Find

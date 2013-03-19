@@ -21,10 +21,10 @@ import           Control.Applicative ((<$>))
 import           Control.Lens hiding (Action, (<.>))
 import           Control.Monad
 import           Data.Char (toLower)
-import           Data.Monoid
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
+import           Shakefile.Lens (append)
 
 {-import Debug.Trace-}
 
@@ -46,17 +46,6 @@ flags_ o = concat . map (flag_ o)
 
 flags :: String -> [String] -> [String]
 flags f = map (f++)
-
--- Lens utils
-append :: forall s t a.
-        Monoid a =>
-        Setting (->) s t a a -> a -> s -> t
-append l n = over l (`mappend` n)
-
-prepend :: forall s t a.
-         Monoid a =>
-         Setting (->) s t a a -> a -> s -> t
-prepend l n = over l (n `mappend`)
 
 -- Shake utils
 (?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Rules ()

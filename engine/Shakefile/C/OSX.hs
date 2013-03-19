@@ -7,6 +7,7 @@ import           Development.Shake.FilePath
 import           Data.List (intercalate)
 import           Data.List.Split (splitOn)
 import           Shakefile.C
+import           Shakefile.Lens (append, prepend)
 import           System.Process (readProcess)
 
 osxArchiver :: Archiver
