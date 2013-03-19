@@ -21,6 +21,7 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
 import           Shakefile.C.OSX
+import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           System.Console.GetOpt
 import           System.Directory (removeFile)

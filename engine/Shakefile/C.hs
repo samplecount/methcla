@@ -24,9 +24,7 @@ import           Data.Char (toLower)
 import           Data.Monoid
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
-import           Data.List (isSuffixOf)
 import           Data.Maybe
-import           System.Process (readProcess)
 
 {-import Debug.Trace-}
 
@@ -361,18 +359,4 @@ dynamicLibrary env target toolChain =
         ((toolChain ^. linkResultFileName) linkResult . libName)
         env target toolChain
     where linkResult = DynamicLibrary
-
--- ====================================================================
--- PkgConfig
-
-pkgConfig :: String -> IO (CBuildFlags -> CBuildFlags)
-pkgConfig pkg = do
-    cflags <- parseFlags <$> readProcess "pkg-config" ["--cflags", pkg] ""
-    lflags <- parseFlags <$> readProcess "pkg-config" ["--libs", pkg] ""
-    return $ append compilerFlags [(Nothing, cflags)] . append linkerFlags lflags
-    where
-        parseFlags = map (dropSuffix "\\") . words . head . lines
-        dropSuffix s x = if s `isSuffixOf` x
-                         then reverse (drop (length s) (reverse x))
-                         else x
 
