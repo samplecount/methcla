@@ -79,6 +79,11 @@ makeLenses ''Env
 defaultEnv :: Env
 defaultEnv = Env "."
 
+newtype Platform = Platform String deriving (Eq, Ord, Show)
+
+platformString :: Platform -> String
+platformString (Platform x) = map toLower x
+
 data Arch =
     I386
   | X86_64
@@ -91,13 +96,13 @@ archString :: Arch -> String
 archString = map toLower . show
 
 data CTarget = CTarget {
-    _targetPlatform :: String
+    _targetPlatform :: Platform
   , _targetArch :: Arch
   } deriving (Show)
 
 makeLenses ''CTarget
 
-mkCTarget :: String -> Arch -> CTarget
+mkCTarget :: Platform -> Arch -> CTarget
 mkCTarget = CTarget
 
 buildDir :: Env -> CTarget -> FilePath

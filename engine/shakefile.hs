@@ -90,17 +90,16 @@ boostBuildFlags = append systemIncludes [ boostDir ]
 tlsfDir :: FilePath
 tlsfDir = externalLibrary "tlsf"
 
-engineBuildFlags :: String -> CBuildFlags -> CBuildFlags
+engineBuildFlags :: Platform -> CBuildFlags -> CBuildFlags
 engineBuildFlags platform =
     append userIncludes
       ( -- Library headers
         [ ".", "src" ]
         -- Platform specific modules
-     ++ case platform of
-            "iphoneos"        -> [ "platform/ios" ]
-            "iphonesimulator" -> [ "platform/ios" ]
-            "macosx"          -> [ "platform/jack" ]
-            _                 -> []
+     ++ if      platform == iPhoneOS then[ "platform/ios" ]
+        else if platform == iPhoneSimulator then [ "platform/ios" ]
+        else if platform == macOSX then [ "platform/jack" ]
+        else []
         -- LV2 libraries
      ++ [ "external_libraries", "external_libraries/lv2" ]
      ++ [ serdDir, sordDir, lilvDir ] )
@@ -131,7 +130,7 @@ methclaStaticBuidFlags = id
 methclaSharedBuildFlags :: CBuildFlags -> CBuildFlags
 methclaSharedBuildFlags = libraries .~ [ "m" ]
 
-methclaLib :: String -> Library
+methclaLib :: Platform -> Library
 methclaLib platform =
     Library "methcla" $ [
         -- serd
@@ -221,14 +220,14 @@ methclaLib platform =
             -- plugins
             ++ [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
             -- platform dependent
-            ++ (if platform `elem` ["iphoneos", "iphonesimulator"]
+            ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
-                else if platform == "macosx"
+                else if platform == macOSX
                      then under "platform/jack" [ "Methcla/Audio/IO/JackDriver.cpp" ]
                      else [])
         ]
 
-plugins :: String -> [Library]
+plugins :: Platform -> [Library]
 plugins platform = [
     -- TODO: Provide more SourceTree combinators
     Library "sine" [ sourceTree (engineBuildFlags platform) $ sourceFiles [ "lv2/methc.la/plugins/sine.lv2/sine.c" ] ]
@@ -270,7 +269,7 @@ mkBuildPrefix :: CTarget -> Config -> FilePath
 mkBuildPrefix cTarget config =
       shakeBuildDir
   </> map toLower (show config)
-  </> (cTarget ^. targetPlatform)
+  </> (platformString $ cTarget ^. targetPlatform)
   </> (archString $ cTarget ^. targetArch)
 
 data Options = Options {
@@ -295,13 +294,13 @@ mkRules options = do
         mkEnv cTarget = set buildPrefix
                             (mkBuildPrefix cTarget config)
                             defaultEnv
-        need1 = need . (:[])
+        platformAlias p = phony (platformString p) . need . (:[])
     fmap sequence_ $ sequence [
         do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
       , do -- iphoneos
             developer <- liftIO getDeveloperPath
-            let platform = "iphoneos"
+            let platform = iPhoneOS
                 cTarget = mkCTarget platform Armv7
                 toolChain = cToolChain_IOS developer
                 env = mkEnv cTarget
@@ -310,10 +309,10 @@ mkRules options = do
                            . methclaCommonBuildFlags
                            $ cBuildFlags_IOS developer iOS_SDK
             return $ staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
-                        >>= phony platform . need1
+                        >>= platformAlias platform
       , do -- iphonesimulator
             developer <- liftIO getDeveloperPath
-            let platform = "iphonesimulator"
+            let platform = iPhoneSimulator
                 cTarget = mkCTarget platform I386
                 toolChain = cToolChain_IOS_Simulator developer
                 env = mkEnv cTarget
@@ -322,12 +321,12 @@ mkRules options = do
                            . methclaCommonBuildFlags
                            $ cBuildFlags_IOS_Simulator developer iOS_SDK
             return $ staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
-                        >>= phony platform . need1
+                        >>= platformAlias platform
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion
             jackBuildFlags <- liftIO $ pkgConfig "jack"
-            let platform = "macosx"
+            let platform = macOSX
                 cTarget = mkCTarget platform X86_64
                 toolChain = cToolChain_MacOSX developer
                 env = mkEnv cTarget
@@ -337,7 +336,7 @@ mkRules options = do
                            . methclaCommonBuildFlags
                            $ cBuildFlags_MacOSX developer sdkVersion
             return $ sharedLibrary env cTarget toolChain buildFlags (methclaLib platform)
-                        >>= phony platform . need1
+                        >>= platformAlias platform
       , do -- tags
             let and a b = do { as <- a; bs <- b; return $! as ++ bs }
                 files clause dir = find always clause dir

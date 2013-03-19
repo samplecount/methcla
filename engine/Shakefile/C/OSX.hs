@@ -37,8 +37,6 @@ platformDeveloperPath :: DeveloperPath -> String -> FilePath
 platformDeveloperPath developer platform =
   developerPath developer </> "Platforms" </> (platform ++ ".platform") </> "Developer"
 
-newtype Platform = Platform String deriving (Show)
-
 macOSX :: Platform
 macOSX = Platform "MacOSX"
 
