@@ -97,10 +97,10 @@ engineBuildFlags platform =
       ( -- Library headers
         [ ".", "src" ]
         -- Platform specific modules
-     ++ if      platform == iPhoneOS then[ "platform/ios" ]
-        else if platform == iPhoneSimulator then [ "platform/ios" ]
-        else if platform == macOSX then [ "platform/jack" ]
-        else []
+     ++ (if      platform == iPhoneOS then[ "platform/ios" ]
+         else if platform == iPhoneSimulator then [ "platform/ios" ]
+         else if platform == macOSX then [ "platform/jack" ]
+         else [])
         -- LV2 libraries
      ++ [ "external_libraries", "external_libraries/lv2" ]
      ++ [ serdDir, sordDir, lilvDir ] )
