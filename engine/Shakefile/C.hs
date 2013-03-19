@@ -319,7 +319,7 @@ libBuildPath env target libFileName = buildDir env target </> libFileName
 cLibrary :: ObjectRule -> Linker -> (Library -> FilePath)
          -> Env -> CTarget -> CToolChain -> CBuildFlags
          -> Library
-         -> Rules FilePath
+         -> Rules [FilePath]
 cLibrary object link libFileName env target toolChain buildFlags lib = do
     let libFile = libFileName lib
         libPath = libBuildPath env target libFile
@@ -331,10 +331,10 @@ cLibrary object link libFileName env target toolChain buildFlags lib = do
         zipWithM_ ($) (zipWith (object target toolChain (mapBuildFlags buildFlags)) src dep) obj
         return obj
     libPath ?=> link target toolChain buildFlags (concat objects)
-    return libPath
+    return [libPath]
 
 -- | Rule for building a static library.
-staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules [FilePath]
 staticLibrary env target toolChain =
     cLibrary
         staticObject
@@ -343,7 +343,7 @@ staticLibrary env target toolChain =
         env target toolChain
 
 -- | Rule for building a shared library.
-sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules [FilePath]
 sharedLibrary env target toolChain =
     cLibrary
         sharedObject
@@ -353,7 +353,7 @@ sharedLibrary env target toolChain =
     where linkResult = SharedLibrary
 
 -- | Rule for building a dynamic library.
-dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
+dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules [FilePath]
 dynamicLibrary env target toolChain =
     cLibrary
         sharedObject
