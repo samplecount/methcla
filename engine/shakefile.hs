@@ -299,30 +299,36 @@ mkRules options = do
     fmap sequence_ $ sequence [
         do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
-      , do -- iphoneos
+      , do -- iphone
             developer <- liftIO getDeveloperPath
-            let platform = iPhoneOS
-                cTarget = mkCTarget platform Armv7
-                toolChain = cToolChain_IOS developer
-                env = mkEnv cTarget
-                buildFlags = applyConfiguration config configurations
-                           . methclaStaticBuidFlags
-                           . methclaCommonBuildFlags
-                           $ cBuildFlags_IOS developer iOS_SDK
-            return $ staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
-                        >>= platformAlias platform
-      , do -- iphonesimulator
-            developer <- liftIO getDeveloperPath
-            let platform = iPhoneSimulator
-                cTarget = mkCTarget platform I386
-                toolChain = cToolChain_IOS_Simulator developer
-                env = mkEnv cTarget
-                buildFlags = applyConfiguration config configurations
-                           . methclaStaticBuidFlags
-                           . methclaCommonBuildFlags
-                           $ cBuildFlags_IOS_Simulator developer iOS_SDK
-            return $ staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
-                        >>= platformAlias platform
+            return $ do
+                iphoneosLib <- do
+                    let platform = iPhoneOS
+                        cTarget = mkCTarget platform Armv7
+                        toolChain = cToolChain_IOS developer
+                        env = mkEnv cTarget
+                        buildFlags = applyConfiguration config configurations
+                                   . methclaStaticBuidFlags
+                                   . methclaCommonBuildFlags
+                                   $ cBuildFlags_IOS developer iOS_SDK
+                    lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
+                    platformAlias platform lib
+                    return lib
+                iphonesimulatorLib <- do
+                    let platform = iPhoneSimulator
+                        cTarget = mkCTarget platform I386
+                        toolChain = cToolChain_IOS_Simulator developer
+                        env = mkEnv cTarget
+                        buildFlags = applyConfiguration config configurations
+                                   . methclaStaticBuidFlags
+                                   . methclaCommonBuildFlags
+                                   $ cBuildFlags_IOS_Simulator developer iOS_SDK
+                    lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
+                    platformAlias platform lib
+                    return lib
+                universalLib <- universalBinary (iphoneosLib ++ iphonesimulatorLib) (shakeBuildDir </> map toLower (show config) </> "libmethcla.a")
+                phony "iphone-universal" (need [universalLib])
+
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion

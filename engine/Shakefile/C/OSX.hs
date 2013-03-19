@@ -115,3 +115,11 @@ cBuildFlags_IOS_Simulator :: DeveloperPath -> SDKVersion -> CBuildFlags
 cBuildFlags_IOS_Simulator developer sdkVersion =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
   $ osxDefaultCBuildFlags developer (SDK iPhoneSimulator sdkVersion)
+
+universalBinary :: [FilePath] -> FilePath -> Rules FilePath
+universalBinary inputs output = do
+    output ?=> \_ -> do
+        need inputs
+        system' "lipo" $ ["-create", "-output", output] ++ inputs
+    return output
+
