@@ -21,6 +21,7 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
 import           Shakefile.C.OSX
+import           Shakefile.Configuration
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
 import           System.FilePath.Find
@@ -236,13 +237,22 @@ plugins platform = [
 -- ====================================================================
 -- Configurations
 
-configurations :: [Configuration]
+data Config = Debug | Release deriving (Eq, Show)
+
+parseConfig :: String -> Either String Config
+parseConfig x =
+    case map toLower x of
+        "debug" -> Right Debug
+        "release" -> Right Release
+        _ -> Left $ "Invalid configuration `" ++ x ++ "'"
+
+configurations :: [Configuration Config CBuildFlags]
 configurations = [
-    ( "release",
+    ( Release,
         append compilerFlags [(Nothing, flag "-O2")]
       . append defines [("NDEBUG", Nothing)]
     )
-  , ( "debug",
+  , ( Debug,
         append compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")]
     )
   ]
@@ -256,27 +266,27 @@ iOS_SDK = SDKVersion "6.1"
 shakeBuildDir :: String
 shakeBuildDir = "build"
 
-mkBuildPrefix :: CTarget -> [Char] -> FilePath
+mkBuildPrefix :: CTarget -> Config -> FilePath
 mkBuildPrefix cTarget config =
       shakeBuildDir
-  </> map toLower config
+  </> map toLower (show config)
   </> (cTarget ^. targetPlatform)
   </> (cTarget ^. targetArch)
 
 data Options = Options {
-    _buildConfig :: String
+    _buildConfig :: Config
   } deriving (Show)
 
 makeLenses ''Options
 
 defaultOptions :: Options
 defaultOptions = Options {
-    _buildConfig = "debug"
+    _buildConfig = Debug
   }
 
 optionDescrs :: [OptDescr (Either String (Options -> Options))]
 optionDescrs = [ Option "c" ["config"]
-                   (ReqArg (Right . set buildConfig) "CONFIG")
+                   (ReqArg (fmap (set buildConfig) . parseConfig) "CONFIG")
                    "Build configuration (debug, release)." ]
 
 mkRules :: Options -> IO (Rules ())

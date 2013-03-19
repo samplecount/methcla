@@ -18,7 +18,7 @@ Cabal-Version: >= 1.2
 Build-Type: Simple
 Executable shakefile
   Main-Is: shakefile.hs
-  Other-Modules: Shakefile.C, Shakefile.C.OSX
+  Other-Modules: Shakefile.C, Shakefile.C.OSX, Shakefile.Configuration
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5
@@ -29,3 +29,4 @@ Executable shakefile
     , process
     , shake >= 0.10
     , split
+
