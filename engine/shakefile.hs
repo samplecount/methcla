@@ -295,7 +295,7 @@ mkRules options = do
         mkEnv cTarget = set buildPrefix
                             (mkBuildPrefix cTarget config)
                             defaultEnv
-        platformAlias p = phony (platformString p) . need
+        platformAlias p = phony (platformString p) . need . (:[])
     fmap sequence_ $ sequence [
         do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
@@ -326,7 +326,9 @@ mkRules options = do
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
                     return lib
-                universalLib <- universalBinary (iphoneosLib ++ iphonesimulatorLib) (shakeBuildDir </> map toLower (show config) </> "libmethcla.a")
+                universalLib <- universalBinary
+                                    [iphoneosLib, iphonesimulatorLib]
+                                    (shakeBuildDir </> map toLower (show config) </> "libmethcla.a")
                 phony "iphone-universal" (need [universalLib])
 
       , do -- macosx
