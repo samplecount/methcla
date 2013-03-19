@@ -20,6 +20,7 @@ module Shakefile.C where
 import           Control.Applicative ((<$>))
 import           Control.Lens hiding (Action, (<.>))
 import           Control.Monad
+import           Data.Char (toLower)
 import           Data.Monoid
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
@@ -78,14 +79,25 @@ makeLenses ''Env
 defaultEnv :: Env
 defaultEnv = Env "."
 
+data Arch =
+    I386
+  | X86_64
+  | Armv6
+  | Armv7
+  | Armv7s
+  deriving (Eq, Show)
+
+archString :: Arch -> String
+archString = map toLower . show
+
 data CTarget = CTarget {
     _targetPlatform :: String
-  , _targetArch :: String
+  , _targetArch :: Arch
   } deriving (Show)
 
 makeLenses ''CTarget
 
-mkCTarget :: String -> String -> CTarget
+mkCTarget :: String -> Arch -> CTarget
 mkCTarget = CTarget
 
 buildDir :: Env -> CTarget -> FilePath
@@ -165,7 +177,7 @@ defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     systemLoud (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flag_ "-arch" (target ^. targetArch)
+          ++ flag_ "-arch" (archString $ target ^. targetArch)
           ++ flags "-L" (buildFlags ^. libraryPath)
           ++ flags "-l" (buildFlags ^. libraries)
           ++ flag_ "-o" output
@@ -246,7 +258,7 @@ dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         systemLoud (tool compilerCmd toolChain)
-                $  flag_ "-arch" (target ^. targetArch)
+                $  flag_ "-arch" (archString $ target ^. targetArch)
                 ++ flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
@@ -267,7 +279,7 @@ staticObject target toolChain buildFlags input deps output = do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         systemLoud (tool compilerCmd toolChain)
-                $  flag_ "-arch" (target ^. targetArch)
+                $  flag_ "-arch" (archString $ target ^. targetArch)
                 ++ flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)

@@ -271,7 +271,7 @@ mkBuildPrefix cTarget config =
       shakeBuildDir
   </> map toLower (show config)
   </> (cTarget ^. targetPlatform)
-  </> (cTarget ^. targetArch)
+  </> (archString $ cTarget ^. targetArch)
 
 data Options = Options {
     _buildConfig :: Config
@@ -302,7 +302,7 @@ mkRules options = do
       , do -- iphoneos
             developer <- liftIO getDeveloperPath
             let platform = "iphoneos"
-                cTarget = mkCTarget platform "armv7"
+                cTarget = mkCTarget platform Armv7
                 toolChain = cToolChain_IOS developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
@@ -314,7 +314,7 @@ mkRules options = do
       , do -- iphonesimulator
             developer <- liftIO getDeveloperPath
             let platform = "iphonesimulator"
-                cTarget = mkCTarget platform "i386"
+                cTarget = mkCTarget platform I386
                 toolChain = cToolChain_IOS_Simulator developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
@@ -328,7 +328,7 @@ mkRules options = do
             sdkVersion <- liftIO getSystemVersion
             jackBuildFlags <- liftIO $ pkgConfig "jack"
             let platform = "macosx"
-                cTarget = mkCTarget platform "x86_64"
+                cTarget = mkCTarget platform X86_64
                 toolChain = cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
