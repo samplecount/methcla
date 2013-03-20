@@ -299,7 +299,7 @@ sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
 sourceFiles = map (flip (,) [])
 
 applySourceTree :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
-applySourceTree a t = go a t
+applySourceTree = go
     where
         flatten a = map ((,)a)
         go a (Node (f, fs) []) = flatten (f a) fs
@@ -326,9 +326,9 @@ cLibrary :: ObjectRule -> Linker -> (Library -> FilePath)
 cLibrary object link libFileName env target toolChain buildFlags lib = do
     let libFile = libFileName lib
         libPath = libBuildPath env target libFile
-        buildDir = libBuildDir env target libFile
+        libDir  = libBuildDir env target libFile
     objects <- forM (buildFlags `applySourceTree` libSources lib) $ \(buildFlags', (src, deps)) -> do
-        let obj = combine buildDir . makeRelative buildDir . (<.> "o") $ src
+        let obj = combine libDir {- . makeRelative srcDir -} $ src <.> "o"
         object target toolChain buildFlags' src deps obj
         return obj
     libPath ?=> link target toolChain buildFlags objects
