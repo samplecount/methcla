@@ -21,6 +21,7 @@ import           Control.Applicative ((<$>))
 import           Control.Lens hiding (Action, (<.>))
 import           Control.Monad
 import           Data.Char (toLower)
+import           Data.Tree (Tree(Node))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
@@ -282,17 +283,32 @@ staticObject target toolChain buildFlags input deps output = do
 sharedObject :: ObjectRule
 sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, flag "-fPIC")]
 
-data SourceTree b = SourceTree (b -> b) [(FilePath, [FilePath])]
+-- | A tree with a transformation and a list of files and their dependencies at each node.
+type SourceTree a = Tree (a -> a, [(FilePath, [FilePath])])
 
-sourceTree :: (b -> b) -> [(FilePath, [FilePath])] -> SourceTree b
-sourceTree = SourceTree
+sourceTree :: (a -> a) -> [(FilePath, [FilePath])] -> [SourceTree a] -> SourceTree a
+sourceTree f fs = Node (f, fs)
+
+sourceTree_ :: (a -> a) -> [(FilePath, [FilePath])] -> SourceTree a
+sourceTree_ f fs = sourceTree f fs []
+
+sourceFlags :: (a -> a) -> [SourceTree a] -> SourceTree a
+sourceFlags f = sourceTree f []
 
 sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
 sourceFiles = map (flip (,) [])
 
+applySourceTree :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
+applySourceTree a t = go a t
+    where
+        flatten a = map ((,)a)
+        go a (Node (f, fs) []) = flatten (f a) fs
+        go a (Node (f, fs) ns) = let a' = f a
+                                 in flatten a' fs ++ concatMap (go a') ns
+
 data Library = Library {
     libName :: String
-  , libSources :: [SourceTree CBuildFlags]
+  , libSources :: SourceTree CBuildFlags
   }
 
 libBuildDir :: Env -> CTarget -> FilePath -> FilePath
@@ -311,13 +327,11 @@ cLibrary object link libFileName env target toolChain buildFlags lib = do
     let libFile = libFileName lib
         libPath = libBuildPath env target libFile
         buildDir = libBuildDir env target libFile
-    objects <- forM (libSources lib) $ \(SourceTree mapBuildFlags srcTree) -> do
-        let src = map fst srcTree
-            dep = map snd srcTree
-            obj = map (combine buildDir . makeRelative buildDir . (<.> "o")) src
-        zipWithM_ ($) (zipWith (object target toolChain (mapBuildFlags buildFlags)) src dep) obj
+    objects <- forM (buildFlags `applySourceTree` libSources lib) $ \(buildFlags', (src, deps)) -> do
+        let obj = combine buildDir . makeRelative buildDir . (<.> "o") $ src
+        object target toolChain buildFlags' src deps obj
         return obj
-    libPath ?=> link target toolChain buildFlags (concat objects)
+    libPath ?=> link target toolChain buildFlags objects
     return libPath
 
 -- | Rule for building a static library.

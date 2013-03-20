@@ -114,8 +114,8 @@ engineBuildFlags platform =
       ++ [ tlsfDir ] )
 
 -- | Build flags common to all targets
-methclaCommonBuildFlags :: CBuildFlags -> CBuildFlags
-methclaCommonBuildFlags = append compilerFlags [
+commonBuildFlags :: CBuildFlags -> CBuildFlags
+commonBuildFlags = append compilerFlags [
     (Just C, flag "-std=c11")
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
@@ -124,18 +124,18 @@ methclaCommonBuildFlags = append compilerFlags [
   ]
 
 -- | Build flags for static library
-methclaStaticBuidFlags :: CBuildFlags -> CBuildFlags
-methclaStaticBuidFlags = id
+staticBuidFlags :: CBuildFlags -> CBuildFlags
+staticBuidFlags = id
 
 -- | Build flags for shared library
-methclaSharedBuildFlags :: CBuildFlags -> CBuildFlags
-methclaSharedBuildFlags = libraries .~ [ "m" ]
+sharedBuildFlags :: CBuildFlags -> CBuildFlags
+sharedBuildFlags = libraries .~ [ "m" ]
 
 methclaLib :: Platform -> Library
 methclaLib platform =
-    Library "methcla" $ [
+    Library "methcla" $ sourceFlags commonBuildFlags [
         -- serd
-        sourceTree serdBuildFlags $ sourceFiles $
+        sourceTree_ serdBuildFlags $ sourceFiles $
             under (serdDir </> "src") [
                 "env.c"
               , "node.c"
@@ -145,7 +145,7 @@ methclaLib platform =
               , "writer.c"
               ]
         -- sord
-      , sourceTree sordBuildFlags $ sourceFiles $
+      , sourceTree_ sordBuildFlags $ sourceFiles $
             under (sordDir </> "src") [
                 "sord.c"
               , "syntax.c"
@@ -154,12 +154,12 @@ methclaLib platform =
               , "zix/tree.c"
               ]
         -- sratom
-      , sourceTree sratomBuildFlags $ sourceFiles $
+      , sourceTree_ sratomBuildFlags $ sourceFiles $
             under (sratomDir </> "src") [
                 "sratom.c"
               ]
         -- lilv
-      , sourceTree lilvBuildFlags $ sourceFiles $
+      , sourceTree_ lilvBuildFlags $ sourceFiles $
             under (lilvDir </> "src") [
                 "collections.c"
               , "instance.c"
@@ -178,7 +178,7 @@ methclaLib platform =
               --, "zix/tree.c"
               ]
         -- boost
-      , sourceTree boostBuildFlags $ sourceFiles $
+      , sourceTree_ boostBuildFlags $ sourceFiles $
             under (boostDir </> "libs") [
                 "date_time/src/gregorian/date_generators.cpp"
               , "date_time/src/gregorian/greg_month.cpp"
@@ -197,10 +197,10 @@ methclaLib platform =
               , "system/src/error_code.cpp"
               ]
         -- TLSF
-      , sourceTree id $ sourceFiles $ [
+      , sourceTree_ id $ sourceFiles $ [
             tlsfDir </> "tlsf.c" ]
         -- engine
-      , sourceTree (engineBuildFlags platform) $ sourceFiles $
+      , sourceTree_ (engineBuildFlags platform) $ sourceFiles $
             under "src" [
                 "Methcla/API.cpp"
               , "Methcla/Audio/AudioBus.cpp"
@@ -231,7 +231,7 @@ methclaLib platform =
 plugins :: Platform -> [Library]
 plugins platform = [
     -- TODO: Provide more SourceTree combinators
-    Library "sine" [ sourceTree (engineBuildFlags platform) $ sourceFiles [ "lv2/methc.la/plugins/sine.lv2/sine.c" ] ]
+    Library "sine" $ sourceTree_ (engineBuildFlags platform) $ sourceFiles [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
   ]
 
 -- ====================================================================
@@ -308,8 +308,7 @@ mkRules options = do
                         toolChain = cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . methclaStaticBuidFlags
-                                   . methclaCommonBuildFlags
+                                   . staticBuidFlags
                                    $ cBuildFlags_IOS developer iOS_SDK
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
@@ -320,8 +319,7 @@ mkRules options = do
                         toolChain = cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . methclaStaticBuidFlags
-                                   . methclaCommonBuildFlags
+                                   . staticBuidFlags
                                    $ cBuildFlags_IOS_Simulator developer iOS_SDK
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
@@ -341,8 +339,7 @@ mkRules options = do
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
                            . jackBuildFlags
-                           . methclaSharedBuildFlags
-                           . methclaCommonBuildFlags
+                           . sharedBuildFlags
                            $ cBuildFlags_MacOSX developer sdkVersion
             return $ sharedLibrary env cTarget toolChain buildFlags (methclaLib platform)
                         >>= platformAlias platform
