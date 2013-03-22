@@ -168,13 +168,13 @@ namespace Methcla { namespace LV2 {
     };
 
     //* Return true if atom is of the specified type.
-    bool isa(const LV2_Atom* atom, LV2_URID type)
+    static inline bool isa(const LV2_Atom* atom, LV2_URID type)
     {
         return atom->type == type;
     }
 
     //* Return true if object is of the specified type.
-    bool isa(const LV2_Atom_Object* object, LV2_URID otype)
+    static inline bool isa(const LV2_Atom_Object* object, LV2_URID otype)
     {
         return object->body.otype == otype;
     }
@@ -221,7 +221,7 @@ namespace Methcla { namespace LV2 {
 
         //* Cast an atom to type T with atom type `type` and throw
         //  std::invalid_argument if the atom is of an incompatible type.
-        template <typename T> T cast(const LV2_Atom* atom, LV2_URID type, const char* typeName=nullptr) const
+        template <typename T> inline T cast(const LV2_Atom* atom, LV2_URID type, const char* typeName=nullptr) const
         {
             checkType(atom, type, typeName);
             return reinterpret_cast<T>(atom);
@@ -229,21 +229,21 @@ namespace Methcla { namespace LV2 {
 
         //* Cast an atom to type T and throw std::invalid_argument if the atom
         //  is of an incompatible type.
-        template <typename T> T cast(const LV2_Atom* atom) const
+        template <typename T> inline T cast(const LV2_Atom* atom) const
         {
             checkType(atom, m_forge.Chunk, LV2_ATOM__Chunk);
             return reinterpret_cast<T>(LV2_ATOM_BODY(atom));
         }
 
         //* Cast an atom and return false if the conversion failed, true otherwise.
-        template <typename T> bool cast(const LV2_Atom* atom, T& out) const;
+        template <typename T> inline bool cast(const LV2_Atom* atom, T& out) const;
 
         //* Cast an atom and return a default value if the conversion failed.
-        template <typename T> T cast(const LV2_Atom* atom, const T& def) const;
+        template <typename T> inline T cast(const LV2_Atom* atom, const T& def) const;
 
         //* Retrieve the value of `key` in `object` and throw std::out_of_range
         //  if `key` is not present.
-        template <typename T> T get(const LV2_Atom_Object* object, LV2_URID key) const;
+        template <typename T> inline T get(const LV2_Atom_Object* object, LV2_URID key) const;
 
         //* Indent width for printing atoms.
         const size_t kIndentWidth = 4;
@@ -288,62 +288,62 @@ namespace Methcla { namespace LV2 {
         LV2_URID_Unmap m_unmap;
     };
 
-    template <> int32_t Parser::cast(const LV2_Atom* atom) const
+    template <> inline int32_t Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Int, LV2_ATOM__Int);
         return reinterpret_cast<const LV2_Atom_Int*>(atom)->body;
     }
 
-    template <> int64_t Parser::cast(const LV2_Atom* atom) const
+    template <> inline int64_t Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Long, LV2_ATOM__Long);
         return reinterpret_cast<const LV2_Atom_Long*>(atom)->body;
     }
 
-    template <> float Parser::cast(const LV2_Atom* atom) const
+    template <> inline float Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Float, LV2_ATOM__Float);
         return reinterpret_cast<const LV2_Atom_Float*>(atom)->body;
     }
 
-    template <> double Parser::cast(const LV2_Atom* atom) const
+    template <> inline double Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Double, LV2_ATOM__Double);
         return reinterpret_cast<const LV2_Atom_Double*>(atom)->body;
     }
 
-    template <> LV2_URID Parser::cast(const LV2_Atom* atom) const
+    template <> inline LV2_URID Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.URID, LV2_ATOM__URID);
         return reinterpret_cast<const LV2_Atom_URID*>(atom)->body;
     }
 
-    template <> const char* Parser::cast(const LV2_Atom* atom) const
+    template <> inline const char* Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.String, LV2_ATOM__String);
         return reinterpret_cast<const char*>(LV2_ATOM_BODY(atom));
     }
 
-    template <> const LV2_Atom_Object* Parser::cast(const LV2_Atom* atom) const
+    template <> inline const LV2_Atom_Object* Parser::cast(const LV2_Atom* atom) const
     {
         if (!isObject(atom))
             argumentError(LV2_ATOM_PREFIX "Object");
         return reinterpret_cast<const LV2_Atom_Object*>(atom);
     }
 
-    template <> const LV2_Atom_Tuple* Parser::cast(const LV2_Atom* atom) const
+    template <> inline const LV2_Atom_Tuple* Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Tuple, LV2_ATOM__Tuple);
         return reinterpret_cast<const LV2_Atom_Tuple*>(atom);
     }
 
-    template <> const LV2_Atom_Sequence* Parser::cast(const LV2_Atom* atom) const
+    template <> inline const LV2_Atom_Sequence* Parser::cast(const LV2_Atom* atom) const
     {
         checkType(atom, m_forge.Sequence, LV2_ATOM__Sequence);
         return reinterpret_cast<const LV2_Atom_Sequence*>(atom);
     }
 
-    template <typename T> bool Parser::cast(const LV2_Atom* atom, T& out) const
+    template <typename T> inline bool Parser::cast(const LV2_Atom* atom, T& out) const
     {
         bool success = false;
         try {
@@ -355,14 +355,14 @@ namespace Methcla { namespace LV2 {
         return success;
     }
 
-    template <typename T> T Parser::cast(const LV2_Atom* atom, const T& def) const
+    template <typename T> inline T Parser::cast(const LV2_Atom* atom, const T& def) const
     {
         T x;
         bool success = cast(atom, x);
         return success ? x : def;
     }
 
-    template <typename T> T Parser::get(const LV2_Atom_Object* object, LV2_URID key) const
+    template <typename T> inline T Parser::get(const LV2_Atom_Object* object, LV2_URID key) const
     {
         const LV2_Atom* value = nullptr;
         lv2_atom_object_get(object, key, &value, nullptr);
@@ -374,7 +374,7 @@ namespace Methcla { namespace LV2 {
         return cast<T>(value);
     }
 
-    void Parser::print(std::ostream& out, const LV2_Atom* atom, size_t level, size_t tab)
+    inline void Parser::print(std::ostream& out, const LV2_Atom* atom, size_t level, size_t tab)
     {
                if (isa(atom, forge().Int)) {
             indent(out, level);
