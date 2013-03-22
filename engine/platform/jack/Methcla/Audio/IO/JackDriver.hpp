@@ -16,7 +16,7 @@
 #define METHCLA_AUDIO_IO_JACKDRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
-#include "Methcla/Audio/Plugin/Types.h"
+#include "Methcla/Audio/Types.h"
 #include "Methcla/Memory.hpp"
 
 #include <jack/jack.h>
