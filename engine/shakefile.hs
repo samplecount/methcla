@@ -129,7 +129,7 @@ staticBuidFlags = id
 
 -- | Build flags for shared library
 sharedBuildFlags :: CBuildFlags -> CBuildFlags
-sharedBuildFlags = libraries .~ [ "m" ]
+sharedBuildFlags = append libraries [ "c++", "m" ]
 
 methclaLib :: Platform -> Library
 methclaLib platform =
