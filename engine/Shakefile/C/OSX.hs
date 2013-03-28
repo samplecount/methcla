@@ -13,7 +13,7 @@ import           System.Process (readProcess)
 osxArchiver :: Archiver
 osxArchiver _ toolChain buildFlags inputs output = do
     need inputs
-    systemLoud (tool archiverCmd toolChain)
+    system' (tool archiverCmd toolChain)
           $  buildFlags ^. archiverFlags
           ++ flag "-static"
           ++ flag_ "-o" output

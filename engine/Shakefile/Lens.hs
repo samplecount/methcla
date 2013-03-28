@@ -31,5 +31,3 @@ prepend :: forall s t a.
          Monoid a =>
          Setting (->) s t a a -> a -> s -> t
 prepend l n = over l (n `mappend`)
-
-

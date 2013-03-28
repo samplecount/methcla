@@ -52,12 +52,6 @@ flags f = map (f++)
 (?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Rules ()
 f ?=> a = (equalFilePath f) ?> a
 
-systemLoud :: FilePath -> [String] -> Shake.Action ()
-systemLoud cmd args = do
-    {-putQuiet $ unwords $ [cmd] ++ args-}
-    {-system' cmd args-}
-    system' cmd args
-
 data Env = Env {
     _buildPrefix :: FilePath
   } deriving (Show)
@@ -157,7 +151,7 @@ makeLenses ''CToolChain
 defaultArchiver :: Archiver
 defaultArchiver _ toolChain buildFlags inputs output = do
     need inputs
-    systemLoud (tool archiverCmd toolChain)
+    system' (tool archiverCmd toolChain)
         $ buildFlags ^. archiverFlags
         ++ [output]
         ++ inputs
@@ -168,7 +162,7 @@ defaultArchiveFileName = ("lib"++) . (<.> "a")
 defaultLinker :: Linker
 defaultLinker target toolChain buildFlags inputs output = do
     need inputs
-    systemLoud (tool linkerCmd toolChain)
+    system' (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
           ++ flag_ "-arch" (archString $ target ^. targetArch)
           ++ flags "-L" (buildFlags ^. libraryPath)
@@ -250,7 +244,7 @@ dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -
 dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
-        systemLoud (tool compilerCmd toolChain)
+        system' (tool compilerCmd toolChain)
                 $  flag_ "-arch" (archString $ target ^. targetArch)
                 ++ flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
@@ -271,7 +265,7 @@ staticObject target toolChain buildFlags input deps output = do
     output ?=> \_ ->  do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
-        systemLoud (tool compilerCmd toolChain)
+        system' (tool compilerCmd toolChain)
                 $  flag_ "-arch" (archString $ target ^. targetArch)
                 ++ flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)

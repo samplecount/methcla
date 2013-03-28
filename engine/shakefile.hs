@@ -26,7 +26,6 @@ import           Shakefile.Lens
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
 import           System.FilePath.Find
-import           System.IO
 
 {-import Debug.Trace-}
 
@@ -364,20 +363,14 @@ mkRules options = do
                         `and` sources "src"
                     need fs
                     writeFileLines tagFiles fs
-                    systemLoud "ctags" $
+                    system' "ctags" $
                         (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
                      ++ flag_ "-f" output
                      ++ flag_ "-L" tagFiles
         ]
 
-setLineBuffering :: IO ()
-setLineBuffering = do
-    hSetBuffering stdout LineBuffering
-    hSetBuffering stderr LineBuffering
-
 main :: IO ()
 main = do
-    setLineBuffering
     let shakeOptions' = shakeOptions {
                         shakeFiles = shakeBuildDir ++ "/"
                       , shakeVerbosity = Normal }
