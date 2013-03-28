@@ -7,3 +7,6 @@
 [submodule "engine/external_libraries/tlsf"]
 	path = engine/external_libraries/tlsf
 	url = https://github.com/samplecount/tlsf.git
+[submodule "engine/external_libraries/oscpp"]
+	path = engine/external_libraries/oscpp
+	url = https://github.com/kaoskorobase/oscpp.git
