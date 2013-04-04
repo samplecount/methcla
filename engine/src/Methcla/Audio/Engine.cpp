@@ -62,13 +62,19 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     }
 
     m_audioOutputChannels.reserve(options.numHardwareOutputChannels);
-    for (uint32_t i=0; i < options.numHardwareOutputChannels; i++) {
+    for (uint32_t i=options.numHardwareInputChannels;
+         i < options.numHardwareInputChannels+options.numHardwareOutputChannels;
+         i++)
+    {
         ExternalAudioBus* bus = new ExternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
         m_audioBuses.insert(bus->id(), bus);
         m_audioOutputChannels.push_back(bus);
     }
 
-    for (uint32_t i=options.numHardwareInputChannels+options.numHardwareOutputChannels; i < m_freeAudioBuses.size(); i++) {
+    for (uint32_t i=options.numHardwareInputChannels+options.numHardwareOutputChannels;
+         i < m_freeAudioBuses.size();
+         i++)
+    {
         AudioBus* bus = new InternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
         m_freeAudioBuses.insert(bus->id(), bus);
     }
@@ -149,33 +155,65 @@ void Environment::perform_free(Command& cmd, Command::Channel&)
     cmd.data.free.func(cmd.data.free.ptr);
 }
 
-void Environment::perform_Response_nodeId(Command& cmd, Command::Channel&)
+void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
 {
     OSC::Client::StaticPacket<128> packet;
     packet
         .openMessage("/ack", 2)
-            .int32(cmd.data.Response_nodeId.requestId)
-            .int32(cmd.data.Response_nodeId.nodeId)
+            .int32(cmd.data.response.requestId)
+            .int32(cmd.data.response.data.nodeId)
         .closeMessage();
-    cmd.env->reply(cmd.data.Response_nodeId.requestId, packet);
+    cmd.env->reply(cmd.data.response.requestId, packet);
 }
 
-void Environment::perform_Response_error(Command& cmd, Command::Channel&)
+void Environment::perform_response_error(Command& cmd, Command::Channel&)
 {
     OSC::Client::StaticPacket<1024> packet;
     packet
         .openMessage("/error", 2)
-            .int32(cmd.data.Response_error.requestId)
-            .string(cmd.data.Response_error.error)
+            .int32(cmd.data.response.requestId)
+            .string(cmd.data.response.data.error)
         .closeMessage();
-    cmd.env->reply(cmd.data.Response_nodeId.requestId, packet);
+    cmd.env->reply(cmd.data.response.requestId, packet);
+}
+
+void Environment::perform_response_query_external_inputs(Command& cmd, Command::Channel&)
+{
+    Environment* env = cmd.env;
+    const size_t numBuses = env->numExternalAudioInputs();
+    const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
+    char buffer[bufferSize];
+    OSC::Client::Packet packet(buffer, bufferSize);
+    packet.openMessage("/ack", 1 + numBuses);
+    packet.int32(cmd.data.response.requestId);
+    for (size_t i=0; i < numBuses; i++) {
+        packet.int32(env->externalAudioInput(i).id());
+    }
+    packet.closeMessage();
+    env->reply(cmd.data.response.requestId, packet);
+}
+
+void Environment::perform_response_query_external_outputs(Command& cmd, Command::Channel&)
+{
+    Environment* env = cmd.env;
+    const size_t numBuses = env->numExternalAudioOutputs();
+    const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
+    char buffer[bufferSize];
+    OSC::Client::Packet packet(buffer, bufferSize);
+    packet.openMessage("/ack", 1 + numBuses);
+    packet.int32(cmd.data.response.requestId);
+    for (size_t i=0; i < numBuses; i++) {
+        packet.int32(env->externalAudioOutput(i).id());
+    }
+    packet.closeMessage();
+    env->reply(cmd.data.response.requestId, packet);
 }
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
-    Command cmd(this, perform_Response_error);
-    cmd.data.Response_error.requestId = requestId;
-    strncpy(cmd.data.Response_error.error, msg, sizeof(cmd.data.Response_error.error));
+    Command cmd(this, perform_response_error);
+    cmd.data.response.requestId = requestId;
+    strncpy(cmd.data.response.data.error, msg, sizeof(cmd.data.response.data.error));
     send(cmd);
 }
 
@@ -265,9 +303,8 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             Node* node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
-            Command cmd(this, perform_Response_nodeId);
-            cmd.data.Response_nodeId.requestId = requestId;
-            cmd.data.Response_nodeId.nodeId = node->id();
+            Command cmd(this, perform_response_nodeId, requestId);
+            cmd.data.response.data.nodeId = node->id();
             send(cmd);
         } else if (msg == "/g_new") {
             NodeId targetId = NodeId(args.int32());
@@ -282,20 +319,22 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             Node* node = Group::construct(*this, targetGroup, Node::kAddToTail);
 
-            Command cmd(this, perform_Response_nodeId);
-            cmd.data.Response_nodeId.requestId = requestId;
-            cmd.data.Response_nodeId.nodeId = node->id();
+            Command cmd(this, perform_response_nodeId, requestId);
+            cmd.data.response.data.nodeId = node->id();
             send(cmd);
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
             Node* node = m_nodes.lookup(nodeId);
             node->free();
 
-            Command cmd(this, perform_Response_nodeId);
-            cmd.data.Response_nodeId.requestId = requestId;
-            cmd.data.Response_nodeId.nodeId = nodeId;
+            Command cmd(this, perform_response_nodeId, requestId);
+            cmd.data.response.data.nodeId = node->id();
             send(cmd);
         } else if (msg == "/n_set") {
+        } else if (msg == "/query/external_inputs") {
+            send(Command(this, perform_response_query_external_inputs, requestId));
+        } else if (msg == "/query/external_outputs") {
+            send(Command(this, perform_response_query_external_outputs, requestId));
         }
     } catch (Exception& e) {
         const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);

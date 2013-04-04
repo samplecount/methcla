@@ -130,6 +130,17 @@ namespace Methcla { namespace Audio
 
         //* Return audio bus with id.
         AudioBus* audioBus(const AudioBusId& id);
+        //* Return number of external audio outputs.
+        size_t numExternalAudioOutputs() const
+        {
+            return m_audioOutputChannels.size();
+        }
+        //* Return number of external audio inputs.
+        size_t numExternalAudioInputs() const
+        {
+            return m_audioInputChannels.size();
+        }
+
         //* Return external audio output bus at index.
         AudioBus& externalAudioOutput(size_t index);
         //* Return external audio input bus at index.
@@ -166,13 +177,11 @@ namespace Methcla { namespace Audio
             struct
             {
                 Methcla_RequestId requestId;
-                uint32_t          nodeId;
-            } Response_nodeId;
-            struct
-            {
-                Methcla_RequestId requestId;
-                char              error[512];
-            } Response_error;
+                union {
+                    uint32_t nodeId;
+                    char error[512];
+                } data;
+            } response;
         };
 
         struct Command
@@ -198,6 +207,11 @@ namespace Methcla { namespace Audio
             {
                 memcpy(&data, &other.data, sizeof(data));
             }
+            Command(Environment* e, PerformFunc f, Methcla_RequestId requestId)
+                : Command(e, f)
+            {
+                data.response.requestId = requestId;
+            }
 
             void perform(Channel& channel)
             {
@@ -210,8 +224,10 @@ namespace Methcla { namespace Audio
         };
 
         static void perform_free(Command&, Command::Channel&);
-        static void perform_Response_nodeId(Command&, Command::Channel&);
-        static void perform_Response_error(Command&, Command::Channel&);
+        static void perform_response_nodeId(Command&, Command::Channel&);
+        static void perform_response_error(Command&, Command::Channel&);
+        static void perform_response_query_external_inputs(Command&, Command::Channel&);
+        static void perform_response_query_external_outputs(Command&, Command::Channel&);
 
     protected:
         // Worker thread
