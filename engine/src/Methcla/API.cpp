@@ -25,9 +25,6 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
-
 class Options
 {
 public:
@@ -54,25 +51,36 @@ static const char* kBadAllocMsg = "memory allocation failure";
 
 struct Methcla_Engine
 {
-    Methcla_Engine(const Methcla_Option* inOptions) noexcept
+    struct PacketHandler
+    {
+        Methcla_PacketHandler handler;
+        void* data;
+
+        void operator()(Methcla_RequestId requestId, const void* packet, size_t size)
+        {
+            handler(data, requestId, packet, size);
+        }
+    };
+
+    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_Option* inOptions) noexcept
         : m_error(kMethcla_NoError)
         , m_errorMessage(kNoErrorMsg)
     {
         Options options(inOptions);
-        const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__LV2_PATH));
+        const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH));
 
         // TODO: Put this somewhere else
-        auto libs = options.lookup<const Methcla_LV2_Library*>(METHCLA_OPTION__LV2_LIBRARIES);
+        auto libs = options.lookup<const Methcla_Library*>(METHCLA_OPTION__PLUGIN_LIBRARIES);
         Methcla::Audio::PluginManager::StaticLibraryMap staticLibs;
         if (libs != nullptr) {
             while (libs->plugin != nullptr) {
-                staticLibs[libs->plugin] = libs->function;
+                staticLibs[libs->plugin] = reinterpret_cast<LV2_Lib_Descriptor_Function>(libs->function);
                 libs++;
             }
         }
 
         m_pluginManager = new Methcla::Audio::PluginManager(staticLibs);
-        m_engine = new Methcla::Audio::Engine(*m_pluginManager, lv2Path);
+        m_engine = new Methcla::Audio::Engine(*m_pluginManager, PacketHandler { .handler = handler, .data = handlerData }, lv2Path);
     }
     ~Methcla_Engine()
     {
@@ -87,11 +95,11 @@ struct Methcla_Engine
     std::string                    m_errorBuffer;
 };
 
-Methcla_Engine* methcla_engine_new(const Methcla_Option* options)
+Methcla_Engine* methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options)
 {
     // cout << "Methcla_Engine_new" << endl;
     try {
-        return new Methcla_Engine(options);
+        return new Methcla_Engine(handler, handler_data, options);
     } catch (std::bad_alloc) {
         return nullptr;
     }
@@ -153,26 +161,10 @@ void methcla_engine_stop(Methcla_Engine* engine)
     } METHCLA_ENGINE_CATCH;
 }
 
-LV2_URID methcla_engine_map_uri(Methcla_Engine* engine, const char* uri)
+void methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size)
 {
     METHCLA_ENGINE_TRY {
-        return engine->m_pluginManager->uriMap().map(uri);
-    } METHCLA_ENGINE_CATCH;
-    return 0;
-}
-
-const char* methcla_engine_unmap_uri(Methcla_Engine* engine, LV2_URID urid)
-{
-    METHCLA_ENGINE_TRY {
-        return engine->m_pluginManager->uriMap().unmap(urid);
-    } METHCLA_ENGINE_CATCH;
-    return nullptr;
-}
-
-void methcla_engine_request(Methcla_Engine* engine, Methcla_Response_Handler handler, void* handler_data, const LV2_Atom* request)
-{
-    METHCLA_ENGINE_TRY {
-        engine->m_engine->env().request(handler, handler_data, request);
+        engine->m_engine->env().send(packet, size);
     } METHCLA_ENGINE_CATCH;
 }
 

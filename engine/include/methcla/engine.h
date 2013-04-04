@@ -18,20 +18,20 @@
 #define METHCLA_ENGINE_H_INCLUDED
 
 #include <methcla/common.h>
-
-#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 #define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
 #define METHCLA_LV2_URI         "http://methc.la/lv2"
 
-struct Methcla_LV2_Library
+typedef void (*Methcla_Library_Function)(void);
+
+struct Methcla_Library
 {
-    const char*                 plugin;    //*< Plugin URI (e.g. "http://methc.la/lv2/plugins/sine").
-    LV2_Lib_Descriptor_Function function;  //*< Symbol function address.
+    const char*              plugin;    //*< Plugin URI (e.g. "http://methc.la/lv2/plugins/sine").
+    Methcla_Library_Function function;  //*< Symbol function address.
 };
-typedef struct Methcla_LV2_Library Methcla_LV2_Library;
+typedef struct Methcla_Library Methcla_Library;
 
 #define METHCLA_END_LIBRARIES { NULL, NULL }
 
@@ -44,15 +44,35 @@ typedef struct Methcla_Option Methcla_Option;
 
 #define METHCLA_END_OPTIONS { NULL, NULL }
 
-#define METHCLA_OPTIONS_URI "http://methc.la/engine/options"
-#define METHCLA_OPTIONS_PREFIX METHCLA_OPTIONS_URI "#"
+#define METHCLA_OPTIONS_URI                 "http://methc.la/engine/options"
+#define METHCLA_OPTIONS_PREFIX              METHCLA_OPTIONS_URI "#"
 
-#define METHCLA_OPTION__LV2_PATH METHCLA_OPTIONS_PREFIX "lv2Path"
-#define METHCLA_OPTION__LV2_LIBRARIES METHCLA_OPTIONS_PREFIX "lv2Libraries"
+#define METHCLA_OPTION__PLUGIN_PATH         METHCLA_OPTIONS_PREFIX "pluginPath"
+#define METHCLA_OPTION__PLUGIN_LIBRARIES    METHCLA_OPTIONS_PREFIX "pluginLibraries"
 
+//* An integral type for uniquely identifying requests sent to the engine.
+typedef int32_t Methcla_RequestId;
+
+enum
+{
+    //* Request id reserved for asynchronous notifications.
+    //  Clients should not use this id when sending requests to the engine.
+    kMethcla_Notification = 0
+};
+
+//* Callback function type for handling OSC packets coming from the engine.
+//  Packets can be either responses to previously issued requests, or, if request_id is equal to kMethcla_Notification, an asynchronous notification.
+typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId request_id, const void* packet, size_t size);
+
+//* Abstract type for the sound engine.
 typedef struct Methcla_Engine Methcla_Engine;
 
-METHCLA_EXPORT Methcla_Engine* methcla_engine_new(const Methcla_Option* options);
+//* Create a new engine with the given packet handling closure and options.
+METHCLA_EXPORT Methcla_Engine* methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options);
+
+//* Free the resources associated with engine.
+//
+//  Dereferencing engine after this function returns results in undefined behavior.
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
 typedef enum Methcla_Error
@@ -63,18 +83,20 @@ typedef enum Methcla_Error
     kMethcla_Error
 } Methcla_Error;
 
+//* Return the last error code.
 METHCLA_EXPORT Methcla_Error methcla_engine_error(const Methcla_Engine* engine);
+
+//* Return the error message associated with the last error.
 METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine);
 
+//* Start the engine.
 METHCLA_EXPORT void methcla_engine_start(Methcla_Engine* engine);
+
+//* Stop the engine.
 METHCLA_EXPORT void methcla_engine_stop(Methcla_Engine* engine);
 
-METHCLA_EXPORT LV2_URID methcla_engine_map_uri(Methcla_Engine* engine, const char* uri);
-METHCLA_EXPORT const char* methcla_engine_unmap_uri(Methcla_Engine* engine, LV2_URID urid);
-
-typedef void (*Methcla_Response_Handler)(void* handler_data, LV2_Atom* request, const LV2_Atom* response);
-
-METHCLA_EXPORT void methcla_engine_request(Methcla_Engine* engine, Methcla_Response_Handler handler, void* handler_data, const LV2_Atom* request);
+//* Send an OSC packet to the engine.
+METHCLA_EXPORT void methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
 //* Temporarily exported.
 METHCLA_EXPORT void* methcla_engine_impl(Methcla_Engine* engine);

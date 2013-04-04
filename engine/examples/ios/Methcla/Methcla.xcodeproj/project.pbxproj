@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A5A7E9E216C40E280022CD1B /* libmethcla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A7E9E116C40E280022CD1B /* libmethcla.a */; };
+		53F752F6170C9FDD00916D62 /* libmethcla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 53F752F5170C9FDD00916D62 /* libmethcla.a */; };
 		A5D0BA7C16C2C2C600C3A046 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		A5D0BA7D16C2C2C600C3A046 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		A5D0BA7E16C2C2C600C3A046 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */; };
@@ -56,11 +56,11 @@
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		53E8B0AB16A8429D00C5BB02 /* lv2 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lv2; path = ../../../lv2; sourceTree = "<group>"; };
 		53EAEA8416A84D7E00380DD3 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../../../src; sourceTree = "<group>"; };
+		53F752F5170C9FDD00916D62 /* libmethcla.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmethcla.a; path = ../../../build/debug/iphoneos/armv7/libmethcla.a; sourceTree = "<group>"; };
 		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		A52CEE2B16C162E0008D8457 /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../../platform; sourceTree = "<group>"; };
 		A5A044D616C3C3CE00B84E4E /* Engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
-		A5A7E9E116C40E280022CD1B /* libmethcla.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmethcla.a; path = ../../../build/debug/ios/armv7/libmethcla.a; sourceTree = "<group>"; };
 		A5D0BA7B16C2C2C500C3A046 /* Methcla.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Methcla.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5D0BA7F16C2C2C600C3A046 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		A5D0BA8416C2C2C600C3A046 /* Methcla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Methcla-Info.plist"; sourceTree = "<group>"; };
@@ -98,7 +98,7 @@
 				A5D0BA7E16C2C2C600C3A046 /* CoreGraphics.framework in Frameworks */,
 				A5D0BA8016C2C2C600C3A046 /* GLKit.framework in Frameworks */,
 				A5D0BA8116C2C2C600C3A046 /* OpenGLES.framework in Frameworks */,
-				A5A7E9E216C40E280022CD1B /* libmethcla.a in Frameworks */,
+				53F752F6170C9FDD00916D62 /* libmethcla.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,7 +141,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A5A7E9E116C40E280022CD1B /* libmethcla.a */,
+				53F752F5170C9FDD00916D62 /* libmethcla.a */,
 				A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */,
 				A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */,
 				F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */,
@@ -507,6 +507,7 @@
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
 					"$(METHCLA_SOURCE)/external_libraries/lv2",
+					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -543,6 +544,7 @@
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
 					"$(METHCLA_SOURCE)/external_libraries/lv2",
+					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;

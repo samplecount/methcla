@@ -24,16 +24,13 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 #include <boost/serialization/strong_typedef.hpp>
 
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-
-// This is missing from patch.h
-#ifndef LV2_PATCH__Insert
-# define LV2_PATCH__Insert LV2_PATCH_PREFIX "Insert"
-#endif
+#include <oscpp/client.hpp>
+#include <oscpp/server.hpp>
 
 namespace Methcla
 {
@@ -43,11 +40,8 @@ namespace Methcla
     {
     public:
         Engine(const Methcla_Option* options)
-            : m_engine(methcla_engine_new(options))
-            , m_map({ m_engine, engineMapUri })
-            , m_unmap({ m_engine, engineUnmapUri })
-            , m_forge(&m_map)
-            , m_parser(&m_map, &m_unmap)
+            : m_engine(methcla_engine_new(handlePacket, this, options))
+            , m_requestId(kMethcla_Notification+1)
         {
             check(m_engine);
         }
@@ -73,45 +67,30 @@ namespace Methcla
             check(m_engine);
         }
 
-        LV2_URID map_uri(const char* uri)
+        void send(void* packet, size_t size)
         {
-            LV2_URID result = methcla_engine_map_uri(m_engine, uri);
-            check(m_engine);
+            methcla_engine_send(m_engine, packet, size);
+        }
+
+        void send(const OSC::Client::Packet& packet)
+        {
+            send(packet.data(), packet.size());
+        }
+
+        Methcla_RequestId getRequestId()
+        {
+            Methcla_RequestId result = m_requestId;
+            if (result == kMethcla_Notification) {
+                result++;
+            }
+            m_requestId = result + 1;
             return result;
         }
 
-        const char* unmap_uri(LV2_URID urid)
+        void registerResponse(Methcla_RequestId requestId, std::function<void (const void*, size_t)> callback)
         {
-            const char* result = methcla_engine_unmap_uri(m_engine, urid);
-            check(m_engine);
-            return result;
-        }
-
-        LV2_Atom* request(LV2_Atom* request)
-        {
-            std::cout << BOOST_CURRENT_FUNCTION << std::endl;
-            print(std::cout, request, 4);
-
-            std::promise<LV2_Atom*> sink;
-            methcla_engine_request(m_engine, responseHandler, &sink, request);
-            check(m_engine);
-            return sink.get_future().get();
-        }
-
-        const LV2::Forge& forge()
-        {
-            return m_forge;
-        }
-
-        const LV2::Parser& parser()
-        {
-            return m_parser;
-        }
-
-        void print(std::ostream& out, const LV2_Atom* atom, size_t indent=0)
-        {
-            m_parser.print(out, atom, indent);
-            out << std::endl;
+            std::lock_guard<std::mutex> lock(m_callbacksMutex);
+            m_callbacks[requestId] = callback;
         }
 
     private:
@@ -129,37 +108,27 @@ namespace Methcla
             }
         }
 
-        static void responseHandler(void* data, LV2_Atom* request, const LV2_Atom* inResponse)
+        static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
-            auto sink = static_cast<std::promise<LV2_Atom*>*>(data);
-            LV2_Atom* response = nullptr;
-            if (request->size >= inResponse->size) {
-                memcpy(request, inResponse, sizeof(LV2_Atom) + inResponse->size);
-                response = request;
-            } else {
-                response = (LV2_Atom*)malloc(sizeof(LV2_Atom) + inResponse->size);
-                memcpy(response, inResponse, sizeof(LV2_Atom) + inResponse->size);
-                free(request);
+            static_cast<Engine*>(data)->handlePacket(requestId, packet, size);
+        }
+
+        void handlePacket(Methcla_RequestId requestId, const void* packet, size_t size)
+        {
+            std::lock_guard<std::mutex> lock(m_callbacksMutex);
+            // look up request id and invoke callback
+            auto it = m_callbacks.find(requestId);
+            if (it != m_callbacks.end()) {
+                it->second(packet, size);
+                m_callbacks.erase(it);
             }
-            sink->set_value(response);
-        }
-
-        static LV2_URID engineMapUri(LV2_URID_Map_Handle handle, const char* uri)
-        {
-            return methcla_engine_map_uri(static_cast<Methcla_Engine*>(handle), uri);
-        }
-
-        static const char* engineUnmapUri(LV2_URID_Unmap_Handle handle, LV2_URID urid)
-        {
-            return methcla_engine_unmap_uri(static_cast<Methcla_Engine*>(handle), urid);
         }
 
     private:
-        Methcla_Engine* m_engine;
-        LV2_URID_Map    m_map;
-        LV2_URID_Unmap  m_unmap;
-        LV2::Forge      m_forge;
-        LV2::Parser     m_parser;
+        Methcla_Engine*     m_engine;
+        Methcla_RequestId   m_requestId;
+        std::unordered_map<Methcla_RequestId,std::function<void (const void*, size_t)>> m_callbacks;
+        std::mutex          m_callbacksMutex;
     };
 
     template <class T> struct FreeDeleter
@@ -167,42 +136,62 @@ namespace Methcla
         void operator()(T* ptr) const { free(ptr); }
     };
 
+    static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
+    {
+        out << msg.address() << ' ';
+        OSC::Server::ArgStream args(msg.args());
+        while (!args.atEnd()) {
+            const char t = args.tag();
+            out << t << ':';
+            switch (t) {
+                case 'i':
+                    out << args.int32();
+                    break;
+                case 'f':
+                    out << args.float32();
+                    break;
+                case 's':
+                    out << args.string();
+                    break;
+                case 'b':
+                    out << args.blob().size;
+                    break;
+                default:
+                    out << '?';
+                    break;
+            }
+            out << ' ';
+        }
+    }
+
     NodeId synth(Engine& engine, const char* synthDef)
     {
-        uint8_t* buffer = (uint8_t*)malloc(8192);
-        LV2::Forge forge(engine.forge());
-        forge.setBuffer(buffer, 8192);
-        {
-            LV2::ObjectFrame frame(forge, 0, engine.map_uri(LV2_PATCH__Insert));
-            forge << LV2::Property(engine.map_uri(LV2_PATCH__subject));
-            {
-                LV2::ObjectFrame frame(forge, 0, engine.map_uri(METHCLA_ENGINE_PREFIX "Node"));
-                forge << LV2::Property(engine.map_uri(METHCLA_ENGINE_PREFIX "id"))
-                      << int32_t(0);
-            }
-            forge << LV2::Property(engine.map_uri(LV2_PATCH__body));
-            {
-                LV2::ObjectFrame frame(forge, 0, engine.map_uri(METHCLA_ENGINE_PREFIX "Synth"));
-                forge << LV2::Property(engine.map_uri(METHCLA_ENGINE_PREFIX "plugin"))
-                      << engine.map_uri(synthDef);
-            }
-        }
+        Methcla_RequestId requestId = engine.getRequestId();
 
-        LV2_Atom* requestAtom = reinterpret_cast<LV2_Atom*>(buffer);
-        auto responseAtom = std::unique_ptr<LV2_Atom, FreeDeleter<LV2_Atom>>(engine.request(requestAtom));
-        auto response = engine.parser().cast<const LV2_Atom_Object*>(responseAtom.get());
+        OSC::Client::StaticPacket<8192> request;
+        request
+            .openMessage("/s_new", 4)
+                .int32(requestId)
+                .string(synthDef)
+                .int32(0)
+                .int32(0)
+            .closeMessage();
 
-        if (LV2::isa(response, engine.map_uri(LV2_PATCH__Ack))) {
-            auto subject = engine.parser().get<const LV2_Atom_Object*>(response, engine.map_uri(LV2_PATCH__subject));
-            return NodeId(engine.parser().get<int32_t>(subject, engine.map_uri(METHCLA_ENGINE_PREFIX "id")));
-        } else if (LV2::isa(response, engine.map_uri(LV2_PATCH__Error))) {
-            auto msg = engine.parser().get<const char*>(response, engine.map_uri(METHCLA_ENGINE_PREFIX "errorMessage"));
-            throw std::runtime_error(msg);
-        } else {
-            std::stringstream msg;
-            msg << "Unknown response type " << engine.unmap_uri(response->body.otype);
-            throw std::runtime_error(msg.str());
-        }
+        dumpMessage(std::cout, (OSC::Server::Message)OSC::Server::Packet(request.data(), request.size()));
+        std::cout << std::endl;
+
+        std::promise<OSC::Server::Packet> promise;
+        engine.registerResponse(requestId, [&promise](const void* packet, size_t size){ promise.set_value(OSC::Server::Packet(packet, size)); });
+        engine.send(request);
+
+        const OSC::Server::Packet& response(promise.get_future().get());
+        assert( response.isMessage() );
+        auto args = ((OSC::Server::Message)response).args();
+        int32_t requestId_ = args.int32();
+        assert(requestId_ == requestId);
+        int32_t nodeId = args.int32();
+
+        return (NodeId)nodeId;
     }
 };
 

@@ -20,8 +20,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "lv2/lv2plug.in/ns/ext/atom/util.h"
-
 using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
@@ -42,19 +40,17 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-Environment::Environment(PluginManager& pluginManager, const Options& options)
+Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_rtMem(options.realtimeMemorySize)
     , m_plugins(pluginManager)
+    , m_listener(handler)
     , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_nodes(options.maxNumNodes)
     , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
     , m_epoch(0)
-    , m_worker(uriMap())
-    , m_uris(uriMap())
-    , m_parser(uriMap().lv2Map(), uriMap().lv2Unmap())
 {
     const Epoch prevEpoch = epoch() - 1;
 
@@ -97,9 +93,20 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
-void Environment::request(MessageQueue::Respond respond, void* data, const LV2_Atom* msg)
+static void freePacket(void* packet)
 {
-    m_requests.send(respond, data, msg);
+    delete [] static_cast<char*>(packet);
+}
+
+void Environment::send(const void* packet, size_t size)
+{
+    char* myPacket = new char[size];
+    memcpy(myPacket, packet, size);
+    Request req;
+    req.packet = myPacket;
+    req.size = size;
+    req.free = freePacket;
+    m_requests.send(req);
 }
 
 void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
@@ -137,193 +144,181 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
-static void forgeReturnEnvelope(::LV2::Forge& forge, const Uris& uris, const Environment::MessageQueue::Message& msg)
+void Environment::perform_free(Command& cmd, Command::Channel&)
 {
-    forge.atom(sizeof(msg), uris.atom_Chunk);
-    forge.write(&msg, sizeof(msg));
+    cmd.data.free.func(cmd.data.free.ptr);
 }
 
-static void forgeError(::LV2::Forge& forge, const Uris& uris, const char* errorMessage)
+void Environment::perform_Response_nodeId(Command& cmd, Command::Channel&)
 {
-    ::LV2::ObjectFrame frame(forge, 0, uris.patch_Error);
-    forge << ::LV2::Property(uris.methcla_errorMessage)
-          << errorMessage;
+    OSC::Client::StaticPacket<128> packet;
+    packet
+        .openMessage("/ack", 2)
+            .int32(cmd.data.Response_nodeId.requestId)
+            .int32(cmd.data.Response_nodeId.nodeId)
+        .closeMessage();
+    cmd.env->reply(cmd.data.Response_nodeId.requestId, packet);
 }
 
-static void forgeException(::LV2::Forge& forge, const Uris& uris, const Exception& e)
+void Environment::perform_Response_error(Command& cmd, Command::Channel&)
 {
-    const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
-    const char* errorMessage = errorInfo == nullptr ? "Unknown error" : errorInfo->c_str();
-    forgeError(forge, uris, errorMessage);
+    OSC::Client::StaticPacket<1024> packet;
+    packet
+        .openMessage("/error", 2)
+            .int32(cmd.data.Response_error.requestId)
+            .string(cmd.data.Response_error.error)
+        .closeMessage();
+    cmd.env->reply(cmd.data.Response_nodeId.requestId, packet);
 }
 
-static void sendReply(void* data, const LV2_Atom* payload, Environment::Worker::Writer& /* writer */)
+void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
-    const LV2::Parser& parser = *static_cast<const LV2::Parser*>(data);
-    auto tuple = parser.cast<const LV2_Atom_Tuple*>(payload);
-    auto iter = lv2_atom_tuple_begin(tuple);
-    auto msg = parser.cast<const Environment::MessageQueue::Message*>(iter);
-    auto response = lv2_atom_tuple_next(iter);
-    msg->respond(response);
+    Command cmd(this, perform_Response_error);
+    cmd.data.Response_error.requestId = requestId;
+    strncpy(cmd.data.Response_error.error, msg, sizeof(cmd.data.Response_error.error));
+    send(cmd);
 }
 
 void Environment::processRequests()
 {
-    MessageQueue::Message msg;
+    Request msg;
     while (m_requests.next(msg)) {
         try {
-            handleRequest(msg);
-        } catch(Exception& e) {
-            // Send Error response
-            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
-            {
-                ::LV2::TupleFrame frame(forge);
-                forgeReturnEnvelope(frame, uris(), msg);
-                forgeException(frame, uris(), e);
-            }
-            commit();
-        } catch(std::exception& e) {
-            // Send Error response
-            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
-            {
-                ::LV2::TupleFrame frame(forge);
-                forgeReturnEnvelope(frame, uris(), msg);
-                forgeError(frame, uris(), e.what());
-            }
-            commit();
-        }
-    }
-}
-
-/*
-*/
-void Environment::handleRequest(MessageQueue::Message& request)
-{
-    const LV2_Atom* atom = request.payload();
-
-    std::cout << BOOST_CURRENT_FUNCTION << std::endl;
-    m_parser.print(std::cout, atom, 4);
-
-    if (m_parser.isObject(atom))
-        handleMessageRequest(request, m_parser.cast<const LV2_Atom_Object*>(atom));
-    else if (m_parser.isSequence(atom))
-        handleSequenceRequest(request, m_parser.cast<const LV2_Atom_Sequence*>(atom));
-    else
-        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString("Invalid request type"));
-}
-
-static void missingProperty(const char* name)
-{
-    BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString(std::string("missing property ") + name) );
-}
-
-static void checkProperty(const LV2_Atom* atom, const char* name)
-{
-    if (atom == nullptr) missingProperty(name);
-}
-
-void Environment::handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg)
-{
-    const LV2_Atom* subjectAtom = nullptr;
-    const LV2_Atom* bodyAtom = nullptr;
-    const LV2_URID requestType = msg->body.otype;
-
-    lv2_atom_object_get( msg
-                       , uris().patch_subject, &subjectAtom
-                       , uris().patch_body, &bodyAtom
-                       , nullptr );
-
-    checkProperty(subjectAtom, LV2_PATCH__subject);
-    checkProperty(bodyAtom, LV2_PATCH__body);
-
-    const LV2_Atom_Object* subject = m_parser.cast<const LV2_Atom_Object*>(subjectAtom);
-    const LV2_Atom_Object* body = m_parser.cast<const LV2_Atom_Object*>(bodyAtom);
-
-    if (LV2::isa(subject, uris().methcla_Node)) {
-        // Get target node
-        const LV2_Atom* targetAtom = nullptr;
-        lv2_atom_object_get(subject, uris().methcla_id, &targetAtom, nullptr);
-        checkProperty(targetAtom, METHCLA_ENGINE_PREFIX "id");
-
-        NodeId targetId(m_parser.cast<int32_t>(targetAtom));
-        Node* targetNode = m_nodes.lookup(targetId);
-        if (targetNode == nullptr)
-            BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("target node not found")
-                                               << ErrorInfoNodeId(targetId) );
-
-        Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
-        Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
-
-        if (requestType == uris().patch_Insert) {
-            Node* node = nullptr;
-            LV2_URID nodeType = uris().methcla_Node;
-
-            if (LV2::isa(body, uris().methcla_Synth)) {
-                // Get plugin URI
-                const LV2_Atom* pluginAtom = nullptr;
-                lv2_atom_object_get(body, uris().methcla_plugin, &pluginAtom, nullptr);
-                checkProperty(pluginAtom, METHCLA_ENGINE_PREFIX "plugin");
-                LV2_URID pluginURID = m_parser.cast<LV2_URID>(pluginAtom);
-
-                // get add action, params and bus mappings from body
-
-                const std::shared_ptr<Plugin> def = plugins().lookup(pluginURID);
-
-                node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
-                nodeType = uris().methcla_Synth;
-            } else if (LV2::isa(body, uris().methcla_Group)) {
-                node = Group::construct(*this, targetGroup, Node::kAddToTail);
-                nodeType = uris().methcla_Group;
+            OSC::Server::Packet packet(msg.packet, msg.size);
+            if (packet.isBundle()) {
+                processBundle(packet);
             } else {
-                BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("invalid body type for " LV2_PATCH__Insert) );
+                processMessage(packet);
             }
-
-            // Send reply with node id (from NRT thread)
-            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
-            {
-                ::LV2::TupleFrame frame(forge);
-                forgeReturnEnvelope(frame, uris(), request);
-                {
-                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
-                    forge << ::LV2::Property(uris().patch_subject);
-                    {
-                        ::LV2::ObjectFrame frame(forge, 0, nodeType);
-                        forge << ::LV2::Property(uris().methcla_id)
-                              << (int32_t)node->id();
-                    }
-                }
-            }
-            commit();
-        } else if (requestType == uris().patch_Delete) {
-            targetNode->free();
-
-            ::LV2::Forge forge(*prepare(sendReply, &m_parser));
-            {
-                ::LV2::TupleFrame frame(forge);
-                forgeReturnEnvelope(frame, uris(), request);
-                {
-                    ::LV2::ObjectFrame frame(forge, 0, uris().patch_Ack);
-                    // Return original subject
-                    forge << ::LV2::Property(uris().patch_subject)
-                          << subjectAtom;
-                }
-            }
-            commit();
-        } else if (requestType == uris().patch_Set) {
-            // get add action, params and bus mappings from body
+        } catch (std::exception& e) {
+            std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
-    } else {
-        BOOST_THROW_EXCEPTION( Exception() << ErrorInfoString("unknown subject type for " LV2_PATCH__Request) );
+        // Free packet in NRT thread
+        Command cmd(this, perform_free);
+        cmd.data.free.func = msg.free;
+        cmd.data.free.ptr  = msg.packet;
+        send(cmd);
     }
 }
 
-void Environment::handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl)
+static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
 {
-    std::cerr << "Sequence requests not supported yet\n";
+    out << msg.address() << ' ';
+    OSC::Server::ArgStream args(msg.args());
+    while (!args.atEnd()) {
+        const char t = args.tag();
+        out << t << ':';
+        switch (t) {
+            case 'i':
+                out << args.int32();
+                break;
+            case 'f':
+                out << args.float32();
+                break;
+            case 's':
+                out << args.string();
+                break;
+            case 'b':
+                out << args.blob().size;
+                break;
+            default:
+                out << '?';
+                break;
+        }
+        out << ' ';
+    }
 }
 
+// static void indent(std::ostream& out, size_t width)
+// {
+    // while (width-- > 0) out << ' ';
+// }
 
-Engine::Engine(PluginManager& pluginManager, const boost::filesystem::path& lv2Directory)
+// static void dumpBundle(std::ostream& out, const OSC::server::Bundle& bundle, size_t tabWidth, size_t curIndent=0)
+// {
+    // out << bundle.time() << " [";
+    // indent(curIndent+tabWidth);
+// }
+
+void Environment::processMessage(const OSC::Server::Message& msg)
+{
+    dumpMessage(std::cout, msg);
+    std::cout << std::endl;
+
+    auto args = msg.args();
+    Methcla_RequestId requestId = args.int32();
+
+    try {
+        if (msg == "/s_new") {
+            const char* defName = args.string();
+            NodeId targetId = NodeId(args.int32());
+            int32_t addAction = args.int32();
+
+            const std::shared_ptr<Plugin> def = plugins().lookup(defName);
+
+            Node* targetNode = m_nodes.lookup(targetId);
+            if (targetNode == nullptr)
+                BOOST_THROW_EXCEPTION(InvalidNodeId());
+
+            Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
+            Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
+
+            Node* node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
+
+            Command cmd(this, perform_Response_nodeId);
+            cmd.data.Response_nodeId.requestId = requestId;
+            cmd.data.Response_nodeId.nodeId = node->id();
+            send(cmd);
+        } else if (msg == "/g_new") {
+            NodeId targetId = NodeId(args.int32());
+            int32_t addAction = args.int32();
+
+            Node* targetNode = m_nodes.lookup(targetId);
+            if (targetNode == nullptr)
+                BOOST_THROW_EXCEPTION(InvalidNodeId());
+
+            Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
+            Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
+
+            Node* node = Group::construct(*this, targetGroup, Node::kAddToTail);
+
+            Command cmd(this, perform_Response_nodeId);
+            cmd.data.Response_nodeId.requestId = requestId;
+            cmd.data.Response_nodeId.nodeId = node->id();
+            send(cmd);
+        } else if (msg == "/n_free") {
+            NodeId nodeId = NodeId(args.int32());
+            Node* node = m_nodes.lookup(nodeId);
+            node->free();
+
+            Command cmd(this, perform_Response_nodeId);
+            cmd.data.Response_nodeId.requestId = requestId;
+            cmd.data.Response_nodeId.nodeId = nodeId;
+            send(cmd);
+        } else if (msg == "/n_set") {
+        }
+    } catch (Exception& e) {
+        const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
+        const char* errorMessage = errorInfo == nullptr ? "Unknown error" : errorInfo->c_str();
+        replyError(requestId, errorMessage);
+    } catch (std::exception& e) {
+        replyError(requestId, e.what());
+    }
+}
+
+void Environment::processBundle(const OSC::Server::Bundle& bundle)
+{
+    // throw std::runtime_error("Bundle support not implemented yet");
+    for (auto p : bundle) {
+        if (p.isBundle()) {
+            processBundle(p);
+        } else {
+            processMessage(p);
+        }
+    }
+}
+
+Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const boost::filesystem::path& lv2Directory)
 {
     m_driver = IO::defaultPlatformDriver();
     m_driver->setProcessCallback(processCallback, this);
@@ -333,7 +328,7 @@ Engine::Engine(PluginManager& pluginManager, const boost::filesystem::path& lv2D
     options.blockSize = m_driver->bufferSize();
     options.numHardwareInputChannels = m_driver->numInputs();
     options.numHardwareOutputChannels = m_driver->numOutputs();
-    m_env = new Environment(pluginManager, options);
+    m_env = new Environment(pluginManager, handler, options);
 
     pluginManager.loadPlugins(lv2Directory);
 }

@@ -262,10 +262,6 @@ PluginManager::PluginManager(const StaticLibraryMap& libs)
 
     // http://methc.la/lv2/ext/rt-instantiate#rtInstantiation
     addFeature( METHCLA_LV2_URI "/ext/rt-instantiate#rtInstantiation" );
-
-    // http://lv2plug.in/ns/ext/urid
-    addFeature( LV2_URID_MAP_URI, m_uriMap.lv2Map() );
-    addFeature( LV2_URID_UNMAP_URI, m_uriMap.lv2Unmap() );
 }
 
 PluginManager::~PluginManager()
@@ -280,9 +276,9 @@ const LV2_Feature* const* PluginManager::features()
     return &m_features[0];
 }
 
-const std::shared_ptr<Plugin>& PluginManager::lookup(LV2_URID urid) const
+const std::shared_ptr<Plugin>& PluginManager::lookup(const char* name) const
 {
-    return m_plugins.find(urid)->second;
+    return m_plugins.find(name)->second;
 }
 
 void PluginManager::loadPlugins(const boost::filesystem::path& directory)
@@ -348,7 +344,7 @@ void PluginManager::loadPlugins(const boost::filesystem::path& directory)
             }
 
             auto plugin = make_shared<Plugin>(*this, libIter->second, lilvPlugin);
-            m_plugins[uriMap().map(plugin->uri())] = plugin;
+            m_plugins[plugin->uri()] = plugin;
         }
     }
 }

@@ -18,7 +18,6 @@
 #include <methcla/engine.h>
 
 #include "Methcla/Lilv.hpp"
-#include "Methcla/LV2/URIDMap.hpp"
 #include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
@@ -30,7 +29,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/methc.la/ext/rt-instantiate/rt-instantiate.h"
 
 namespace Methcla { namespace Audio {
@@ -188,18 +186,20 @@ public:
     void loadPlugins(const boost::filesystem::path& directory);
 
     // Plugin access
-    const std::shared_ptr<Plugin>& lookup(LV2_URID urid) const;
-
-    // Uri mapping
-    const LV2::URIDMap& uriMap() const { return m_uriMap; }
-    LV2::URIDMap& uriMap() { return m_uriMap; }
+    const std::shared_ptr<Plugin>& lookup(const char* name) const;
 
 private:
     void addFeature(const char* uri, void* data=0);
 
     typedef std::vector<const LV2_Feature*> Features;
-    typedef std::unordered_map<std::string,std::shared_ptr<PluginLibrary>> LibraryMap;
-    typedef std::unordered_map<LV2_URID,std::shared_ptr<Plugin>> PluginMap;
+    typedef std::unordered_map<std::string,
+                               std::shared_ptr<PluginLibrary>>
+            LibraryMap;
+    typedef std::unordered_map<const char*,
+                               std::shared_ptr<Plugin>,
+                               Utility::Hash::cstr_hash,
+                               Utility::Hash::cstr_equal>
+            PluginMap;
 
     LilvWorld*                              m_world;
     Features                                m_features;
@@ -207,7 +207,6 @@ private:
     StaticLibraryMap                        m_staticLibs;
     LibraryMap                              m_libs;
     PluginMap                               m_plugins;
-    LV2::URIDMap                            m_uriMap;
 };
 
 }; };

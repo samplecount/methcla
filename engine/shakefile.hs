@@ -109,6 +109,8 @@ engineBuildFlags platform =
          -- Boost
       ++ [ boostDir
          , "external_libraries/boost_lockfree" ]
+         -- oscpp
+      ++ [ "external_libraries/oscpp" ]
          -- TLSF
       ++ [ tlsfDir ] )
 

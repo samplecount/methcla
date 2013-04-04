@@ -39,19 +39,17 @@ private:
     LV2_URID insert(const char* uri);
 
 private:
-    typedef std::unordered_map<
-                const char*
-              , LV2_URID
-              , Methcla::Utility::Hash::string_hash
-              , Methcla::Utility::Hash::string_equal_to >
+    typedef std::unordered_map<const char*,
+                               LV2_URID,
+                               Methcla::Utility::Hash::cstr_hash,
+                               Methcla::Utility::Hash::cstr_equal>
             UriToId;
-    typedef std::unordered_map<
-                LV2_URID
-              , const char* >
+    typedef std::unordered_map<LV2_URID,
+                               const char*>
             IdToUri;
     
-    UriToId 		m_uriToId;
-    IdToUri 		m_idToUri;
+    UriToId         m_uriToId;
+    IdToUri         m_idToUri;
     LV2_URID_Map    m_lv2Map;
     LV2_URID_Unmap  m_lv2Unmap;
 };

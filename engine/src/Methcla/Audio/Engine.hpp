@@ -31,7 +31,11 @@
 #include <boost/utility.hpp>
 
 #include <cstddef>
+#include <functional>
 #include <vector>
+
+#include <oscpp/client.hpp>
+#include <oscpp/server.hpp>
 
 #include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 #include "lv2/lv2plug.in/ns/ext/patch/patch.h"
@@ -85,67 +89,7 @@ namespace Methcla { namespace Audio
 
     class Group;
 
-    // Mapped URIs needed by the realtime thread
-    struct Uris
-    {
-        // atom
-        const LV2_URID atom_Blank;
-        const LV2_URID atom_Chunk;
-        const LV2_URID atom_Int;
-        const LV2_URID atom_Resource;
-        const LV2_URID atom_Sequence;
-        const LV2_URID atom_URID;
-        // patch
-        const LV2_URID patch_Ack;
-        const LV2_URID patch_Delete;
-        const LV2_URID patch_Error;
-        const LV2_URID patch_Insert;
-        const LV2_URID patch_Set;
-        const LV2_URID patch_subject;
-        const LV2_URID patch_body;
-        // methcla
-        const LV2_URID methcla_Group;
-        const LV2_URID methcla_Node;
-        const LV2_URID methcla_Synth;
-        const LV2_URID methcla_errorMessage;
-        const LV2_URID methcla_id;
-        const LV2_URID methcla_nodes;
-        const LV2_URID methcla_addToHead;
-        const LV2_URID methcla_addToTail;
-        const LV2_URID methcla_plugin;
-        const LV2_URID methcla_target;
-
-        Uris(LV2::URIDMap& uris)
-            : atom_Blank    ( uris.map(LV2_ATOM__Blank) )
-            , atom_Chunk    ( uris.map(LV2_ATOM__Chunk) )
-            , atom_Int      ( uris.map(LV2_ATOM__Int) )
-            , atom_Resource ( uris.map(LV2_ATOM__Resource) )
-            , atom_Sequence ( uris.map(LV2_ATOM__Sequence) )
-            , atom_URID     ( uris.map(LV2_ATOM__URID) )
-            , patch_Ack     ( uris.map(LV2_PATCH__Ack) )
-            , patch_Delete  ( uris.map(LV2_PATCH__Delete) )
-            , patch_Error   ( uris.map(LV2_PATCH__Error) )
-            , patch_Insert  ( uris.map(LV2_PATCH__Insert) )
-            , patch_Set     ( uris.map(LV2_PATCH__Set) )
-            , patch_subject ( uris.map(LV2_PATCH__subject) )
-            , patch_body    ( uris.map(LV2_PATCH__body) )
-            , methcla_Group ( uris.map(METHCLA_ENGINE_PREFIX "Group") )
-            , methcla_Node  ( uris.map(METHCLA_ENGINE_PREFIX "Node") )
-            , methcla_Synth ( uris.map(METHCLA_ENGINE_PREFIX "Synth") )
-            , methcla_errorMessage    ( uris.map(METHCLA_ENGINE_PREFIX "errorMessage") )
-            , methcla_id    ( uris.map(METHCLA_ENGINE_PREFIX "id") )
-            , methcla_nodes ( uris.map(METHCLA_ENGINE_PREFIX "nodes") )
-            , methcla_addToHead ( uris.map(METHCLA_ENGINE_PREFIX "addToHead") )
-            , methcla_addToTail ( uris.map(METHCLA_ENGINE_PREFIX "addToTail") )
-            , methcla_plugin ( uris.map(METHCLA_ENGINE_PREFIX "plugin") )
-            , methcla_target ( uris.map(METHCLA_ENGINE_PREFIX "target") )
-        { }
-
-        bool isNode(const LV2_Atom_Object* obj) const
-        {
-            return (obj->body.otype == methcla_Group) || (obj->body.otype == methcla_Synth);
-        }
-    };
+    typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;
 
     class Environment : public boost::noncopyable
     {
@@ -173,7 +117,7 @@ namespace Methcla { namespace Audio
             size_t numHardwareOutputChannels;
         };
 
-        Environment(PluginManager& pluginManager, const Options& options);
+        Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options);
         ~Environment();
 
         const PluginManager& plugins() const { return m_plugins; }
@@ -197,37 +141,117 @@ namespace Methcla { namespace Audio
 
         void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
 
-        // URIs and messages
-        const LV2::URIDMap& uriMap() const { return plugins().uriMap(); }
-        LV2::URIDMap& uriMap() { return plugins().uriMap(); }
-
-        LV2_URID mapUri(const char* uri) { return uriMap().map(uri); }
-        const char* unmapUri(LV2_URID urid) const { return uriMap().unmap(urid); }
-
-        const Uris& uris() const { return m_uris; }
-        const LV2::Parser& parser() const { return m_parser; }
-
-        // Request queue
-        typedef Utility::MessageQueue<8192> MessageQueue;
-        void request(MessageQueue::Respond respond, void* data, const LV2_Atom* msg);
-
-        // Worker thread
-        typedef Utility::WorkerThread<8192,8192> Worker;
-
-        LV2_Atom_Forge* prepare(const Worker::Perform& perform, void* data)
-        {
-            return m_worker.toWorker().prepare(perform, data);
-        }
-        void commit()
-        {
-            m_worker.toWorker().commit();
-        }
+        //* Send an OSC request to the engine.
+        void send(const void* packet, size_t size);
 
     protected:
+        static const size_t kQueueSize = 8192;
+
+        struct Request
+        {
+            void* packet;
+            size_t size;
+            void (*free)(void*);
+        };
+
+        typedef Utility::MessageQueue<Request,kQueueSize> MessageQueue;
+
+        union CommandData
+        {
+            struct
+            {
+                void (*func)(void*);
+                void* ptr;
+            } free;
+            struct
+            {
+                Methcla_RequestId requestId;
+                uint32_t          nodeId;
+            } Response_nodeId;
+            struct
+            {
+                Methcla_RequestId requestId;
+                char              error[512];
+            } Response_error;
+        };
+
+        struct Command
+        {
+            typedef Utility::Channel<Command,kQueueSize> Channel;
+            typedef void (*PerformFunc)(Command& cmd, Channel& channel);
+
+            Command()
+                : env(nullptr)
+                , performFunc(nullptr)
+            {
+                memset(&data, 0, sizeof(data));
+            }
+            Command(Environment* e, PerformFunc f)
+                : env(e)
+                , performFunc(f)
+            {
+                memset(&data, 0, sizeof(data));
+            }
+            Command(const Command& other)
+                : env(other.env)
+                , performFunc(other.performFunc)
+            {
+                memcpy(&data, &other.data, sizeof(data));
+            }
+
+            void perform(Channel& channel)
+            {
+                if (performFunc != nullptr) performFunc(*this, channel);
+            }
+            
+            Environment* env;
+            PerformFunc  performFunc;
+            CommandData  data;
+        };
+
+        static void perform_free(Command&, Command::Channel&);
+        static void perform_Response_nodeId(Command&, Command::Channel&);
+        static void perform_Response_error(Command&, Command::Channel&);
+
+    protected:
+        // Worker thread
+        typedef Utility::WorkerThread<Command,kQueueSize> Worker;
+
         void processRequests();
-        void handleRequest(MessageQueue::Message& request);
-        void handleMessageRequest(MessageQueue::Message& request, const LV2_Atom_Object* msg);
-        void handleSequenceRequest(MessageQueue::Message& request, const LV2_Atom_Sequence* bdl);
+        void processMessage(const OSC::Server::Message& message);
+        void processBundle(const OSC::Server::Bundle& bundle);
+
+        //* Context: NRT
+        void reply(Methcla_RequestId requestId, const void* packet, size_t size)
+        {
+            m_listener(requestId, packet, size);
+        }
+
+        void reply(Methcla_RequestId requestId, const OSC::Client::Packet& packet)
+        {
+            reply(requestId, packet.data(), packet.size());
+        }
+
+        void replyError(Methcla_RequestId requestId, const char* what);
+
+        //* Context: NRT
+        void notify(const void* packet, size_t size)
+        {
+            m_listener(kMethcla_Notification, packet, size);
+        }
+
+        void notify(const OSC::Client::Packet& packet)
+        {
+            notify(packet.data(), packet.size());
+        }
+
+        //* Send a command to the worker thread.
+        //
+        // Context: RT
+        void send(const Command& cmd)
+        {
+            m_worker.toWorker().send(cmd);
+        }
 
     protected:
         friend class Node;
@@ -238,6 +262,7 @@ namespace Methcla { namespace Audio
         const size_t                        m_blockSize;
         Memory::RTMemoryManager             m_rtMem;
         PluginManager&                      m_plugins;
+        PacketHandler                       m_listener;
         ResourceMap<AudioBusId,AudioBus>    m_audioBuses;
         ResourceMap<AudioBusId,AudioBus>    m_freeAudioBuses;
         ResourceMap<NodeId,Node>            m_nodes;
@@ -247,14 +272,12 @@ namespace Methcla { namespace Audio
         Epoch                               m_epoch;
         MessageQueue                        m_requests;
         Worker                              m_worker;
-        Uris                                m_uris;
-        LV2::Parser                         m_parser;
     };
 
     class Engine
     {
     public:
-        Engine(PluginManager& pluginManager, const boost::filesystem::path& lv2Directory);
+        Engine(PluginManager& pluginManager, const PacketHandler& handler, const boost::filesystem::path& lv2Directory);
         virtual ~Engine();
 
         Environment& env()

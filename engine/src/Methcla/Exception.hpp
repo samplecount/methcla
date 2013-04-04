@@ -22,8 +22,11 @@
 namespace Methcla {
 
 struct Exception : virtual std::exception, virtual boost::exception { };
+
 struct MemoryAllocationFailure : virtual Exception { };
 struct InvalidInput : virtual Exception { };
+
+struct InvalidNodeId : virtual Exception { };
 
 struct ErrorInfoStringTag { };
 typedef boost::error_info<ErrorInfoStringTag, std::string> ErrorInfoString;
