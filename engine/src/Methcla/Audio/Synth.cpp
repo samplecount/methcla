@@ -46,7 +46,7 @@ Synth::Synth( Environment& env
 
     // Audio buffer memory
     sample_t* audioInputBuffers = m_audioBuffers;
-    sample_t* audioOutputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
+    sample_t* audioOutputBuffers = m_audioBuffers + synthDef.numAudioInputs() * blockSize;
 
     for (size_t i=0; i < synthDef.numPorts(); i++) {
         const FloatPort& port = synthDef.port(i);
@@ -222,7 +222,7 @@ void Synth::process(size_t numFrames)
 
     m_synthDef.run(m_synth, numFrames);
 
-    sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
+    sample_t* const outputBuffers = m_audioBuffers + m_synthDef.numAudioInputs() * blockSize;
     for (auto& x : m_audioOutputConnections) {
         x.write(env, numFrames, outputBuffers + x.index() * blockSize);
     }

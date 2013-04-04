@@ -177,13 +177,9 @@ public:
     /// Return this synth's SynthDef.
     const Plugin::Plugin& synthDef() const { return m_synthDef; }
 
-    /// Return number of inputs.
-    size_t numAudioInputs() const { return m_synthDef.numAudioInputs(); }
     /// Map input to bus.
     void mapInput(size_t input, const AudioBusId& busId, InputConnectionType type);
 
-    // Return number of outputs.
-    size_t numAudioOutputs() const { return m_synthDef.numAudioOutputs(); }
     // Map output to bus.
     void mapOutput(size_t output, const AudioBusId& busId, OutputConnectionType type);
 
