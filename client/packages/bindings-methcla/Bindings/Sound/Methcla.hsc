@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 #include <bindings.dsl.h>
-#include <Mescaline/API.h>
+#include <methcla/engine.h>
 
 module Bindings.Sound.Methcla where
 
@@ -22,45 +22,37 @@ import Data.Word (Word32)
 #strict_import
 
 -- | Abstract engine handle.
-#opaque_t Mescaline_Engine
+#opaque_t Methcla_Engine
 
--- #cinline kDefaultWorldOptions , IO (Ptr <struct WorldOptions>)
-
--- | Create new engine.
-#ccall Mescaline_Engine_new             , IO (Ptr <Mescaline_Engine>)
-
--- | Free engine.
-#ccall Mescaline_Engine_free            , Ptr <Mescaline_Engine> -> IO ()
-
--- | Start engine.
-#ccall Mescaline_Engine_start           , Ptr <Mescaline_Engine> -> IO ()
-
--- | Stop engine.
-#ccall Mescaline_Engine_stop            , Ptr <Mescaline_Engine> -> IO ()
-
--- | LV2 mapped URI.
-#integral_t LV2_URID
-
--- | LV2 atom structure.
-#starttype LV2_Atom
-  #field size , Word32
-  #field type , Word32
+#starttype Methcla_Option
+#field key , Ptr CChar
+#field value , Ptr ()
 #stoptype
 
--- | Map URI.
-#ccall Mescaline_Engine_mapUri          , Ptr <Mescaline_Engine> -> Ptr CChar -> IO <LV2_URID>
+#integral_t enum Methcla_Error
 
--- | Unmap mapped URI.
-#ccall Mescaline_Engine_unmapUri        , Ptr <Mescaline_Engine> -> <LV2_URID> -> IO (Ptr CChar)
+#ccall methcla_engine_error             , Ptr <Methcla_Engine> -> IO <Methcla_Error>
+
+#ccall methcla_engine_error_message     , Ptr <Methcla_Engine> -> IO (Ptr CChar)
+
+#integral_t Methcla_RequestId
+#num kMethcla_Notification
 
 -- | Response callback function.
-#callback Mescaline_HandleResponse      , Ptr <LV2_Atom> -> Ptr () -> IO ()
+#callback Methcla_PacketHandler         , Ptr () -> <Methcla_RequestId> -> Ptr () -> CSize -> IO ()
+
+-- | Create new engine.
+#ccall methcla_engine_new               , <Methcla_PacketHandler> -> Ptr () -> IO (Ptr <Methcla_Engine>)
+
+-- | Free engine.
+#ccall methcla_engine_free              , Ptr <Methcla_Engine> -> IO ()
+
+-- | Start engine.
+#ccall methcla_engine_start             , Ptr <Methcla_Engine> -> IO ()
+
+-- | Stop engine.
+#ccall methcla_engine_stop              , Ptr <Methcla_Engine> -> IO ()
 
 -- | Send request.
-#ccall Mescaline_Engine_request         , Ptr <Mescaline_Engine> -> Ptr <LV2_Atom> -> <Mescaline_HandleResponse> -> Ptr () -> IO ()
+#ccall methcla_engine_send              , Ptr <Methcla_Engine> -> Ptr () -> CSize -> IO ()
 
--- | Haskell print function.
--- #callback HaskellPrintFunc , Ptr CChar -> IO ()
-
--- | Set the global Haskell print function.
--- #ccall SetHaskellPrintFunc , <HaskellPrintFunc> -> IO ()
