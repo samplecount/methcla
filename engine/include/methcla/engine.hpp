@@ -34,8 +34,6 @@
 
 namespace Methcla
 {
-    BOOST_STRONG_TYPEDEF(uint32_t, NodeId);
-
     class Engine
     {
     public:
@@ -164,7 +162,25 @@ namespace Methcla
         }
     }
 
-    NodeId synth(Engine& engine, const char* synthDef)
+    BOOST_STRONG_TYPEDEF(int32_t, SynthId);
+    BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
+
+    void checkResponse(const OSC::Server::Packet& packet)
+    {
+        if (packet.isMessage()) {
+            OSC::Server::Message msg(packet);
+            if (msg == "/error") {
+                auto args(msg.args());
+                args.drop(); // request id
+                const char* error = args.string();
+                throw std::runtime_error(error);
+            }
+        } else {
+            throw std::invalid_argument("Response is not a message");
+        }
+    }
+
+    SynthId synth(Engine& engine, const char* synthDef)
     {
         Methcla_RequestId requestId = engine.getRequestId();
 
@@ -185,13 +201,38 @@ namespace Methcla
         engine.send(request);
 
         const OSC::Server::Packet& response(promise.get_future().get());
-        assert( response.isMessage() );
+        checkResponse(response);
+
         auto args = ((OSC::Server::Message)response).args();
         int32_t requestId_ = args.int32();
         assert(requestId_ == requestId);
         int32_t nodeId = args.int32();
 
-        return (NodeId)nodeId;
+        return SynthId(nodeId);
+    }
+
+    void mapOutput(Engine& engine, const SynthId& synth, size_t index, AudioBusId bus)
+    {
+        Methcla_RequestId requestId = engine.getRequestId();
+
+        OSC::Client::StaticPacket<8192> request;
+        request
+            .openMessage("/synth/map/output", 4)
+                .int32(requestId)
+                .int32(synth)
+                .int32(index)
+                .int32(bus)
+            .closeMessage();
+
+        dumpMessage(std::cout, (OSC::Server::Message)OSC::Server::Packet(request.data(), request.size()));
+        std::cout << std::endl;
+
+        std::promise<OSC::Server::Packet> promise;
+        engine.registerResponse(requestId, [&promise](const void* packet, size_t size){ promise.set_value(OSC::Server::Packet(packet, size)); });
+        engine.send(request);
+
+        const OSC::Server::Packet& response(promise.get_future().get());
+        checkResponse(response);
     }
 };
 

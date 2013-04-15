@@ -224,6 +224,7 @@ namespace Methcla { namespace Audio
         };
 
         static void perform_free(Command&, Command::Channel&);
+        static void perform_response_ack(Command&, Command::Channel&);
         static void perform_response_nodeId(Command&, Command::Channel&);
         static void perform_response_error(Command&, Command::Channel&);
         static void perform_response_query_external_inputs(Command&, Command::Channel&);

@@ -155,9 +155,19 @@ void Environment::perform_free(Command& cmd, Command::Channel&)
     cmd.data.free.func(cmd.data.free.ptr);
 }
 
+void Environment::perform_response_ack(Command& cmd, Command::Channel&)
+{
+    OSC::Client::StaticPacket<16> packet;
+    packet
+        .openMessage("/ack", 1)
+            .int32(cmd.data.response.requestId)
+        .closeMessage();
+    cmd.env->reply(cmd.data.response.requestId, packet);
+}
+
 void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
 {
-    OSC::Client::StaticPacket<128> packet;
+    OSC::Client::StaticPacket<20> packet;
     packet
         .openMessage("/ack", 2)
             .int32(cmd.data.response.requestId)
@@ -168,7 +178,7 @@ void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
 
 void Environment::perform_response_error(Command& cmd, Command::Channel&)
 {
-    OSC::Client::StaticPacket<1024> packet;
+    OSC::Client::StaticPacket<16 + sizeof(cmd.data.response.data.error)> packet;
     packet
         .openMessage("/error", 2)
             .int32(cmd.data.response.requestId)
@@ -211,8 +221,7 @@ void Environment::perform_response_query_external_outputs(Command& cmd, Command:
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
-    Command cmd(this, perform_response_error);
-    cmd.data.response.requestId = requestId;
+    Command cmd(this, perform_response_error, requestId);
     strncpy(cmd.data.response.data.error, msg, sizeof(cmd.data.response.data.error));
     send(cmd);
 }
@@ -295,12 +304,8 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             const std::shared_ptr<Plugin> def = plugins().lookup(defName);
 
             Node* targetNode = m_nodes.lookup(targetId);
-            if (targetNode == nullptr)
-                BOOST_THROW_EXCEPTION(InvalidNodeId());
-
-            Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
-            Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
-
+            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
+                                                       : dynamic_cast<Synth*>(targetNode)->parent();
             Node* node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
             Command cmd(this, perform_response_nodeId, requestId);
@@ -311,12 +316,8 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             int32_t addAction = args.int32();
 
             Node* targetNode = m_nodes.lookup(targetId);
-            if (targetNode == nullptr)
-                BOOST_THROW_EXCEPTION(InvalidNodeId());
-
-            Synth* targetSynth = dynamic_cast<Synth*>(targetNode);
-            Group* targetGroup = targetSynth == nullptr ? dynamic_cast<Group*>(targetNode) : targetSynth->parent();
-
+            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
+                                                       : dynamic_cast<Synth*>(targetNode)->parent();
             Node* node = Group::construct(*this, targetGroup, Node::kAddToTail);
 
             Command cmd(this, perform_response_nodeId, requestId);
@@ -324,13 +325,30 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             send(cmd);
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
-            Node* node = m_nodes.lookup(nodeId);
-            node->free();
+            m_nodes.lookup(nodeId)->free();
 
             Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = node->id();
+            cmd.data.response.data.nodeId = nodeId;
             send(cmd);
         } else if (msg == "/n_set") {
+        } else if (msg == "/synth/map/output") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            AudioBusId busId = AudioBusId(args.int32());
+
+            Node* node = m_nodes.lookup(nodeId);
+            // Could traverse all synths in a group
+            if (!node->isSynth())
+                throw std::runtime_error("Node is not a synth");
+
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= synth->numAudioOutputs()))
+                throw std::runtime_error("Synth output index out of range");
+
+            synth->mapOutput(index, busId, kOut);
+
+            // Could reply with previous bus mapping
+            send(Command(this, perform_response_ack, requestId));
         } else if (msg == "/query/external_inputs") {
             send(Command(this, perform_response_query_external_inputs, requestId));
         } else if (msg == "/query/external_outputs") {
