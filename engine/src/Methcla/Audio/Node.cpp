@@ -15,7 +15,6 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Node.hpp"
-#include "Methcla/Audio/Synth.hpp"
 
 using namespace Methcla::Audio;
 
