@@ -84,7 +84,7 @@ public:
 
         if (bus != nullptr) {
             std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if (bus->epoch() == env.epoch()) {
+            if ((type() == kInFeedback) || (bus->epoch() == env.epoch())) {
                 memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
@@ -128,7 +128,7 @@ public:
         if (bus != nullptr) {
             const Epoch epoch = env.epoch();
             std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if (bus->epoch() == epoch) {
+            if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
                 // Accumulate
                 sample_t* dst = bus->data();
                 for (size_t i=0; i < numFrames; i++) {
