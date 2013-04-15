@@ -176,12 +176,19 @@ public:
 
     virtual bool isSynth() const override { return true; }
 
+    //* Return this synth's SynthDef.
     const Plugin::Plugin& synthDef() const { return m_synthDef; }
 
-    /// Map input to bus.
+    //* Return number of audio inputs.
+    size_t numAudioInputs() const { return synthDef().numAudioInputs(); }
+
+    //* Map input to bus.
     void mapInput(size_t input, const AudioBusId& busId, InputConnectionType type);
 
-    // Map output to bus.
+    //* Return number of audio outputs.
+    size_t numAudioOutputs() const { return synthDef().numAudioOutputs(); }
+
+    //* Map output to bus.
     void mapOutput(size_t output, const AudioBusId& busId, OutputConnectionType type);
 
     typedef boost::intrusive::list<AudioInputConnection>  AudioInputConnections;
@@ -189,8 +196,8 @@ public:
     // typedef boost::container::vector<Connection<ControlBus, InputConnectionType> > ControlInputConnections;
     // typedef boost::container::vector<Connection<ControlBus, OutputConnectionType> > ControlOutputConnections;
 
-    size_t numControlInputs() const { return m_synthDef.numControlInputs(); }
-    size_t numControlOutputs() const { return m_synthDef.numControlOutputs(); }
+    size_t numControlInputs() const { return synthDef().numControlInputs(); }
+    size_t numControlOutputs() const { return synthDef().numControlOutputs(); }
 
     float controlInput(size_t index) const
     {
