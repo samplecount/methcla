@@ -51,6 +51,11 @@ namespace Methcla { namespace Audio {
         //* Free a node.
         virtual void free();
 
+        //* Return true if this node is a group.
+        virtual bool isGroup() const { return false; }
+        //* Return true if this node is a synth.
+        virtual bool isSynth() const { return false; }
+
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
         bool isRootNode() const { return parent() == 0; }

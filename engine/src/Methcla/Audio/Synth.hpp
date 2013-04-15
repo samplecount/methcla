@@ -174,7 +174,8 @@ protected:
 public:
     static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const Plugin::Plugin& synthDef);
 
-    /// Return this synth's SynthDef.
+    virtual bool isSynth() const override { return true; }
+
     const Plugin::Plugin& synthDef() const { return m_synthDef; }
 
     /// Map input to bus.

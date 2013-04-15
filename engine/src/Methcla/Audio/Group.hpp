@@ -30,6 +30,8 @@ public:
     static Group* construct(Environment& env, Group* target, AddAction addAction);
     virtual void free() override;
 
+    virtual bool isGroup() const override { return true; }
+
     const NodeList& children() const { return m_children; }
     void addToHead(Node& node) { m_children.push_front(node); }
     void addToTail(Node& node) { m_children.push_back(node); }
