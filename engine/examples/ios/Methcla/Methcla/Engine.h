@@ -46,7 +46,7 @@ Methcla::Engine* makeEngine()
     Methcla::SynthId synth = Methcla::synth(engine, METHCLA_LV2_URI "/plugins/sine");
     std::cout << "synth " << synth << std::endl;
 
-    Methcla::mapOutput(engine, synth, 1, Methcla::AudioBusId(0));
+    Methcla::mapOutput(engine, synth, 0, Methcla::AudioBusId(2));
 
     return enginePtr;
 }
