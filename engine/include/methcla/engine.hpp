@@ -164,7 +164,7 @@ namespace Methcla
     BOOST_STRONG_TYPEDEF(int32_t, SynthId);
     BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
 
-    void checkResponse(const OSC::Server::Packet& packet)
+    inline void checkResponse(const OSC::Server::Packet& packet)
     {
         if (packet.isMessage()) {
             OSC::Server::Message msg(packet);
@@ -179,7 +179,7 @@ namespace Methcla
         }
     }
 
-    SynthId synth(Engine& engine, const char* synthDef)
+    inline SynthId synth(Engine& engine, const char* synthDef)
     {
         Methcla_RequestId requestId = engine.getRequestId();
 
@@ -210,7 +210,7 @@ namespace Methcla
         return SynthId(nodeId);
     }
 
-    void mapOutput(Engine& engine, const SynthId& synth, size_t index, AudioBusId bus)
+    inline void mapOutput(Engine& engine, const SynthId& synth, size_t index, AudioBusId bus)
     {
         Methcla_RequestId requestId = engine.getRequestId();
 
