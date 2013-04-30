@@ -325,10 +325,14 @@ mkRules options = do
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
                     return lib
+                let universalTarget = "iphone-universal"
                 universalLib <- universalBinary
                                     [iphoneosLib, iphonesimulatorLib]
-                                    (shakeBuildDir </> map toLower (show config) </> "libmethcla.a")
-                phony "iphone-universal" (need [universalLib])
+                                    (shakeBuildDir
+                                      </> map toLower (show config)
+                                      </> universalTarget
+                                      </> "libmethcla.a")
+                phony universalTarget (need [universalLib])
 
       , do -- macosx
             developer <- liftIO getDeveloperPath
