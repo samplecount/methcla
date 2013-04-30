@@ -18,7 +18,6 @@
 #include <methcla/engine.h>
 #include <methcla/lv2/atom.hpp>
 
-#include <boost/current_function.hpp>
 #include <future>
 #include <iostream>
 #include <memory>
