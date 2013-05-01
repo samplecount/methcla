@@ -44,8 +44,8 @@ public:
     }
 };
 
-/// Default alignment, corresponding to the size of a pointer.
-static const size_t kDefaultAlignment = sizeof(nullptr);
+/// Default alignment, corresponding to the size of a 64 bit type.
+static const size_t kDefaultAlignment = 8;
 /// Alignment needed for data accessed by SIMD instructions.
 static const size_t kSIMDAlignment = 16;
 
