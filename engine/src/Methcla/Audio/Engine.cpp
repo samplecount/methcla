@@ -101,12 +101,12 @@ AudioBus& Environment::externalAudioInput(size_t index)
 
 static void freePacket(void* packet)
 {
-    delete [] static_cast<char*>(packet);
+    Memory::free(packet);
 }
 
 void Environment::send(const void* packet, size_t size)
 {
-    char* myPacket = new char[size];
+    char* myPacket = Memory::allocAlignedOf<char,OSC::kMaxAlignment>(size);
     memcpy(myPacket, packet, size);
     Request req;
     req.packet = myPacket;
