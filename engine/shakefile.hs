@@ -107,8 +107,7 @@ engineBuildFlags platform =
        ( -- API headers
          [ "include" ]
          -- Boost
-      ++ [ boostDir
-         , "external_libraries/boost_lockfree" ]
+      ++ [ boostDir ]
          -- oscpp
       ++ [ "external_libraries/oscpp" ]
          -- TLSF
@@ -358,7 +357,6 @@ mkRules options = do
                 tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
                     fs <- liftIO $ find
                               (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
-                        `and` files (extension ==? ".hpp") (externalLibraries </> "boost_lockfree")
                         `and` files (extension ==? ".h") (lilvDir </> "lilv")
                         `and` files (extension ==? ".h") (lv2Dir </> "lv2")
                         `and` files (extension ==? ".h") (serdDir </> "serd")

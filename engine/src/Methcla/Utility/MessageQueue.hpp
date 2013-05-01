@@ -20,10 +20,9 @@
 #include <functional>
 #include <thread>
 
-#include <boost/lockfree/ringbuffer.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 #include <boost/utility.hpp>
 
-#include "Methcla/Utility/RingBuffer.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
 namespace Methcla { namespace Utility {
@@ -38,18 +37,18 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_writeMutex);
         for (;;) {
-            if (m_queue.enqueue(msg)) break;
+            if (m_queue.push(msg)) break;
         }
     }
 
     bool next(T& msg)
     {
-        size_t n = m_queue.dequeue(&msg);
+        size_t n = m_queue.pop(&msg);
         return n == 1;
     }
 
 private:
-    typedef boost::lockfree::ringbuffer<T,queueSize> Queue;
+    typedef boost::lockfree::spsc_queue<T,boost::lockfree::capacity<queueSize>> Queue;
     Queue      m_queue;
     std::mutex m_writeMutex;
 };
@@ -66,13 +65,13 @@ public:
 
     void send(const Command& cmd)
     {
-        bool success = m_queue.enqueue(cmd);
+        bool success = m_queue.push(cmd);
         BOOST_ASSERT( success );
         m_afterCommit();
     }
 
 protected:
-    typedef boost::lockfree::ringbuffer<Command,queueSize> Queue;
+    typedef boost::lockfree::spsc_queue<Command,boost::lockfree::capacity<queueSize>> Queue;
     Queue      m_queue;
     CommitHook m_afterCommit;
 };
@@ -113,7 +112,7 @@ private:
 
         bool dequeue(Command& cmd)
         {
-            return this->m_queue.dequeue(cmd);
+            return this->m_queue.pop(cmd);
         }
     };
 

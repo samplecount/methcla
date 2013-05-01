@@ -14,11 +14,11 @@
 # limitations under the License.
 
 boost_src="$1"
-src_dirs="src platform external_libraries/boost_lockfree"
+src_dirs="include platform src"
 out_dir="./external_libraries/boost"
 
 mkdir -p "$out_dir"
-bcp --boost="$boost_src" --scan `find $src_dirs -name '*.hpp' -o -name '*.cpp'` "$out_dir"
+"$boost_src/dist/bin/bcp" --boost="$boost_src" --scan `find $src_dirs -name '*.hpp' -o -name '*.cpp'` "$out_dir"
 
 rm -f "$out_dir/Jamroot"
 
