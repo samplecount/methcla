@@ -61,6 +61,7 @@
 		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		A52CEE2B16C162E0008D8457 /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../../platform; sourceTree = "<group>"; };
 		A5A044D616C3C3CE00B84E4E /* Engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
+		A5ADD5E5173127590014FDA6 /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../include; sourceTree = "<group>"; };
 		A5D0BA7B16C2C2C500C3A046 /* Methcla.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Methcla.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5D0BA7F16C2C2C600C3A046 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
 		A5D0BA8416C2C2C600C3A046 /* Methcla-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Methcla-Info.plist"; sourceTree = "<group>"; };
@@ -127,6 +128,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				A5ADD5E5173127590014FDA6 /* include */,
 				A52CEE2B16C162E0008D8457 /* platform */,
 				53EAEA8416A84D7E00380DD3 /* src */,
 				53E8B0AB16A8429D00C5BB02 /* lv2 */,

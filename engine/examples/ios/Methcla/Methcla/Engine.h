@@ -43,10 +43,13 @@ Methcla::Engine* makeEngine()
 //    Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(
 //        engine->env(), engine->env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
 
-    Methcla::SynthId synth = Methcla::synth(engine, METHCLA_LV2_URI "/plugins/sine");
-    std::cout << "synth " << synth << std::endl;
+    Methcla::SynthId synth1 = engine.synth(METHCLA_LV2_URI "/plugins/sine");
+    engine.mapOutput(synth1, 0, Methcla::AudioBusId(2));
+    std::cout << "Synth " << synth1 << " started" << std::endl;
 
-    Methcla::mapOutput(engine, synth, 0, Methcla::AudioBusId(2));
+    Methcla::SynthId synth2 = engine.synth(METHCLA_LV2_URI "/plugins/sine");
+    engine.mapOutput(synth2, 0, Methcla::AudioBusId(2));
+    std::cout << "Synth " << synth2 << " started" << std::endl;
 
     return enginePtr;
 }

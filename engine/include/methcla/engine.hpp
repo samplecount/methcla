@@ -26,13 +26,100 @@
 #include <thread>
 #include <unordered_map>
 
+#include <boost/optional.hpp>
 #include <boost/serialization/strong_typedef.hpp>
+#include <boost/variant.hpp>
+#include <boost/variant/apply_visitor.hpp>
 
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
 
 namespace Methcla
 {
+    inline static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
+    {
+        out << msg.address() << ' ';
+        OSC::Server::ArgStream args(msg.args());
+        while (!args.atEnd()) {
+            const char t = args.tag();
+            out << t << ':';
+            switch (t) {
+                case 'i':
+                    out << args.int32();
+                    break;
+                case 'f':
+                    out << args.float32();
+                    break;
+                case 's':
+                    out << args.string();
+                    break;
+                case 'b':
+                    out << args.blob().size;
+                    break;
+                default:
+                    out << '?';
+                    break;
+            }
+            out << ' ';
+        }
+    }
+
+    inline static void dumpRequest(std::ostream& out, const OSC::Server::Packet& packet)
+    {
+        out << "Request (send): ";
+        dumpMessage(out, packet);
+        out << std::endl;
+    }
+
+    inline static boost::optional<std::exception_ptr> responseToException(const OSC::Server::Packet& packet)
+    {
+        if (packet.isMessage()) {
+            OSC::Server::Message msg(packet);
+            if (msg == "/error") {
+                auto args(msg.args());
+                args.drop(); // request id
+                const char* error = args.string();
+                return boost::make_optional(std::make_exception_ptr(std::runtime_error(error)));
+            } else {
+                return boost::none;
+            }
+        } else {
+            return boost::make_optional(std::make_exception_ptr(std::invalid_argument("Response is not a message")));
+        }
+    }
+
+    inline static void checkResponse(const OSC::Server::Packet& packet)
+    {
+        if (packet.isMessage()) {
+            OSC::Server::Message msg(packet);
+            if (msg == "/error") {
+                auto args(msg.args());
+                args.drop(); // request id
+                const char* error = args.string();
+                throw std::runtime_error(error);
+            }
+        } else {
+            throw std::invalid_argument("Response is not a message");
+        }
+    }
+
+    BOOST_STRONG_TYPEDEF(int32_t, SynthId);
+    BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
+
+    template <class T> class ExceptionVisitor : public boost::static_visitor<T>
+    {
+    public:
+        T operator()(const std::exception_ptr& e) const
+        {
+            std::rethrow_exception(e);
+        }
+
+        T operator()(const T& x) const
+        {
+            return x;
+        }
+    };
+
     class Engine
     {
     public:
@@ -64,30 +151,68 @@ namespace Methcla
             check(m_engine);
         }
 
-        void send(void* packet, size_t size)
+        inline SynthId synth(const char* synthDef)
         {
-            methcla_engine_send(m_engine, packet, size);
+            Methcla_RequestId requestId = getRequestId();
+
+            OSC::Client::StaticPacket<8192> request;
+            request
+                .openMessage("/s_new", 4)
+                    .int32(requestId)
+                    .string(synthDef)
+                    .int32(0)
+                    .int32(0)
+                .closeMessage();
+
+            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
+
+            std::promise<boost::variant<std::exception_ptr,SynthId>> promise;
+
+            registerResponse(requestId, [&promise,&requestId](const void* buffer, size_t size){
+                OSC::Server::Packet response(buffer, size);
+                auto error = responseToException(response);
+                if (error) {
+                    promise.set_value(*error);
+                } else {
+                    auto args = ((OSC::Server::Message)response).args();
+                    int32_t requestId_ = args.int32();
+                    assert(requestId_ == requestId);
+                    int32_t nodeId = args.int32();
+                    promise.set_value(SynthId(nodeId));
+                }
+            });
+
+            send(request);
+
+            auto response = promise.get_future().get();
+            return boost::apply_visitor(ExceptionVisitor<SynthId>(), response);
         }
 
-        void send(const OSC::Client::Packet& packet)
+        inline void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
         {
-            send(packet.data(), packet.size());
-        }
+            Methcla_RequestId requestId = getRequestId();
 
-        Methcla_RequestId getRequestId()
-        {
-            Methcla_RequestId result = m_requestId;
-            if (result == kMethcla_Notification) {
-                result++;
-            }
-            m_requestId = result + 1;
-            return result;
-        }
+            OSC::Client::StaticPacket<8192> request;
+            request
+                .openMessage("/synth/map/output", 4)
+                    .int32(requestId)
+                    .int32(synth)
+                    .int32(index)
+                    .int32(bus)
+                .closeMessage();
 
-        void registerResponse(Methcla_RequestId requestId, std::function<void (const void*, size_t)> callback)
-        {
-            std::lock_guard<std::mutex> lock(m_callbacksMutex);
-            m_callbacks[requestId] = callback;
+            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
+
+            std::promise<boost::optional<std::exception_ptr>> promise;
+            registerResponse(requestId, [&promise](const void* buffer, size_t size){
+                promise.set_value(responseToException(OSC::Server::Packet(buffer, size)));
+            });
+
+            send(request);
+
+            auto response = promise.get_future().get();
+            if (response)
+                std::rethrow_exception(*response);
         }
 
     private:
@@ -121,118 +246,39 @@ namespace Methcla
             }
         }
 
+        void send(void* packet, size_t size)
+        {
+            methcla_engine_send(m_engine, packet, size);
+        }
+
+        void send(const OSC::Client::Packet& packet)
+        {
+            send(packet.data(), packet.size());
+        }
+
+        Methcla_RequestId getRequestId()
+        {
+            Methcla_RequestId result = m_requestId;
+            if (result == kMethcla_Notification) {
+                result++;
+            }
+            m_requestId = result + 1;
+            return result;
+        }
+
+        void registerResponse(Methcla_RequestId requestId, std::function<void (const void*, size_t)> callback)
+        {
+            std::lock_guard<std::mutex> lock(m_callbacksMutex);
+            m_callbacks[requestId] = callback;
+        }
+
+
     private:
         Methcla_Engine*     m_engine;
         Methcla_RequestId   m_requestId;
         std::unordered_map<Methcla_RequestId,std::function<void (const void*, size_t)>> m_callbacks;
         std::mutex          m_callbacksMutex;
     };
-
-    template <class T> struct FreeDeleter
-    {
-        void operator()(T* ptr) const { free(ptr); }
-    };
-
-    static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
-    {
-        out << msg.address() << ' ';
-        OSC::Server::ArgStream args(msg.args());
-        while (!args.atEnd()) {
-            const char t = args.tag();
-            out << t << ':';
-            switch (t) {
-                case 'i':
-                    out << args.int32();
-                    break;
-                case 'f':
-                    out << args.float32();
-                    break;
-                case 's':
-                    out << args.string();
-                    break;
-                case 'b':
-                    out << args.blob().size;
-                    break;
-                default:
-                    out << '?';
-                    break;
-            }
-            out << ' ';
-        }
-    }
-
-    BOOST_STRONG_TYPEDEF(int32_t, SynthId);
-    BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
-
-    inline void checkResponse(const OSC::Server::Packet& packet)
-    {
-        if (packet.isMessage()) {
-            OSC::Server::Message msg(packet);
-            if (msg == "/error") {
-                auto args(msg.args());
-                args.drop(); // request id
-                const char* error = args.string();
-                throw std::runtime_error(error);
-            }
-        } else {
-            throw std::invalid_argument("Response is not a message");
-        }
-    }
-
-    inline SynthId synth(Engine& engine, const char* synthDef)
-    {
-        Methcla_RequestId requestId = engine.getRequestId();
-
-        OSC::Client::StaticPacket<8192> request;
-        request
-            .openMessage("/s_new", 4)
-                .int32(requestId)
-                .string(synthDef)
-                .int32(0)
-                .int32(0)
-            .closeMessage();
-
-        dumpMessage(std::cout, (OSC::Server::Message)OSC::Server::Packet(request.data(), request.size()));
-        std::cout << std::endl;
-
-        std::promise<OSC::Server::Packet> promise;
-        engine.registerResponse(requestId, [&promise](const void* packet, size_t size){ promise.set_value(OSC::Server::Packet(packet, size)); });
-        engine.send(request);
-
-        const OSC::Server::Packet& response(promise.get_future().get());
-        checkResponse(response);
-
-        auto args = ((OSC::Server::Message)response).args();
-        int32_t requestId_ = args.int32();
-        assert(requestId_ == requestId);
-        int32_t nodeId = args.int32();
-
-        return SynthId(nodeId);
-    }
-
-    inline void mapOutput(Engine& engine, const SynthId& synth, size_t index, AudioBusId bus)
-    {
-        Methcla_RequestId requestId = engine.getRequestId();
-
-        OSC::Client::StaticPacket<8192> request;
-        request
-            .openMessage("/synth/map/output", 4)
-                .int32(requestId)
-                .int32(synth)
-                .int32(index)
-                .int32(bus)
-            .closeMessage();
-
-        dumpMessage(std::cout, (OSC::Server::Message)OSC::Server::Packet(request.data(), request.size()));
-        std::cout << std::endl;
-
-        std::promise<OSC::Server::Packet> promise;
-        engine.registerResponse(requestId, [&promise](const void* packet, size_t size){ promise.set_value(OSC::Server::Packet(packet, size)); });
-        engine.send(request);
-
-        const OSC::Server::Packet& response(promise.get_future().get());
-        checkResponse(response);
-    }
 };
 
 #endif // METHCLA_ENGINE_HPP_INCLUDED

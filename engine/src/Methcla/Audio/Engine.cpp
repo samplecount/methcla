@@ -289,8 +289,9 @@ static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
 
 void Environment::processMessage(const OSC::Server::Message& msg)
 {
-    dumpMessage(std::cout, msg);
-    std::cout << std::endl;
+    std::cerr << "Request (recv): ";
+    dumpMessage(std::cerr, msg);
+    std::cerr << std::endl;
 
     auto args = msg.args();
     Methcla_RequestId requestId = args.int32();
