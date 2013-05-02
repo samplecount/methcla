@@ -24,26 +24,35 @@
 
 //#include <boost/lockfree/fifo.hpp>
 
+// Set to 1 to disable the realtime memory manager.
+#define METHCLA_NO_RT_MEMORY 0
+
 namespace Methcla { namespace Memory {
 
 class RTMemoryManager
 {
 public:
     RTMemoryManager(size_t poolSize)
+#if !METHCLA_NO_RT_MEMORY
         : m_memory(nullptr)
         , m_pool(nullptr)
+#endif
     {
+#if !METHCLA_NO_RT_MEMORY
         m_memory = Memory::alloc(poolSize);
         m_pool = tlsf_create(m_memory, poolSize);
         if (m_pool == nullptr) {
             Memory::free(m_memory);
             BOOST_THROW_EXCEPTION(std::bad_alloc());
         }
+#endif
     }
     ~RTMemoryManager()
     {
+#if !METHCLA_NO_RT_MEMORY
         tlsf_destroy(m_pool);
         Memory::free(m_memory);
+#endif
     }
 
     //* Allocate memory of `size` bytes.
@@ -52,12 +61,16 @@ public:
     // @throw std::bad_alloc
     void* alloc(size_t size)
     {
+#if METHCLA_NO_RT_MEMORY
+        return Methcla::Memory::alloc(size);
+#else
         if (size == 0)
             BOOST_THROW_EXCEPTION(std::invalid_argument("allocation size must be greater than zero"));
         void* ptr = tlsf_malloc(m_pool, size);
         if (ptr == nullptr)
             BOOST_THROW_EXCEPTION(std::bad_alloc());
         return ptr;
+#endif
     }
 
     //* Allocate aligned memory of `size` bytes.
@@ -66,19 +79,27 @@ public:
     // @throw std::bad_alloc
     template <size_t align> void* allocAligned(size_t size)
     {
+#if METHCLA_NO_RT_MEMORY
+        return Methcla::Memory::allocAligned<align>(size);
+#else
         if (size == 0)
             BOOST_THROW_EXCEPTION(std::invalid_argument("allocation size must be greater than zero"));
         void* ptr = tlsf_memalign(m_pool, align, size);
         if (ptr == nullptr)
             BOOST_THROW_EXCEPTION(std::bad_alloc());
         return ptr;
+#endif
     }
 
     //* Free memory allocated by this allocator.
     void free(void* ptr) noexcept
     {
+#if METHCLA_NO_RT_MEMORY
+        Methcla::Memory::free(ptr);
+#else
         if (ptr != nullptr)
             tlsf_free(m_pool, ptr);
+#endif
     }
 
     //* Allocate memory for `n` elements of type `T`.
@@ -100,8 +121,10 @@ public:
     }
 
 private:
+#if !METHCLA_NO_RT_MEMORY
     void*       m_memory;
     tlsf_pool   m_pool;
+#endif
 };
 
 template <class T, class Allocator, size_t align=kDefaultAlignment> class AllocatedBase
