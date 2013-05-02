@@ -106,7 +106,7 @@ static void freePacket(void* packet)
 
 void Environment::send(const void* packet, size_t size)
 {
-    char* myPacket = Memory::allocAlignedOf<char,OSC::kMaxAlignment>(size);
+    char* myPacket = Memory::allocAlignedOf<char,OSC::kAlignment>(size);
     memcpy(myPacket, packet, size);
     Request req;
     req.packet = myPacket;
