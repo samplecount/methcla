@@ -67,7 +67,7 @@ public:
     {
         bool success = m_queue.push(cmd);
         BOOST_ASSERT( success );
-        m_afterCommit();
+        if (m_afterCommit) m_afterCommit();
     }
 
 protected:
