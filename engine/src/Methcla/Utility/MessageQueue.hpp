@@ -40,10 +40,9 @@ public:
         if (!success) throw std::runtime_error("Message queue overflow");
     }
 
-    bool next(T& msg)
+    inline bool next(T& msg)
     {
-        size_t n = m_queue.pop(&msg);
-        return n == 1;
+        return m_queue.pop(msg);
     }
 
 private:
