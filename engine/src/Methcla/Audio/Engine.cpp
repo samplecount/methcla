@@ -192,8 +192,7 @@ void Environment::perform_response_query_external_inputs(Command& cmd, Command::
     Environment* env = cmd.env;
     const size_t numBuses = env->numExternalAudioInputs();
     const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
-    char buffer[bufferSize];
-    OSC::Client::Packet packet(buffer, bufferSize);
+    OSC::Client::DynamicPacket packet(bufferSize);
     packet.openMessage("/ack", 1 + numBuses);
     packet.int32(cmd.data.response.requestId);
     for (size_t i=0; i < numBuses; i++) {
@@ -208,8 +207,7 @@ void Environment::perform_response_query_external_outputs(Command& cmd, Command:
     Environment* env = cmd.env;
     const size_t numBuses = env->numExternalAudioOutputs();
     const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
-    char buffer[bufferSize];
-    OSC::Client::Packet packet(buffer, bufferSize);
+    OSC::Client::DynamicPacket packet(bufferSize);
     packet.openMessage("/ack", 1 + numBuses);
     packet.int32(cmd.data.response.requestId);
     for (size_t i=0; i < numBuses; i++) {
