@@ -33,12 +33,11 @@ namespace Methcla { namespace Utility {
 template <typename T, size_t queueSize> class MessageQueue : boost::noncopyable
 {
 public:
-    void send(const T& msg)
+    inline void send(const T& msg)
     {
         std::lock_guard<std::mutex> lock(m_writeMutex);
-        for (;;) {
-            if (m_queue.push(msg)) break;
-        }
+        bool success = m_queue.push(msg);
+        if (!success) throw std::runtime_error("Message queue overflow");
     }
 
     bool next(T& msg)
