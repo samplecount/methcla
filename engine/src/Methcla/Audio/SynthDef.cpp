@@ -278,7 +278,10 @@ const LV2_Feature* const* PluginManager::features()
 
 const std::shared_ptr<Plugin>& PluginManager::lookup(const char* name) const
 {
-    return m_plugins.find(name)->second;
+    auto it = m_plugins.find(name);
+    if (it == m_plugins.end())
+        throw std::runtime_error("Synth definition not found");
+    return it->second;
 }
 
 void PluginManager::loadPlugins(const boost::filesystem::path& directory)
