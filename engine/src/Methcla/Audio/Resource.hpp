@@ -91,7 +91,7 @@ namespace Methcla { namespace Audio
 
         T* lookup(const Id& id)
         {
-            if ((id >= Id(0)) && (id < m_elems.size()))
+            if ((id >= Id(0)) && (id < Id(m_elems.size())))
                 return m_elems[id];
             throw std::invalid_argument("Invalid resource ID");
         }
