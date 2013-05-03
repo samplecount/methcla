@@ -71,7 +71,7 @@ namespace Methcla
         out << std::endl;
     }
 
-    inline static boost::optional<std::exception_ptr> responseToException(const OSC::Server::Packet& packet)
+    inline static std::exception_ptr responseToException(const OSC::Server::Packet& packet)
     {
         if (packet.isMessage()) {
             OSC::Server::Message msg(packet);
@@ -79,27 +79,12 @@ namespace Methcla
                 auto args(msg.args());
                 args.drop(); // request id
                 const char* error = args.string();
-                return boost::make_optional(std::make_exception_ptr(std::runtime_error(error)));
+                return std::make_exception_ptr(std::runtime_error(error));
             } else {
-                return boost::none;
+                return std::exception_ptr();
             }
         } else {
-            return boost::make_optional(std::make_exception_ptr(std::invalid_argument("Response is not a message")));
-        }
-    }
-
-    inline static void checkResponse(const OSC::Server::Packet& packet)
-    {
-        if (packet.isMessage()) {
-            OSC::Server::Message msg(packet);
-            if (msg == "/error") {
-                auto args(msg.args());
-                args.drop(); // request id
-                const char* error = args.string();
-                throw std::runtime_error(error);
-            }
-        } else {
-            throw std::invalid_argument("Response is not a message");
+            return std::make_exception_ptr(std::invalid_argument("Response is not a message"));
         }
     }
 
@@ -119,6 +104,103 @@ namespace Methcla
             return x;
         }
     };
+
+    namespace impl
+    {
+        struct Result : boost::noncopyable
+        {
+            Result()
+                : m_cond(false)
+            { }
+
+            inline void notify()
+            {
+                m_cond = true;
+                m_cond_var.notify_one();
+            }
+
+            inline void wait()
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                while (!m_cond) {
+                    m_cond_var.wait(lock);
+                }
+                if (m_exc) {
+                    std::rethrow_exception(m_exc);
+                }
+            }
+
+            void set_exception(std::exception_ptr exc)
+            {
+                BOOST_ASSERT(m_cond);
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_exc = exc;
+                notify();
+            }
+
+            std::mutex m_mutex;
+            std::condition_variable m_cond_var;
+            bool m_cond;
+            std::exception_ptr m_exc;
+        };
+    };
+
+    template <class T> class Result : impl::Result
+    {
+    public:
+        void set(std::exception_ptr exc)
+        {
+            set_exception(exc);
+        }
+
+        void set(const T& value)
+        {
+            BOOST_ASSERT(!m_cond);
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_value = value;
+            notify();
+        }
+
+        const T& get()
+        {
+            wait();
+            return m_value;
+        }
+
+    private:
+        T m_value;
+    };
+
+    template <> class Result<void> : impl::Result
+    {
+    public:
+        void set(std::exception_ptr exc)
+        {
+            set_exception(exc);
+        }
+
+        void set()
+        {
+            BOOST_ASSERT(!m_cond);
+            std::lock_guard<std::mutex> lock(m_mutex);
+            notify();
+        }
+
+        void get()
+        {
+            wait();
+        }
+    };
+
+    template <typename T> bool checkResponse(const OSC::Server::Packet& response, Result<T>& result)
+    {
+        auto error = responseToException(response);
+        if (error) {
+            result.set(error);
+            return false;
+        }
+        return true;
+    }
 
     class Engine
     {
@@ -153,11 +235,18 @@ namespace Methcla
 
         inline SynthId synth(const char* synthDef)
         {
-            Methcla_RequestId requestId = getRequestId();
+            static const char kAddress[] = "/s_new";
+            static const size_t kNumArgs = 4;
+            static const size_t kPacketSize = OSC::Size::message(kAddress,kNumArgs)
+                                                 + OSC::Size::int32()
+                                                 + OSC::Size::string(256)
+                                                 + 2 * OSC::Size::int32();
 
-            OSC::Client::StaticPacket<8192> request;
+            const Methcla_RequestId requestId = getRequestId();
+
+            OSC::Client::StaticPacket<kPacketSize> request;
             request
-                .openMessage("/s_new", 4)
+                .openMessage(kAddress, kNumArgs)
                     .int32(requestId)
                     .string(synthDef)
                     .int32(0)
@@ -166,35 +255,35 @@ namespace Methcla
 
             dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
 
-            std::promise<boost::variant<std::exception_ptr,SynthId>> promise;
+            Result<SynthId> result;
 
-            registerResponse(requestId, [&promise,&requestId](const void* buffer, size_t size){
+            withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
                 OSC::Server::Packet response(buffer, size);
-                auto error = responseToException(response);
-                if (error) {
-                    promise.set_value(*error);
-                } else {
+                if (checkResponse(response, result)) {
                     auto args = ((OSC::Server::Message)response).args();
                     int32_t requestId_ = args.int32();
-                    assert(requestId_ == requestId);
+                    BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
                     int32_t nodeId = args.int32();
-                    promise.set_value(SynthId(nodeId));
+                    std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
+                    result.set(SynthId(nodeId));
                 }
             });
 
-            send(request);
-
-            auto response = promise.get_future().get();
-            return boost::apply_visitor(ExceptionVisitor<SynthId>(), response);
+            return result.get();
         }
 
         inline void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
         {
+            static const char kAddress[] = "/synth/map/output";
+            static const size_t kNumArgs = 4;
+            static const size_t kPacketSize =  OSC::Size::message(kAddress,kNumArgs)
+                                                 + kNumArgs * OSC::Size::int32();
+
             Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<8192> request;
+            OSC::Client::StaticPacket<kPacketSize> request;
             request
-                .openMessage("/synth/map/output", 4)
+                .openMessage(kAddress, kNumArgs)
                     .int32(requestId)
                     .int32(synth)
                     .int32(index)
@@ -203,16 +292,15 @@ namespace Methcla
 
             dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
 
-            std::promise<boost::optional<std::exception_ptr>> promise;
-            registerResponse(requestId, [&promise](const void* buffer, size_t size){
-                promise.set_value(responseToException(OSC::Server::Packet(buffer, size)));
+            Result<void> result;
+
+            withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
+                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
+                    result.set();
+                }
             });
 
-            send(request);
-
-            auto response = promise.get_future().get();
-            if (response)
-                std::rethrow_exception(*response);
+            result.get();
         }
 
     private:
@@ -241,7 +329,7 @@ namespace Methcla
             // look up request id and invoke callback
             auto it = m_callbacks.find(requestId);
             if (it != m_callbacks.end()) {
-                it->second(packet, size);
+                it->second(requestId, packet, size);
                 m_callbacks.erase(it);
             }
         }
@@ -267,18 +355,24 @@ namespace Methcla
             return result;
         }
 
-        void registerResponse(Methcla_RequestId requestId, std::function<void (const void*, size_t)> callback)
+        void registerResponse(Methcla_RequestId requestId, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
         {
             std::lock_guard<std::mutex> lock(m_callbacksMutex);
+            BOOST_ASSERT_MSG( m_callbacks.find(requestId) == m_callbacks.end(), "Duplicate request id" );
             m_callbacks[requestId] = callback;
         }
 
+        void withRequest(Methcla_RequestId requestId, const OSC::Client::Packet& request, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
+        {
+            registerResponse(requestId, callback);
+            send(request);
+        }
 
     private:
         Methcla_Engine*     m_engine;
         Methcla_RequestId   m_requestId;
-        std::unordered_map<Methcla_RequestId,std::function<void (const void*, size_t)>> m_callbacks;
         std::mutex          m_requestIdMutex;
+        std::unordered_map<Methcla_RequestId,std::function<void (Methcla_RequestId, const void*, size_t)>> m_callbacks;
         std::mutex          m_callbacksMutex;
     };
 };
