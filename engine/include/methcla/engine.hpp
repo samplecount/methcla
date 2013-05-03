@@ -233,7 +233,7 @@ namespace Methcla
             check(m_engine);
         }
 
-        inline SynthId synth(const char* synthDef)
+        SynthId synth(const char* synthDef)
         {
             const char address[] = "/s_new";
             const size_t numArgs = 4;
@@ -272,7 +272,7 @@ namespace Methcla
             return result.get();
         }
 
-        inline void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
+        void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
         {
             const char address[] = "/synth/map/output";
             const size_t numArgs = 4;
