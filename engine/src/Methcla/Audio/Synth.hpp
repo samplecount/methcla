@@ -46,18 +46,21 @@ class Connection : public boost::noncopyable
 public:
     Connection(size_t index, ConnectionType type)
         : m_index(index)
-        , m_busId(-1)
+        , m_connected(false)
+        , m_busId(0)
         , m_type(type)
     { }
 
     size_t index() const { return m_index; }
+    bool isConnected() const { return m_connected; }
     BusId busId() const { return m_busId; }
     const ConnectionType& type() const { return m_type; }
 
     bool connect(const BusId& busId, const ConnectionType& type)
     {
         bool changed = false;
-        if (busId != m_busId) {
+        if (!m_connected || (busId != m_busId)) {
+            m_connected = true;
             m_busId = busId;
             changed = true;
         }
@@ -67,6 +70,7 @@ public:
 
 private:
     size_t          m_index;
+    bool            m_connected;
     BusId           m_busId;
     ConnectionType  m_type;
 };
@@ -80,17 +84,19 @@ public:
 
     void read(Environment& env, size_t numFrames, sample_t* dst)
     {
-        AudioBus* bus = env.audioBus(busId());
+        if (isConnected()) {
+            AudioBus* bus = env.audioBus(busId());
 
-        if (bus != nullptr) {
-            std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if ((type() == kInFeedback) || (bus->epoch() == env.epoch())) {
-                memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
+            if (bus != nullptr) {
+                std::lock_guard<AudioBus::Lock> lock(bus->lock());
+                if ((type() == kInFeedback) || (bus->epoch() == env.epoch())) {
+                    memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
+                } else {
+                    memset(dst, 0, numFrames * sizeof(sample_t));
+                }
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
-        } else {
-            memset(dst, 0, numFrames * sizeof(sample_t));
         }
     }
 };
@@ -123,21 +129,23 @@ public:
 
     void write(Environment& env, size_t numFrames, const sample_t* src)
     {
-        AudioBus* bus = env.audioBus(busId());
+        if (isConnected()) {
+            AudioBus* bus = env.audioBus(busId());
 
-        if (bus != nullptr) {
-            const Epoch epoch = env.epoch();
-            std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
-                // Accumulate
-                sample_t* dst = bus->data();
-                for (size_t i=0; i < numFrames; i++) {
-                    dst[i] += src[i];
+            if (bus != nullptr) {
+                const Epoch epoch = env.epoch();
+                std::lock_guard<AudioBus::Lock> lock(bus->lock());
+                if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
+                    // Accumulate
+                    sample_t* dst = bus->data();
+                    for (size_t i=0; i < numFrames; i++) {
+                        dst[i] += src[i];
+                    }
+                } else {
+                    // Copy
+                    memcpy(bus->data(), src, numFrames * sizeof(sample_t));
+                    bus->setEpoch(epoch);
                 }
-            } else {
-                // Copy
-                memcpy(bus->data(), src, numFrames * sizeof(sample_t));
-                bus->setEpoch(epoch);
             }
         }
     }
