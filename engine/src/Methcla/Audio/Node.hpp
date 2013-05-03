@@ -32,7 +32,7 @@ namespace Methcla { namespace Audio {
 
     class Node : public Resource<NodeId>
                , public Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment>
-               , public boost::intrusive::list_base_hook<>
+               , public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
     {
     protected:
         typedef Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment> allocated_super;
@@ -70,7 +70,7 @@ namespace Methcla { namespace Audio {
         Group* m_parent;
     };
 
-    typedef boost::intrusive::list<Node> NodeList;
+    typedef boost::intrusive::list<Node,boost::intrusive::constant_time_size<false>> NodeList;
 }; };
 
 #endif // METHCLA_AUDIO_NODE_HPP_INCLUDED
