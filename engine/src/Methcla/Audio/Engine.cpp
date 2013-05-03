@@ -305,10 +305,10 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             Node* targetNode = m_nodes.lookup(targetId);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Node* node = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
+            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
 
             Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = node->id();
+            cmd.data.response.data.nodeId = synth->id();
             send(cmd);
         } else if (msg == "/g_new") {
             NodeId targetId = NodeId(args.int32());
