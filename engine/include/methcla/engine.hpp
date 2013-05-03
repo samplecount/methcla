@@ -258,6 +258,7 @@ namespace Methcla
 
         Methcla_RequestId getRequestId()
         {
+            std::lock_guard<std::mutex> lock(m_requestIdMutex);
             Methcla_RequestId result = m_requestId;
             if (result == kMethcla_Notification) {
                 result++;
@@ -277,6 +278,7 @@ namespace Methcla
         Methcla_Engine*     m_engine;
         Methcla_RequestId   m_requestId;
         std::unordered_map<Methcla_RequestId,std::function<void (const void*, size_t)>> m_callbacks;
+        std::mutex          m_requestIdMutex;
         std::mutex          m_callbacksMutex;
     };
 };
