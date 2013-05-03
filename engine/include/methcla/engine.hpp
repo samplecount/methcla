@@ -246,7 +246,7 @@ namespace Methcla
             }
         }
 
-        void send(void* packet, size_t size)
+        void send(const void* packet, size_t size)
         {
             methcla_engine_send(m_engine, packet, size);
         }
