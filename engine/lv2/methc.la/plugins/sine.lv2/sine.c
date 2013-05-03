@@ -102,7 +102,8 @@ deactivate(LV2_Handle instance)
 static void
 cleanup(LV2_Handle instance)
 {
-    free(instance);
+    // Cannot free instance if allocated by rt-instantiate!
+//    free(instance);
 }
 
 static const LV2_RT_Instantiate_Interface rtiInterface = {
