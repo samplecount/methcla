@@ -235,18 +235,18 @@ namespace Methcla
 
         inline SynthId synth(const char* synthDef)
         {
-            static const char kAddress[] = "/s_new";
-            static const size_t kNumArgs = 4;
-            static const size_t kPacketSize = OSC::Size::message(kAddress,kNumArgs)
-                                                 + OSC::Size::int32()
-                                                 + OSC::Size::string(256)
-                                                 + 2 * OSC::Size::int32();
+            const char address[] = "/s_new";
+            const size_t numArgs = 4;
+            const size_t packetSize = OSC::Size::message(address, numArgs)
+                                         + OSC::Size::int32()
+                                         + OSC::Size::string(256)
+                                         + 2 * OSC::Size::int32();
 
             const Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<kPacketSize> request;
+            OSC::Client::StaticPacket<packetSize> request;
             request
-                .openMessage(kAddress, kNumArgs)
+                .openMessage(address, numArgs)
                     .int32(requestId)
                     .string(synthDef)
                     .int32(0)
@@ -274,16 +274,16 @@ namespace Methcla
 
         inline void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
         {
-            static const char kAddress[] = "/synth/map/output";
-            static const size_t kNumArgs = 4;
-            static const size_t kPacketSize =  OSC::Size::message(kAddress,kNumArgs)
-                                                 + kNumArgs * OSC::Size::int32();
+            const char address[] = "/synth/map/output";
+            const size_t numArgs = 4;
+            const size_t packetSize =  OSC::Size::message(address, numArgs)
+                                         + numArgs * OSC::Size::int32();
 
             Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<kPacketSize> request;
+            OSC::Client::StaticPacket<packetSize> request;
             request
-                .openMessage(kAddress, kNumArgs)
+                .openMessage(address, numArgs)
                     .int32(requestId)
                     .int32(synth)
                     .int32(index)

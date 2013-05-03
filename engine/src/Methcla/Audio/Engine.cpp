@@ -157,9 +157,14 @@ void Environment::perform_free(Command& cmd, Command::Channel&)
 
 void Environment::perform_response_ack(Command& cmd, Command::Channel&)
 {
-    OSC::Client::StaticPacket<16> packet;
+    const char address[] = "/ack";
+    const size_t numArgs = 1;
+    const size_t packetSize = OSC::Size::message(address, numArgs)
+                                + OSC::Size::int32();
+    OSC::Client::StaticPacket<packetSize> packet;
+    // OSC::Client::DynamicPacket packet(kPacketSize);
     packet
-        .openMessage("/ack", 1)
+        .openMessage(address, numArgs)
             .int32(cmd.data.response.requestId)
         .closeMessage();
     cmd.env->reply(cmd.data.response.requestId, packet);
@@ -167,9 +172,14 @@ void Environment::perform_response_ack(Command& cmd, Command::Channel&)
 
 void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
 {
-    OSC::Client::StaticPacket<20> packet;
+    const char address[] = "/ack";
+    const size_t numArgs = 2;
+    const size_t packetSize = OSC::Size::message(address, numArgs)
+                                + 2 * OSC::Size::int32();
+    OSC::Client::StaticPacket<packetSize> packet;
+    // OSC::Client::DynamicPacket packet(kPacketSize);
     packet
-        .openMessage("/ack", 2)
+        .openMessage(address, numArgs)
             .int32(cmd.data.response.requestId)
             .int32(cmd.data.response.data.nodeId)
         .closeMessage();
@@ -178,9 +188,15 @@ void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
 
 void Environment::perform_response_error(Command& cmd, Command::Channel&)
 {
-    OSC::Client::StaticPacket<16 + sizeof(cmd.data.response.data.error)> packet;
+    const char address[] = "/error";
+    const size_t numArgs = 2;
+    const size_t packetSize = OSC::Size::message(address, numArgs)
+                                + OSC::Size::int32()
+                                + OSC::Size::string(sizeof(cmd.data.response.data.error));
+    OSC::Client::StaticPacket<packetSize> packet;
+    // OSC::Client::DynamicPacket packet(kPacketSize);
     packet
-        .openMessage("/error", 2)
+        .openMessage(address, numArgs)
             .int32(cmd.data.response.requestId)
             .string(cmd.data.response.data.error)
         .closeMessage();
@@ -190,10 +206,12 @@ void Environment::perform_response_error(Command& cmd, Command::Channel&)
 void Environment::perform_response_query_external_inputs(Command& cmd, Command::Channel&)
 {
     Environment* env = cmd.env;
+    const char address[] = "/ack";
     const size_t numBuses = env->numExternalAudioInputs();
-    const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
-    OSC::Client::DynamicPacket packet(bufferSize);
-    packet.openMessage("/ack", 1 + numBuses);
+    const size_t numArgs = 1 + numBuses;
+    const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
+    OSC::Client::DynamicPacket packet(packetSize);
+    packet.openMessage(address, numArgs);
     packet.int32(cmd.data.response.requestId);
     for (size_t i=0; i < numBuses; i++) {
         packet.int32(env->externalAudioInput(i).id());
@@ -205,10 +223,12 @@ void Environment::perform_response_query_external_inputs(Command& cmd, Command::
 void Environment::perform_response_query_external_outputs(Command& cmd, Command::Channel&)
 {
     Environment* env = cmd.env;
+    const char address[] = "/ack";
     const size_t numBuses = env->numExternalAudioOutputs();
-    const size_t bufferSize = 64 + numBuses * sizeof(int32_t);
-    OSC::Client::DynamicPacket packet(bufferSize);
-    packet.openMessage("/ack", 1 + numBuses);
+    const size_t numArgs = 1 + numBuses;
+    const size_t packetSize = OSC::Size::message(address, numArgs) +  numArgs * OSC::Size::int32();
+    OSC::Client::DynamicPacket packet(packetSize);
+    packet.openMessage(address, numArgs);
     packet.int32(cmd.data.response.requestId);
     for (size_t i=0; i < numBuses; i++) {
         packet.int32(env->externalAudioOutput(i).id());
