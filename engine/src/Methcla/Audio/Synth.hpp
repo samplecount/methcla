@@ -177,7 +177,7 @@ protected:
          , size_t controlBufferOffset
          , size_t audioBufferOffset
          );
-    virtual ~Synth();
+    ~Synth();
 
 public:
     static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const Plugin::Plugin& synthDef);
