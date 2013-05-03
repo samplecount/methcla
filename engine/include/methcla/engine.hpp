@@ -303,6 +303,29 @@ namespace Methcla
             result.get();
         }
 
+        void freeNode(const SynthId& synth)
+        {
+            const char address[] = "/n_free";
+            const size_t numArgs = 2;
+            const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
+            const Methcla_RequestId requestId = getRequestId();
+            OSC::Client::StaticPacket<packetSize> request;
+            request
+                .openMessage(address, numArgs)
+                    .int32(requestId)
+                    .int32(synth)
+                .closeMessage();
+
+            Result<void> result;
+            withRequest(requestId, request, [&result](Methcla_RequestId, const void* buffer, size_t size){
+                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
+                    result.set();
+                }
+            });
+            result.get();
+            // send(request);
+        }
+
     private:
         static void check(const Methcla_Engine* engine)
         {
