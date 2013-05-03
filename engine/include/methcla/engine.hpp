@@ -276,8 +276,8 @@ namespace Methcla
         {
             const char address[] = "/synth/map/output";
             const size_t numArgs = 4;
-            const size_t packetSize =  OSC::Size::message(address, numArgs)
-                                         + numArgs * OSC::Size::int32();
+            const size_t packetSize = OSC::Size::message(address, numArgs)
+                                        + numArgs * OSC::Size::int32();
 
             Methcla_RequestId requestId = getRequestId();
 
