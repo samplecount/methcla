@@ -329,8 +329,13 @@ namespace Methcla
             // look up request id and invoke callback
             auto it = m_callbacks.find(requestId);
             if (it != m_callbacks.end()) {
-                it->second(requestId, packet, size);
-                m_callbacks.erase(it);
+                try {
+                    it->second(requestId, packet, size);
+                    m_callbacks.erase(it);
+                } catch (...) {
+                    m_callbacks.erase(it);
+                    throw;
+                }
             }
         }
 
