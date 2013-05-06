@@ -394,7 +394,7 @@ void Environment::processBundle(const OSC::Server::Bundle& bundle)
     }
 }
 
-Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const boost::filesystem::path& lv2Directory)
+Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& lv2Directory)
 {
     m_driver = IO::defaultPlatformDriver();
     m_driver->setProcessCallback(processCallback, this);

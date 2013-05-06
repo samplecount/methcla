@@ -186,14 +186,6 @@ methclaLib platform =
               , "date_time/src/gregorian/gregorian_types.cpp"
               , "date_time/src/posix_time/posix_time_types.cpp"
               , "exception/src/clone_current_exception_non_intrusive.cpp"
-              , "filesystem/src/codecvt_error_category.cpp"
-              , "filesystem/src/operations.cpp"
-              , "filesystem/src/path.cpp"
-              , "filesystem/src/path_traits.cpp"
-              , "filesystem/src/portability.cpp"
-              , "filesystem/src/unique_path.cpp"
-              , "filesystem/src/utf8_codecvt_facet.cpp"
-              , "filesystem/src/windows_file_codecvt.cpp"
               , "system/src/error_code.cpp"
               ]
         -- TLSF

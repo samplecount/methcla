@@ -16,13 +16,12 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 
-#include <boost/filesystem.hpp>
-
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <new>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 class Options
@@ -67,7 +66,7 @@ struct Methcla_Engine
         , m_errorMessage(kNoErrorMsg)
     {
         Options options(inOptions);
-        const boost::filesystem::path lv2Path(options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH));
+        const std::string lv2Path(options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH));
 
         // TODO: Put this somewhere else
         auto libs = options.lookup<const Methcla_Library*>(METHCLA_OPTION__PLUGIN_LIBRARIES);

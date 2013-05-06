@@ -21,7 +21,6 @@
 #include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
-#include <boost/filesystem.hpp>
 #include <boost/utility.hpp>
 #include <cstring>
 #include <memory>
@@ -183,7 +182,7 @@ public:
     Lilv::NodePtr newUri(const char* uri);
 
     // Plugin discovery and loading
-    void loadPlugins(const boost::filesystem::path& directory);
+    void loadPlugins(const std::string& directory);
 
     // Plugin access
     const std::shared_ptr<Plugin>& lookup(const char* name) const;

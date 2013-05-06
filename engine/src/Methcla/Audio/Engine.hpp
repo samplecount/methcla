@@ -27,11 +27,11 @@
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
-#include <boost/filesystem.hpp>
 #include <boost/utility.hpp>
 
 #include <cstddef>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include <oscpp/client.hpp>
@@ -294,7 +294,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PluginManager& pluginManager, const PacketHandler& handler, const boost::filesystem::path& lv2Directory);
+        Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& lv2Directory);
         virtual ~Engine();
 
         Environment& env()

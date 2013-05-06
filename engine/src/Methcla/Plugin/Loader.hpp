@@ -18,25 +18,9 @@
 #include <methcla/engine.h>
 #include "Methcla/Exception.hpp"
 
-#include <boost/filesystem.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
-
-// Put this in a separate header
-#include <boost/filesystem.hpp>
-#include <boost/functional/hash.hpp>
-
-namespace std
-{
-    template<> struct hash<boost::filesystem::path>
-    {
-        size_t operator()(const boost::filesystem::path& p) const
-        {
-            return boost::filesystem::hash_value(p);
-        }
-    };
-}
 
 namespace Methcla { namespace Plugin {
 
@@ -56,7 +40,7 @@ class Loader
 {
 public:
     virtual ~Loader() { }
-    virtual std::shared_ptr<Library> open(const boost::filesystem::path& path) throw (Exception) = 0;
+    virtual std::shared_ptr<Library> open(const std::string& path) throw (Exception) = 0;
 };
 
 // These are for systems without dynamically loadable modules.
@@ -84,12 +68,12 @@ class StaticLoader : public Loader
 {
 public:
     //* Add a library.
-    void addLibrary(const boost::filesystem::path& path, const std::string& symbolPrefix);
+    void addLibrary(const std::string& path, const std::string& symbolPrefix);
 
-    virtual std::shared_ptr<Library> open(const boost::filesystem::path& path) throw (Exception) override;
+    virtual std::shared_ptr<Library> open(const std::string& path) throw (Exception) override;
 
 private:
-    typedef std::unordered_map<boost::filesystem::path,std::shared_ptr<Library>>
+    typedef std::unordered_map<std::string,std::shared_ptr<Library>>
             LibraryMap;
     LibraryMap m_libs;
 };

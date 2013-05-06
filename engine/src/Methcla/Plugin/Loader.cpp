@@ -42,12 +42,12 @@ Function StaticLibrary::symbol(const std::string& name)
     return dlfunc(RTLD_DEFAULT, (m_prefix + name).c_str());
 }
 
-void StaticLoader::addLibrary(const boost::filesystem::path& path, const std::string& symbolPrefix)
+void StaticLoader::addLibrary(const std::string& path, const std::string& symbolPrefix)
 {
     m_libs[path] = std::shared_ptr<Library>(new StaticLibrary(symbolPrefix));
 }
 
-std::shared_ptr<Library> StaticLoader::open(const boost::filesystem::path& path) throw (Exception)
+std::shared_ptr<Library> StaticLoader::open(const std::string& path) throw (Exception)
 {
     return m_libs.at(path);
 }

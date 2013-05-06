@@ -284,7 +284,7 @@ const std::shared_ptr<Plugin>& PluginManager::lookup(const char* name) const
     return it->second;
 }
 
-void PluginManager::loadPlugins(const boost::filesystem::path& directory)
+void PluginManager::loadPlugins(const std::string& directory)
 {
     NodePtr extensionData(newUri(LV2_CORE_URI "#extensionData"));
     NodePtr hardRTCapable(newUri(LV2_CORE_URI "#hardRTCapable"));
