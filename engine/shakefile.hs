@@ -51,14 +51,14 @@ engineBuildFlags :: Platform -> CBuildFlags -> CBuildFlags
 engineBuildFlags platform =
     append userIncludes
       ( -- Library headers
-        [ ".", "src" ]
+        [ "src" ]
         -- Platform specific modules
      ++ (if      platform == iPhoneOS then[ "platform/ios" ]
          else if platform == iPhoneSimulator then [ "platform/ios" ]
          else if platform == macOSX then [ "platform/jack" ]
          else [])
-        -- Plugins
-     ++ [ "external_libraries" ] )
+        -- External libs and plugins
+     ++ [ "external_libraries", "plugins" ] )
   . append systemIncludes
        ( -- API headers
          [ "include" ]
@@ -121,7 +121,7 @@ methclaLib platform =
               ]
             -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
             -- plugins
-            ++ [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
+            ++ [ "plugins/methc.la/plugins/sine/sine.c" ]
             -- platform dependent
             ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
@@ -133,7 +133,7 @@ methclaLib platform =
 plugins :: Platform -> [Library]
 plugins platform = [
     -- TODO: Provide more SourceTree combinators
-    Library "sine" $ sourceTree_ (engineBuildFlags platform) $ sourceFiles [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
+    Library "sine" $ sourceTree_ (engineBuildFlags platform) $ sourceFiles [ "plugins/methc.la/plugins/sine/sine.c" ]
   ]
 
 -- ====================================================================
@@ -260,8 +260,8 @@ mkRules options = do
                     fs <- liftIO $ find
                               (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
                         `and` sources "include"
-                        `and` sources "lv2"
                         `and` sources "platform"
+                        `and` sources "plugins"
                         `and` sources "src"
                     need fs
                     writeFileLines tagFiles fs

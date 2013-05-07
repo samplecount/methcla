@@ -502,6 +502,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
+					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
@@ -512,7 +513,6 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE)";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -537,6 +537,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
+					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
@@ -548,7 +549,6 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
-				USER_HEADER_SEARCH_PATHS = "$(METHCLA_SOURCE)";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};

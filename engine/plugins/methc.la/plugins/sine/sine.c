@@ -19,7 +19,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "lv2/methc.la/plugins/sine.lv2/sine.h"
+#include "methc.la/plugins/sine/sine.h"
 
 typedef enum {
     SINE_FREQ,

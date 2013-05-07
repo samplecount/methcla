@@ -16,7 +16,7 @@
 #define MethclaMobile_Engine_h
 
 #include <methcla/engine.hpp>
-#include "lv2/methc.la/plugins/sine.lv2/sine.h"
+#include <methc.la/plugins/sine/sine.h>
 
 Methcla::Engine* makeEngine()
 {
