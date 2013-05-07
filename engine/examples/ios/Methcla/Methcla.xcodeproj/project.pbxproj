@@ -30,7 +30,6 @@
 		A5D0BAB216C2C2C700C3A046 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A5D0BAB016C2C2C700C3A046 /* InfoPlist.strings */; };
 		A5D0BAB516C2C2C700C3A046 /* MethclaTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A5D0BAB416C2C2C700C3A046 /* MethclaTests.m */; };
 		A5D0BABC16C2C5E700C3A046 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */; };
-		A5D0BABE16C2C66600C3A046 /* lv2 in Resources */ = {isa = PBXBuildFile; fileRef = 53E8B0AB16A8429D00C5BB02 /* lv2 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,7 +53,6 @@
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		53E8B0AB16A8429D00C5BB02 /* lv2 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lv2; path = ../../../lv2; sourceTree = "<group>"; };
 		53EAEA8416A84D7E00380DD3 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../../../src; sourceTree = "<group>"; };
 		53F752F5170C9FDD00916D62 /* libmethcla.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmethcla.a; path = ../../../build/debug/iphoneos/armv7/libmethcla.a; sourceTree = "<group>"; };
 		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
@@ -131,7 +129,6 @@
 				A5ADD5E5173127590014FDA6 /* include */,
 				A52CEE2B16C162E0008D8457 /* platform */,
 				53EAEA8416A84D7E00380DD3 /* src */,
-				53E8B0AB16A8429D00C5BB02 /* lv2 */,
 				A5D0BA8216C2C2C600C3A046 /* Methcla */,
 				A5D0BAAD16C2C2C700C3A046 /* MethclaTests */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
@@ -307,7 +304,6 @@
 				A5D0BA9716C2C2C600C3A046 /* Shader.vsh in Resources */,
 				A5D0BA9D16C2C2C600C3A046 /* ViewController_iPhone.xib in Resources */,
 				A5D0BAA016C2C2C600C3A046 /* ViewController_iPad.xib in Resources */,
-				A5D0BABE16C2C66600C3A046 /* lv2 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -507,8 +503,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
-					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
-					"$(METHCLA_SOURCE)/external_libraries/lv2",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
@@ -544,8 +538,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
-					"$(METHCLA_SOURCE)/external_libraries/boost_lockfree",
-					"$(METHCLA_SOURCE)/external_libraries/lv2",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";

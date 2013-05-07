@@ -37,14 +37,6 @@
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/patch/patch.h"
-
-// This is missing from patch.h
-#ifndef LV2_PATCH__Insert
-# define LV2_PATCH__Insert LV2_PATCH_PREFIX "Insert"
-#endif
-
 namespace Methcla { namespace Audio
 {
     // class ControlBus : boost::noncopyable
@@ -298,7 +290,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& lv2Directory);
+        Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory);
         virtual ~Engine();
 
         Environment& env()

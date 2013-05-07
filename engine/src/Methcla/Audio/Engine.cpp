@@ -403,7 +403,7 @@ void Environment::processBundle(const OSC::Server::Bundle& bundle)
     }
 }
 
-Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& lv2Directory)
+Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)
 {
     m_driver = IO::defaultPlatformDriver();
     m_driver->setProcessCallback(processCallback, this);
@@ -415,7 +415,7 @@ Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const
     options.numHardwareOutputChannels = m_driver->numOutputs();
     m_env = new Environment(pluginManager, handler, options);
 
-    pluginManager.loadPlugins(lv2Directory);
+    pluginManager.loadPlugins(pluginDirectory);
 }
 
 Engine::~Engine()

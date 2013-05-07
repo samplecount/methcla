@@ -38,49 +38,6 @@ externalLibraries = "external_libraries"
 externalLibrary :: FilePath -> FilePath
 externalLibrary = combine externalLibraries
 
-lv2Dir :: FilePath
-lv2Dir = externalLibrary "lv2"
-
-serdDir :: FilePath
-serdDir = externalLibrary "serd"
-
-serdBuildFlags :: CBuildFlags -> CBuildFlags
-serdBuildFlags = append userIncludes
-                    [ serdDir, serdDir </> "src"
-                    , externalLibraries ]
-
-sordDir :: FilePath
-sordDir = externalLibrary "sord"
-
-sordBuildFlags :: CBuildFlags -> CBuildFlags
-sordBuildFlags = append userIncludes
-                    [ sordDir, sordDir </> "src"
-                    , serdDir
-                    , externalLibraries ]
-
-sratomDir :: FilePath
-sratomDir = externalLibrary "sratom"
-
-sratomBuildFlags :: CBuildFlags -> CBuildFlags
-sratomBuildFlags = append userIncludes
-                    [ sratomDir
-                    , serdDir
-                    , sordDir
-                    , externalLibraries
-                    , lv2Dir ]
-
-lilvDir :: FilePath
-lilvDir = externalLibrary "lilv"
-
-lilvBuildFlags :: CBuildFlags -> CBuildFlags
-lilvBuildFlags = append userIncludes
-                    [ lilvDir, lilvDir </> "src"
-                    , serdDir
-                    , sordDir
-                    , sratomDir
-                    , externalLibraries
-                    , lv2Dir ]
-
 boostDir :: FilePath
 boostDir = externalLibrary "boost"
 
@@ -100,9 +57,8 @@ engineBuildFlags platform =
          else if platform == iPhoneSimulator then [ "platform/ios" ]
          else if platform == macOSX then [ "platform/jack" ]
          else [])
-        -- LV2 libraries
-     ++ [ "external_libraries", "external_libraries/lv2" ]
-     ++ [ serdDir, sordDir, lilvDir ] )
+        -- Plugins
+     ++ [ "external_libraries" ] )
   . append systemIncludes
        ( -- API headers
          [ "include" ]
@@ -134,51 +90,7 @@ sharedBuildFlags = append libraries [ "c++", "m" ]
 methclaLib :: Platform -> Library
 methclaLib platform =
     Library "methcla" $ sourceFlags commonBuildFlags [
-        -- serd
-        sourceTree_ serdBuildFlags $ sourceFiles $
-            under (serdDir </> "src") [
-                "env.c"
-              , "node.c"
-              , "reader.c"
-              , "string.c"
-              , "uri.c"
-              , "writer.c"
-              ]
-        -- sord
-      , sourceTree_ sordBuildFlags $ sourceFiles $
-            under (sordDir </> "src") [
-                "sord.c"
-              , "syntax.c"
-              , "zix/digest.c"
-              , "zix/hash.c"
-              , "zix/tree.c"
-              ]
-        -- sratom
-      , sourceTree_ sratomBuildFlags $ sourceFiles $
-            under (sratomDir </> "src") [
-                "sratom.c"
-              ]
-        -- lilv
-      , sourceTree_ lilvBuildFlags $ sourceFiles $
-            under (lilvDir </> "src") [
-                "collections.c"
-              , "instance.c"
-              , "lib.c"
-              , "node.c"
-              , "plugin.c"
-              , "pluginclass.c"
-              , "port.c"
-              , "query.c"
-              , "scalepoint.c"
-              , "state.c"
-              , "ui.c"
-              , "util.c"
-              , "world.c"
-              -- FIXME: Make sure during compilation that this is actually the same as sord/src/zix/tree.c?
-              --, "zix/tree.c"
-              ]
-        -- boost
-      , sourceTree_ boostBuildFlags $ sourceFiles $
+        sourceTree_ boostBuildFlags $ sourceFiles $
             under (boostDir </> "libs") [
               --   "date_time/src/gregorian/date_generators.cpp"
               -- , "date_time/src/gregorian/greg_month.cpp"
@@ -203,7 +115,6 @@ methclaLib platform =
               , "Methcla/Audio/Resource.cpp"
               , "Methcla/Audio/Synth.cpp"
               , "Methcla/Audio/SynthDef.cpp"
-              , "Methcla/LV2/URIDMap.cpp"
               , "Methcla/Memory/Manager.cpp"
               , "Methcla/Memory.cpp"
               , "Methcla/Plugin/Loader.cpp"
@@ -348,10 +259,6 @@ mkRules options = do
                 tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
                     fs <- liftIO $ find
                               (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
-                        `and` files (extension ==? ".h") (lilvDir </> "lilv")
-                        `and` files (extension ==? ".h") (lv2Dir </> "lv2")
-                        `and` files (extension ==? ".h") (serdDir </> "serd")
-                        `and` files (extension ==? ".h") (sordDir </> "sord")
                         `and` sources "include"
                         `and` sources "lv2"
                         `and` sources "platform"
