@@ -24,6 +24,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include <boost/optional.hpp>
 #include <boost/serialization/strong_typedef.hpp>
@@ -31,42 +32,13 @@
 
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
+#include <oscpp/print.hpp>
 
 namespace Methcla
 {
-    inline static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
-    {
-        out << msg.address() << ' ';
-        OSC::Server::ArgStream args(msg.args());
-        while (!args.atEnd()) {
-            const char t = args.tag();
-            out << t << ':';
-            switch (t) {
-                case 'i':
-                    out << args.int32();
-                    break;
-                case 'f':
-                    out << args.float32();
-                    break;
-                case 's':
-                    out << args.string();
-                    break;
-                case 'b':
-                    out << args.blob().size;
-                    break;
-                default:
-                    out << '?';
-                    break;
-            }
-            out << ' ';
-        }
-    }
-
     inline static void dumpRequest(std::ostream& out, const OSC::Server::Packet& packet)
     {
-        out << "Request (send): ";
-        dumpMessage(out, packet);
-        out << std::endl;
+        out << "Request (send): " << packet << std::endl;
     }
 
     inline static std::exception_ptr responseToException(const OSC::Server::Packet& packet)
@@ -217,24 +189,26 @@ namespace Methcla
             check(m_engine);
         }
 
-        SynthId synth(const char* synthDef)
+        SynthId synth(const char* synthDef, const std::vector<float>& controls=std::vector<float>())
         {
             const char address[] = "/s_new";
-            const size_t numArgs = 4;
+            const size_t numArgs = 4 + OSC::Size::array(controls.size());
             const size_t packetSize = OSC::Size::message(address, numArgs)
                                          + OSC::Size::int32()
                                          + OSC::Size::string(256)
-                                         + 2 * OSC::Size::int32();
+                                         + 2 * OSC::Size::int32()
+                                         + controls.size() * OSC::Size::float32();
 
             const Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<packetSize> request;
+            OSC::Client::DynamicPacket request(packetSize);
             request
                 .openMessage(address, numArgs)
-                    .int32(requestId)
-                    .string(synthDef)
-                    .int32(0)
-                    .int32(0)
+                .int32(requestId)
+                .string(synthDef)
+                .int32(0)
+                .int32(0)
+                .putArray(controls.begin(), controls.end())
                 .closeMessage();
 
             dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));

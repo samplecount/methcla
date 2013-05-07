@@ -19,6 +19,7 @@
 #include <boost/current_function.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <oscpp/print.hpp>
 
 using namespace Methcla;
 using namespace Methcla::Audio;
@@ -275,50 +276,9 @@ void Environment::processRequests()
     }
 }
 
-static void dumpMessage(std::ostream& out, const OSC::Server::Message& msg)
-{
-    out << msg.address() << ' ';
-    OSC::Server::ArgStream args(msg.args());
-    while (!args.atEnd()) {
-        const char t = args.tag();
-        out << t << ':';
-        switch (t) {
-            case 'i':
-                out << args.int32();
-                break;
-            case 'f':
-                out << args.float32();
-                break;
-            case 's':
-                out << args.string();
-                break;
-            case 'b':
-                out << args.blob().size;
-                break;
-            default:
-                out << '?';
-                break;
-        }
-        out << ' ';
-    }
-}
-
-// static void indent(std::ostream& out, size_t width)
-// {
-    // while (width-- > 0) out << ' ';
-// }
-
-// static void dumpBundle(std::ostream& out, const OSC::server::Bundle& bundle, size_t tabWidth, size_t curIndent=0)
-// {
-    // out << bundle.time() << " [";
-    // indent(curIndent+tabWidth);
-// }
-
 void Environment::processMessage(const OSC::Server::Message& msg)
 {
-    std::cerr << "Request (recv): ";
-    dumpMessage(std::cerr, msg);
-    std::cerr << std::endl;
+    std::cerr << "Request (recv): " << msg << std::endl;
 
     auto args = msg.args();
     Methcla_RequestId requestId = args.int32();
@@ -331,10 +291,16 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             const std::shared_ptr<SynthDef> def = plugins().lookup(defName);
 
+            auto synthControls = args.atEnd() ? OSC::Server::ArgStream() : args.array();
+            if (def->numControlInputs() != synthControls.size()) {
+                throw std::runtime_error("Missing synth control initialisers");
+            }
+            auto synthArgs = args.atEnd() ? OSC::Server::ArgStream() : args.array();
+
             Node* targetNode = m_nodes.lookup(targetId);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def);
+            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def, synthControls, synthArgs);
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = synth->id();

@@ -26,6 +26,8 @@ Synth::Synth( Environment& env
             , Group* target
             , Node::AddAction addAction
             , const SynthDef& synthDef
+            , OSC::Server::ArgStream controls
+            , OSC::Server::ArgStream args
             , size_t synthOffset
             , size_t audioInputOffset
             , size_t audioOutputOffset
@@ -53,7 +55,7 @@ Synth::Synth( Environment& env
         // Connect control ports
         if (port.isa(Port::kControl)) {
             if (port.isa(Port::kInput)) {
-                m_controlBuffers[port.index()] = 0.f;
+                m_controlBuffers[port.index()] = controls.next<float>();
                 m_synthDef.connectPort(
                     m_synth
                   , i
@@ -103,7 +105,7 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef)
+Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args)
 {
     typedef Alignment<kSIMDAlignment> BufferAlignment;
 
@@ -135,7 +137,7 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
     // Instantiate synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
                Synth( env, target, addAction
-                    , synthDef
+                    , synthDef, controls, args
                     , sizeof(Synth)
                     , audioInputOffset
                     , audioOutputOffset

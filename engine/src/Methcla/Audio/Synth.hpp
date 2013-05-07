@@ -20,7 +20,7 @@
 
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
-
+#include <oscpp/server.hpp>
 #include <thread>
 
 namespace Methcla { namespace Audio {
@@ -171,6 +171,8 @@ protected:
          , Group* target
          , AddAction addAction
          , const SynthDef& synthDef
+         , OSC::Server::ArgStream controls
+         , OSC::Server::ArgStream args
          , size_t synthOffset
          , size_t audioInputConnectionsOffset
          , size_t audioOutputConnectionsOffset
@@ -180,7 +182,7 @@ protected:
     ~Synth();
 
 public:
-    static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef);
+    static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args);
 
     virtual bool isSynth() const override { return true; }
 
