@@ -208,7 +208,7 @@ methclaLib platform =
               , "Methcla/Memory.cpp"
               , "Methcla/Plugin/Loader.cpp"
               ]
-            ++ [ "external_libraries/zix/ring.c" ]
+            -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
             -- plugins
             ++ [ "lv2/methc.la/plugins/sine.lv2/sine.c" ]
             -- platform dependent
