@@ -196,7 +196,6 @@ methclaLib platform =
             under "src" [
                 "Methcla/API.cpp"
               , "Methcla/Audio/AudioBus.cpp"
-              , "Methcla/Audio/Client.cpp"
               , "Methcla/Audio/Engine.cpp"
               , "Methcla/Audio/Group.cpp"
               , "Methcla/Audio/IO/Driver.cpp"
