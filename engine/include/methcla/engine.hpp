@@ -29,6 +29,7 @@
 #include <boost/serialization/strong_typedef.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/apply_visitor.hpp>
+#include <boost/utility.hpp>
 
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
