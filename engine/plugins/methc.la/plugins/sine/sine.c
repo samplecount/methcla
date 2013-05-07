@@ -75,7 +75,7 @@ sine_connect( Methcla_Synth* synth
         case SINE_FREQ:
             sine->freq = (float*)data;
             // *sine->freq = (float)rand() / (float)RAND_MAX * 400 + 200;
-            fprintf(stderr, "SINE_FREQ: %f\n", *sine->freq);
+            // fprintf(stderr, "SINE_FREQ: %f\n", *sine->freq);
             break;
         case SINE_OUTPUT:
             sine->output = (float*)data;
