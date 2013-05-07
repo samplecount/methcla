@@ -170,7 +170,7 @@ protected:
     Synth( Environment& env
          , Group* target
          , AddAction addAction
-         , const Plugin::Plugin& synthDef
+         , const SynthDef& synthDef
          , size_t synthOffset
          , size_t audioInputConnectionsOffset
          , size_t audioOutputConnectionsOffset
@@ -180,12 +180,12 @@ protected:
     ~Synth();
 
 public:
-    static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const Plugin::Plugin& synthDef);
+    static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef);
 
     virtual bool isSynth() const override { return true; }
 
     //* Return this synth's SynthDef.
-    const Plugin::Plugin& synthDef() const { return m_synthDef; }
+    const SynthDef& synthDef() const { return m_synthDef; }
 
     //* Return number of audio inputs.
     size_t numAudioInputs() const { return synthDef().numAudioInputs(); }
@@ -234,9 +234,9 @@ public:
     template <class T> T* synth() { return static_cast<T*>(m_synth); }
 
 private:
-    const Plugin::Plugin&   m_synthDef;
+    const SynthDef&         m_synthDef;
     std::bitset<32>         m_flags;
-    LV2_Handle              m_synth;
+    Methcla_Synth*          m_synth;
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
     sample_t*               m_controlBuffers;

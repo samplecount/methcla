@@ -17,15 +17,14 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-#include <methcla/common.h>
-
-#include "lv2/methc.la/ext/rt-instantiate/rt-instantiate.h"
 #include "lv2/methc.la/plugins/sine.lv2/sine.h"
 
 typedef enum {
-    SINE_FREQ   = 0,
-    SINE_OUTPUT = 1
+    SINE_FREQ,
+    SINE_OUTPUT,
+    kSineNumPorts
 } PortIndex;
 
 typedef struct {
@@ -35,51 +34,62 @@ typedef struct {
     double freqToPhaseInc;
 } Sine;
 
-static uint32_t instance_size(const LV2_Descriptor* descriptor)
+static bool
+sine_port( const Methcla_SynthDef* synthDef
+         , size_t index
+         , Methcla_Port* port )
 {
-    return sizeof(Sine);
+    switch ((PortIndex)index) {
+        case SINE_FREQ:
+            port->type = kMethcla_ControlPort;
+            port->direction = kMethcla_Input;
+            port->flags = kMethcla_PortFlags;
+            return true;
+        case SINE_OUTPUT:
+            port->type = kMethcla_AudioPort;
+            port->direction = kMethcla_Output;
+            port->flags = kMethcla_PortFlags;
+            return true;
+        default:
+            return false;
+    }
 }
-
-static LV2_Handle
-instantiate( const LV2_Descriptor*     descriptor
-           , double                    sampleRate
-           , const char*               bundlePath
-           , const LV2_Feature* const* features
-           , void*                     location )
+static void
+sine_construct( const Methcla_SynthDef* synthDef
+         , const Methcla_World* world
+         , Methcla_Synth* synth )
 {
-    Sine* sine = (Sine*)location;
-    sine->freqToPhaseInc = 2.*M_PI/sampleRate;
-    return (LV2_Handle)sine;
+    Sine* sine = (Sine*)synth;
+    sine->phase = 0.;
+    sine->freqToPhaseInc = 2.*M_PI/methcla_world_samplerate(world);
 }
 
 static void
-activate(LV2_Handle instance)
+sine_connect( Methcla_Synth* synth
+       , size_t port
+       , void* data)
 {
-    Sine* sine = (Sine*)instance;
-    sine->phase = 0;
-}
-
-static void
-connect_port(LV2_Handle instance,
-             uint32_t   port,
-             void*      data)
-{
-    Sine* sine = (Sine*)instance;
+    Sine* sine = (Sine*)synth;
 
     switch ((PortIndex)port) {
-    case SINE_FREQ:
-        sine->freq = (float*)data;
-        break;
-    case SINE_OUTPUT:
-        sine->output = (float*)data;
-        break;
+        case SINE_FREQ:
+            sine->freq = (float*)data;
+            *sine->freq = (float)rand() / (float)RAND_MAX * 400 + 200;
+            fprintf(stderr, "SINE_FREQ: %f\n", *sine->freq);
+            break;
+        case SINE_OUTPUT:
+            sine->output = (float*)data;
+            break;
+        default:
+            break;
     }
 }
 
 static void
-run(LV2_Handle instance, uint32_t numFrames)
+
+sine_process(Methcla_Synth* synth, size_t numFrames)
 {
-    Sine* sine = (Sine*)instance;
+    Sine* sine = (Sine*)synth;
 
     const float  freq     = *sine->freq;
     double phase          = sine->phase;
@@ -87,73 +97,27 @@ run(LV2_Handle instance, uint32_t numFrames)
     float* const output   = sine->output;
 
     for (uint32_t k = 0; k < numFrames; k++) {
-        output[k] = sin(phase);
+        output[k] = sin(phase) * 0.05f;
         phase += phaseInc;
     }
 
     sine->phase = phase;
 }
 
-static void
-deactivate(LV2_Handle instance)
-{
-}
-
-static void
-cleanup(LV2_Handle instance)
-{
-    // Cannot free instance if allocated by rt-instantiate!
-//    free(instance);
-}
-
-static const LV2_RT_Instantiate_Interface rtiInterface = {
-    instance_size
-  , instantiate
+static const Methcla_SynthDef descriptor = {
+    METHCLA_PLUGINS_SINE_URI,
+    sizeof(Sine),
+    sine_port,
+    sine_construct,
+    sine_connect,
+    sine_process,
+    NULL
 };
 
-const void*
-extension_data(const char* uri)
+static const Methcla_Library library = { NULL, NULL };
+
+METHCLA_EXPORT const Methcla_Library* methcla_plugins_sine(const Methcla_Host* host, const char* bundlePath)
 {
-    if (strcmp(uri, LV2_RT_INSTANTIATE__INTERFACE) == 0) {
-        return &rtiInterface;
-    }
-    return NULL;
+    methcla_register_synthdef(host, &descriptor);
+    return &library;
 }
-
-static const LV2_Descriptor descriptor = {
-    METHCLA_LV2_PLUGINS_SINE_URI,
-    lv2_rt_instantiate_default_instantiate,
-    connect_port,
-    activate,
-    run,
-    deactivate,
-    cleanup,
-    extension_data
-};
-
-static const LV2_Descriptor* lib_get_plugin(LV2_Lib_Handle handle, uint32_t index)
-{
-    switch (index) {
-    case 0:
-        return &descriptor;
-    default:
-        return NULL;
-    }
-}
-
-static void lib_cleanup(LV2_Lib_Handle handle)
-{
-}
-
-static const LV2_Lib_Descriptor libDescriptor = {
-    NULL,
-    sizeof(LV2_Lib_Descriptor),
-    lib_cleanup,
-    lib_get_plugin
-};
-
-METHCLA_EXPORT const LV2_Lib_Descriptor* methcla_lv2_plugins_sine_lv2_lib_descriptor(const char* bundlePath, const LV2_Feature* const* features)
-{
-    return &libDescriptor;
-}
-

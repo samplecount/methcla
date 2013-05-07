@@ -40,7 +40,7 @@ class Loader
 {
 public:
     virtual ~Loader() { }
-    virtual std::shared_ptr<Library> open(const std::string& path) throw (Exception) = 0;
+    virtual std::shared_ptr<Library> open(const std::string& path) = 0;
 };
 
 // These are for systems without dynamically loadable modules.
@@ -70,7 +70,7 @@ public:
     //* Add a library.
     void addLibrary(const std::string& path, const std::string& symbolPrefix);
 
-    virtual std::shared_ptr<Library> open(const std::string& path) throw (Exception) override;
+    virtual std::shared_ptr<Library> open(const std::string& path) override;
 
 private:
     typedef std::unordered_map<std::string,std::shared_ptr<Library>>

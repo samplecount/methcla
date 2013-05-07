@@ -18,22 +18,12 @@
 #define METHCLA_ENGINE_H_INCLUDED
 
 #include <methcla/common.h>
+#include <methcla/plugin.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
-#define METHCLA_LV2_URI         "http://methc.la/lv2"
-
-typedef void (*Methcla_Library_Function)(void);
-
-struct Methcla_Library
-{
-    const char*              plugin;    //*< Plugin URI (e.g. "http://methc.la/lv2/plugins/sine").
-    Methcla_Library_Function function;  //*< Symbol function address.
-};
-typedef struct Methcla_Library Methcla_Library;
-
-#define METHCLA_END_LIBRARIES { NULL, NULL }
+#define METHCLA_PLUGINS_URI     "http://methc.la/plugins"
 
 struct Methcla_Option
 {
@@ -49,6 +39,14 @@ typedef struct Methcla_Option Methcla_Option;
 
 #define METHCLA_OPTION__PLUGIN_PATH         METHCLA_OPTIONS_PREFIX "pluginPath"
 #define METHCLA_OPTION__PLUGIN_LIBRARIES    METHCLA_OPTIONS_PREFIX "pluginLibraries"
+
+struct Methcla_PluginLibrary
+{
+    Methcla_LibraryFunction function;
+};
+typedef struct Methcla_PluginLibrary Methcla_PluginLibrary;
+
+#define METHCLA_END_PLUGIN_LIBRARIES { NULL }
 
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;

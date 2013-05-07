@@ -66,20 +66,22 @@ struct Methcla_Engine
         , m_errorMessage(kNoErrorMsg)
     {
         Options options(inOptions);
-        const std::string lv2Path(options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH));
 
         // TODO: Put this somewhere else
-        auto libs = options.lookup<const Methcla_Library*>(METHCLA_OPTION__PLUGIN_LIBRARIES);
-        Methcla::Audio::PluginManager::StaticLibraryMap staticLibs;
-        if (libs != nullptr) {
-            while (libs->plugin != nullptr) {
-                staticLibs[libs->plugin] = reinterpret_cast<LV2_Lib_Descriptor_Function>(libs->function);
-                libs++;
-            }
+        Methcla::Audio::PluginManager::LibraryFunctions libs;
+        for ( auto it = options.lookup<const Methcla_PluginLibrary*>(METHCLA_OPTION__PLUGIN_LIBRARIES)
+            ; it->function != nullptr
+            ; it++ )
+        {
+            libs.push_back(it->function);
         }
 
-        m_pluginManager = new Methcla::Audio::PluginManager(staticLibs);
-        m_engine = new Methcla::Audio::Engine(*m_pluginManager, PacketHandler { .handler = handler, .data = handlerData }, lv2Path);
+        m_pluginManager = new Methcla::Audio::PluginManager(libs);
+        const char* pluginPath = options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH, ".");
+        m_engine = new Methcla::Audio::Engine(
+            *m_pluginManager,
+            PacketHandler { .handler = handler, .data = handlerData },
+            pluginPath );
     }
     ~Methcla_Engine()
     {

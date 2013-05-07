@@ -16,7 +16,7 @@
 #define METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 
 #include <methcla/engine.h>
-#include <methcla/lv2/atom.hpp>
+#include <methcla/plugin.h>
 
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/AudioBus.hpp"
@@ -155,6 +155,9 @@ namespace Methcla { namespace Audio
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
 
+        //* Convert environment to Methcla_World.
+        operator Methcla_World* () { return &m_world; }
+
     protected:
         static const size_t kQueueSize = 8192;
 
@@ -179,7 +182,7 @@ namespace Methcla { namespace Audio
                 Methcla_RequestId requestId;
                 union {
                     uint32_t nodeId;
-                    char error[512];
+                    char error[32];
                 } data;
             } response;
         };
@@ -289,6 +292,7 @@ namespace Methcla { namespace Audio
         Epoch                               m_epoch;
         MessageQueue                        m_requests;
         Worker                              m_worker;
+        Methcla_World                       m_world;
     };
 
     class Engine

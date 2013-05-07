@@ -18,29 +18,30 @@
 #define METHCLA_PLUGIN_H_INCLUDED
 
 #include <methcla/common.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef void Methcla_Synth;
 
 typedef enum
 {
-    kMethclaInput,
-    kMethclaOutput
+    kMethcla_Input,
+    kMethcla_Output
 } Methcla_PortDirection;
 
 typedef enum
 {
-    kMethclaControlPort,
-    kMethclaAudioPort
+    kMethcla_ControlPort,
+    kMethcla_AudioPort
 } Methcla_PortType;
 
 typedef enum
 {
-    kMethclaPortFlags   = 0x0
-  , kMethclaPortTrigger = 0x1
+    kMethcla_PortFlags  = 0x0
+  , kMethcla_Trigger    = 0x1
 } Methcla_PortFlags;
 
-typedef struct Methcla_PortDescriptor Methcla_PortDescriptor;
+typedef struct Methcla_Port Methcla_Port;
 
 struct Methcla_Port
 {
@@ -49,7 +50,23 @@ struct Methcla_Port
     Methcla_PortFlags     flags;
 };
 
-typedef struct Methcla_Host Methcla_Host;
+typedef struct Methcla_World Methcla_World;
+
+typedef void* Methcla_WorldHandle;
+
+struct Methcla_World
+{
+    Methcla_WorldHandle handle;
+
+    double (*sampleRate)(Methcla_WorldHandle handle);
+    // Realtime memory allocation
+    // Asynchronous commands
+};
+
+static inline double methcla_world_samplerate(const Methcla_World* world)
+{
+    return world->sampleRate(world->handle);
+}
 
 typedef struct Methcla_SynthDef Methcla_SynthDef;
 
@@ -61,65 +78,52 @@ struct Methcla_SynthDef
     //* Size of an instance in bytes.
     size_t size;
 
-    //* Number of ports.
-    size_t numPorts;
-
     //* Get port at index.
-    const Methcla_Port* (*port)(const Methcla_SynthDef* def, size_t index);
-
-    //* Retrieve metadata as an OSC packet.
-    const void* (*metaData)();
+    bool (*port)(const Methcla_SynthDef* def, size_t index, Methcla_Port* port);
 
     //* Construct a synth instance at the location given.
-    void (*construct)(const Methcla_SynthDef* def, Methcla_Synth* synth);
-
-    //* Destroy a synth instance.
-    void (*destroy)(const Methcla_SynthDef* def, Methcla_Synth* synth);
+    void (*construct)(const Methcla_SynthDef* def, const Methcla_World* world, Methcla_Synth* synth);
 
     //* Connect port at index to data.
     void (*connect)(Methcla_Synth* synth, size_t index, void* data);
 
     //* Process numFrames of audio samples.
-    void (*run)(Methcla_Synth* self, size_t numFrames);
+    void (*process)(Methcla_Synth* synth, size_t numFrames);
 
-    //* Activate the synth.
-    void (*activate)(Methcla_Synth* self);
-
-    //* Deactivate the synth.
-    void (*deactivate)(Methcla_Synth* self);
+    //* Destroy a synth instance.
+    void (*destroy)(const Methcla_SynthDef* def, const Methcla_World* world, Methcla_Synth* synth);
 };
+
+typedef struct Methcla_Host Methcla_Host;
+
+typedef void* Methcla_HostHandle;
 
 struct Methcla_Host
 {
-    //* Return the host's audio sample rate.
-    double (*sampleRate)(const Methcla_Host* self);
+    Methcla_HostHandle handle;
+
     //* Register a synth definition.
-    void (*registerSynthDef)(Methcla_Host* self, const Methcla_SynthDef* synthDef);
+    void (*registerSynthDef)(Methcla_HostHandle handle, const Methcla_SynthDef* synthDef);
+    //* Non realtime memory allocation
 };
 
-typedef void (*Methcla_PluginLoadFunction)(Methcla_Host* host);
-
-static inline double Methcla_Host_sampleRate(Methcla_Host* self)
+static inline void methcla_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
-    return self->sampleRate(self);
+    host->registerSynthDef(host->handle, synthDef);
 }
 
-static inline void Methcla_Host_registerSynthDef(Methcla_Host* self, Methcla_SynthDef* synthDef)
-{
-    self->registerSynthDef(self, synthDef);
-}
-
-typedef struct Methcla_LibraryDescriptor Methcla_LibraryDescriptor;
+typedef struct Methcla_Library Methcla_Library;
 
 typedef void* Methcla_LibraryHandle;
 
-struct Methcla_LibraryDescriptor
+struct Methcla_Library
 {
     Methcla_LibraryHandle handle;
+
     void (*destroy)(Methcla_LibraryHandle handle);
 };
 
-typedef const Methcla_LibraryDescriptor* (*Methcla_LibraryDescriptorFunction)(Methcla_Host* host);
+typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
 
 // #define MESCALINE_MAKE_INIT_FUNC(name) MethclaInit_##name
 // #define MESCALINE_INIT_FUNC(name) MESCALINE_MAKE_INIT_FUNC(name)

@@ -25,7 +25,7 @@ template <class T> T offset_cast(Synth* self, size_t offset)
 Synth::Synth( Environment& env
             , Group* target
             , Node::AddAction addAction
-            , const Plugin::Plugin& synthDef
+            , const SynthDef& synthDef
             , size_t synthOffset
             , size_t audioInputOffset
             , size_t audioOutputOffset
@@ -34,7 +34,7 @@ Synth::Synth( Environment& env
             )
     : Node(env, target, addAction)
     , m_synthDef(synthDef)
-    , m_synth(synthDef.construct(offset_cast<void*>(this, synthOffset), env.sampleRate()))
+    , m_synth(synthDef.construct(env, offset_cast<void*>(this, synthOffset)))
     , m_controlBuffers(offset_cast<sample_t*>(this, controlBufferOffset))
     , m_audioBuffers(offset_cast<sample_t*>(this, audioBufferOffset))
 {
@@ -49,11 +49,11 @@ Synth::Synth( Environment& env
     sample_t* audioOutputBuffers = m_audioBuffers + synthDef.numAudioInputs() * blockSize;
 
     for (size_t i=0; i < synthDef.numPorts(); i++) {
-        const FloatPort& port = synthDef.port(i);
+        const Port& port = synthDef.port(i);
         // Connect control ports
         if (port.isa(Port::kControl)) {
             if (port.isa(Port::kInput)) {
-                m_controlBuffers[port.index()] = port.defaultValue();
+                m_controlBuffers[port.index()] = 0.f;
                 m_synthDef.connectPort(
                     m_synth
                   , i
@@ -96,18 +96,14 @@ Synth::Synth( Environment& env
 //            break;
 //        }
 //    }
-
-    // Activate the synth
-    m_synthDef.activate(m_synth);
 }
 
 Synth::~Synth()
 {
-    m_synthDef.deactivate(m_synth);
-    m_synthDef.destroy(m_synth);
+    m_synthDef.destroy(env(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const Plugin::Plugin& synthDef)
+Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef)
 {
     typedef Alignment<kSIMDAlignment> BufferAlignment;
 
@@ -220,7 +216,7 @@ void Synth::process(size_t numFrames)
         x.read(env, numFrames, inputBuffers + x.index() * blockSize);
     }
 
-    m_synthDef.run(m_synth, numFrames);
+    m_synthDef.process(m_synth, numFrames);
 
     sample_t* const outputBuffers = m_audioBuffers + m_synthDef.numAudioInputs() * blockSize;
     for (auto& x : m_audioOutputConnections) {

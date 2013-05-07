@@ -40,6 +40,11 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
+static double worldSampleRate(Methcla_WorldHandle handle)
+{
+    return static_cast<Environment*>(handle)->sampleRate();
+}
+
 Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -78,6 +83,10 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
         AudioBus* bus = new InternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
         m_freeAudioBuses.insert(bus->id(), bus);
     }
+
+    // Initialize Methcla_World interface
+    m_world.handle = this;
+    m_world.sampleRate = worldSampleRate;
 }
 
 Environment::~Environment()
@@ -320,7 +329,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
 
-            const std::shared_ptr<Plugin> def = plugins().lookup(defName);
+            const std::shared_ptr<SynthDef> def = plugins().lookup(defName);
 
             Node* targetNode = m_nodes.lookup(targetId);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)

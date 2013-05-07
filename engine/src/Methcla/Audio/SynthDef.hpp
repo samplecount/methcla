@@ -16,19 +16,18 @@
 #define METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 
 #include <methcla/engine.h>
+#include <methcla/plugin.h>
 
-#include "Methcla/Lilv.hpp"
 #include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
 #include <boost/utility.hpp>
 #include <cstring>
+#include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "lv2/methc.la/ext/rt-instantiate/rt-instantiate.h"
 
 namespace Methcla { namespace Audio {
 
@@ -78,134 +77,94 @@ private:
     float   m_defaultValue;
 };
 
-//* LV2 plugin library.
+//* Plugin library.
 class PluginLibrary
 {
 public:
-    PluginLibrary(const LV2_Descriptor_Function descFunc, std::shared_ptr<Methcla::Plugin::Library> library=nullptr)
-        : m_lib(library)
-        , m_descFunc(descFunc)
-        , m_libDesc(nullptr)
-    { }
-    PluginLibrary(const LV2_Lib_Descriptor* libDesc, std::shared_ptr<Methcla::Plugin::Library> library=nullptr)
-        : m_lib(library)
-        , m_descFunc(nullptr)
-        , m_libDesc(libDesc)
-    { }
+    PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
     ~PluginLibrary();
 
-    static std::shared_ptr<PluginLibrary> create(const char* bundlePath, const LV2_Feature* const* features, std::shared_ptr<Methcla::Plugin::Library> library);
-    static std::shared_ptr<PluginLibrary> create(const char* bundlePath, const LV2_Feature* const* features, LV2_Lib_Descriptor_Function library);
-    static std::shared_ptr<PluginLibrary> create(LV2_Descriptor_Function library);
-
-    const LV2_Descriptor* get(uint32_t index);
-
 private:
-    std::shared_ptr<Methcla::Plugin::Library> m_lib;
-    LV2_Descriptor_Function m_descFunc;
-    const LV2_Lib_Descriptor* m_libDesc;
+    const Methcla_Library*                      m_lib;
+    std::shared_ptr<Methcla::Plugin::Library>   m_plugin;
 };
 
 class PluginManager;
 
-class Plugin : boost::noncopyable
+class SynthDef : boost::noncopyable
 {
 public:
-    Plugin(PluginManager& manager, std::shared_ptr<PluginLibrary> library, const LilvPlugin* plugin);
+    SynthDef(PluginManager& manager, const Methcla_SynthDef* def);
 
-    const char* uri() const;
-    const char* name() const;
+    const char* uri() const { return m_descriptor->uri; }
 
-    size_t instanceSize      () const;
+    size_t instanceSize () const { return m_descriptor->size; }
 
     size_t numPorts() const { return m_ports.size(); }
-    const FloatPort& port(size_t i) const { return m_ports.at(i); }
+    const Port& port(size_t i) const { return m_ports.at(i); }
 
     size_t numAudioInputs    () const { return m_numAudioInputs;    }
     size_t numAudioOutputs   () const { return m_numAudioOutputs;   }
     size_t numControlInputs  () const { return m_numControlInputs;  }
     size_t numControlOutputs () const { return m_numControlOutputs; }
 
-    LV2_Handle construct(void* location, double sampleRate, const LV2_Feature* const* features=nullptr) const;
-
-    void destroy(LV2_Handle instance) const
+    Methcla_Synth* construct(const Methcla_World* world, Methcla_Synth* synth) const
     {
-        if (m_descriptor->cleanup) m_descriptor->cleanup(instance);
+        m_descriptor->construct(m_descriptor, world, synth);
+        return synth;
     }
 
-    void activate(LV2_Handle instance) const
+    void destroy(const Methcla_World* world, Methcla_Synth* synth) const
     {
-        if (m_descriptor->activate) m_descriptor->activate(instance);
+        if (m_descriptor->destroy) m_descriptor->destroy(m_descriptor, world, synth);
     }
 
-    void deactivate(LV2_Handle instance) const
+    void connectPort(Methcla_Synth* synth, uint32_t port, void* data) const
     {
-        if (m_descriptor->deactivate) m_descriptor->deactivate(instance);
+        m_descriptor->connect(synth, port, data);
     }
 
-    void connectPort(LV2_Handle instance, uint32_t port, void* data) const
+    void process(Methcla_Synth* synth, size_t numFrames) const
     {
-        m_descriptor->connect_port(instance, port, data);
-    }
-
-    void run(LV2_Handle instance, uint32_t numSamples) const
-    {
-        m_descriptor->run(instance, numSamples);
+        m_descriptor->process(synth, numFrames);
     }
 
 private:
-    std::shared_ptr<PluginLibrary>              m_library;
-    const LilvPlugin*                           m_plugin;
-    const LV2_Descriptor*                       m_descriptor;
-    const char*                                 m_bundlePath;
-    const LV2_Feature* const*                   m_features;
-    const LV2_RT_Instantiate_Interface*         m_constructor;
-    std::vector<FloatPort>                      m_ports;
-    uint32_t                                    m_numAudioInputs;
-    uint32_t                                    m_numAudioOutputs;
-    uint32_t                                    m_numControlInputs;
-    uint32_t                                    m_numControlOutputs;
+    const Methcla_SynthDef*         m_descriptor;
+    std::vector<Port>               m_ports;
+    size_t                          m_numAudioInputs;
+    size_t                          m_numAudioOutputs;
+    size_t                          m_numControlInputs;
+    size_t                          m_numControlOutputs;
 };
 
 class PluginManager : boost::noncopyable
 {
 public:
-    typedef std::unordered_map<std::string,LV2_Lib_Descriptor_Function> StaticLibraryMap;
+    typedef std::list<Methcla_LibraryFunction> LibraryFunctions;
 
-    PluginManager(const StaticLibraryMap& libs=StaticLibraryMap());
-    ~PluginManager();
-
-    // Features
-    const LV2_Feature* const* features();
-
-    // Node creation
-    Lilv::NodePtr newUri(const char* uri);
+    PluginManager(const LibraryFunctions& libs);
 
     // Plugin discovery and loading
     void loadPlugins(const std::string& directory);
 
-    // Plugin access
-    const std::shared_ptr<Plugin>& lookup(const char* name) const;
+    // SynthDef lookup
+    const std::shared_ptr<SynthDef>& lookup(const char* uri) const;
 
 private:
-    void addFeature(const char* uri, void* data=0);
+    static void registerSynthDef(Methcla_HostHandle handle, const Methcla_SynthDef* synthDef);
 
-    typedef std::vector<const LV2_Feature*> Features;
-    typedef std::unordered_map<std::string,
-                               std::shared_ptr<PluginLibrary>>
-            LibraryMap;
+private:
+    typedef std::list<std::shared_ptr<PluginLibrary>>
+            Libraries;
     typedef std::unordered_map<const char*,
-                               std::shared_ptr<Plugin>,
+                               std::shared_ptr<SynthDef>,
                                Utility::Hash::cstr_hash,
                                Utility::Hash::cstr_equal>
             PluginMap;
 
-    LilvWorld*                              m_world;
-    Features                                m_features;
-    Methcla::Plugin::StaticLoader           m_loader;
-    StaticLibraryMap                        m_staticLibs;
-    LibraryMap                              m_libs;
-    PluginMap                               m_plugins;
+    Libraries m_libs;
+    PluginMap m_plugins;
 };
 
 }; };

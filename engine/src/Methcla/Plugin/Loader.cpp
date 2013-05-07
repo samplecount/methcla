@@ -47,7 +47,7 @@ void StaticLoader::addLibrary(const std::string& path, const std::string& symbol
     m_libs[path] = std::shared_ptr<Library>(new StaticLibrary(symbolPrefix));
 }
 
-std::shared_ptr<Library> StaticLoader::open(const std::string& path) throw (Exception)
+std::shared_ptr<Library> StaticLoader::open(const std::string& path)
 {
     return m_libs.at(path);
 }
