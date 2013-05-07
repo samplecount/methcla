@@ -27,8 +27,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/serialization/strong_typedef.hpp>
-#include <boost/variant.hpp>
-#include <boost/variant/apply_visitor.hpp>
 #include <boost/utility.hpp>
 
 #include <oscpp/client.hpp>
@@ -90,20 +88,6 @@ namespace Methcla
 
     BOOST_STRONG_TYPEDEF(int32_t, SynthId);
     BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
-
-    template <class T> class ExceptionVisitor : public boost::static_visitor<T>
-    {
-    public:
-        T operator()(const std::exception_ptr& e) const
-        {
-            std::rethrow_exception(e);
-        }
-
-        T operator()(const T& x) const
-        {
-            return x;
-        }
-    };
 
     namespace impl
     {
