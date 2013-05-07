@@ -23,12 +23,12 @@ Methcla::Engine* makeEngine()
     NSString* resources = [[NSBundle mainBundle] resourcePath];
     NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
 
-    const char* lv2Path = [bundles UTF8String];
-    Methcla_Library libs[] = { METHCLA_LV2_PLUGINS_SINE_LIB, METHCLA_END_LIBRARIES };
+    const char* pluginPath = [bundles UTF8String];
+    Methcla_PluginLibrary pluginLibs[] = { METHCLA_PLUGINS_SINE_LIB, METHCLA_END_PLUGIN_LIBRARIES };
 
     Methcla_Option options[] = {
-        { METHCLA_OPTION__PLUGIN_PATH, lv2Path },
-        { METHCLA_OPTION__PLUGIN_LIBRARIES, libs },
+        { METHCLA_OPTION__PLUGIN_PATH, pluginPath },
+        { METHCLA_OPTION__PLUGIN_LIBRARIES, pluginLibs },
           METHCLA_END_OPTIONS };
 
     Methcla::Engine* enginePtr = new Methcla::Engine(options);
@@ -43,11 +43,11 @@ Methcla::Engine* makeEngine()
 //    Methcla::Audio::Synth* synth = Methcla::Audio::Synth::construct(
 //        engine->env(), engine->env().rootNode(), Methcla::Audio::Node::kAddToTail, *def);
 
-    Methcla::SynthId synth1 = engine.synth(METHCLA_LV2_URI "/plugins/sine");
+    Methcla::SynthId synth1 = engine.synth(METHCLA_PLUGINS_SINE_URI);
     engine.mapOutput(synth1, 0, Methcla::AudioBusId(2));
     std::cout << "Synth " << synth1 << " started" << std::endl;
 
-    Methcla::SynthId synth2 = engine.synth(METHCLA_LV2_URI "/plugins/sine");
+    Methcla::SynthId synth2 = engine.synth(METHCLA_PLUGINS_SINE_URI);
     engine.mapOutput(synth2, 0, Methcla::AudioBusId(2));
     std::cout << "Synth " << synth2 << " started" << std::endl;
 
