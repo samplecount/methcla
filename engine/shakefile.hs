@@ -180,13 +180,13 @@ methclaLib platform =
         -- boost
       , sourceTree_ boostBuildFlags $ sourceFiles $
             under (boostDir </> "libs") [
-                "date_time/src/gregorian/date_generators.cpp"
-              , "date_time/src/gregorian/greg_month.cpp"
-              , "date_time/src/gregorian/greg_weekday.cpp"
-              , "date_time/src/gregorian/gregorian_types.cpp"
-              , "date_time/src/posix_time/posix_time_types.cpp"
-              , "exception/src/clone_current_exception_non_intrusive.cpp"
-              , "system/src/error_code.cpp"
+              --   "date_time/src/gregorian/date_generators.cpp"
+              -- , "date_time/src/gregorian/greg_month.cpp"
+              -- , "date_time/src/gregorian/greg_weekday.cpp"
+              -- , "date_time/src/gregorian/gregorian_types.cpp"
+              -- , "date_time/src/posix_time/posix_time_types.cpp"
+              -- , "exception/src/clone_current_exception_non_intrusive.cpp"
+              -- , "system/src/error_code.cpp"
               ]
         -- TLSF
       , sourceTree_ id $ sourceFiles $ [
