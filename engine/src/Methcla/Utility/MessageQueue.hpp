@@ -64,7 +64,7 @@ public:
     void send(const Command& cmd)
     {
         bool success = m_queue.push(cmd);
-        BOOST_ASSERT( success );
+        if (!success) throw std::runtime_error("Channel overflow");
         if (m_afterCommit) m_afterCommit();
     }
 
