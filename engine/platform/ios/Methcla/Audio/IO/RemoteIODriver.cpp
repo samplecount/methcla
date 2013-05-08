@@ -281,11 +281,11 @@ RemoteIODriver::RemoteIODriver() throw (IO::Exception)
     m_outputBuffers = new sample_t*[m_numOutputs];    
     for (size_t i = 0; i < m_numInputs; i++) {
         m_inputBuffers[i] =
-            Methcla::Memory::allocAlignedOf<sample_t,Methcla::Memory::kSIMDAlignment>(m_bufferSize);
+            Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, m_bufferSize);
     }
     for (size_t i = 0; i < m_numOutputs; i++) {
         m_outputBuffers[i] =
-            Methcla::Memory::allocAlignedOf<sample_t,Methcla::Memory::kSIMDAlignment>(m_bufferSize);
+            Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, m_bufferSize);
     }
 }
 

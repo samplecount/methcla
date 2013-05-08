@@ -12,19 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// #include "Methcla/Memory.hpp"
-// 
-// void* Methcla::Memory::alloc(size_t numBytes)
-//     throw(Methcla::MemoryAllocationFailure)
-// {
-//     void* ptr = ::malloc(numBytes);
-//     if (ptr == 0)
-//         BOOST_THROW_EXCEPTION(Methcla::MemoryAllocationFailure());
-//     return ptr;
-// }
-// 
-// void Methcla::Memory::free(void* ptr) throw(Methcla::MemoryAllocationFailure)
-// {
-//     if (ptr != 0)
-//         ::free(ptr);
-// }
+#include "Methcla/Memory.hpp"
+
+#include <cstdlib>
+#include <memory>
+#include <stdexcept>
+
+void* Methcla::Memory::alloc(size_t size)
+{
+    if (size == 0)
+        throw std::invalid_argument("size must be greater than zero");
+    void* ptr = std::malloc(size);
+    if (ptr == nullptr)
+        throw std::bad_alloc();
+    return ptr;
+}
+
+void* Methcla::Memory::allocAligned(size_t align, size_t size)
+{
+    if (size == 0)
+        throw std::invalid_argument("size must be greater than zero");
+    void* ptr;
+    int err = posix_memalign(&ptr, align, size);
+    if (err != 0)
+        throw std::bad_alloc();
+    return ptr;
+}
+
+void Methcla::Memory::free(void* ptr) noexcept
+{
+    if (ptr != nullptr)
+        std::free(ptr);
+}

@@ -38,7 +38,7 @@ InternalAudioBus::InternalAudioBus(Environment& env, const AudioBusId& id, size_
     : AudioBus( env
               , id
               , numFrames
-              , allocAlignedOf<sample_t,kSIMDAlignment>(numFrames)
+              , allocAlignedOf<sample_t>(kSIMDAlignment, numFrames)
               , epoch )
 {
 }

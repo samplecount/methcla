@@ -185,7 +185,7 @@ void Synth::mapInput(size_t index, const AudioBusId& busId, InputConnectionType 
 void Synth::mapOutput(size_t index, const AudioBusId& busId, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
-    sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t,kSIMDAlignment>(offset) : 0;
+    sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kSIMDAlignment, offset) : 0;
     AudioOutputConnections::iterator conn =
         find_if( m_audioOutputConnections.begin()
                , m_audioOutputConnections.end()

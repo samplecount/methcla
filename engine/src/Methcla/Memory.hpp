@@ -15,9 +15,7 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
-#include "Methcla/Exception.hpp"
-#include <memory>
-#include <stdexcept>
+#include <cstddef>
 
 namespace Methcla { namespace Memory {
 
@@ -53,37 +51,16 @@ static const size_t kSIMDAlignment = 16;
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
-inline static void* alloc(size_t size)
-{
-    if (size == 0)
-        BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
-    void* ptr = ::malloc(size);
-    if (ptr == nullptr)
-        BOOST_THROW_EXCEPTION(std::bad_alloc());
-    return ptr;
-}
+void* alloc(size_t size);
 
 //* Allocate aligned memory of `size` bytes.
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
-template <size_t align> void* allocAligned(size_t size)
-{
-    if (size == 0)
-        BOOST_THROW_EXCEPTION(std::invalid_argument("size must be greater than zero"));
-    void* ptr;
-    int err = posix_memalign(&ptr, align, size);
-    if (err != 0)
-        BOOST_THROW_EXCEPTION(std::bad_alloc());
-    return ptr;
-}
+void* allocAligned(size_t align, size_t size);
 
 //* Free memory allocated by this allocator.
-inline static void free(void* ptr) noexcept
-{
-    if (ptr != nullptr)
-        ::free(ptr);
-}
+void free(void* ptr) noexcept;
 
 //* Allocate memory for `n` elements of type `T`.
 //
@@ -98,9 +75,9 @@ template <typename T> T* allocOf(size_t n=1)
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
-template <typename T, size_t align=alignof(T)> T* allocAlignedOf(size_t n=1)
+template <typename T> T* allocAlignedOf(size_t align, size_t n=1)
 {
-    return static_cast<T*>(allocAligned<align>(n * sizeof(T)));
+    return static_cast<T*>(allocAligned(align, n * sizeof(T)));
 }
 
 }; };

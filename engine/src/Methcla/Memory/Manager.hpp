@@ -77,10 +77,10 @@ public:
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    template <size_t align> void* allocAligned(size_t size)
+    void* allocAligned(size_t align, size_t size)
     {
 #if METHCLA_NO_RT_MEMORY
-        return Methcla::Memory::allocAligned<align>(size);
+        return Methcla::Memory::allocAligned(align, size);
 #else
         if (size == 0)
             BOOST_THROW_EXCEPTION(std::invalid_argument("allocation size must be greater than zero"));
@@ -115,9 +115,9 @@ public:
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    template <typename T, size_t align> T* allocAlignedOf(size_t n=1)
+    template <typename T> T* allocAlignedOf(size_t align, size_t n=1)
     {
-        return static_cast<T*>(allocAligned<align>(n * sizeof(T)));
+        return static_cast<T*>(allocAligned(align, n * sizeof(T)));
     }
 
 private:
@@ -141,7 +141,7 @@ protected:
 
     static void* alloc(Allocator& allocator, size_t size)
     {
-        Chunk* chunk = static_cast<Chunk*>(allocator.template allocAligned<align>(sizeof(Chunk) + size));
+        Chunk* chunk = static_cast<Chunk*>(allocator.template allocAligned(align, sizeof(Chunk) + size));
         chunk->alloc = &allocator;
         BOOST_ASSERT( Alignment<align>::isAligned(reinterpret_cast<size_t>(chunk->data)) );
         return chunk->data;
