@@ -51,22 +51,21 @@ struct Methcla_Port
     Methcla_PortFlags     flags;
 };
 
-typedef struct Methcla_World Methcla_World;
-
-typedef void* Methcla_WorldHandle;
-
-struct Methcla_World
+typedef struct Methcla_World
 {
-    Methcla_WorldHandle handle;
+    //* Handle for implementation specific data.
+    void* handle;
 
-    double (*sampleRate)(Methcla_WorldHandle handle);
+    //* Return engine sample rate.
+    double (*sampleRate)(const struct Methcla_World* world);
     // Realtime memory allocation
     // Asynchronous commands
-};
+    // void (*perform)(Methcla_WorldHandle handle, const Methcla_Command* cmd);
+} Methcla_World;
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
 {
-    return world->sampleRate(world->handle);
+    return world->sampleRate(world);
 }
 
 typedef struct Methcla_SynthDef Methcla_SynthDef;
@@ -97,12 +96,13 @@ struct Methcla_SynthDef
 
 typedef struct Methcla_Host
 {
+    //* Handle for implementation specific data.
     void* handle;
 
     //* Register a synth definition.
     void (*registerSynthDef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
-    //* Sound file access
+    //* Lookup sound file API.
     const Methcla_SoundFileAPI* (*soundFileAPI)(const struct Methcla_Host* host, const char* mimeType);
 } Methcla_Host;
 
@@ -117,16 +117,14 @@ static inline Methcla_SoundFile* methcla_host_soundfile_open(const Methcla_Host*
     return api == NULL ? NULL : api->open(api, path, mode, info);
 }
 
-typedef struct Methcla_Library Methcla_Library;
-
-typedef void* Methcla_LibraryHandle;
-
-struct Methcla_Library
+typedef struct Methcla_Library
 {
-    Methcla_LibraryHandle handle;
+    //* Handle for implementation specific data.
+    void* handle;
 
-    void (*destroy)(Methcla_LibraryHandle handle);
-};
+    //* Destroy the library and associated resources.
+    void (*destroy)(const struct Methcla_Library* library);
+} Methcla_Library;
 
 typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
 

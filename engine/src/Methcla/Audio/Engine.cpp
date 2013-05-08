@@ -51,9 +51,9 @@ static const Methcla_SoundFileAPI* hostSoundFileAPI(const Methcla_Host* host, co
     return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
 }
 
-static double worldSampleRate(Methcla_WorldHandle handle)
+static double worldSampleRate(const Methcla_World* world)
 {
-    return static_cast<Environment*>(handle)->sampleRate();
+    return static_cast<Environment*>(world->handle)->sampleRate();
 }
 
 Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
