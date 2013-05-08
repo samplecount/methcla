@@ -182,11 +182,6 @@ namespace Methcla
             return m_engine;
         }
 
-        void* impl()
-        {
-            return methcla_engine_impl(m_engine);
-        }
-
         void start()
         {
             methcla_engine_start(m_engine);

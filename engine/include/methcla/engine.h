@@ -95,9 +95,6 @@ METHCLA_EXPORT void methcla_engine_stop(Methcla_Engine* engine);
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT void methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
-//* Temporarily exported.
-METHCLA_EXPORT void* methcla_engine_impl(Methcla_Engine* engine);
-
 METHCLA_EXPORT void methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
 
 #endif /* METHCLA_ENGINE_H_INCLUDED */

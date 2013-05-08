@@ -170,14 +170,6 @@ void methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size
     } METHCLA_ENGINE_CATCH;
 }
 
-void* methcla_engine_impl(Methcla_Engine* engine)
-{
-    METHCLA_ENGINE_TRY {
-        return engine->m_engine;
-    } METHCLA_ENGINE_CATCH;
-    return nullptr;
-}
-
 void methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api)
 {
     METHCLA_ENGINE_TRY {
