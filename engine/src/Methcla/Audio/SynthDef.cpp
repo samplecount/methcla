@@ -33,19 +33,6 @@ Methcla::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* sym
     , m_defaultValue(isnan(defaultValue) ? 0 : defaultValue)
 { }
 
-PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)
-    : m_lib(lib)
-    , m_plugin(plugin)
-{
-}
-
-PluginLibrary::~PluginLibrary()
-{
-    if ((m_lib != nullptr) && (m_lib->destroy != nullptr)) {
-        m_lib->destroy(m_lib->handle);
-    }
-}
-
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
     , m_numAudioInputs(0)
@@ -97,6 +84,19 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
               << "    control outputs: " << numControlOutputs() << std::endl
               << "    audio inputs: " << numAudioInputs() << std::endl
               << "    audio outputs: " << numAudioOutputs() << std::endl;
+}
+
+PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)
+    : m_lib(lib)
+    , m_plugin(plugin)
+{
+}
+
+PluginLibrary::~PluginLibrary()
+{
+    if ((m_lib != nullptr) && (m_lib->destroy != nullptr)) {
+        m_lib->destroy(m_lib);
+    }
 }
 
 void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs)
