@@ -25,12 +25,11 @@
 #define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
 #define METHCLA_PLUGINS_URI     "http://methc.la/plugins"
 
-struct Methcla_Option
+typedef struct
 {
     const char* key;    //*< Option key URI.
     const void* value;  //*< Option value.
-};
-typedef struct Methcla_Option Methcla_Option;
+} Methcla_Option;
 
 #define METHCLA_END_OPTIONS { NULL, NULL }
 
@@ -40,11 +39,10 @@ typedef struct Methcla_Option Methcla_Option;
 #define METHCLA_OPTION__PLUGIN_PATH         METHCLA_OPTIONS_PREFIX "pluginPath"
 #define METHCLA_OPTION__PLUGIN_LIBRARIES    METHCLA_OPTIONS_PREFIX "pluginLibraries"
 
-struct Methcla_PluginLibrary
+typedef struct
 {
     Methcla_LibraryFunction function;
-};
-typedef struct Methcla_PluginLibrary Methcla_PluginLibrary;
+} Methcla_PluginLibrary;
 
 #define METHCLA_END_PLUGIN_LIBRARIES { NULL }
 
@@ -73,7 +71,7 @@ METHCLA_EXPORT Methcla_Engine* methcla_engine_new(Methcla_PacketHandler handler,
 //  Dereferencing engine after this function returns results in undefined behavior.
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
-typedef enum Methcla_Error
+typedef enum
 {
     kMethcla_NoError,
     kMethcla_InvalidArgument,
