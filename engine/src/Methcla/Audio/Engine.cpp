@@ -41,17 +41,17 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
-static void hostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
+static void methclaHostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
     return static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
 }
 
-static const Methcla_SoundFileAPI* hostSoundFileAPI(const Methcla_Host* host, const char* mimeType)
+static const Methcla_SoundFileAPI* methclaHostSoundFileAPI(const Methcla_Host* host, const char* mimeType)
 {
     return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
 }
 
-static double worldSampleRate(const Methcla_World* world)
+static double methclaWorldSampleRate(const Methcla_World* world)
 {
     return static_cast<Environment*>(world->handle)->sampleRate();
 }
@@ -96,13 +96,18 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     }
 
     // Initialize Methcla_Host interface
-    m_host.handle = this;
-    m_host.registerSynthDef = hostRegisterSynthDef;
-    m_host.soundFileAPI = hostSoundFileAPI;
+    m_host = {
+        .handle = this,
+        .registerSynthDef = methclaHostRegisterSynthDef,
+        .soundFileAPI = methclaHostSoundFileAPI
+    };
 
     // Initialize Methcla_World interface
-    m_world.handle = this;
-    m_world.sampleRate = worldSampleRate;
+    m_world = {
+        .handle = this,
+        .sampleRate = methclaWorldSampleRate,
+        .performCommand = methclaWorldPerformCommand
+    };
 }
 
 Environment::~Environment()
@@ -406,6 +411,36 @@ void Environment::registerSoundFileAPI(const char* mimeType, const Methcla_Sound
 const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) const
 {
     return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
+}
+
+void Environment::methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data)
+{
+    std::tuple<Environment*,Command::Channel*> state =
+        *static_cast<std::tuple<Environment*,Command::Channel*>*>(channel->handle);
+    Command cmd(std::get<0>(state), perform_command);
+    cmd.data.command.perform = perform;
+    cmd.data.command.data = data;
+    std::get<1>(state)->send(cmd);
+}
+
+void Environment::perform_command(Command& cmd, Command::Channel& channel)
+{
+    std::tuple<Environment*,Command::Channel*> state =
+        std::make_tuple(cmd.env, &channel);
+    Methcla_CommandChannel methclaChannel = {
+        .handle = &state,
+        .send = methclaChannelSend
+    };
+    cmd.data.command.perform(cmd.data.command.data, &methclaChannel);
+}
+
+void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data)
+{
+    Environment* self = static_cast<Environment*>(world->handle);
+    Command cmd(self, perform_command);
+    cmd.data.command.perform = perform;
+    cmd.data.command.data = data;
+    self->send(cmd);
 }
 
 Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)

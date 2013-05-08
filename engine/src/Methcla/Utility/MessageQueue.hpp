@@ -82,9 +82,9 @@ public:
         , m_fromWorker(typename Channel<Command,queueSize>::CommitHook())
     { }
 
-    Channel<Command,queueSize>& toWorker()
+    void send(const Command& cmd)
     {
-        return m_toWorker;
+        return m_toWorker.send(cmd);
     }
 
     void perform()

@@ -22,7 +22,47 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-typedef void Methcla_Synth;
+typedef struct Methcla_CommandChannel Methcla_CommandChannel;
+
+typedef void (*Methcla_CommandPerformFunction)(const void* data, const Methcla_CommandChannel* channel);
+
+struct Methcla_CommandChannel
+{
+    void* handle;
+    void (*send)(const struct Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data);
+};
+
+static inline void methcla_command_channel_send(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data)
+{
+    channel->send(channel, perform, data);
+}
+
+typedef struct Methcla_World
+{
+    //* Handle for implementation specific data.
+    void* handle;
+
+    //* Return engine sample rate.
+    double (*sampleRate)(const struct Methcla_World* world);
+
+    // Realtime memory allocation
+    // void* (*alloc)(const Methcla_World* world, size_t size);
+    // void* (*allocAligned)(const Methcla_World* world, size_t size, size_t alignment);
+    // void (*free)(const Methcla_World* world, void* ptr);
+
+    //* Schedule a command for execution in the non-realtime context.
+    void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
+} Methcla_World;
+
+static inline double methcla_world_samplerate(const Methcla_World* world)
+{
+    return world->sampleRate(world);
+}
+
+static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data)
+{
+    world->performCommand(world, perform, data);
+}
 
 typedef enum
 {
@@ -51,22 +91,7 @@ struct Methcla_Port
     Methcla_PortFlags     flags;
 };
 
-typedef struct Methcla_World
-{
-    //* Handle for implementation specific data.
-    void* handle;
-
-    //* Return engine sample rate.
-    double (*sampleRate)(const struct Methcla_World* world);
-    // Realtime memory allocation
-    // Asynchronous commands
-    // void (*perform)(Methcla_WorldHandle handle, const Methcla_Command* cmd);
-} Methcla_World;
-
-static inline double methcla_world_samplerate(const Methcla_World* world)
-{
-    return world->sampleRate(world);
-}
+typedef void Methcla_Synth;
 
 typedef struct Methcla_SynthDef Methcla_SynthDef;
 

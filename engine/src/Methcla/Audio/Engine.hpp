@@ -182,6 +182,7 @@ namespace Methcla { namespace Audio
                 void (*func)(void*);
                 void* ptr;
             } free;
+
             struct
             {
                 Methcla_RequestId requestId;
@@ -190,6 +191,12 @@ namespace Methcla { namespace Audio
                     char error[32];
                 } data;
             } response;
+
+            struct
+            {
+                Methcla_CommandPerformFunction perform;
+                const void* data;
+            } command;
         };
 
         struct Command
@@ -275,8 +282,12 @@ namespace Methcla { namespace Audio
         // Context: RT
         void send(const Command& cmd)
         {
-            m_worker.toWorker().send(cmd);
+            m_worker.send(cmd);
         }
+
+        static void perform_command(Command&, Command::Channel&);
+        static void methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data);
+        static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
 
     protected:
         friend class Node;
