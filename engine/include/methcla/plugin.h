@@ -18,6 +18,7 @@
 #define METHCLA_PLUGIN_H_INCLUDED
 
 #include <methcla/common.h>
+#include <methcla/file.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -94,22 +95,26 @@ struct Methcla_SynthDef
     void (*destroy)(const Methcla_SynthDef* def, const Methcla_World* world, Methcla_Synth* synth);
 };
 
-typedef struct Methcla_Host Methcla_Host;
-
-typedef void* Methcla_HostHandle;
-
-struct Methcla_Host
+typedef struct Methcla_Host
 {
-    Methcla_HostHandle handle;
+    void* handle;
 
     //* Register a synth definition.
-    void (*registerSynthDef)(Methcla_HostHandle handle, const Methcla_SynthDef* synthDef);
-    //* Non realtime memory allocation
-};
+    void (*registerSynthDef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
-static inline void methcla_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
+    //* Sound file access
+    const Methcla_SoundFileAPI* (*soundFileAPI)(const struct Methcla_Host* host, const char* mimeType);
+} Methcla_Host;
+
+static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
-    host->registerSynthDef(host->handle, synthDef);
+    host->registerSynthDef(host, synthDef);
+}
+
+static inline Methcla_SoundFile* methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFileInfo* info)
+{
+    const Methcla_SoundFileAPI* api = host->soundFileAPI(host, "audio/*");
+    return api == NULL ? NULL : api->open(api, path, mode, info);
 }
 
 typedef struct Methcla_Library Methcla_Library;

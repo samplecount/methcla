@@ -46,7 +46,7 @@ PluginLibrary::~PluginLibrary()
     }
 }
 
-SynthDef::SynthDef(PluginManager& manager, const Methcla_SynthDef* synthDef)
+SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
     , m_numAudioInputs(0)
     , m_numAudioOutputs(0)
@@ -99,35 +99,17 @@ SynthDef::SynthDef(PluginManager& manager, const Methcla_SynthDef* synthDef)
               << "    audio outputs: " << numAudioOutputs() << std::endl;
 }
 
-const std::shared_ptr<SynthDef>& PluginManager::lookup(const char* uri) const
+void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs)
 {
-    auto it = m_plugins.find(uri);
-    if (it == m_plugins.end())
-        throw std::runtime_error("Synth definition not found");
-    return it->second;
-}
-
-void PluginManager::registerSynthDef(Methcla_HostHandle handle, const Methcla_SynthDef* def)
-{
-    PluginManager* self = static_cast<PluginManager*>(handle);
-    auto synthDef = std::make_shared<SynthDef>(*self, def);
-    self->m_plugins[synthDef->uri()] = synthDef;
-}
-
-PluginManager::PluginManager(const LibraryFunctions& libs)
-{
-    Methcla_Host host;
-    host.handle = this;
-    host.registerSynthDef = registerSynthDef;
-
-    for (auto f : libs) {
-        const Methcla_Library* lib = f(&host, "/");
+    for (auto f : funcs) {
+        const Methcla_Library* lib = f(host, ".");
         if (lib != nullptr) {
             m_libs.push_back(std::make_shared<PluginLibrary>(lib));
         }
     }
 }
 
-void PluginManager::loadPlugins(const std::string& directory)
+void PluginManager::loadPlugins(const Methcla_Host* host, const std::string& directory)
 {
+    std::cout << "PluginManager::loadPlugins not yet implemented" << std::endl;
 }

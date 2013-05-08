@@ -41,6 +41,16 @@ void NodeMap::release(const NodeId& nodeId)
     m_nodes[nodeId] = 0;
 }
 
+static void hostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
+{
+    return static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
+}
+
+static const Methcla_SoundFileAPI* hostSoundFileAPI(const Methcla_Host* host, const char* mimeType)
+{
+    return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
+}
+
 static double worldSampleRate(Methcla_WorldHandle handle)
 {
     return static_cast<Environment*>(handle)->sampleRate();
@@ -84,6 +94,11 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
         AudioBus* bus = new InternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
         m_freeAudioBuses.insert(bus->id(), bus);
     }
+
+    // Initialize Methcla_Host interface
+    m_host.handle = this;
+    m_host.registerSynthDef = hostRegisterSynthDef;
+    m_host.soundFileAPI = hostSoundFileAPI;
 
     // Initialize Methcla_World interface
     m_world.handle = this;
@@ -289,7 +304,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
 
-            const std::shared_ptr<SynthDef> def = plugins().lookup(defName);
+            const std::shared_ptr<SynthDef> def = synthDef(defName);
 
             auto synthControls = args.atEnd() ? OSC::Server::ArgStream() : args.array();
             if (def->numControlInputs() != synthControls.size()) {
@@ -369,6 +384,30 @@ void Environment::processBundle(const OSC::Server::Bundle& bundle)
     }
 }
 
+void Environment::registerSynthDef(const Methcla_SynthDef* def)
+{
+    auto synthDef = std::make_shared<SynthDef>(def);
+    m_synthDefs[synthDef->uri()] = synthDef;
+}
+
+const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
+{
+    auto it = m_synthDefs.find(uri);
+    if (it == m_synthDefs.end())
+        throw std::runtime_error("Synth definition not found");
+    return it->second;
+}
+
+void Environment::registerSoundFileAPI(const char* mimeType, const Methcla_SoundFileAPI* api)
+{
+    m_soundFileAPIs.push_back(api);
+}
+
+const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) const
+{
+    return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
+}
+
 Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)
 {
     m_driver = IO::defaultPlatformDriver();
@@ -381,7 +420,7 @@ Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const
     options.numHardwareOutputChannels = m_driver->numOutputs();
     m_env = new Environment(pluginManager, handler, options);
 
-    pluginManager.loadPlugins(pluginDirectory);
+    pluginManager.loadPlugins(*m_env, pluginDirectory);
 }
 
 Engine::~Engine()

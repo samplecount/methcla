@@ -172,6 +172,16 @@ namespace Methcla
             methcla_engine_free(m_engine);
         }
 
+        operator const Methcla_Engine* () const
+        {
+            return m_engine;
+        }
+
+        operator Methcla_Engine* ()
+        {
+            return m_engine;
+        }
+
         void* impl()
         {
             return methcla_engine_impl(m_engine);

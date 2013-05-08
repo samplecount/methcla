@@ -147,8 +147,21 @@ namespace Methcla { namespace Audio
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
 
+        //* Register SynthDef.
+        void registerSynthDef(const Methcla_SynthDef* synthDef);
+
+        //* Lookup SynthDef
+        const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+
+        //* Sound file API registration
+        void registerSoundFileAPI(const char* mimeType, const Methcla_SoundFileAPI* api);
+        const Methcla_SoundFileAPI* soundFileAPI(const char* mimeType) const;
+
+        //* Convert environment to Methcla_Host.
+        operator const Methcla_Host* () const { return &m_host; }
+
         //* Convert environment to Methcla_World.
-        operator Methcla_World* () { return &m_world; }
+        operator const Methcla_World* () const { return &m_world; }
 
     protected:
         static const size_t kQueueSize = 8192;
@@ -270,21 +283,24 @@ namespace Methcla { namespace Audio
         ResourceMap<NodeId,Node>& nodes() { return m_nodes; }
 
     private:
-        const size_t                        m_sampleRate;
-        const size_t                        m_blockSize;
-        Memory::RTMemoryManager             m_rtMem;
-        PluginManager&                      m_plugins;
-        PacketHandler                       m_listener;
-        ResourceMap<AudioBusId,AudioBus>    m_audioBuses;
-        ResourceMap<AudioBusId,AudioBus>    m_freeAudioBuses;
-        ResourceMap<NodeId,Node>            m_nodes;
-        Group*                              m_rootNode;
-        std::vector<ExternalAudioBus*>      m_audioInputChannels;
-        std::vector<ExternalAudioBus*>      m_audioOutputChannels;
-        Epoch                               m_epoch;
-        MessageQueue                        m_requests;
-        Worker                              m_worker;
-        Methcla_World                       m_world;
+        const size_t                            m_sampleRate;
+        const size_t                            m_blockSize;
+        Memory::RTMemoryManager                 m_rtMem;
+        PluginManager&                          m_plugins;
+        SynthDefMap                             m_synthDefs;
+        PacketHandler                           m_listener;
+        ResourceMap<AudioBusId,AudioBus>        m_audioBuses;
+        ResourceMap<AudioBusId,AudioBus>        m_freeAudioBuses;
+        ResourceMap<NodeId,Node>                m_nodes;
+        Group*                                  m_rootNode;
+        std::vector<ExternalAudioBus*>          m_audioInputChannels;
+        std::vector<ExternalAudioBus*>          m_audioOutputChannels;
+        Epoch                                   m_epoch;
+        MessageQueue                            m_requests;
+        Worker                                  m_worker;
+        Methcla_Host                            m_host;
+        Methcla_World                           m_world;
+        std::list<const Methcla_SoundFileAPI*>  m_soundFileAPIs;
     };
 
     class Engine

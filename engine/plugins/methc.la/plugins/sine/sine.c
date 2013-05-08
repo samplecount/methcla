@@ -118,6 +118,6 @@ static const Methcla_Library library = { NULL, NULL };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_sine(const Methcla_Host* host, const char* bundlePath)
 {
-    methcla_register_synthdef(host, &descriptor);
+    methcla_host_register_synthdef(host, &descriptor);
     return &library;
 }

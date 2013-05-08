@@ -18,6 +18,7 @@
 #define METHCLA_ENGINE_H_INCLUDED
 
 #include <methcla/common.h>
+#include <methcla/file.h>
 #include <methcla/plugin.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -96,5 +97,7 @@ METHCLA_EXPORT void methcla_engine_send(Methcla_Engine* engine, const void* pack
 
 //* Temporarily exported.
 METHCLA_EXPORT void* methcla_engine_impl(Methcla_Engine* engine);
+
+METHCLA_EXPORT void methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
 
 #endif /* METHCLA_ENGINE_H_INCLUDED */

@@ -68,7 +68,7 @@ struct Methcla_Engine
         Options options(inOptions);
 
         // TODO: Put this somewhere else
-        Methcla::Audio::PluginManager::LibraryFunctions libs;
+        std::list<Methcla_LibraryFunction> libs;
         for ( auto it = options.lookup<const Methcla_PluginLibrary*>(METHCLA_OPTION__PLUGIN_LIBRARIES)
             ; it->function != nullptr
             ; it++ )
@@ -76,20 +76,21 @@ struct Methcla_Engine
             libs.push_back(it->function);
         }
 
-        m_pluginManager = new Methcla::Audio::PluginManager(libs);
         const char* pluginPath = options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH, ".");
         m_engine = new Methcla::Audio::Engine(
-            *m_pluginManager,
+            m_pluginManager,
             PacketHandler { .handler = handler, .data = handlerData },
             pluginPath );
+
+        m_pluginManager.loadPlugins(m_engine->env(), libs);
     }
+
     ~Methcla_Engine()
     {
         delete m_engine;
-        delete m_pluginManager;
     }
 
-    Methcla::Audio::PluginManager* m_pluginManager;
+    Methcla::Audio::PluginManager  m_pluginManager;
     Methcla::Audio::Engine*        m_engine;
     Methcla_Error                  m_error;
     const char*                    m_errorMessage;
@@ -177,3 +178,9 @@ void* methcla_engine_impl(Methcla_Engine* engine)
     return nullptr;
 }
 
+void methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api)
+{
+    METHCLA_ENGINE_TRY {
+        return engine->m_engine->env().registerSoundFileAPI(mimeType, api);
+    } METHCLA_ENGINE_CATCH;
+}

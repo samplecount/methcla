@@ -61,6 +61,7 @@ private:
     std::string m_symbol;
 };
 
+//* DEPRECATED
 class FloatPort : public Port
 {
 public:
@@ -77,54 +78,40 @@ private:
     float   m_defaultValue;
 };
 
-//* Plugin library.
-class PluginLibrary
-{
-public:
-    PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
-    ~PluginLibrary();
-
-private:
-    const Methcla_Library*                      m_lib;
-    std::shared_ptr<Methcla::Plugin::Library>   m_plugin;
-};
-
-class PluginManager;
-
 class SynthDef : boost::noncopyable
 {
 public:
-    SynthDef(PluginManager& manager, const Methcla_SynthDef* def);
+    SynthDef(const Methcla_SynthDef* def);
 
-    const char* uri() const { return m_descriptor->uri; }
+    inline const char* uri() const { return m_descriptor->uri; }
 
-    size_t instanceSize () const { return m_descriptor->size; }
+    inline size_t instanceSize () const { return m_descriptor->size; }
 
-    size_t numPorts() const { return m_ports.size(); }
-    const Port& port(size_t i) const { return m_ports.at(i); }
+    inline size_t numPorts() const { return m_ports.size(); }
+    inline const Port& port(size_t i) const { return m_ports.at(i); }
 
-    size_t numAudioInputs    () const { return m_numAudioInputs;    }
-    size_t numAudioOutputs   () const { return m_numAudioOutputs;   }
-    size_t numControlInputs  () const { return m_numControlInputs;  }
-    size_t numControlOutputs () const { return m_numControlOutputs; }
+    inline size_t numAudioInputs    () const { return m_numAudioInputs;    }
+    inline size_t numAudioOutputs   () const { return m_numAudioOutputs;   }
+    inline size_t numControlInputs  () const { return m_numControlInputs;  }
+    inline size_t numControlOutputs () const { return m_numControlOutputs; }
 
-    Methcla_Synth* construct(const Methcla_World* world, Methcla_Synth* synth) const
+    inline Methcla_Synth* construct(const Methcla_World* world, Methcla_Synth* synth) const
     {
         m_descriptor->construct(m_descriptor, world, synth);
         return synth;
     }
 
-    void destroy(const Methcla_World* world, Methcla_Synth* synth) const
+    inline void destroy(const Methcla_World* world, Methcla_Synth* synth) const
     {
         if (m_descriptor->destroy) m_descriptor->destroy(m_descriptor, world, synth);
     }
 
-    void connectPort(Methcla_Synth* synth, uint32_t port, void* data) const
+    inline void connectPort(Methcla_Synth* synth, uint32_t port, void* data) const
     {
         m_descriptor->connect(synth, port, data);
     }
 
-    void process(Methcla_Synth* synth, size_t numFrames) const
+    inline void process(Methcla_Synth* synth, size_t numFrames) const
     {
         m_descriptor->process(synth, numFrames);
     }
@@ -138,33 +125,37 @@ private:
     size_t                          m_numControlOutputs;
 };
 
+typedef std::unordered_map<const char*,
+                           std::shared_ptr<SynthDef>,
+                           Utility::Hash::cstr_hash,
+                           Utility::Hash::cstr_equal>
+        SynthDefMap;
+
+//* Plugin library.
+class PluginLibrary : boost::noncopyable
+{
+public:
+    PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
+    ~PluginLibrary();
+
+private:
+    const Methcla_Library*                      m_lib;
+    std::shared_ptr<Methcla::Plugin::Library>   m_plugin;
+};
+
 class PluginManager : boost::noncopyable
 {
 public:
-    typedef std::list<Methcla_LibraryFunction> LibraryFunctions;
+    //* Load plugins from static functions.
+    void loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs);
 
-    PluginManager(const LibraryFunctions& libs);
-
-    // Plugin discovery and loading
-    void loadPlugins(const std::string& directory);
-
-    // SynthDef lookup
-    const std::shared_ptr<SynthDef>& lookup(const char* uri) const;
-
-private:
-    static void registerSynthDef(Methcla_HostHandle handle, const Methcla_SynthDef* synthDef);
+    //* Load plugins from directory.
+    void loadPlugins(const Methcla_Host* host, const std::string& directory);
 
 private:
     typedef std::list<std::shared_ptr<PluginLibrary>>
             Libraries;
-    typedef std::unordered_map<const char*,
-                               std::shared_ptr<SynthDef>,
-                               Utility::Hash::cstr_hash,
-                               Utility::Hash::cstr_equal>
-            PluginMap;
-
     Libraries m_libs;
-    PluginMap m_plugins;
 };
 
 }; };
