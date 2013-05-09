@@ -28,7 +28,7 @@ void* Methcla::Memory::alloc(size_t size)
     return ptr;
 }
 
-void* Methcla::Memory::allocAligned(size_t align, size_t size)
+void* Methcla::Memory::allocAligned(Alignment align, size_t size)
 {
     if (size == 0)
         throw std::invalid_argument("size must be greater than zero");

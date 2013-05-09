@@ -31,11 +31,11 @@ namespace Methcla { namespace Audio {
     class Group;
 
     class Node : public Resource<NodeId>
-               , public Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment>
+               , public Memory::Allocated<Node, Memory::RTMemoryManager>
                , public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
     {
     protected:
-        typedef Memory::Allocated<Node, Memory::RTMemoryManager, Memory::kSIMDAlignment> allocated_super;
+        typedef Memory::Allocated<Node, Memory::RTMemoryManager> allocated_super;
 
     public:
         enum AddAction

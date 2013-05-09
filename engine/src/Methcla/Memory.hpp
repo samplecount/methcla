@@ -15,37 +15,83 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
+#include <boost/assert.hpp>
 #include <cstddef>
 
 namespace Methcla { namespace Memory {
 
-template <size_t alignment> class Alignment
+class Alignment
 {
 public:
-    static const size_t kAlignment = alignment;
-    static const size_t kMask = ~(kAlignment - 1);
+    Alignment(size_t alignment)
+        : m_alignment(alignment)
+    {
+        BOOST_ASSERT_MSG( (m_alignment & (m_alignment - 1)) == 0, "Alignment must be a power of two" );
+        BOOST_ASSERT_MSG( m_alignment >= sizeof(nullptr), "Alignment must be >= sizeof(nullptr)" );
+    }
+    Alignment(const Alignment&) = default;
 
-    static_assert( (kAlignment & (kAlignment - 1)) == 0, "Alignment must be a power of two" );
-    static_assert( kAlignment >= sizeof(nullptr), "Alignment must be >= sizeof(nullptr)" );
+    operator size_t () const
+    {
+        return m_alignment;
+    }
 
-    constexpr inline static size_t isAligned(size_t size)
+    template <typename T> bool isAligned(T size) const
     {
-        return (size & kMask) == size;
+        return isAligned(m_alignment, size);
     }
-    constexpr inline static size_t align(size_t size)
+
+    template <typename T> T align(T size) const
     {
-        return (size + alignment) & kMask;
+        return align(m_alignment, size);
     }
-    constexpr inline static size_t padding(size_t size)
+
+    template <typename T> size_t padding(T size) const
     {
-        return align(size) - size;
+        return padding(m_alignment, size);
     }
+
+    // Aligning pointers
+    template <typename T> bool isAligned(T* ptr) const
+    {
+        return isAligned(reinterpret_cast<uintptr_t>(ptr));
+    }
+
+    template <typename T> T* align(T* ptr) const
+    {
+        return reinterpret_cast<T*>(align(reinterpret_cast<uintptr_t>(ptr)));
+    }
+
+    template <typename T> size_t padding(T* ptr) const
+    {
+        return padding(reinterpret_cast<uintptr_t>(ptr));
+    }
+
+    // Static alignment functions
+    template <typename T> static bool isAligned(size_t alignment, T n)
+    {
+        return (n & ~(alignment-1)) == n;
+    }
+
+    template <typename T> static T align(size_t alignment, T n)
+    {
+        return (n + alignment) & ~(alignment-1);
+    }
+
+    template <typename T> static size_t padding(size_t alignment, T n)
+    {
+        return align(alignment, n) - n;
+    }
+
+private:
+    size_t m_alignment;
 };
 
-/// Default alignment, corresponding to the size of a 64 bit type.
-static const size_t kDefaultAlignment = 8;
-/// Alignment needed for data accessed by SIMD instructions.
-static const size_t kSIMDAlignment = 16;
+//* Default alignment.
+static const Alignment kDefaultAlignment(alignof(std::max_align_t));
+
+//* Alignment needed for data accessed by SIMD instructions.
+static const Alignment kSIMDAlignment(16);
 
 //* Allocate memory of `size` bytes.
 //
@@ -57,7 +103,7 @@ void* alloc(size_t size);
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
-void* allocAligned(size_t align, size_t size);
+void* allocAligned(Alignment align, size_t size);
 
 //* Free memory allocated by this allocator.
 void free(void* ptr) noexcept;
@@ -75,7 +121,7 @@ template <typename T> T* allocOf(size_t n=1)
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
-template <typename T> T* allocAlignedOf(size_t align, size_t n=1)
+template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
 {
     return static_cast<T*>(allocAligned(align, n * sizeof(T)));
 }

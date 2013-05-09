@@ -20,6 +20,7 @@
 
 #include <boost/cstdint.hpp>
 #include <tlsf.h>
+#include <cstddef>
 #include <stdexcept>
 
 //#include <boost/lockfree/fifo.hpp>
@@ -77,7 +78,7 @@ public:
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    void* allocAligned(size_t align, size_t size)
+    void* allocAligned(Alignment align, size_t size)
     {
 #if METHCLA_NO_RT_MEMORY
         return Methcla::Memory::allocAligned(align, size);
@@ -115,7 +116,7 @@ public:
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    template <typename T> T* allocAlignedOf(size_t align, size_t n=1)
+    template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
     {
         return static_cast<T*>(allocAligned(align, n * sizeof(T)));
     }
@@ -127,25 +128,23 @@ private:
 #endif
 };
 
-template <class T, class Allocator, size_t align=kDefaultAlignment> class AllocatedBase
+template <class T, class Allocator> class AllocatedBase
 {
     struct Chunk
     {
-        Allocator*  alloc;
-        char        padding[Alignment<align>::padding(sizeof(alloc))];
-        char        data[];
+        Allocator*       alloc;
+        std::max_align_t data[];
     };
 
 protected:
-    static const size_t kAlignment = align;
-
     static void* alloc(Allocator& allocator, size_t size)
     {
-        Chunk* chunk = static_cast<Chunk*>(allocator.template allocAligned(align, sizeof(Chunk) + size));
+        Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
-        BOOST_ASSERT( Alignment<align>::isAligned(reinterpret_cast<size_t>(chunk->data)) );
+        BOOST_ASSERT( Alignment::isAligned(alignof(std::max_align_t), reinterpret_cast<std::uintptr_t>(chunk->data)) );
         return chunk->data;
     }
+
     static void destroy(void* ptr)
     {
         Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
@@ -154,20 +153,21 @@ protected:
         chunk->alloc->free(chunk);
     }
 
+private:
     void* operator new(size_t);
 };
 
-template <class T, class Allocator, size_t align=kDefaultAlignment> class Allocated
-    : public AllocatedBase<T, Allocator, align>
+template <class T, class Allocator> class Allocated
+    : public AllocatedBase<T, Allocator>
 {
-    typedef AllocatedBase<T, Allocator, align> super;
+    typedef AllocatedBase<T, Allocator> super;
 
 public:
     void* operator new(size_t size, Allocator& alloc)
     {
         return super::alloc(alloc, size);
     }
-    void operator delete(void* ptr, Allocator& alloc)
+    void operator delete(void* ptr, Allocator&)
     {
         super::destroy(ptr);
     }
@@ -175,7 +175,7 @@ public:
     {
         return super::alloc(alloc, size+additional);
     }
-    void operator delete(void* ptr, Allocator& alloc, size_t realSize)
+    void operator delete(void* ptr, Allocator&, size_t)
     {
         super::destroy(ptr);
     }

@@ -22,6 +22,8 @@ template <class T> T offset_cast(Synth* self, size_t offset)
     return reinterpret_cast<T>(reinterpret_cast<char*>(self) + offset);
 }
 
+static const Alignment kBufferAlignment = kSIMDAlignment;
+
 Synth::Synth( Environment& env
             , Group* target
             , Node::AddAction addAction
@@ -33,14 +35,17 @@ Synth::Synth( Environment& env
             , size_t audioOutputOffset
             , size_t controlBufferOffset
             , size_t audioBufferOffset
+            , size_t audioBufferSize
             )
     : Node(env, target, addAction)
     , m_synthDef(synthDef)
-    , m_synth(synthDef.construct(env, offset_cast<void*>(this, synthOffset)))
-    , m_controlBuffers(offset_cast<sample_t*>(this, controlBufferOffset))
-    , m_audioBuffers(offset_cast<sample_t*>(this, audioBufferOffset))
 {
     const size_t blockSize = env.blockSize();
+
+    m_synth = synthDef.construct(env, offset_cast<void*>(this, synthOffset));
+    m_controlBuffers = offset_cast<sample_t*>(this, controlBufferOffset);
+    // Align audio buffers
+    m_audioBuffers = kBufferAlignment.align(offset_cast<sample_t*>(this, audioBufferOffset));
 
     // Uninitialized audio connection memory
     AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
@@ -73,16 +78,15 @@ Synth::Synth( Environment& env
             if (port.isa(Port::kInput)) {
                 new (&audioInputConnections[port.index()]) AudioInputConnection(m_audioInputConnections.size());
                 m_audioInputConnections.push_back(audioInputConnections[port.index()]);
-                m_synthDef.connectPort( m_synth
-                                      , i
-                                      , audioInputBuffers + port.index() * blockSize );
-
+                sample_t* buffer = audioInputBuffers + port.index() * blockSize;
+                BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
+                m_synthDef.connectPort(m_synth, i, buffer);
             } else if (port.isa(Port::kOutput)) {
                 new (&audioOutputConnections[port.index()]) AudioOutputConnection(m_audioOutputConnections.size());
                 m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
-                m_synthDef.connectPort( m_synth
-                                      , i
-                                      , audioOutputBuffers + port.index() * blockSize );
+                sample_t* buffer = audioOutputBuffers + port.index() * blockSize;
+                BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
+                m_synthDef.connectPort(m_synth, i, buffer);
             } else {
                 BOOST_ASSERT_MSG( false, "Invalid port type" );
             }
@@ -107,15 +111,9 @@ Synth::~Synth()
 
 Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args)
 {
-    typedef Alignment<kSIMDAlignment> BufferAlignment;
-
-    static_assert(   (allocated_super::kAlignment >= BufferAlignment::kAlignment)
-                  && ((allocated_super::kAlignment % BufferAlignment::kAlignment) == 0)
-                 , "allocated_super::kAlignment multiple of kSIMDAlignment" );
-
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
-    BOOST_ASSERT_MSG( BufferAlignment::isAligned(env.blockSize() * sizeof(sample_t))
-                    , "Environment.blockSize must be aligned to Alignment::SIMDAlignment" );
+    BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
+                    , "Environment.blockSize must be a multiple of kBufferAlignment" );
 
     const size_t numControlInputs           = synthDef.numControlInputs();
     const size_t numControlOutputs          = synthDef.numControlOutputs();
@@ -130,9 +128,9 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
     const size_t audioOutputAllocSize       = numAudioOutputs * sizeof(AudioOutputConnection);
     const size_t controlBufferOffset        = audioOutputOffset + audioOutputAllocSize;
     const size_t controlBufferAllocSize     = (numControlInputs + numControlOutputs) * sizeof(sample_t);
-    const size_t audioBufferOffset          = BufferAlignment::align(controlBufferOffset + controlBufferAllocSize);
+    const size_t audioBufferOffset          = controlBufferOffset + controlBufferAllocSize;
     const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
-    const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize;
+    const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize + kBufferAlignment /* alignment margin */;
 
     // Instantiate synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
@@ -142,7 +140,8 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
                     , audioInputOffset
                     , audioOutputOffset
                     , controlBufferOffset
-                    , audioBufferOffset );
+                    , audioBufferOffset
+                    , audioBufferAllocSize );
 }
 
 template <class Connection>
@@ -185,7 +184,7 @@ void Synth::mapInput(size_t index, const AudioBusId& busId, InputConnectionType 
 void Synth::mapOutput(size_t index, const AudioBusId& busId, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
-    sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kSIMDAlignment, offset) : 0;
+    sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kBufferAlignment, offset) : 0;
     AudioOutputConnections::iterator conn =
         find_if( m_audioOutputConnections.begin()
                , m_audioOutputConnections.end()

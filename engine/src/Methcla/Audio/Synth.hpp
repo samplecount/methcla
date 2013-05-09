@@ -178,6 +178,7 @@ protected:
          , size_t audioOutputConnectionsOffset
          , size_t controlBufferOffset
          , size_t audioBufferOffset
+         , size_t audioBufferSize
          );
     ~Synth();
 
