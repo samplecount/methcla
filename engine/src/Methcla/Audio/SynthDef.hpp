@@ -34,48 +34,21 @@ namespace Methcla { namespace Audio {
 class Port
 {
 public:
-    enum Type
-    {
-        kInput      = 1
-      , kOutput     = 2
-      , kAudio      = 4
-      , kControl    = 8
-    };
-
-    Port(Type type, uint32_t index, const char* symbol)
-        : m_type(type)
+    Port(Methcla_Port port, uint32_t index, const char* symbol="")
+        : m_port(port)
         , m_index(index)
         , m_symbol(symbol)
     { }
 
-    Type type() const { return m_type; }
-    bool isa(Type t) const { return (m_type & t) == t; }
-    bool isa(Type t1, Type t2) const { return isa(t1) && isa(t2); }
-
+    Methcla_PortType type() const { return m_port.type; }
+    Methcla_PortDirection direction() const { return m_port.direction; }
     uint32_t index() const { return m_index; }
     const char* symbol() const { return m_symbol.c_str(); }
 
 private:
-    Type        m_type;
-    uint32_t    m_index;
-    std::string m_symbol;
-};
-
-//* DEPRECATED
-class FloatPort : public Port
-{
-public:
-    FloatPort( Type type, uint32_t index, const char* symbol
-             , float minValue, float maxValue, float defaultValue );
-
-    float minValue() const { return m_minValue; }
-    float maxValue() const { return m_maxValue; }
-    float defaultValue() const { return m_defaultValue; }
-
-private:
-    float   m_minValue;
-    float   m_maxValue;
-    float   m_defaultValue;
+    Methcla_Port    m_port;
+    uint32_t        m_index;
+    std::string     m_symbol;
 };
 
 class SynthDef : boost::noncopyable
@@ -117,12 +90,12 @@ public:
     }
 
 private:
-    const Methcla_SynthDef*         m_descriptor;
-    std::vector<Port>               m_ports;
-    size_t                          m_numAudioInputs;
-    size_t                          m_numAudioOutputs;
-    size_t                          m_numControlInputs;
-    size_t                          m_numControlOutputs;
+    const Methcla_SynthDef* m_descriptor;
+    std::vector<Port>       m_ports;
+    size_t                  m_numAudioInputs;
+    size_t                  m_numAudioOutputs;
+    size_t                  m_numControlInputs;
+    size_t                  m_numControlOutputs;
 };
 
 typedef std::unordered_map<const char*,

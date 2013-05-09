@@ -15,23 +15,13 @@
 #include "Methcla/Exception.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 
-#include <boost/optional.hpp>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <utility>
 
 using namespace boost;
 using namespace Methcla::Audio;
 using namespace std;
-
-Methcla::Audio::FloatPort::FloatPort( Type type, uint32_t index, const char* symbol
-                    , float minValue, float maxValue, float defaultValue )
-    : Port(type, index, symbol)
-    , m_minValue(isnan(minValue) ? -numeric_limits<float>::max() : minValue)
-    , m_maxValue(isnan(maxValue) ? numeric_limits<float>::max() : maxValue)
-    , m_defaultValue(isnan(defaultValue) ? 0 : defaultValue)
-{ }
 
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
@@ -47,15 +37,11 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
             case kMethcla_AudioPort:
                 switch (port.direction) {
                     case kMethcla_Input:
-                        m_ports.push_back(Port( Port::Type(Port::kAudio|Port::kInput)
-                                              , m_numAudioInputs
-                                              , "<unknown>" ));
+                        m_ports.push_back(Port(port, m_numAudioInputs));
                         m_numAudioInputs++;
                         break;
                     case kMethcla_Output:
-                        m_ports.push_back(Port( Port::Type(Port::kAudio|Port::kOutput)
-                                              , m_numAudioOutputs
-                                              , "<unknown>" ));
+                        m_ports.push_back(Port(port, m_numAudioOutputs));
                         m_numAudioOutputs++;
                         break;
                 }
@@ -63,15 +49,11 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
             case kMethcla_ControlPort:
                 switch (port.direction) {
                     case kMethcla_Input:
-                        m_ports.push_back(Port( Port::Type(Port::kControl|Port::kInput)
-                                              , m_numControlInputs
-                                              , "<unknown>" ));
+                        m_ports.push_back(Port(port, m_numControlInputs));
                         m_numControlInputs++;
                         break;
                     case kMethcla_Output:
-                        m_ports.push_back(Port( Port::Type(Port::kControl|Port::kOutput)
-                                              , m_numControlOutputs
-                                              , "<unknown>" ));
+                        m_ports.push_back(Port(port, m_numControlOutputs));
                         m_numControlOutputs++;
                         break;
                 }

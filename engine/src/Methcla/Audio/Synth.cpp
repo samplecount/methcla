@@ -55,39 +55,46 @@ Synth::Synth( Environment& env
     sample_t* audioInputBuffers = m_audioBuffers;
     sample_t* audioOutputBuffers = m_audioBuffers + synthDef.numAudioInputs() * blockSize;
 
+    // Connect ports
     for (size_t i=0; i < synthDef.numPorts(); i++) {
         const Port& port = synthDef.port(i);
-        // Connect control ports
-        if (port.isa(Port::kControl)) {
-            if (port.isa(Port::kInput)) {
+        switch (port.type()) {
+        case kMethcla_ControlPort:
+            switch (port.direction()) {
+            case kMethcla_Input: {
+                // Initialize with control value
                 m_controlBuffers[port.index()] = controls.next<float>();
                 sample_t* buffer = &m_controlBuffers[port.index()];
                 m_synthDef.connect(m_synth, i, buffer);
-            } else if (port.isa(Port::kOutput)) {
+                };
+                break;
+            case kMethcla_Output: {
                 sample_t* buffer = &m_controlBuffers[numControlInputs() + port.index()];
                 m_synthDef.connect(m_synth, i, buffer);
-            } else {
-                BOOST_ASSERT_MSG( false, "Invalid port type" );
-            }
-        } else if (port.isa(Port::kAudio)) {
-            // Connect audio ports
-            if (port.isa(Port::kInput)) {
+                };
+                break;
+            };
+            break;
+        case kMethcla_AudioPort:
+            switch (port.direction()) {
+            case kMethcla_Input: {
                 new (&audioInputConnections[port.index()]) AudioInputConnection(m_audioInputConnections.size());
                 m_audioInputConnections.push_back(audioInputConnections[port.index()]);
                 sample_t* buffer = audioInputBuffers + port.index() * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
                 m_synthDef.connect(m_synth, i, buffer);
-            } else if (port.isa(Port::kOutput)) {
+                };
+                break;
+            case kMethcla_Output: {
                 new (&audioOutputConnections[port.index()]) AudioOutputConnection(m_audioOutputConnections.size());
                 m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
                 sample_t* buffer = audioOutputBuffers + port.index() * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
                 m_synthDef.connect(m_synth, i, buffer);
-            } else {
-                BOOST_ASSERT_MSG( false, "Invalid port type" );
-            }
-        } else {
-            BOOST_ASSERT_MSG( false, "Invalid port type" );
+                };
+                break;
+            };
+            break;
         }
     }
 
