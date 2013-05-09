@@ -232,7 +232,7 @@ public:
     size_t sampleOffset() const { return 0; }
 
     /// Sets up inputs and outputs and calls compute.
-    virtual void process(size_t numFrames);
+    virtual void process(size_t numFrames) override;
 
 private:
     const SynthDef&         m_synthDef;
