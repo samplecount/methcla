@@ -16,28 +16,23 @@
 #define METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED
 
 #include <boost/utility.hpp>
-#include "zix/sem.h"
 
 namespace Methcla { namespace Utility {
+
+namespace detail { struct SemaphoreImpl; }
 
 class Semaphore : boost::noncopyable
 {
 public:
-    Semaphore(unsigned initial=0)
-    {
-        zix_sem_init(&m_sem, initial);
-    }
-    ~Semaphore()
-    {
-        zix_sem_destroy(&m_sem);
-    }
+    Semaphore(unsigned initial=0);
+    ~Semaphore();
 
-    void post() { zix_sem_post(&m_sem); }
-    void wait() { zix_sem_wait(&m_sem); }
-    void tryWait() { zix_sem_try_wait(&m_sem); }
+    void post();
+    void wait();
+    bool tryWait();
 
 private:
-    ZixSem m_sem;
+    struct detail::SemaphoreImpl* m_impl;
 };
 
 }; };

@@ -118,6 +118,7 @@ methclaLib platform =
               , "Methcla/Memory/Manager.cpp"
               , "Methcla/Memory.cpp"
               , "Methcla/Plugin/Loader.cpp"
+              , "Methcla/Utility/Semaphore.cpp"
               ]
             -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
             -- plugins
