@@ -56,6 +56,21 @@ static double methclaWorldSampleRate(const Methcla_World* world)
     return static_cast<Environment*>(world->handle)->sampleRate();
 }
 
+static void* methclaWorldAlloc(const Methcla_World* world, size_t size)
+{
+    return static_cast<Environment*>(world->handle)->rtMem().alloc(size);
+}
+
+static void* methclaWorldAllocAligned(const Methcla_World* world, size_t alignment, size_t size)
+{
+    return static_cast<Environment*>(world->handle)->rtMem().allocAligned(alignment, size);
+}
+
+static void methclaWorldFree(const Methcla_World* world, void* ptr)
+{
+    return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
+}
+
 Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -106,6 +121,9 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     m_world = {
         .handle = this,
         .sampleRate = methclaWorldSampleRate,
+        .alloc = methclaWorldAlloc,
+        .allocAligned = methclaWorldAllocAligned,
+        .free = methclaWorldFree,
         .performCommand = methclaWorldPerformCommand
     };
 }

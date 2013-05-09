@@ -46,9 +46,9 @@ typedef struct Methcla_World
     double (*sampleRate)(const struct Methcla_World* world);
 
     // Realtime memory allocation
-    // void* (*alloc)(const Methcla_World* world, size_t size);
-    // void* (*allocAligned)(const Methcla_World* world, size_t size, size_t alignment);
-    // void (*free)(const Methcla_World* world, void* ptr);
+    void* (*alloc)(const struct Methcla_World* world, size_t size);
+    void* (*allocAligned)(const struct Methcla_World* world, size_t alignment, size_t size);
+    void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
     void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
