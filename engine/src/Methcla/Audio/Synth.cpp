@@ -105,6 +105,10 @@ Synth::Synth( Environment& env
 //            break;
 //        }
 //    }
+
+    // Activate synth instance
+    // This might be deferred to when the synth is actually started by the scheduler
+    synthDef.activate(env, m_synth);
 }
 
 Synth::~Synth()

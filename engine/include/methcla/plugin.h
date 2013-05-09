@@ -112,11 +112,14 @@ struct Methcla_SynthDef
     //* Connect port at index to data.
     void (*connect)(Methcla_Synth* synth, size_t index, void* data);
 
+    //* Activate the synth instance just before starting to call `process`.
+    void (*activate)(const Methcla_World* world, Methcla_Synth* synth);
+
     //* Process numFrames of audio samples.
     void (*process)(Methcla_Synth* synth, size_t numFrames);
 
     //* Destroy a synth instance.
-    void (*destroy)(const Methcla_SynthDef* def, const Methcla_World* world, Methcla_Synth* synth);
+    void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);
 };
 
 typedef struct Methcla_Host

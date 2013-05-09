@@ -74,19 +74,24 @@ public:
         return synth;
     }
 
-    inline void destroy(const Methcla_World* world, Methcla_Synth* synth) const
-    {
-        if (m_descriptor->destroy) m_descriptor->destroy(m_descriptor, world, synth);
-    }
-
     inline void connect(Methcla_Synth* synth, uint32_t port, void* data) const
     {
         m_descriptor->connect(synth, port, data);
     }
 
+    inline void activate(const Methcla_World* world, Methcla_Synth* synth) const
+    {
+        if (m_descriptor->activate) m_descriptor->activate(world, synth);
+    }
+
     inline void process(Methcla_Synth* synth, size_t numFrames) const
     {
         m_descriptor->process(synth, numFrames);
+    }
+
+    inline void destroy(const Methcla_World* world, Methcla_Synth* synth) const
+    {
+        if (m_descriptor->destroy) m_descriptor->destroy(world, synth);
     }
 
 private:

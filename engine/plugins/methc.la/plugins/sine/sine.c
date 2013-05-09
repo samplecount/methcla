@@ -23,8 +23,7 @@
 
 typedef enum {
     SINE_FREQ,
-    SINE_OUTPUT,
-    kSineNumPorts
+    SINE_OUTPUT
 } PortIndex;
 
 typedef struct {
@@ -35,9 +34,9 @@ typedef struct {
 } Sine;
 
 static bool
-sine_port( const Methcla_SynthDef* synthDef
-         , size_t index
-         , Methcla_Port* port )
+port( const Methcla_SynthDef* synthDef
+    , size_t index
+    , Methcla_Port* port )
 {
     switch ((PortIndex)index) {
         case SINE_FREQ:
@@ -55,27 +54,27 @@ sine_port( const Methcla_SynthDef* synthDef
     }
 }
 
-static void sine_print_freq(const void* data, const Methcla_CommandChannel* channel)
+static void print_freq(const void* data, const Methcla_CommandChannel* channel)
 {
     Sine* sine = (Sine*)data;
     fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->freq);
 }
 
 static void
-sine_construct( const Methcla_SynthDef* synthDef
-              , const Methcla_World* world
-              , Methcla_Synth* synth )
+construct( const Methcla_SynthDef* synthDef
+         , const Methcla_World* world
+         , Methcla_Synth* synth )
 {
     Sine* sine = (Sine*)synth;
     sine->phase = 0.;
     sine->freqToPhaseInc = 2.*M_PI/methcla_world_samplerate(world);
-    methcla_world_perform_command(world, sine_print_freq, sine);
+    methcla_world_perform_command(world, print_freq, sine);
 }
 
 static void
-sine_connect( Methcla_Synth* synth
-            , size_t port
-            , void* data)
+connect( Methcla_Synth* synth
+       , size_t port
+       , void* data)
 {
     Sine* sine = (Sine*)synth;
 
@@ -93,8 +92,7 @@ sine_connect( Methcla_Synth* synth
 }
 
 static void
-
-sine_process(Methcla_Synth* synth, size_t numFrames)
+process(Methcla_Synth* synth, size_t numFrames)
 {
     Sine* sine = (Sine*)synth;
 
@@ -103,7 +101,7 @@ sine_process(Methcla_Synth* synth, size_t numFrames)
     const double phaseInc = freq * sine->freqToPhaseInc;
     float* const output   = sine->output;
 
-    for (uint32_t k = 0; k < numFrames; k++) {
+    for (size_t k = 0; k < numFrames; k++) {
         output[k] = sin(phase) * 0.05f;
         phase += phaseInc;
     }
@@ -111,13 +109,15 @@ sine_process(Methcla_Synth* synth, size_t numFrames)
     sine->phase = phase;
 }
 
-static const Methcla_SynthDef descriptor = {
+static const Methcla_SynthDef descriptor =
+{
     METHCLA_PLUGINS_SINE_URI,
     sizeof(Sine),
-    sine_port,
-    sine_construct,
-    sine_connect,
-    sine_process,
+    port,
+    construct,
+    connect,
+    NULL,
+    process,
     NULL
 };
 
