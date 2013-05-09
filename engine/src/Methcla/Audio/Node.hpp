@@ -56,8 +56,11 @@ namespace Methcla { namespace Audio {
         //* Return true if this node is a synth.
         virtual bool isSynth() const { return false; }
 
+        //* Return the node's parent group or nullptr if it's the root node.
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
+
+        //* Return true if the node is the root node.
         bool isRootNode() const { return parent() == 0; }
 
         // Process a number of frames.
