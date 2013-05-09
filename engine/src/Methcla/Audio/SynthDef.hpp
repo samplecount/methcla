@@ -106,7 +106,7 @@ public:
         if (m_descriptor->destroy) m_descriptor->destroy(m_descriptor, world, synth);
     }
 
-    inline void connectPort(Methcla_Synth* synth, uint32_t port, void* data) const
+    inline void connect(Methcla_Synth* synth, uint32_t port, void* data) const
     {
         m_descriptor->connect(synth, port, data);
     }

@@ -61,15 +61,11 @@ Synth::Synth( Environment& env
         if (port.isa(Port::kControl)) {
             if (port.isa(Port::kInput)) {
                 m_controlBuffers[port.index()] = controls.next<float>();
-                m_synthDef.connectPort(
-                    m_synth
-                  , i
-                  , &m_controlBuffers[port.index()] );
+                sample_t* buffer = &m_controlBuffers[port.index()];
+                m_synthDef.connect(m_synth, i, buffer);
             } else if (port.isa(Port::kOutput)) {
-                m_synthDef.connectPort(
-                    m_synth
-                  , i
-                  , &m_controlBuffers[numControlInputs() + port.index()] );
+                sample_t* buffer = &m_controlBuffers[numControlInputs() + port.index()];
+                m_synthDef.connect(m_synth, i, buffer);
             } else {
                 BOOST_ASSERT_MSG( false, "Invalid port type" );
             }
@@ -80,13 +76,13 @@ Synth::Synth( Environment& env
                 m_audioInputConnections.push_back(audioInputConnections[port.index()]);
                 sample_t* buffer = audioInputBuffers + port.index() * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
-                m_synthDef.connectPort(m_synth, i, buffer);
+                m_synthDef.connect(m_synth, i, buffer);
             } else if (port.isa(Port::kOutput)) {
                 new (&audioOutputConnections[port.index()]) AudioOutputConnection(m_audioOutputConnections.size());
                 m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
                 sample_t* buffer = audioOutputBuffers + port.index() * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
-                m_synthDef.connectPort(m_synth, i, buffer);
+                m_synthDef.connect(m_synth, i, buffer);
             } else {
                 BOOST_ASSERT_MSG( false, "Invalid port type" );
             }
