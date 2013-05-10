@@ -182,7 +182,12 @@ static inline void methcla_host_register_synthdef(const Methcla_Host* host, cons
 static inline Methcla_SoundFile* methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFileInfo* info)
 {
     const Methcla_SoundFileAPI* api = host->soundFileAPI(host, "audio/*");
-    return api == NULL ? NULL : api->open(api, path, mode, info);
+    if (api) {
+        Methcla_SoundFileInfo localInfo;
+        Methcla_SoundFileInfo* realInfo = info ? info : &localInfo;
+        return api->open(api, path, mode, realInfo);
+    }
+    return NULL;
 }
 
 typedef struct Methcla_Library
