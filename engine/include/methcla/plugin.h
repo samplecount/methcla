@@ -42,6 +42,9 @@ typedef struct Methcla_World
     //* Handle for implementation specific data.
     void* handle;
 
+    //* Access the non-realtime host interface.
+    const Methcla_Host* host;
+
     //* Return engine sample rate.
     double (*sampleRate)(const struct Methcla_World* world);
 
@@ -53,6 +56,10 @@ typedef struct Methcla_World
     //* Schedule a command for execution in the non-realtime context.
     void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
 } Methcla_World;
+static inline const Methcla_Host* methcla_world_host(const Methcla_World* world)
+{
+    return world->host;
+}
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
 {

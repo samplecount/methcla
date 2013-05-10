@@ -120,6 +120,7 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     // Initialize Methcla_World interface
     m_world = {
         .handle = this,
+        .host = &m_host,
         .sampleRate = methclaWorldSampleRate,
         .alloc = methclaWorldAlloc,
         .allocAligned = methclaWorldAllocAligned,
