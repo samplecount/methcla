@@ -97,6 +97,9 @@ typedef struct Methcla_SynthDef Methcla_SynthDef;
 
 struct Methcla_SynthDef
 {
+    //* Handle for implementation specific data.
+    void* handle;
+
     //* Synth definition URI.
     const char* uri;
 
@@ -120,6 +123,9 @@ struct Methcla_SynthDef
 
     //* Destroy a synth instance.
     void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);
+
+    //* Cleanup resources associated with SynthDef.
+    void (*cleanup)(const Methcla_SynthDef* def);
 };
 
 typedef struct Methcla_Host

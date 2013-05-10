@@ -66,6 +66,12 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
               << "    control outputs: " << numControlOutputs() << std::endl
               << "    audio inputs: " << numAudioInputs() << std::endl
               << "    audio outputs: " << numAudioOutputs() << std::endl;
+
+SynthDef::~SynthDef()
+{
+    if (m_descriptor->cleanup)
+        m_descriptor->cleanup(m_descriptor);
+}
 }
 
 PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)

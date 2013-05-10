@@ -55,6 +55,7 @@ class SynthDef : boost::noncopyable
 {
 public:
     SynthDef(const Methcla_SynthDef* def);
+    ~SynthDef();
 
     inline const char* uri() const { return m_descriptor->uri; }
 
