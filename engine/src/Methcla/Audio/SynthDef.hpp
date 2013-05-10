@@ -59,7 +59,7 @@ public:
 
     inline const char* uri() const { return m_descriptor->uri; }
 
-    inline size_t instanceSize () const { return m_descriptor->size; }
+    inline size_t instanceSize () const { return m_descriptor->instance_size; }
 
     inline size_t numPorts() const { return m_ports.size(); }
     inline const Port& port(size_t i) const { return m_ports.at(i); }

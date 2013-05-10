@@ -104,7 +104,7 @@ struct Methcla_SynthDef
     const char* uri;
 
     //* Size of an instance in bytes.
-    size_t size;
+    size_t instance_size;
 
     //* Get port at index.
     bool (*port)(const Methcla_SynthDef* def, size_t index, Methcla_Port* port);
