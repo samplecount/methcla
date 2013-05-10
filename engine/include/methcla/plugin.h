@@ -70,6 +70,21 @@ static inline double methcla_world_samplerate(const Methcla_World* world)
     return world->sampleRate(world);
 }
 
+static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
+{
+    return world->alloc(world, size);
+}
+
+static inline void* methcla_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
+{
+    return world->allocAligned(world, alignment, size);
+}
+
+static inline void methcla_world_free(const Methcla_World* world, void* ptr)
+{
+    world->free(world, ptr);
+}
+
 static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data)
 {
     world->performCommand(world, perform, data);
