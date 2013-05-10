@@ -138,7 +138,7 @@ struct Methcla_SynthDef
     size_t options_size;
 
     //* Parse OSC options and fill options struct.
-    void (*configure)(void* tag_buffer, size_t tag_size, void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
+    void (*configure)(const void* tag_buffer, size_t tag_size, const void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
 
     //* Get port descriptor at index.
     bool (*port_descriptor)(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port);
