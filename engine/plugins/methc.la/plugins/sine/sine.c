@@ -22,42 +22,38 @@
 #include "methc.la/plugins/sine/sine.h"
 
 typedef enum {
-    SINE_FREQ,
-    SINE_OUTPUT
+    kSine_freq,
+    kSine_out,
+    kSinePorts
 } PortIndex;
 
 typedef struct {
-    float* freq;
-    float* output;
+    float* ports[kSinePorts];
     double phase;
     double freqToPhaseInc;
 } Sine;
+
+static const Methcla_PortDescriptor kPortDescriptors[] = {
+    { .type = kMethcla_ControlPort, .direction = kMethcla_Input, .flags = kMethcla_PortFlags },
+    { .type = kMethcla_AudioPort, .direction = kMethcla_Output, .flags = kMethcla_PortFlags }
+};
 
 static bool
 port_descriptor( const Methcla_SynthOptions* options
                , size_t index
                , Methcla_PortDescriptor* port )
 {
-    switch ((PortIndex)index) {
-        case SINE_FREQ:
-            port->type = kMethcla_ControlPort;
-            port->direction = kMethcla_Input;
-            port->flags = kMethcla_PortFlags;
-            return true;
-        case SINE_OUTPUT:
-            port->type = kMethcla_AudioPort;
-            port->direction = kMethcla_Output;
-            port->flags = kMethcla_PortFlags;
-            return true;
-        default:
-            return false;
+    if (index < kSinePorts) {
+        *port = kPortDescriptors[index];
+        return true;
     }
+    return false;
 }
 
 static void print_freq(const void* data, const Methcla_CommandChannel* channel)
 {
     Sine* sine = (Sine*)data;
-    fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->freq);
+    fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->ports[kSine_freq]);
 }
 
 static void
@@ -77,19 +73,7 @@ connect( Methcla_Synth* synth
        , size_t port
        , void* data)
 {
-    Sine* sine = (Sine*)synth;
-
-    switch ((PortIndex)port) {
-        case SINE_FREQ:
-            sine->freq = (float*)data;
-            // *sine->freq = (float)rand() / (float)RAND_MAX * 400 + 200;
-            break;
-        case SINE_OUTPUT:
-            sine->output = (float*)data;
-            break;
-        default:
-            break;
-    }
+    ((Sine*)synth)->ports[port] = (float*)data;
 }
 
 static void
@@ -97,10 +81,10 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 {
     Sine* sine = (Sine*)synth;
 
-    const float  freq     = *sine->freq;
+    const float  freq     = *sine->ports[kSine_freq];
     double phase          = sine->phase;
     const double phaseInc = freq * sine->freqToPhaseInc;
-    float* const output   = sine->output;
+    float* const output   = sine->ports[kSine_out];
 
     for (size_t k = 0; k < numFrames; k++) {
         output[k] = sin(phase) * 0.05f;
