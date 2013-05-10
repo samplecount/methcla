@@ -50,7 +50,7 @@ port_descriptor( const Methcla_SynthOptions* options
     return false;
 }
 
-static void print_freq(const void* data, const Methcla_CommandChannel* channel)
+static void print_freq(const void* data, const Methcla_World* world, const Methcla_CommandChannel* channel)
 {
     Sine* sine = (Sine*)data;
     fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->ports[kSine_freq]);

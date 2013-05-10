@@ -47,7 +47,7 @@ port_descriptor( const Methcla_SynthOptions* options
     }
 }
 
-static void command_callback(const void* data, const Methcla_CommandChannel* channel)
+static void command_callback(const void* data, const Methcla_World* world, const Methcla_CommandChannel* channel)
 {
 }
 

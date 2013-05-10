@@ -22,9 +22,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef struct Methcla_World Methcla_World;
 typedef struct Methcla_CommandChannel Methcla_CommandChannel;
 
-typedef void (*Methcla_CommandPerformFunction)(const void* data, const Methcla_CommandChannel* channel);
+typedef void (*Methcla_CommandPerformFunction)(const void* data, const Methcla_World* world, const Methcla_CommandChannel* channel);
 
 struct Methcla_CommandChannel
 {
@@ -37,7 +38,9 @@ static inline void methcla_command_channel_send(const Methcla_CommandChannel* ch
     channel->send(channel, perform, data);
 }
 
-typedef struct Methcla_World
+typedef struct Methcla_Host Methcla_Host;
+
+struct Methcla_World
 {
     //* Handle for implementation specific data.
     void* handle;
@@ -55,7 +58,8 @@ typedef struct Methcla_World
 
     //* Schedule a command for execution in the non-realtime context.
     void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
-} Methcla_World;
+};
+
 static inline const Methcla_Host* methcla_world_host(const Methcla_World* world)
 {
     return world->host;

@@ -451,7 +451,7 @@ void Environment::perform_command(Command& cmd, Command::Channel& channel)
         .handle = &state,
         .send = methclaChannelSend
     };
-    cmd.data.command.perform(cmd.data.command.data, &methclaChannel);
+    cmd.data.command.perform(cmd.data.command.data, *cmd.env, &methclaChannel);
 }
 
 void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data)
