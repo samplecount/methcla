@@ -122,7 +122,8 @@ methclaLib platform =
               ]
             -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
             -- plugins
-            ++ [ "plugins/methc.la/plugins/sine/sine.c" ]
+            ++ [ "plugins/methc.la/plugins/sine/sine.c"
+               , "plugins/methc.la/plugins/sampler/sampler.cpp" ]
             -- platform dependent
             ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
