@@ -25,15 +25,15 @@
 typedef struct Methcla_World Methcla_World;
 typedef struct Methcla_CommandChannel Methcla_CommandChannel;
 
-typedef void (*Methcla_CommandPerformFunction)(const void* data, const Methcla_World* world, const Methcla_CommandChannel* channel);
+typedef void (*Methcla_CommandPerformFunction)(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data);
 
 struct Methcla_CommandChannel
 {
     void* handle;
-    void (*send)(const struct Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data);
+    void (*send)(const struct Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data);
 };
 
-static inline void methcla_command_channel_send(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data)
+static inline void methcla_command_channel_send(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data)
 {
     channel->send(channel, perform, data);
 }
@@ -57,7 +57,7 @@ struct Methcla_World
     void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
+    void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, void* data);
 };
 
 static inline const Methcla_Host* methcla_world_host(const Methcla_World* world)
@@ -70,7 +70,7 @@ static inline double methcla_world_samplerate(const Methcla_World* world)
     return world->sampleRate(world);
 }
 
-static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data)
+static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data)
 {
     world->performCommand(world, perform, data);
 }

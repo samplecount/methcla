@@ -433,7 +433,7 @@ const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) cons
     return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
 }
 
-void Environment::methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data)
+void Environment::methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data)
 {
     std::tuple<Environment*,Command::Channel*> state =
         *static_cast<std::tuple<Environment*,Command::Channel*>*>(channel->handle);
@@ -451,10 +451,10 @@ void Environment::perform_command(Command& cmd, Command::Channel& channel)
         .handle = &state,
         .send = methclaChannelSend
     };
-    cmd.data.command.perform(cmd.data.command.data, *cmd.env, &methclaChannel);
+    cmd.data.command.perform(*cmd.env, &methclaChannel, cmd.data.command.data);
 }
 
-void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data)
+void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data)
 {
     Environment* self = static_cast<Environment*>(world->handle);
     Command cmd(self, perform_command);

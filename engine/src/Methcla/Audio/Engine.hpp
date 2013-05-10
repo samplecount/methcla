@@ -195,7 +195,7 @@ namespace Methcla { namespace Audio
             struct
             {
                 Methcla_CommandPerformFunction perform;
-                const void* data;
+                void* data;
             } command;
         };
 
@@ -286,8 +286,8 @@ namespace Methcla { namespace Audio
         }
 
         static void perform_command(Command&, Command::Channel&);
-        static void methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, const void* data);
-        static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, const void* data);
+        static void methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data);
+        static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data);
 
     protected:
         friend class Node;
