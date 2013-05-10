@@ -158,6 +158,51 @@ namespace Methcla
         return true;
     }
 
+    class Value
+    {
+    public:
+        enum Type
+        {
+            kInt,
+            kFloat,
+            kString
+        };
+
+        explicit Value(int x)
+            : m_type(kInt)
+            , m_int(x)
+        { }
+        explicit Value(float x)
+            : m_type(kFloat)
+            , m_float(x)
+        { }
+        Value(const char* x)
+            : m_type(kString)
+            , m_string(x)
+        { }
+
+        void put(OSC::Client::Packet& packet) const
+        {
+            switch (m_type) {
+                case kInt:
+                    packet.int32(m_int);
+                    break;
+                case kFloat:
+                    packet.float32(m_float);
+                    break;
+                case kString:
+                    packet.string(m_string.c_str());
+                    break;
+            }
+        }
+
+    private:
+        Type m_type;
+        int m_int;
+        float m_float;
+        std::string m_string;
+    };
+
     class Engine
     {
     public:
@@ -194,15 +239,16 @@ namespace Methcla
             check(m_engine);
         }
 
-        SynthId synth(const char* synthDef, const std::vector<float>& controls=std::vector<float>())
+        SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             const char address[] = "/s_new";
-            const size_t numArgs = 4 + OSC::Size::array(controls.size());
+            const size_t numArgs = 4 + OSC::Size::array(controls.size()) + OSC::Size::array(options.size());
             const size_t packetSize = OSC::Size::message(address, numArgs)
                                          + OSC::Size::int32()
                                          + OSC::Size::string(256)
                                          + 2 * OSC::Size::int32()
-                                         + controls.size() * OSC::Size::float32();
+                                         + controls.size() * OSC::Size::float32()
+                                         + 256; // margin for options. better: pool allocator with fixed size packets.
 
             const Methcla_RequestId requestId = getRequestId();
 
@@ -213,8 +259,15 @@ namespace Methcla
                 .string(synthDef)
                 .int32(0)
                 .int32(0)
-                .putArray(controls.begin(), controls.end())
-                .closeMessage();
+                .putArray(controls.begin(), controls.end());
+
+            request.openArray();
+            for (const auto& x : options) {
+                x.put(request);
+            }
+            request.closeArray();
+
+            request.closeMessage();
 
             dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
 
