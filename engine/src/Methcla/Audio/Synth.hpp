@@ -172,7 +172,10 @@ protected:
          , AddAction addAction
          , const SynthDef& synthDef
          , OSC::Server::ArgStream controls
-         , OSC::Server::ArgStream args
+         , size_t numControlInputs
+         , size_t numControlOutputs
+         , size_t numAudioInputs
+         , size_t numAudioOutputs
          , size_t synthOffset
          , size_t audioInputConnectionsOffset
          , size_t audioOutputConnectionsOffset
@@ -191,13 +194,13 @@ public:
     const SynthDef& synthDef() const { return m_synthDef; }
 
     //* Return number of audio inputs.
-    size_t numAudioInputs() const { return synthDef().numAudioInputs(); }
+    size_t numAudioInputs() const { return m_numAudioInputs; }
 
     //* Map input to bus.
     void mapInput(size_t input, const AudioBusId& busId, InputConnectionType type);
 
     //* Return number of audio outputs.
-    size_t numAudioOutputs() const { return synthDef().numAudioOutputs(); }
+    size_t numAudioOutputs() const { return m_numAudioOutputs; }
 
     //* Map output to bus.
     void mapOutput(size_t output, const AudioBusId& busId, OutputConnectionType type);
@@ -207,8 +210,8 @@ public:
     // typedef boost::container::vector<Connection<ControlBus, InputConnectionType> > ControlInputConnections;
     // typedef boost::container::vector<Connection<ControlBus, OutputConnectionType> > ControlOutputConnections;
 
-    size_t numControlInputs() const { return synthDef().numControlInputs(); }
-    size_t numControlOutputs() const { return synthDef().numControlOutputs(); }
+    size_t numControlInputs() const { return m_numControlInputs; }
+    size_t numControlOutputs() const { return m_numControlOutputs; }
 
     float controlInput(size_t index) const
     {
@@ -240,6 +243,10 @@ private:
     Methcla_Synth*          m_synth;
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
+    const size_t            m_numControlInputs;
+    const size_t            m_numControlOutputs;
+    const size_t            m_numAudioInputs;
+    const size_t            m_numAudioOutputs;
     sample_t*               m_controlBuffers;
     sample_t*               m_audioBuffers;
 };

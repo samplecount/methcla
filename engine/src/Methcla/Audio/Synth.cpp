@@ -29,7 +29,10 @@ Synth::Synth( Environment& env
             , Node::AddAction addAction
             , const SynthDef& synthDef
             , OSC::Server::ArgStream controls
-            , OSC::Server::ArgStream args
+            , size_t numControlInputs
+            , size_t numControlOutputs
+            , size_t numAudioInputs
+            , size_t numAudioOutputs
             , size_t synthOffset
             , size_t audioInputOffset
             , size_t audioOutputOffset
@@ -39,6 +42,10 @@ Synth::Synth( Environment& env
             )
     : Node(env, target, addAction)
     , m_synthDef(synthDef)
+    , m_numControlInputs(numControlInputs)
+    , m_numControlOutputs(numControlOutputs)
+    , m_numAudioInputs(numAudioInputs)
+    , m_numAudioOutputs(numAudioOutputs)
 {
     const size_t blockSize = env.blockSize();
 
@@ -51,46 +58,50 @@ Synth::Synth( Environment& env
     AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
     AudioOutputConnection* audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
 
-    // Audio buffer memory
-    sample_t* audioInputBuffers = m_audioBuffers;
-    sample_t* audioOutputBuffers = m_audioBuffers + synthDef.numAudioInputs() * blockSize;
-
     // Connect ports
-    for (size_t i=0; i < synthDef.numPorts(); i++) {
-        const Port& port = synthDef.port(i);
-        switch (port.type()) {
+    Methcla_PortDescriptor port;
+    size_t controlInputIndex  = 0;
+    size_t controlOutputIndex = 0;
+    size_t audioInputIndex    = 0;
+    size_t audioOutputIndex   = 0;
+    for (size_t i=0; synthDef.portDescriptor(i, &port); i++) {
+        switch (port.type) {
         case kMethcla_ControlPort:
-            switch (port.direction()) {
+            switch (port.direction) {
             case kMethcla_Input: {
                 // Initialize with control value
-                m_controlBuffers[port.index()] = controls.next<float>();
-                sample_t* buffer = &m_controlBuffers[port.index()];
+                m_controlBuffers[controlInputIndex] = controls.next<float>();
+                sample_t* buffer = &m_controlBuffers[controlInputIndex];
                 m_synthDef.connect(m_synth, i, buffer);
+                controlInputIndex++;
                 };
                 break;
             case kMethcla_Output: {
-                sample_t* buffer = &m_controlBuffers[numControlInputs() + port.index()];
+                sample_t* buffer = &m_controlBuffers[numControlInputs + controlOutputIndex];
                 m_synthDef.connect(m_synth, i, buffer);
+                controlOutputIndex++;
                 };
                 break;
             };
             break;
         case kMethcla_AudioPort:
-            switch (port.direction()) {
+            switch (port.direction) {
             case kMethcla_Input: {
-                new (&audioInputConnections[port.index()]) AudioInputConnection(m_audioInputConnections.size());
-                m_audioInputConnections.push_back(audioInputConnections[port.index()]);
-                sample_t* buffer = audioInputBuffers + port.index() * blockSize;
+                new (&audioInputConnections[audioInputIndex]) AudioInputConnection(m_audioInputConnections.size());
+                m_audioInputConnections.push_back(audioInputConnections[audioInputIndex]);
+                sample_t* buffer = m_audioBuffers + audioInputIndex * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
                 m_synthDef.connect(m_synth, i, buffer);
+                audioInputIndex++;
                 };
                 break;
             case kMethcla_Output: {
-                new (&audioOutputConnections[port.index()]) AudioOutputConnection(m_audioOutputConnections.size());
-                m_audioOutputConnections.push_back(audioOutputConnections[port.index()]);
-                sample_t* buffer = audioOutputBuffers + port.index() * blockSize;
+                new (&audioOutputConnections[audioOutputIndex]) AudioOutputConnection(m_audioOutputConnections.size());
+                m_audioOutputConnections.push_back(audioOutputConnections[audioOutputIndex]);
+                sample_t* buffer = m_audioBuffers + (numAudioInputs + audioOutputIndex) * blockSize;
                 BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
                 m_synthDef.connect(m_synth, i, buffer);
+                audioOutputIndex++;
                 };
                 break;
             };
@@ -116,16 +127,49 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args)
+Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be a multiple of kBufferAlignment" );
 
-    const size_t numControlInputs           = synthDef.numControlInputs();
-    const size_t numControlOutputs          = synthDef.numControlOutputs();
-    const size_t numAudioInputs             = synthDef.numAudioInputs();
-    const size_t numAudioOutputs            = synthDef.numAudioOutputs();
+    synthDef.parseOptions(options);
+
+    size_t numControlInputs  = 0;
+    size_t numControlOutputs = 0;
+    size_t numAudioInputs    = 0;
+    size_t numAudioOutputs   = 0;
+
+    // Get port counts.
+    Methcla_PortDescriptor port;
+    for (size_t i=0; synthDef.portDescriptor(i, &port); i++) {
+        switch (port.type) {
+            case kMethcla_AudioPort:
+                switch (port.direction) {
+                    case kMethcla_Input:
+                        numAudioInputs++;
+                        break;
+                    case kMethcla_Output:
+                        numAudioOutputs++;
+                        break;
+                }
+                break;
+            case kMethcla_ControlPort:
+                switch (port.direction) {
+                    case kMethcla_Input:
+                        numControlInputs++;
+                        break;
+                    case kMethcla_Output:
+                        numControlOutputs++;
+                        break;
+                }
+        }
+    }
+
+    // const size_t numControlInputs           = synthDef.numControlInputs();
+    // const size_t numControlOutputs          = synthDef.numControlOutputs();
+    // const size_t numAudioInputs             = synthDef.numAudioInputs();
+    // const size_t numAudioOutputs            = synthDef.numAudioOutputs();
     const size_t blockSize                  = env.blockSize();
 
     const size_t synthAllocSize             = sizeof(Synth) + synthDef.instanceSize();
@@ -142,7 +186,11 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
     // Instantiate synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
                Synth( env, target, addAction
-                    , synthDef, controls, args
+                    , synthDef, controls
+                    , numControlInputs
+                    , numControlOutputs
+                    , numAudioInputs
+                    , numAudioOutputs
                     , sizeof(Synth)
                     , audioInputOffset
                     , audioOutputOffset
@@ -224,9 +272,9 @@ void Synth::process(size_t numFrames)
         x.read(env, numFrames, inputBuffers + x.index() * blockSize);
     }
 
-    m_synthDef.process(m_synth, numFrames);
+    m_synthDef.process(env, m_synth, numFrames);
 
-    sample_t* const outputBuffers = m_audioBuffers + m_synthDef.numAudioInputs() * blockSize;
+    sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
     for (auto& x : m_audioOutputConnections) {
         x.write(env, numFrames, outputBuffers + x.index() * blockSize);
     }

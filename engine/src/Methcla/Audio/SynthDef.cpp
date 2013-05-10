@@ -25,53 +25,79 @@ using namespace std;
 
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
-    , m_numAudioInputs(0)
-    , m_numAudioOutputs(0)
-    , m_numControlInputs(0)
-    , m_numControlOutputs(0)
+    // , m_numAudioInputs(0)
+    // , m_numAudioOutputs(0)
+    // , m_numControlInputs(0)
+    // , m_numControlOutputs(0)
 {
-    Methcla_Port port;
-    std::memset(&port, 0, sizeof(port));
-    for (size_t i=0; m_descriptor->port(m_descriptor, i, &port); i++) {
-        switch (port.type) {
-            case kMethcla_AudioPort:
-                switch (port.direction) {
-                    case kMethcla_Input:
-                        m_ports.push_back(Port(port, m_numAudioInputs));
-                        m_numAudioInputs++;
-                        break;
-                    case kMethcla_Output:
-                        m_ports.push_back(Port(port, m_numAudioOutputs));
-                        m_numAudioOutputs++;
-                        break;
-                }
-                break;
-            case kMethcla_ControlPort:
-                switch (port.direction) {
-                    case kMethcla_Input:
-                        m_ports.push_back(Port(port, m_numControlInputs));
-                        m_numControlInputs++;
-                        break;
-                    case kMethcla_Output:
-                        m_ports.push_back(Port(port, m_numControlOutputs));
-                        m_numControlOutputs++;
-                        break;
-                }
-        }
-    }
+    // Methcla_Port port;
+    // std::memset(&port, 0, sizeof(port));
+    // for (size_t i=0; m_descriptor->port(m_descriptor, nullptr, i, &port); i++) {
+    //     switch (port.type) {
+    //         case kMethcla_AudioPort:
+    //             switch (port.direction) {
+    //                 case kMethcla_Input:
+    //                     m_ports.push_back(Port(port, m_numAudioInputs));
+    //                     m_numAudioInputs++;
+    //                     break;
+    //                 case kMethcla_Output:
+    //                     m_ports.push_back(Port(port, m_numAudioOutputs));
+    //                     m_numAudioOutputs++;
+    //                     break;
+    //             }
+    //             break;
+    //         case kMethcla_ControlPort:
+    //             switch (port.direction) {
+    //                 case kMethcla_Input:
+    //                     m_ports.push_back(Port(port, m_numControlInputs));
+    //                     m_numControlInputs++;
+    //                     break;
+    //                 case kMethcla_Output:
+    //                     m_ports.push_back(Port(port, m_numControlOutputs));
+    //                     m_numControlOutputs++;
+    //                     break;
+    //             }
+    //     }
+    // }
+
+    m_options = new char[m_descriptor->options_size];
 
     std::cerr << "SynthDef " << uri() << " loaded (" << m_descriptor << "):" << std::endl
-              << "    instance size: " << instanceSize() << std::endl
-              << "    control inputs: " << numControlInputs() << std::endl
-              << "    control outputs: " << numControlOutputs() << std::endl
-              << "    audio inputs: " << numAudioInputs() << std::endl
-              << "    audio outputs: " << numAudioOutputs() << std::endl;
+              << "    instance size: " << instanceSize() << std::endl;
+              // << "    control inputs: " << numControlInputs() << std::endl
+              // << "    control outputs: " << numControlOutputs() << std::endl
+              // << "    audio inputs: " << numAudioInputs() << std::endl
+              // << "    audio outputs: " << numAudioOutputs() << std::endl;
+}
 
 SynthDef::~SynthDef()
 {
     if (m_descriptor->cleanup)
         m_descriptor->cleanup(m_descriptor);
+    delete [] static_cast<char*>(m_options);
 }
+
+void SynthDef::parseOptions(OSC::Server::ArgStream options) const
+{
+    if (m_descriptor->parse_options) {
+        auto state = options.state();
+        m_descriptor->parse_options(
+            std::get<0>(state).pos(), std::get<0>(state).consumable(),
+            std::get<1>(state).pos(), std::get<1>(state).consumable(),
+            m_options
+        );
+    }
+}
+
+bool SynthDef::portDescriptor(size_t index, Methcla_PortDescriptor* port) const
+{
+    return m_descriptor->port_descriptor(m_descriptor, m_descriptor->parse_options ? m_options : nullptr, index, port);
+}
+
+Methcla_Synth* SynthDef::construct(const Methcla_World* world, Methcla_Synth* synth) const
+{
+    m_descriptor->construct(m_descriptor, m_descriptor->parse_options ? m_options : nullptr, world, synth);
+    return synth;
 }
 
 PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)

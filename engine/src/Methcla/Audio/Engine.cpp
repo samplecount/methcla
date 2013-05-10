@@ -330,9 +330,10 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             const std::shared_ptr<SynthDef> def = synthDef(defName);
 
             auto synthControls = args.atEnd() ? OSC::Server::ArgStream() : args.array();
-            if (def->numControlInputs() != synthControls.size()) {
-                throw std::runtime_error("Missing synth control initialisers");
-            }
+            // FIXME: Cannot be checked before the synth is instantiated.
+            // if (def->numControlInputs() != synthControls.size()) {
+            //     throw std::runtime_error("Missing synth control initialisers");
+            // }
             auto synthArgs = args.atEnd() ? OSC::Server::ArgStream() : args.array();
 
             Node* targetNode = m_nodes.lookup(targetId);

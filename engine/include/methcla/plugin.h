@@ -82,14 +82,16 @@ typedef enum
   , kMethcla_Trigger    = 0x1
 } Methcla_PortFlags;
 
-typedef struct Methcla_Port Methcla_Port;
+typedef struct Methcla_PortDescriptor Methcla_PortDescriptor;
 
-struct Methcla_Port
+struct Methcla_PortDescriptor
 {
     Methcla_PortDirection direction;
     Methcla_PortType      type;
     Methcla_PortFlags     flags;
 };
+
+typedef void Methcla_SynthOptions;
 
 typedef void Methcla_Synth;
 
@@ -106,11 +108,17 @@ struct Methcla_SynthDef
     //* Size of an instance in bytes.
     size_t instance_size;
 
-    //* Get port at index.
-    bool (*port)(const Methcla_SynthDef* def, size_t index, Methcla_Port* port);
+    //* Size of options struct in bytes.
+    size_t options_size;
+
+    //* Parse OSC options and fill options struct.
+    void (*parse_options)(void* tag_buffer, size_t tag_size, void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
+
+    //* Get port descriptor at index.
+    bool (*port_descriptor)(const Methcla_SynthDef* def, const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port);
 
     //* Construct a synth instance at the location given.
-    void (*construct)(const Methcla_SynthDef* def, const Methcla_World* world, Methcla_Synth* synth);
+    void (*construct)(const Methcla_SynthDef* def, const Methcla_SynthOptions* options, const Methcla_World* world, Methcla_Synth* synth);
 
     //* Connect port at index to data.
     void (*connect)(Methcla_Synth* synth, size_t index, void* data);
@@ -119,7 +127,7 @@ struct Methcla_SynthDef
     void (*activate)(const Methcla_World* world, Methcla_Synth* synth);
 
     //* Process numFrames of audio samples.
-    void (*process)(Methcla_Synth* synth, size_t numFrames);
+    void (*process)(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames);
 
     //* Destroy a synth instance.
     void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);

@@ -34,9 +34,10 @@ typedef struct {
 } Sine;
 
 static bool
-port( const Methcla_SynthDef* synthDef
-    , size_t index
-    , Methcla_Port* port )
+port_descriptor( const Methcla_SynthDef* synthDef
+               , const Methcla_SynthOptions* options
+               , size_t index
+               , Methcla_PortDescriptor* port )
 {
     switch ((PortIndex)index) {
         case SINE_FREQ:
@@ -62,6 +63,7 @@ static void print_freq(const void* data, const Methcla_CommandChannel* channel)
 
 static void
 construct( const Methcla_SynthDef* synthDef
+         , const Methcla_SynthOptions* options
          , const Methcla_World* world
          , Methcla_Synth* synth )
 {
@@ -92,7 +94,7 @@ connect( Methcla_Synth* synth
 }
 
 static void
-process(Methcla_Synth* synth, size_t numFrames)
+process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 {
     Sine* sine = (Sine*)synth;
 
@@ -111,13 +113,16 @@ process(Methcla_Synth* synth, size_t numFrames)
 
 static const Methcla_SynthDef descriptor =
 {
+    NULL,
     METHCLA_PLUGINS_SINE_URI,
     sizeof(Sine),
-    port,
+    0, NULL,
+    port_descriptor,
     construct,
     connect,
     NULL,
     process,
+    NULL,
     NULL
 };
 
