@@ -77,26 +77,28 @@ SynthDef::~SynthDef()
     delete [] static_cast<char*>(m_options);
 }
 
-void SynthDef::parseOptions(OSC::Server::ArgStream options) const
+const Methcla_SynthOptions* SynthDef::configure(OSC::Server::ArgStream options) const
 {
-    if (m_descriptor->parse_options) {
+    if (m_descriptor->configure) {
         auto state = options.state();
-        m_descriptor->parse_options(
+        m_descriptor->configure(
             std::get<0>(state).pos(), std::get<0>(state).consumable(),
             std::get<1>(state).pos(), std::get<1>(state).consumable(),
             m_options
         );
+        return m_options;
     }
+    return nullptr;
 }
 
-bool SynthDef::portDescriptor(size_t index, Methcla_PortDescriptor* port) const
+bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port) const
 {
-    return m_descriptor->port_descriptor(m_descriptor, m_descriptor->parse_options ? m_options : nullptr, index, port);
+    return m_descriptor->port_descriptor(options, index, port);
 }
 
-Methcla_Synth* SynthDef::construct(const Methcla_World* world, Methcla_Synth* synth) const
+Methcla_Synth* SynthDef::construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const
 {
-    m_descriptor->construct(m_descriptor, m_descriptor->parse_options ? m_options : nullptr, world, synth);
+    m_descriptor->construct(world, m_descriptor, options, synth);
     return synth;
 }
 

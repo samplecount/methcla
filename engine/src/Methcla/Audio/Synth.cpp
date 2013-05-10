@@ -29,6 +29,7 @@ Synth::Synth( Environment& env
             , Node::AddAction addAction
             , const SynthDef& synthDef
             , OSC::Server::ArgStream controls
+            , const Methcla_SynthOptions* synthOptions
             , size_t numControlInputs
             , size_t numControlOutputs
             , size_t numAudioInputs
@@ -49,7 +50,7 @@ Synth::Synth( Environment& env
 {
     const size_t blockSize = env.blockSize();
 
-    m_synth = synthDef.construct(env, offset_cast<void*>(this, synthOffset));
+    m_synth = synthDef.construct(env, synthOptions, offset_cast<void*>(this, synthOffset));
     m_controlBuffers = offset_cast<sample_t*>(this, controlBufferOffset);
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(offset_cast<sample_t*>(this, audioBufferOffset));
@@ -64,7 +65,7 @@ Synth::Synth( Environment& env
     size_t controlOutputIndex = 0;
     size_t audioInputIndex    = 0;
     size_t audioOutputIndex   = 0;
-    for (size_t i=0; synthDef.portDescriptor(i, &port); i++) {
+    for (size_t i=0; synthDef.portDescriptor(synthOptions, i, &port); i++) {
         switch (port.type) {
         case kMethcla_ControlPort:
             switch (port.direction) {
@@ -133,7 +134,7 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be a multiple of kBufferAlignment" );
 
-    synthDef.parseOptions(options);
+    const Methcla_SynthOptions* synthOptions = synthDef.configure(options);
 
     size_t numControlInputs  = 0;
     size_t numControlOutputs = 0;
@@ -142,7 +143,7 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
 
     // Get port counts.
     Methcla_PortDescriptor port;
-    for (size_t i=0; synthDef.portDescriptor(i, &port); i++) {
+    for (size_t i=0; synthDef.portDescriptor(synthOptions, i, &port); i++) {
         switch (port.type) {
             case kMethcla_AudioPort:
                 switch (port.direction) {
@@ -187,6 +188,7 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
     return new (env.rtMem(), allocSize - sizeof(Synth))
                Synth( env, target, addAction
                     , synthDef, controls
+                    , synthOptions
                     , numControlInputs
                     , numControlOutputs
                     , numAudioInputs

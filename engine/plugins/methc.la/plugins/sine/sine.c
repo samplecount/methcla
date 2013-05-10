@@ -34,8 +34,7 @@ typedef struct {
 } Sine;
 
 static bool
-port_descriptor( const Methcla_SynthDef* synthDef
-               , const Methcla_SynthOptions* options
+port_descriptor( const Methcla_SynthOptions* options
                , size_t index
                , Methcla_PortDescriptor* port )
 {
@@ -62,9 +61,9 @@ static void print_freq(const void* data, const Methcla_CommandChannel* channel)
 }
 
 static void
-construct( const Methcla_SynthDef* synthDef
+construct( const Methcla_World* world
+         , const Methcla_SynthDef* synthDef
          , const Methcla_SynthOptions* options
-         , const Methcla_World* world
          , Methcla_Synth* synth )
 {
     Sine* sine = (Sine*)synth;

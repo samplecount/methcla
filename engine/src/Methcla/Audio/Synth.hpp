@@ -172,6 +172,7 @@ protected:
          , AddAction addAction
          , const SynthDef& synthDef
          , OSC::Server::ArgStream controls
+         , const Methcla_SynthOptions* synthOptions
          , size_t numControlInputs
          , size_t numControlOutputs
          , size_t numAudioInputs
