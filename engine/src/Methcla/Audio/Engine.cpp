@@ -82,6 +82,7 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     , m_nodes(options.maxNumNodes)
     , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
     , m_epoch(0)
+    , m_worker(2)
 {
     const Epoch prevEpoch = epoch() - 1;
 
