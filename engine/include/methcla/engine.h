@@ -47,6 +47,15 @@ typedef struct
 
 #define METHCLA_END_PLUGIN_LIBRARIES { NULL }
 
+typedef enum
+{
+    kMethcla_NoError,
+    kMethcla_UnspecifiedError,
+    kMethcla_InvalidArgument,
+    kMethcla_BadAlloc,
+    kMethcla_Overflow
+} Methcla_Error;
+
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;
 
@@ -65,36 +74,28 @@ typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId requ
 typedef struct Methcla_Engine Methcla_Engine;
 
 //* Create a new engine with the given packet handling closure and options.
-METHCLA_EXPORT Methcla_Engine* methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options);
+METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options, Methcla_Engine** engine);
 
 //* Free the resources associated with engine.
 //
 //  Dereferencing engine after this function returns results in undefined behavior.
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
-typedef enum
-{
-    kMethcla_NoError,
-    kMethcla_InvalidArgument,
-    kMethcla_BadAlloc,
-    kMethcla_Error
-} Methcla_Error;
-
 //* Return the last error code.
-METHCLA_EXPORT Methcla_Error methcla_engine_error(const Methcla_Engine* engine);
+// METHCLA_EXPORT Methcla_Error methcla_engine_error(const Methcla_Engine* engine);
 
 //* Return the error message associated with the last error.
-METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine);
+METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine, Methcla_Error error);
 
 //* Start the engine.
-METHCLA_EXPORT void methcla_engine_start(Methcla_Engine* engine);
+METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine);
 
 //* Stop the engine.
-METHCLA_EXPORT void methcla_engine_stop(Methcla_Engine* engine);
+METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine);
 
 //* Send an OSC packet to the engine.
-METHCLA_EXPORT void methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
+METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
-METHCLA_EXPORT void methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
+METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
 
 #endif /* METHCLA_ENGINE_H_INCLUDED */

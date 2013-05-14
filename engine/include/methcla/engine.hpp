@@ -207,10 +207,9 @@ namespace Methcla
     {
     public:
         Engine(const Methcla_Option* options)
-            : m_engine(methcla_engine_new(handlePacket, this, options))
-            , m_requestId(kMethcla_Notification+1)
+            : m_requestId(kMethcla_Notification+1)
         {
-            check(m_engine);
+            check(nullptr, methcla_engine_new(handlePacket, this, options, &m_engine));
         }
         ~Engine()
         {
@@ -229,14 +228,12 @@ namespace Methcla
 
         void start()
         {
-            methcla_engine_start(m_engine);
-            check(m_engine);
+            check(m_engine, methcla_engine_start(m_engine));
         }
 
         void stop()
         {
-            methcla_engine_stop(m_engine);
-            check(m_engine);
+            check(m_engine, methcla_engine_stop(m_engine));
         }
 
         SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
@@ -343,11 +340,10 @@ namespace Methcla
         }
 
     private:
-        static void check(const Methcla_Engine* engine)
+        static void check(const Methcla_Engine* engine, Methcla_Error err)
         {
-            Methcla_Error err = methcla_engine_error(engine);
             if (err != kMethcla_NoError) {
-                const char* msg = methcla_engine_error_message(engine);
+                const char* msg = methcla_engine_error_message(engine, err);
                 if (err == kMethcla_InvalidArgument)
                     throw std::invalid_argument(msg);
                 else if (err == kMethcla_BadAlloc)
