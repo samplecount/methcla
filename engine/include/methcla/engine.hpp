@@ -181,6 +181,11 @@ namespace Methcla
             , m_string(x)
         { }
 
+        explicit Value(bool x)
+            : m_type(kInt)
+            , m_int(x)
+        { }
+
         void put(OSC::Client::Packet& packet) const
         {
             switch (m_type) {
