@@ -309,16 +309,32 @@ namespace Methcla
                 .closeMessage();
 
             dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
+            execRequest(requestId, request);
+        }
 
-            Result<void> result;
+        void set(const SynthId& synth, size_t index, double value)
+        {
+            std::cout << "Synth::set " << index << " " << value << std::endl;
 
-            withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
-                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
-                    result.set();
-                }
-            });
+            const char address[] = "/n_set";
+            const size_t numArgs = 4;
+            const size_t packetSize = OSC::Size::message(address, numArgs)
+                                        + 3 * OSC::Size::int32()
+                                        + OSC::Size::float32();
 
-            result.get();
+            Methcla_RequestId requestId = getRequestId();
+
+            OSC::Client::StaticPacket<packetSize> request;
+            request
+                .openMessage(address, numArgs)
+                    .int32(requestId)
+                    .int32(synth)
+                    .int32(index)
+                    .float32(value)
+                .closeMessage();
+
+            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
+            execRequest(requestId, request);
         }
 
         void freeNode(const SynthId& synth)
@@ -333,15 +349,7 @@ namespace Methcla
                     .int32(requestId)
                     .int32(synth)
                 .closeMessage();
-
-            Result<void> result;
-            withRequest(requestId, request, [&result](Methcla_RequestId, const void* buffer, size_t size){
-                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
-                    result.set();
-                }
-            });
-            result.get();
-            // send(request);
+            execRequest(requestId, request);
         }
 
     private:
@@ -411,6 +419,17 @@ namespace Methcla
         {
             registerResponse(requestId, callback);
             send(request);
+        }
+
+        void execRequest(Methcla_RequestId requestId, const OSC::Client::Packet& request)
+        {
+            Result<void> result;
+            withRequest(requestId, request, [&result](Methcla_RequestId, const void* buffer, size_t size){
+                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
+                    result.set();
+                }
+            });
+            result.get();
         }
 
     private:

@@ -365,6 +365,18 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             cmd.data.response.data.nodeId = nodeId;
             send(cmd);
         } else if (msg == "/n_set") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            float value = args.float32();
+            Node* node = m_nodes.lookup(nodeId);
+            if (!node->isSynth())
+                throw std::runtime_error("Node is not a synth");
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= synth->numControlInputs())) {
+                throw std::runtime_error("Control input index out of range");
+            }
+            synth->controlInput(index) = value;
+            send(Command(this, perform_response_ack, requestId));
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
