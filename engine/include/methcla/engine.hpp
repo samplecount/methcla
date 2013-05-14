@@ -176,7 +176,7 @@ namespace Methcla
             : m_type(kFloat)
             , m_float(x)
         { }
-        Value(const char* x)
+        Value(const std::string& x)
             : m_type(kString)
             , m_string(x)
         { }
