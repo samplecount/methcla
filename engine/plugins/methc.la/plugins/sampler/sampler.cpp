@@ -109,6 +109,7 @@ static void load_sound_file(const Methcla_World* world, const Methcla_CommandCha
         msg->numFrames = msg->numFrames < 0 ? info.frames : std::min<int64_t>(msg->numFrames, info.frames);
         msg->numChannels = info.channels;
         msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
+        std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
         // TODO: error handling
         if (msg->buffer != nullptr) {
             size_t numFrames;
@@ -204,10 +205,10 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
                     out[played+k] = amp * buffer[(pos+k)*channels];
                 }
                 played += toPlay;
-                toPlay = std::min(numFrames - played, self->frames);
                 pos += toPlay;
                 if (pos >= self->frames)
                     pos = 0;
+                toPlay = std::min(numFrames - played, self->frames);
             }
             self->pos = pos;
         } else {
