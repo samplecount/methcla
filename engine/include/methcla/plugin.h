@@ -176,18 +176,23 @@ typedef struct Methcla_Host
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
+    if ((host == NULL) || (host->registerSynthDef == NULL) ||
+        (synthDef == NULL))
+        return; // TODO: return error code
     host->registerSynthDef(host, synthDef);
 }
 
-static inline Methcla_SoundFile* methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFileInfo* info)
+static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
+    if ((host == NULL) ||
+        (host->soundFileAPI == NULL) ||
+        (path == NULL) || (*path == '\0') ||
+        (file == NULL) ||
+        (info == NULL))
+        return kMethcla_FileInvalidArgument;
     const Methcla_SoundFileAPI* api = host->soundFileAPI(host, "audio/*");
-    if (api) {
-        Methcla_SoundFileInfo localInfo;
-        Methcla_SoundFileInfo* realInfo = info ? info : &localInfo;
-        return api->open(api, path, mode, realInfo);
-    }
-    return NULL;
+    return api == NULL ? kMethcla_FileUnspecifiedError
+                       : api->open(api, path, mode, file, info);
 }
 
 typedef struct Methcla_Library
