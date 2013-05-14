@@ -23,9 +23,6 @@ namespace Methcla {
 
 struct Exception : virtual std::exception, virtual boost::exception { };
 
-struct MemoryAllocationFailure : virtual Exception { };
-struct InvalidInput : virtual Exception { };
-
 struct InvalidNodeId : virtual Exception { };
 
 struct ErrorInfoStringTag { };
