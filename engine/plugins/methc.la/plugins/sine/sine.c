@@ -96,7 +96,6 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 
 static const Methcla_SynthDef descriptor =
 {
-    NULL,
     METHCLA_PLUGINS_SINE_URI,
     sizeof(Sine),
     0, NULL,
@@ -105,7 +104,6 @@ static const Methcla_SynthDef descriptor =
     connect,
     NULL,
     process,
-    NULL,
     NULL
 };
 

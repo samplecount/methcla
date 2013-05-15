@@ -507,7 +507,6 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 
 static const Methcla_SynthDef descriptor =
 {
-    nullptr,
     METHCLA_PLUGINS_DISKSAMPLER_URI,
     sizeof(Synth),
     sizeof(Options),
@@ -517,8 +516,7 @@ static const Methcla_SynthDef descriptor =
     connect,
     nullptr,
     process,
-    destroy,
-    nullptr
+    destroy
 };
 
 static const Methcla_Library library = { NULL, NULL };

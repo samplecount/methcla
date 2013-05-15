@@ -72,8 +72,6 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
 
 SynthDef::~SynthDef()
 {
-    if (m_descriptor->cleanup)
-        m_descriptor->cleanup(m_descriptor);
     delete [] static_cast<char*>(m_options);
 }
 
