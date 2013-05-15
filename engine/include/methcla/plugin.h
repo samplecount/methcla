@@ -22,31 +22,20 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+//* Realtime interface.
 typedef struct Methcla_World Methcla_World;
-typedef struct Methcla_CommandChannel Methcla_CommandChannel;
 
-typedef void (*Methcla_CommandPerformFunction)(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data);
-
-struct Methcla_CommandChannel
-{
-    void* handle;
-    void (*send)(const struct Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data);
-};
-
-static inline void methcla_command_channel_send(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data)
-{
-    channel->send(channel, perform, data);
-}
-
+//* Non-realtime interface.
 typedef struct Methcla_Host Methcla_Host;
 
+//* Callback function type for performing commands in the non-realtime context.
+typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
+
+//* Realtime interface
 struct Methcla_World
 {
     //* Handle for implementation specific data.
     void* handle;
-
-    //* Access the non-realtime host interface.
-    const Methcla_Host* host;
 
     //* Return engine sample rate.
     double (*sampleRate)(const struct Methcla_World* world);
@@ -57,13 +46,8 @@ struct Methcla_World
     void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    void (*performCommand)(const struct Methcla_World* world, Methcla_CommandPerformFunction perform, void* data);
+    void (*performCommand)(const struct Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
 };
-
-static inline const Methcla_Host* methcla_world_host(const Methcla_World* world)
-{
-    return world->host;
-}
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
 {
@@ -85,7 +69,7 @@ static inline void methcla_world_free(const Methcla_World* world, void* ptr)
     world->free(world, ptr);
 }
 
-static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data)
+static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
     world->performCommand(world, perform, data);
 }
@@ -156,6 +140,9 @@ struct Methcla_SynthDef
     void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);
 };
 
+//* Callback function type for performing commands in the realtime context.
+typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* data);
+
 typedef struct Methcla_Host
 {
     //* Handle for implementation specific data.
@@ -166,6 +153,9 @@ typedef struct Methcla_Host
 
     //* Lookup sound file API.
     const Methcla_SoundFileAPI* (*soundFileAPI)(const struct Methcla_Host* host, const char* mimeType);
+
+    //* Schedule a command for execution in the realtime context.
+    void (*performCommand)(const struct Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
 } Methcla_Host;
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
@@ -187,6 +177,11 @@ static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* 
     const Methcla_SoundFileAPI* api = host->soundFileAPI(host, "audio/*");
     return api == NULL ? kMethcla_FileUnspecifiedError
                        : api->open(api, path, mode, file, info);
+}
+
+static inline void methcla_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+{
+    host->performCommand(host, perform, data);
 }
 
 typedef struct Methcla_Library

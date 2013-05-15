@@ -181,7 +181,7 @@ static inline void finish(Synth* self)
     self->state.state.store(kFinished, std::memory_order_relaxed);
 }
 
-static void fill_buffer(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data)
+static void fill_buffer(const Methcla_Host*, void* data)
 {
 //    std::cout << "fill_buffer\n";
     Synth* self = (Synth*)data;
@@ -239,7 +239,7 @@ inline static void init_buffer_cleanup(Synth* self)
     }
 }
 
-static void init_buffer(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data)
+static void init_buffer(const Methcla_Host* host, void* data)
 {
     std::cout << "init_buffer\n";
     Synth* self = (Synth*)data;
@@ -247,7 +247,7 @@ static void init_buffer(const Methcla_World* world, const Methcla_CommandChannel
     Methcla_SoundFileInfo info;
 
     Methcla_FileError err = methcla_host_soundfile_open(
-        methcla_world_host(world),
+        host,
         self->path,
         kMethcla_Read,
         &self->state.file,
@@ -319,12 +319,12 @@ construct( const Methcla_World* world
     methcla_world_perform_command(world, init_buffer, self);
 }
 
-static void free_cb(const Methcla_World*, const Methcla_CommandChannel*, void* data)
+static void free_cb(const Methcla_Host*, void* data)
 {
     free(data);
 }
 
-static void close_cb(const Methcla_World*, const Methcla_CommandChannel*, void* data)
+static void close_cb(const Methcla_Host*, void* data)
 {
     methcla_soundfile_close((Methcla_SoundFile*)data);
 }

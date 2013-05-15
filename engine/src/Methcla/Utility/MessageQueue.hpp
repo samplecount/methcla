@@ -52,21 +52,6 @@ private:
     std::mutex m_mutex;
 };
 
-template <typename Command, size_t queueSize> class Channel : boost::noncopyable
-{
-public:
-    virtual void send(const Command& cmd)
-    {
-        bool success = m_queue.push(cmd);
-        if (!success) throw std::runtime_error("Channel overflow");
-    }
-
-protected:
-    typedef boost::lockfree::spsc_queue<Command,boost::lockfree::capacity<queueSize>> Queue;
-    // typedef boost::lockfree::queue<Command,boost::lockfree::capacity<queueSize>> Queue;
-    Queue m_queue;
-};
-
 template <typename Command, size_t queueSize> class Worker : boost::noncopyable
 {
 public:
@@ -74,9 +59,14 @@ public:
         : m_toWorker(*this)
     { }
 
-    void send(const Command& cmd)
+    void sendToWorker(const Command& cmd)
     {
-        return m_toWorker.send(cmd);
+        m_toWorker.send(cmd);
+    }
+
+    void sendFromWorker(const Command& cmd)
+    {
+        m_fromWorker.send(cmd);
     }
 
     void perform()
@@ -94,10 +84,20 @@ protected:
     virtual void signalWorker() { }
 
 private:
-    class Transport : public Channel<Command,queueSize>
+    class Transport : boost::noncopyable
     {
     public:
+        virtual void send(const Command& cmd)
+        {
+            bool success = m_queue.push(cmd);
+            if (!success) throw std::runtime_error("Channel overflow");
+        }
         virtual bool dequeue(Command& cmd) = 0;
+
+    protected:
+        typedef boost::lockfree::spsc_queue<Command,boost::lockfree::capacity<queueSize>> Queue;
+        // typedef boost::lockfree::queue<Command,boost::lockfree::capacity<queueSize>> Queue;
+        Queue m_queue;
     };
 
     class ToWorker : public Transport
@@ -145,7 +145,7 @@ private:
         for (;;) {
             Command cmd;
             bool success = input.dequeue(cmd);
-            if (success) cmd.perform(output);
+            if (success) cmd.perform();
             else break;
         }
     }

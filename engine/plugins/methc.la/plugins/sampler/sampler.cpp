@@ -86,7 +86,7 @@ struct LoadMessage
     char path[];
 };
 
-static void set_buffer(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data)
+static void set_buffer(const Methcla_World* world, void* data)
 {
     std::cout << "set_buffer\n";
     LoadMessage* msg = (LoadMessage*)data;
@@ -96,14 +96,14 @@ static void set_buffer(const Methcla_World* world, const Methcla_CommandChannel*
     methcla_world_free(world, msg);
 }
 
-static void load_sound_file(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data)
+static void load_sound_file(const Methcla_Host* host, void* data)
 {
     std::cout << "load_sound_file\n";
     LoadMessage* msg = (LoadMessage*)data;
 
     Methcla_SoundFile* file;
     Methcla_SoundFileInfo info;
-    Methcla_FileError err = methcla_host_soundfile_open(methcla_world_host(world), msg->path, kMethcla_Read, &file, &info);
+    Methcla_FileError err = methcla_host_soundfile_open(host, msg->path, kMethcla_Read, &file, &info);
 
     if (err == kMethcla_FileNoError) {
         msg->numFrames = msg->numFrames < 0 ? info.frames : std::min<int64_t>(msg->numFrames, info.frames);
@@ -118,10 +118,10 @@ static void load_sound_file(const Methcla_World* world, const Methcla_CommandCha
         methcla_soundfile_close(file);
     }
 
-    methcla_command_channel_send(channel, set_buffer, msg);
+    methcla_host_perform_command(host, set_buffer, msg);
 }
 
-static void free_buffer_cb(const Methcla_World* world, const Methcla_CommandChannel* channel, void* data)
+static void free_buffer_cb(const Methcla_Host*, void* data)
 {
     std::cout << "free_buffer\n";
     free(data);

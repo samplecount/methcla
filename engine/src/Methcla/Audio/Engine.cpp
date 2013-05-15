@@ -121,7 +121,6 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     // Initialize Methcla_World interface
     m_world = {
         .handle = this,
-        .host = &m_host,
         .sampleRate = methclaWorldSampleRate,
         .alloc = methclaWorldAlloc,
         .allocAligned = methclaWorldAllocAligned,
@@ -200,12 +199,12 @@ void Environment::process(size_t numFrames, sample_t** inputs, sample_t** output
     m_epoch++;
 }
 
-void Environment::perform_free(Command& cmd, Command::Channel&)
+void Environment::perform_free(Command& cmd)
 {
     cmd.data.free.func(cmd.data.free.ptr);
 }
 
-void Environment::perform_response_ack(Command& cmd, Command::Channel&)
+void Environment::perform_response_ack(Command& cmd)
 {
     const char address[] = "/ack";
     const size_t numArgs = 1;
@@ -220,7 +219,7 @@ void Environment::perform_response_ack(Command& cmd, Command::Channel&)
     cmd.env->reply(cmd.data.response.requestId, packet);
 }
 
-void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
+void Environment::perform_response_nodeId(Command& cmd)
 {
     const char address[] = "/ack";
     const size_t numArgs = 2;
@@ -236,7 +235,7 @@ void Environment::perform_response_nodeId(Command& cmd, Command::Channel&)
     cmd.env->reply(cmd.data.response.requestId, packet);
 }
 
-void Environment::perform_response_error(Command& cmd, Command::Channel&)
+void Environment::perform_response_error(Command& cmd)
 {
     const char address[] = "/error";
     const size_t numArgs = 2;
@@ -253,7 +252,7 @@ void Environment::perform_response_error(Command& cmd, Command::Channel&)
     cmd.env->reply(cmd.data.response.requestId, packet);
 }
 
-void Environment::perform_response_query_external_inputs(Command& cmd, Command::Channel&)
+void Environment::perform_response_query_external_inputs(Command& cmd)
 {
     Environment* env = cmd.env;
     const char address[] = "/ack";
@@ -270,7 +269,7 @@ void Environment::perform_response_query_external_inputs(Command& cmd, Command::
     env->reply(cmd.data.response.requestId, packet);
 }
 
-void Environment::perform_response_query_external_outputs(Command& cmd, Command::Channel&)
+void Environment::perform_response_query_external_outputs(Command& cmd)
 {
     Environment* env = cmd.env;
     const char address[] = "/ack";
@@ -291,7 +290,7 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
     Command cmd(this, perform_response_error, requestId);
     strncpy(cmd.data.response.data.error, msg, sizeof(cmd.data.response.data.error));
-    send(cmd);
+    sendToWorker(cmd);
 }
 
 void Environment::processRequests()
@@ -312,7 +311,7 @@ void Environment::processRequests()
         Command cmd(this, perform_free);
         cmd.data.free.func = msg.free;
         cmd.data.free.ptr  = msg.packet;
-        send(cmd);
+        sendToWorker(cmd);
     }
 }
 
@@ -345,7 +344,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = synth->id();
-            send(cmd);
+            sendToWorker(cmd);
         } else if (msg == "/g_new") {
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
@@ -357,14 +356,14 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = node->id();
-            send(cmd);
+            sendToWorker(cmd);
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
             m_nodes.lookup(nodeId)->free();
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = nodeId;
-            send(cmd);
+            sendToWorker(cmd);
         } else if (msg == "/n_set") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -377,7 +376,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 throw std::runtime_error("Control input index out of range");
             }
             synth->controlInput(index) = value;
-            send(Command(this, perform_response_ack, requestId));
+            sendToWorker(Command(this, perform_response_ack, requestId));
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -395,11 +394,11 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             synth->mapOutput(index, busId, kOut);
 
             // Could reply with previous bus mapping
-            send(Command(this, perform_response_ack, requestId));
+            sendToWorker(Command(this, perform_response_ack, requestId));
         } else if (msg == "/query/external_inputs") {
-            send(Command(this, perform_response_query_external_inputs, requestId));
+            sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
         } else if (msg == "/query/external_outputs") {
-            send(Command(this, perform_response_query_external_outputs, requestId));
+            sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
     } catch (Exception& e) {
         const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
@@ -446,34 +445,32 @@ const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) cons
     return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
 }
 
-void Environment::methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data)
+void Environment::perform_worldCommand(Command& cmd)
 {
-    std::tuple<Environment*,Command::Channel*> state =
-        *static_cast<std::tuple<Environment*,Command::Channel*>*>(channel->handle);
-    Command cmd(std::get<0>(state), perform_command);
-    cmd.data.command.perform = perform;
-    cmd.data.command.data = data;
-    std::get<1>(state)->send(cmd);
+    cmd.data.worldCommand.perform(static_cast<const Methcla_World*>(*cmd.env), cmd.data.worldCommand.data);
 }
 
-void Environment::perform_command(Command& cmd, Command::Channel& channel)
+void Environment::perform_hostCommand(Command& cmd)
 {
-    std::tuple<Environment*,Command::Channel*> state =
-        std::make_tuple(cmd.env, &channel);
-    Methcla_CommandChannel methclaChannel = {
-        .handle = &state,
-        .send = methclaChannelSend
-    };
-    cmd.data.command.perform(*cmd.env, &methclaChannel, cmd.data.command.data);
+    cmd.data.hostCommand.perform(static_cast<const Methcla_Host*>(*cmd.env), cmd.data.hostCommand.data);
 }
 
-void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data)
+void Environment::methclaHostPerformCommand(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+{
+    Environment* env = static_cast<Environment*>(host->handle);
+    Command cmd(env, perform_worldCommand);
+    cmd.data.worldCommand.perform = perform;
+    cmd.data.worldCommand.data = data;
+    env->sendFromWorker(cmd);
+}
+
+void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
     Environment* self = static_cast<Environment*>(world->handle);
-    Command cmd(self, perform_command);
-    cmd.data.command.perform = perform;
-    cmd.data.command.data = data;
-    self->send(cmd);
+    Command cmd(self, perform_hostCommand);
+    cmd.data.hostCommand.perform = perform;
+    cmd.data.hostCommand.data = data;
+    self->sendToWorker(cmd);
 }
 
 Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)

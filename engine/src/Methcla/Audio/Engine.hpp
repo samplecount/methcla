@@ -194,15 +194,20 @@ namespace Methcla { namespace Audio
 
             struct
             {
-                Methcla_CommandPerformFunction perform;
+                Methcla_HostPerformFunction perform;
                 void* data;
-            } command;
+            } hostCommand;
+
+            struct
+            {
+                Methcla_WorldPerformFunction perform;
+                void* data;
+            } worldCommand;
         };
 
         struct Command
         {
-            typedef Utility::Channel<Command,kQueueSize> Channel;
-            typedef void (*PerformFunc)(Command& cmd, Channel& channel);
+            typedef void (*PerformFunc)(Command& cmd);
 
             Command()
                 : env(nullptr)
@@ -228,9 +233,9 @@ namespace Methcla { namespace Audio
                 data.response.requestId = requestId;
             }
 
-            void perform(Channel& channel)
+            void perform()
             {
-                if (performFunc != nullptr) performFunc(*this, channel);
+                if (performFunc != nullptr) performFunc(*this);
             }
             
             Environment* env;
@@ -238,12 +243,12 @@ namespace Methcla { namespace Audio
             CommandData  data;
         };
 
-        static void perform_free(Command&, Command::Channel&);
-        static void perform_response_ack(Command&, Command::Channel&);
-        static void perform_response_nodeId(Command&, Command::Channel&);
-        static void perform_response_error(Command&, Command::Channel&);
-        static void perform_response_query_external_inputs(Command&, Command::Channel&);
-        static void perform_response_query_external_outputs(Command&, Command::Channel&);
+        static void perform_free(Command&);
+        static void perform_response_ack(Command&);
+        static void perform_response_nodeId(Command&);
+        static void perform_response_error(Command&);
+        static void perform_response_query_external_inputs(Command&);
+        static void perform_response_query_external_outputs(Command&);
 
     protected:
         // Worker thread
@@ -277,17 +282,26 @@ namespace Methcla { namespace Audio
             notify(packet.data(), packet.size());
         }
 
-        //* Send a command to the worker thread.
+        //* Send a command from the realtime thread to the worker thread.
         //
         // Context: RT
-        void send(const Command& cmd)
+        void sendToWorker(const Command& cmd)
         {
-            m_worker.send(cmd);
+            m_worker.sendToWorker(cmd);
         }
 
-        static void perform_command(Command&, Command::Channel&);
-        static void methclaChannelSend(const Methcla_CommandChannel* channel, Methcla_CommandPerformFunction perform, void* data);
-        static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_CommandPerformFunction perform, void* data);
+        //* Send a command from the worker thread to the realtime thread.
+        //
+        // Context: NRT
+        void sendFromWorker(const Command& cmd)
+        {
+            m_worker.sendFromWorker(cmd);
+        }
+
+        static void perform_worldCommand(Command&);
+        static void perform_hostCommand(Command&);
+        static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+        static void methclaHostPerformCommand(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
 
     protected:
         friend class Node;
