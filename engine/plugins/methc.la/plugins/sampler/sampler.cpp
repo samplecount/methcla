@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,7 @@
 typedef enum {
     kSampler_amp,
     kSampler_output_0,
-    // kSampler_output_1,
+    kSampler_output_1,
     kSamplerPorts
 } PortIndex;
 
@@ -46,7 +46,7 @@ port_descriptor( const Methcla_SynthOptions* options
                       .flags = kMethcla_PortFlags };
             return true;
         case kSampler_output_0:
-        // case kSampler_output_1:
+        case kSampler_output_1:
             *port = { .type = kMethcla_AudioPort,
                       .direction = kMethcla_Output,
                       .flags = kMethcla_PortFlags };
@@ -179,7 +179,8 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
     Synth* self = (Synth*)synth;
 
     const float amp = *self->ports[kSampler_amp];
-    float* out = self->ports[kSampler_output_0];
+    float* out0 = self->ports[kSampler_output_0];
+    float* out1 = self->ports[kSampler_output_1];
 
     float* buffer = self->buffer;
     if (buffer) {
@@ -188,21 +189,40 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         const size_t channels = self->channels;
 
         if (left >= numFrames) {
-            for (size_t k = 0; k < numFrames; k++) {
-                out[k] = amp * buffer[(pos+k)*channels];
+            if (channels == 1) {
+                for (size_t k = 0; k < numFrames; k++) {
+                    out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
+                }
+            } else {
+                for (size_t k = 0; k < numFrames; k++) {
+                    const size_t j = (pos+k)*channels;
+                    out0[k] = amp * buffer[j];
+                    out1[k] = amp * buffer[j+1];
+                }
             }
             if (left == numFrames) {
                 if (self->loop) self->pos = 0;
                 else freeBuffer(world, self);
             } else {
                 self->pos = pos + numFrames;
-            }
+            };
         } else if (self->loop) {
             size_t played = 0;
             size_t toPlay = left;
             while (played < numFrames) {
-                for (size_t k = 0; k < toPlay; k++) {
-                    out[played+k] = amp * buffer[(pos+k)*channels];
+                if (channels == 1) {
+                    for (size_t k = 0; k < toPlay; k++) {
+                        const size_t m = played+k;
+                        const size_t j = (pos+k)*channels;
+                        out0[m] = out1[m] = amp * buffer[j];
+                    }
+                } else {
+                    for (size_t k = 0; k < toPlay; k++) {
+                        const size_t m = played+k;
+                        const size_t j = (pos+k)*channels;
+                        out0[m] = amp * buffer[j];
+                        out1[m] = amp * buffer[j+1];
+                    }
                 }
                 played += toPlay;
                 pos += toPlay;
@@ -212,17 +232,26 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
             }
             self->pos = pos;
         } else {
-            for (size_t k = 0; k < left; k++) {
-                out[k] = amp * buffer[(pos+k)*channels];
+            if (channels == 1) {
+                for (size_t k = 0; k < left; k++) {
+                    const size_t j = (pos+k)*channels;
+                    out0[k] = out1[k] = amp * buffer[j];
+                }
+            } else {
+                for (size_t k = 0; k < left; k++) {
+                    const size_t j = (pos+k)*channels;
+                    out0[k] = amp * buffer[j];
+                    out1[k] = amp * buffer[j+1];
+                }
             }
             for (size_t k = left; k < numFrames; k++) {
-                out[k] = 0.f;
+                out0[k] = out1[k] = 0.f;
             }
             freeBuffer(world, self);
         }
     } else {
         for (size_t k = 0; k < numFrames; k++) {
-            out[k] = 0.f;
+            out0[k] = out1[k] = 0.f;
         }
     }
 }

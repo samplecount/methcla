@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ static inline size_t framesToBytes(size_t channels, size_t frames)
 typedef enum {
     kSampler_amp,
     kSampler_output_0,
-    // kSampler_output_1,
+    kSampler_output_1,
     kSamplerPorts
 } PortIndex;
 
@@ -125,7 +125,7 @@ port_descriptor( const Methcla_SynthOptions* options
                       .flags = kMethcla_PortFlags };
             return true;
         case kSampler_output_0:
-        // case kSampler_output_1:
+        case kSampler_output_1:
             *port = { .type = kMethcla_AudioPort,
                       .direction = kMethcla_Output,
                       .flags = kMethcla_PortFlags };
@@ -356,7 +356,7 @@ connect( Methcla_Synth* synth
 }
 
 inline static void
-process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, float* out)
+process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
 {
     assert( self->state.file != nullptr );
 
@@ -369,16 +369,34 @@ process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, floa
     const size_t readable2 = readable - readable1;
     const size_t channels = self->state.channels;
 
-    for (size_t k = 0; k < readable1; k++) {
-        out[k] = amp * buffer[(readPos+k)*channels];
-    }
-    for (size_t k = 0; k < readable2; k++) {
-        out[readable1+k] = amp * buffer[k*channels];
-    }
     if (readable < numFrames) {
         std::cerr << "process_disk: underrun " << numFrames - readable << "\n";
+    }
+
+    if (channels == 1) {
+        for (size_t k = 0; k < readable1; k++) {
+            out0[k] = out1[k] = amp * buffer[(readPos+k)*channels];
+        }
+        for (size_t k = 0; k < readable2; k++) {
+            out0[readable1+k] = out1[readable1+k] = amp * buffer[k*channels];
+        }
         for (size_t k = readable; k < numFrames; k++) {
-            out[k] = 0.f;
+            out0[k] = out1[k] = 0.f;
+        }
+    } else {
+        for (size_t k = 0; k < readable1; k++) {
+            const size_t j = (readPos+k)*channels;
+            out0[k] = amp * buffer[j];
+            out1[k] = amp * buffer[j+1];
+        }
+        for (size_t k = 0; k < readable2; k++) {
+            const size_t j = k*channels;
+            const size_t m = readable1+k;
+            out0[m] = amp * buffer[j];
+            out1[m] = amp * buffer[j+1];
+        }
+        for (size_t k = readable; k < numFrames; k++) {
+            out0[k] = out1[k] = 0.f;
         }
     }
 
@@ -387,15 +405,23 @@ process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, floa
 }
 
 inline static void
-process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, float* out)
+process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
 {
     size_t pos = self->state.readPos;
     const size_t left = self->state.frames - pos;
     const size_t channels = self->state.channels;
 
     if (left >= numFrames) {
-        for (size_t k = 0; k < numFrames; k++) {
-            out[k] = amp * buffer[(pos+k)*channels];
+        if (channels == 1) {
+            for (size_t k = 0; k < numFrames; k++) {
+                out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
+            }
+        } else {
+            for (size_t k = 0; k < numFrames; k++) {
+                const size_t j = (pos+k)*channels;
+                out0[k] = amp * buffer[j];
+                out1[k] = amp * buffer[j+1];
+            }
         }
         if (left == numFrames) {
             if (self->loop) self->state.readPos = 0;
@@ -407,8 +433,18 @@ process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, fl
         size_t played = 0;
         size_t toPlay = left;
         while (played < numFrames) {
-            for (size_t k = 0; k < toPlay; k++) {
-                out[played+k] = amp * buffer[(pos+k)*channels];
+            if (channels == 1) {
+                for (size_t k = 0; k < toPlay; k++) {
+                    const size_t m = played+k;
+                    out0[m] = out1[m] = amp * buffer[(pos+k)*channels];
+                }
+            } else {
+                for (size_t k = 0; k < toPlay; k++) {
+                    const size_t m = played+k;
+                    const size_t j = (pos+k)*channels;
+                    out0[m] = amp * buffer[j];
+                    out1[m] = amp * buffer[j+1];
+                }
             }
             played += toPlay;
             pos += toPlay;
@@ -418,11 +454,19 @@ process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, fl
         }
         self->state.readPos = pos;
     } else {
-        for (size_t k = 0; k < left; k++) {
-            out[k] = amp * buffer[(pos+k)*channels];
+        if (channels == 1) {
+            for (size_t k = 0; k < left; k++) {
+                out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
+            }
+        } else {
+            for (size_t k = 0; k < left; k++) {
+                const size_t j = (pos+k)*channels;
+                out0[k] = amp * buffer[j];
+                out1[k] = amp * buffer[j+1];
+            }
         }
         for (size_t k = left; k < numFrames; k++) {
-            out[k] = 0.f;
+            out0[k] = out1[k] = 0.f;
         }
         finish(self);
     }
@@ -434,7 +478,8 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
     Synth* self = (Synth*)synth;
 
     const float amp = *self->ports[kSampler_amp];
-    float* out = self->ports[kSampler_output_0];
+    float* out0 = self->ports[kSampler_output_0];
+    float* out1 = self->ports[kSampler_output_1];
     const float* buffer = self->state.buffer;
 
     int state = self->state.state.load(std::memory_order_consume);
@@ -446,15 +491,15 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
             methcla_world_perform_command(world, fill_buffer, self);
         }
         case kFilling:
-        process_disk(self, numFrames, amp, buffer, out);
+        process_disk(self, numFrames, amp, buffer, out0, out1);
         break;
         case kMemoryPlayback:
-        process_memory(self, numFrames, amp, buffer, out);
+        process_memory(self, numFrames, amp, buffer, out0, out1);
         break;
         case kInitializing:
         case kFinished:
         for (size_t k = 0; k < numFrames; k++) {
-            out[k] = 0.f;
+            out0[k] = out1[k] = 0.f;
         }
         break;
     }
