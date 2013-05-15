@@ -87,6 +87,12 @@ staticBuidFlags = id
 sharedBuildFlags :: CBuildFlags -> CBuildFlags
 sharedBuildFlags = append libraries [ "c++", "m" ]
 
+pluginSources :: [FilePath]
+pluginSources = [
+    "plugins/methc.la/plugins/disksampler/disksampler.cpp"
+  , "plugins/methc.la/plugins/sampler/sampler.cpp"
+  , "plugins/methc.la/plugins/sine/sine.c" ]
+
 methclaLib :: Platform -> Library
 methclaLib platform =
     Library "methcla" $ sourceFlags commonBuildFlags [
@@ -112,7 +118,7 @@ methclaLib platform =
               , "Methcla/Audio/Group.cpp"
               , "Methcla/Audio/IO/Driver.cpp"
               , "Methcla/Audio/Node.cpp"
-              , "Methcla/Audio/Resource.cpp"
+              -- , "Methcla/Audio/Resource.cpp"
               , "Methcla/Audio/Synth.cpp"
               , "Methcla/Audio/SynthDef.cpp"
               , "Methcla/Memory/Manager.cpp"
@@ -122,8 +128,7 @@ methclaLib platform =
               ]
             -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
             -- plugins
-            ++ [ "plugins/methc.la/plugins/sine/sine.c"
-               , "plugins/methc.la/plugins/sampler/sampler.cpp" ]
+            ++ pluginSources
             -- platform dependent
             ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
                 then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
