@@ -163,6 +163,7 @@ configurations = [
     )
   , ( Debug,
         append compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")]
+      . append defines [("DEBUG", Just "1")]
     )
   ]
 
