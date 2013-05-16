@@ -181,10 +181,16 @@ static inline void finish(Synth* self)
     self->state.state.store(kFinished, std::memory_order_relaxed);
 }
 
-static void fill_buffer(const Methcla_Host*, void* data)
+static void release_synth(const Methcla_World* world, void* data)
+{
+    methcla_world_release(world, (Methcla_Resource)data);
+}
+
+static void fill_buffer(const Methcla_Host* host, void* data)
 {
 //    std::cout << "fill_buffer\n";
-    Synth* self = (Synth*)data;
+    Methcla_Resource resource = (Methcla_Resource)data;
+    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
 
     assert( self->state.writable() >= self->state.transferFrames );
 
@@ -223,6 +229,8 @@ static void fill_buffer(const Methcla_Host*, void* data)
     const size_t nextWritePos = numFrames2 > 0 ? numFrames2 : writePos + numFrames1;
     self->state.writePos.store(nextWritePos == bufferFrames ? 0 : nextWritePos, std::memory_order_relaxed);
     self->state.state.store(kIdle, std::memory_order_release);
+
+    methcla_host_perform_command(host, release_synth, resource);
 }
 
 // Only safe to be called during initialization
@@ -242,7 +250,9 @@ inline static void init_buffer_cleanup(Synth* self)
 static void init_buffer(const Methcla_Host* host, void* data)
 {
     std::cout << "init_buffer\n";
-    Synth* self = (Synth*)data;
+
+    Methcla_Resource resource = (Methcla_Resource)data;
+    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
 
     Methcla_SoundFileInfo info;
 
@@ -294,6 +304,8 @@ static void init_buffer(const Methcla_Host* host, void* data)
     } else {
         init_buffer_cleanup(self);
     }
+
+    methcla_host_perform_command(host, release_synth, resource);
 }
 
 static void
@@ -316,7 +328,7 @@ construct( const Methcla_World* world
     self->state.frames = options->frames;
 
     // TODO: Need to retain a reference to the outer Synth, otherwise the self pointer might dangle if the synth is freed while the async command is still being executed. Same goes for fill_buffer
-    methcla_world_perform_command(world, init_buffer, self);
+    methcla_world_perform_command(world, init_buffer, methcla_world_synth_acquire_resource(world, self));
 }
 
 static void free_cb(const Methcla_Host*, void* data)
@@ -488,7 +500,7 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         if (self->state.writable() >= self->state.transferFrames) {
             // Trigger refill
             self->state.state.store(kFilling, std::memory_order_relaxed);
-            methcla_world_perform_command(world, fill_buffer, self);
+            methcla_world_perform_command(world, fill_buffer, methcla_world_synth_acquire_resource(world, self));
         }
         case kFilling:
         process_disk(self, numFrames, amp, buffer, out0, out1);

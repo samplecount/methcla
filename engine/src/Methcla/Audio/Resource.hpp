@@ -36,18 +36,49 @@ namespace Methcla { namespace Audio
         expr->release();
     }
 
+    //* Reference counted base class
+    class Reference : public boost::noncopyable
+    {
+    public:
+        Reference()
+            : m_refs(0)
+        { }
+
+        inline void retain()
+        {
+            m_refs++;
+        }
+
+        inline void release()
+        {
+            m_refs--;
+            BOOST_ASSERT_MSG( m_refs >= 0 , "release() called once too many" );
+            if (m_refs == 0)
+                this->free();
+        }
+
+    protected:
+        virtual ~Reference()
+        { }
+
+        virtual void free()
+        {
+            delete this;
+        }
+
+    private:
+        int m_refs;
+    };
+
     /// Resource base class.
     //
     // A resource has a reference to its environment and a unique id.
-    template <class Id> class Resource : public boost::noncopyable
+    template <class Id> class Resource : public Reference
     {
     public:
         Resource(Environment& env, const Id& id)
             : m_env(env)
             , m_id(id)
-            , m_references(0)
-        { }
-        virtual ~Resource()
         { }
 
         /// Return environment.
@@ -57,29 +88,9 @@ namespace Methcla { namespace Audio
         /// Return unique id.
         const Id& id() const { return m_id; }
 
-        inline void retain()
-        {
-            m_references++;
-        }
-
-        inline void release()
-        {
-            m_references--;
-            BOOST_ASSERT_MSG( m_references >= 0 , "release() called once too many" );
-            if (m_references == 0)
-                this->free();
-        }
-
-    protected:
-        virtual void free()
-        {
-            delete this;
-        }
-
     private:
         Environment&    m_env;
         Id              m_id;
-        int             m_references;
     };
 
     /// Simple map for holding pointers to resources.

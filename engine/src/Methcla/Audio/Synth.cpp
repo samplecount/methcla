@@ -201,6 +201,11 @@ Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::Ad
                     , audioBufferAllocSize );
 }
 
+Synth* Synth::asSynth(Methcla_Synth* handle)
+{
+    return reinterpret_cast<Synth*>(reinterpret_cast<char*>(handle) - sizeof(Synth));
+}
+
 template <class Connection>
 struct IfConnectionIndex
 {

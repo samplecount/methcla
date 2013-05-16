@@ -195,6 +195,12 @@ public:
     //* Return this synth's SynthDef.
     const SynthDef& synthDef() const { return m_synthDef; }
 
+    //* Return synth handle.
+    Methcla_Synth* asHandle() { return m_synth; }
+
+    //* Return the synth corresponding to handle.
+    static Synth* asSynth(Methcla_Synth* handle);
+
     //* Return number of audio inputs.
     size_t numAudioInputs() const { return m_numAudioInputs; }
 

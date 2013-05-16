@@ -55,6 +55,26 @@ static void methclaWorldFree(const Methcla_World* world, void* ptr)
     return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
 }
 
+static void methcla_api_world_resource_retain(const Methcla_World*, Methcla_Resource resource)
+{
+    static_cast<Reference*>(resource)->retain();
+}
+
+static void methcla_api_world_resource_release(const Methcla_World*, Methcla_Resource resource)
+{
+    static_cast<Reference*>(resource)->release();
+}
+
+static Methcla_Resource methcla_api_world_synth_get_resource(const Methcla_World*, Methcla_Synth* synth)
+{
+    return Synth::asSynth(synth);
+}
+
+static Methcla_Synth* methcla_api_host_resource_get_synth(const Methcla_Host*, Methcla_Resource resource)
+{
+    return static_cast<Synth*>(resource)->asHandle();
+}
+
 Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
@@ -101,7 +121,9 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     m_host = {
         .handle = this,
         .registerSynthDef = methclaHostRegisterSynthDef,
-        .soundFileAPI = methclaHostSoundFileAPI
+        .soundFileAPI = methclaHostSoundFileAPI,
+        .performCommand = methcla_api_host_perform_command,
+        .resource_get_synth = methcla_api_host_resource_get_synth
     };
 
     // Initialize Methcla_World interface
@@ -111,7 +133,10 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
         .alloc = methclaWorldAlloc,
         .allocAligned = methclaWorldAllocAligned,
         .free = methclaWorldFree,
-        .performCommand = methclaWorldPerformCommand
+        .performCommand = methclaWorldPerformCommand,
+        .retain = methcla_api_world_resource_retain,
+        .release = methcla_api_world_resource_release,
+        .synth_get_resource = methcla_api_world_synth_get_resource,
     };
 }
 
@@ -451,7 +476,7 @@ void Environment::perform_hostCommand(Command& cmd)
     cmd.data.hostCommand.perform(static_cast<const Methcla_Host*>(*cmd.env), cmd.data.hostCommand.data);
 }
 
-void Environment::methclaHostPerformCommand(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+void Environment::methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(host->handle);
     Command cmd(env, perform_worldCommand);

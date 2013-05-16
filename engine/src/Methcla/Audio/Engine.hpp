@@ -286,7 +286,7 @@ namespace Methcla { namespace Audio
         static void perform_worldCommand(Command&);
         static void perform_hostCommand(Command&);
         static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
-        static void methclaHostPerformCommand(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
+        static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
 
     private:
         const size_t                            m_sampleRate;
