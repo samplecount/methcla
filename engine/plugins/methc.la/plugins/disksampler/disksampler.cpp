@@ -79,6 +79,8 @@ struct State
     float* buffer;
 
     std::atomic<size_t> readPos;
+    // Force read and write pointers to different cache lines.
+    char padding[kCacheLineSize-sizeof(readPos)];
     std::atomic<size_t> writePos;
 
     inline static size_t readable(size_t w, size_t r, size_t n)
