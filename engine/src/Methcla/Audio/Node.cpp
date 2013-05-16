@@ -40,7 +40,6 @@ Node::Node(Environment& env, Group* target, AddAction addAction)
 
 Node::~Node()
 {
-    env().nodes().remove(id());
 }
 
 void Node::free()

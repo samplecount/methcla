@@ -17,6 +17,7 @@
 
 #include "Methcla/Audio/Resource.hpp"
 #include "Methcla/Memory/Manager.hpp"
+
 #include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/serialization/strong_typedef.hpp>
@@ -47,10 +48,6 @@ namespace Methcla { namespace Audio {
           // , kReplace
         };
 
-        virtual ~Node();
-        //* Free a node.
-        virtual void free();
-
         //* Return true if this node is a group.
         virtual bool isGroup() const { return false; }
         //* Return true if this node is a synth.
@@ -68,6 +65,10 @@ namespace Methcla { namespace Audio {
 
     protected:
         Node(Environment& env, Group* target, AddAction addAction);
+        virtual ~Node();
+
+        //* Free a node.
+        virtual void free() override;
 
     private:
         Group* m_parent;

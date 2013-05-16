@@ -119,7 +119,7 @@ Environment::~Environment()
 
 AudioBus* Environment::audioBus(const AudioBusId& id)
 {
-    return m_audioBuses.lookup(id);
+    return m_audioBuses.lookup(id).get();
 }
 
 AudioBus& Environment::externalAudioOutput(size_t index)
@@ -321,7 +321,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             // }
             auto synthArgs = args.atEnd() ? OSC::Server::ArgStream() : args.array();
 
-            Node* targetNode = m_nodes.lookup(targetId);
+            Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def, synthControls, synthArgs);
@@ -333,7 +333,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
 
-            Node* targetNode = m_nodes.lookup(targetId);
+            Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Node* node = Group::construct(*this, targetGroup, Node::kAddToTail);
@@ -343,7 +343,8 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             sendToWorker(cmd);
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
-            m_nodes.lookup(nodeId)->free();
+            // Drop reference from node map
+            m_nodes.remove(nodeId);
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = nodeId;
@@ -352,7 +353,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             float value = args.float32();
-            Node* node = m_nodes.lookup(nodeId);
+            Node* node = m_nodes.lookup(nodeId).get();
             if (!node->isSynth())
                 throw std::runtime_error("Node is not a synth");
             Synth* synth = dynamic_cast<Synth*>(node);
@@ -366,7 +367,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             int32_t index = args.int32();
             AudioBusId busId = AudioBusId(args.int32());
 
-            Node* node = m_nodes.lookup(nodeId);
+            Node* node = m_nodes.lookup(nodeId).get();
             // Could traverse all synths in a group
             if (!node->isSynth())
                 throw std::runtime_error("Node is not a synth");

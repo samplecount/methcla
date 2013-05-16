@@ -99,23 +99,8 @@ namespace Methcla { namespace Audio
         size_t sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
 
-        //* Return audio bus with id.
+        //* Return audio bus with id (needed by Synth).
         AudioBus* audioBus(const AudioBusId& id);
-        //* Return number of external audio outputs.
-        size_t numExternalAudioOutputs() const
-        {
-            return m_audioOutputChannels.size();
-        }
-        //* Return number of external audio inputs.
-        size_t numExternalAudioInputs() const
-        {
-            return m_audioInputChannels.size();
-        }
-
-        //* Return external audio output bus at index.
-        AudioBus& externalAudioOutput(size_t index);
-        //* Return external audio input bus at index.
-        AudioBus& externalAudioInput(size_t index);
 
         Memory::RTMemoryManager& rtMem() { return m_rtMem; }
 
@@ -143,6 +128,28 @@ namespace Methcla { namespace Audio
         operator const Methcla_World* () const { return &m_world; }
 
     protected:
+        ResourceMap<NodeId,Node>& nodes()
+        {
+            return m_nodes;
+        }
+
+        //* Return number of external audio outputs.
+        size_t numExternalAudioOutputs() const
+        {
+            return m_audioOutputChannels.size();
+        }
+        //* Return number of external audio inputs.
+        size_t numExternalAudioInputs() const
+        {
+            return m_audioInputChannels.size();
+        }
+
+        //* Return external audio output bus at index.
+        AudioBus& externalAudioOutput(size_t index);
+        //* Return external audio input bus at index.
+        AudioBus& externalAudioInput(size_t index);
+
+    private:
         static const size_t kQueueSize = 8192;
 
         struct Request
@@ -229,7 +236,6 @@ namespace Methcla { namespace Audio
         static void perform_response_query_external_inputs(Command&);
         static void perform_response_query_external_outputs(Command&);
 
-    protected:
         // Worker thread
         typedef Utility::WorkerThread<Command,kQueueSize> Worker;
 

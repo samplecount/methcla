@@ -15,6 +15,7 @@
 #ifndef METHCLA_AUDIO_RESOURCE_HPP_INCLUDED
 #define METHCLA_AUDIO_RESOURCE_HPP_INCLUDED
 
+#include <boost/intrusive_ptr.hpp>
 #include <boost/utility.hpp>
 #include <stdexcept>
 #include <vector>
@@ -22,6 +23,18 @@
 namespace Methcla { namespace Audio
 {
     class Environment;
+
+    template<typename T>
+    inline void intrusive_ptr_add_ref(T* expr)
+    {
+        expr->retain();
+    }
+
+    template<typename T>
+    inline void intrusive_ptr_release(T* expr)
+    {
+        expr->release();
+    }
 
     /// Resource base class.
     //
@@ -32,6 +45,7 @@ namespace Methcla { namespace Audio
         Resource(Environment& env, const Id& id)
             : m_env(env)
             , m_id(id)
+            , m_references(0)
         { }
         virtual ~Resource()
         { }
@@ -43,9 +57,29 @@ namespace Methcla { namespace Audio
         /// Return unique id.
         const Id& id() const { return m_id; }
 
+        inline void retain()
+        {
+            m_references++;
+        }
+
+        inline void release()
+        {
+            m_references--;
+            BOOST_ASSERT_MSG( m_references >= 0 , "release() called once too many" );
+            if (m_references == 0)
+                this->free();
+        }
+
+    protected:
+        virtual void free()
+        {
+            delete this;
+        }
+
     private:
         Environment&    m_env;
         Id              m_id;
+        int             m_references;
     };
 
     /// Simple map for holding pointers to resources.
@@ -54,15 +88,11 @@ namespace Methcla { namespace Audio
     template <class Id, class T> class ResourceMap : boost::noncopyable
     {
     public:
+        typedef boost::intrusive_ptr<T> Pointer;
+
         ResourceMap(size_t size)
             : m_elems(size, nullptr)
         { }
-        ~ResourceMap()
-        {
-            for (T*& a : m_elems) {
-                delete a;
-            }
-        }
 
         size_t size() const
         {
@@ -79,9 +109,14 @@ namespace Methcla { namespace Audio
             throw std::runtime_error("No free ids");
         }
 
-        void insert(const Id& id, T* a)
+        void insert(const Id& id, Pointer a)
         {
             m_elems[id] = a;
+        }
+
+        void insert(const Id& id, T* a)
+        {
+            insert(id, Pointer(a));
         }
 
         void remove(const Id& id)
@@ -89,15 +124,15 @@ namespace Methcla { namespace Audio
             m_elems[id] = nullptr;
         }
 
-        T* lookup(const Id& id)
+        Pointer lookup(const Id& id) noexcept
         {
             if ((id >= Id(0)) && (id < Id(m_elems.size())))
                 return m_elems[id];
-            throw std::invalid_argument("Invalid resource ID");
+            return nullptr;
         }
 
     private:
-        std::vector<T*> m_elems;
+        std::vector<Pointer> m_elems;
     };
 }; };
 
