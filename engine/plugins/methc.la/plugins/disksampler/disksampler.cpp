@@ -19,6 +19,7 @@
 #include <oscpp/server.hpp>
 #include <unistd.h>
 
+static const size_t kCacheLineSize = 64;
 static const size_t kDiskBlockSize = 8192;
 static const size_t kDiskTransferSize = kDiskBlockSize * 4;
 
