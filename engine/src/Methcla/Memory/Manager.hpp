@@ -149,7 +149,6 @@ protected:
     {
         Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
         BOOST_ASSERT( chunk->data == ptr );
-        static_cast<T*>(ptr)->~T();
         chunk->alloc->free(chunk);
     }
 
