@@ -267,6 +267,9 @@ static void init_buffer(const Methcla_Host* host, void* data)
                 Methcla_FileError err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.bufferFrames, &numFrames);
                 if (err == kMethcla_FileNoError && numFrames == self->state.bufferFrames) {
+                    // After having read the whole file, we can close it right away.
+                    methcla_soundfile_close(self->state.file);
+                    self->state.file = nullptr;
                     self->state.state.store(kMemoryPlayback, std::memory_order_release);
                 } else {
                     init_buffer_cleanup(self);
