@@ -25,6 +25,7 @@ template <class T> T offset_cast(Synth* self, size_t offset)
 static const Alignment kBufferAlignment = kSIMDAlignment;
 
 Synth::Synth( Environment& env
+            , NodeId nodeId
             , Group* target
             , Node::AddAction addAction
             , const SynthDef& synthDef
@@ -41,7 +42,7 @@ Synth::Synth( Environment& env
             , size_t audioBufferOffset
             , size_t audioBufferSize
             )
-    : Node(env, target, addAction)
+    : Node(env, nodeId, target, addAction)
     , m_synthDef(synthDef)
     , m_numControlInputs(numControlInputs)
     , m_numControlOutputs(numControlOutputs)
@@ -128,7 +129,7 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream options)
+Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
@@ -186,9 +187,8 @@ Synth* Synth::construct(Environment& env, Group* target, Node::AddAction addActi
 
     // Instantiate synth
     return new (env.rtMem(), allocSize - sizeof(Synth))
-               Synth( env, target, addAction
-                    , synthDef, controls
-                    , synthOptions
+               Synth( env, nodeId, target, addAction
+                    , synthDef, controls, synthOptions
                     , numControlInputs
                     , numControlOutputs
                     , numAudioInputs

@@ -64,10 +64,12 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_nodes(options.maxNumNodes)
-    , m_rootNode(Group::construct(*this, nullptr, Node::kAddToTail))
+    , m_rootNode(Group::construct(*this, nodes().nextId(), nullptr, Node::kAddToTail))
     , m_epoch(0)
     , m_worker(2)
 {
+    m_nodes.insert(m_rootNode->id(), m_rootNode);
+
     const Epoch prevEpoch = epoch() - 1;
 
     m_audioInputChannels.reserve(options.numHardwareInputChannels);
@@ -324,7 +326,15 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Synth* synth = Synth::construct(*this, targetGroup, Node::kAddToTail, *def, synthControls, synthArgs);
+            Synth* synth = Synth::construct(
+                *this,
+                nodes().nextId(),
+                targetGroup,
+                Node::kAddToTail,
+                *def,
+                synthControls,
+                synthArgs);
+            nodes().insert(synth->id(), synth);
 
             Command cmd(this, perform_response_nodeId, requestId);
             cmd.data.response.data.nodeId = synth->id();
@@ -336,10 +346,11 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Node* node = Group::construct(*this, targetGroup, Node::kAddToTail);
+            Group* group = Group::construct(*this, nodes().nextId(), targetGroup, Node::kAddToTail);
+            nodes().insert(group->id(), group);
 
             Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = node->id();
+            cmd.data.response.data.nodeId = group->id();
             sendToWorker(cmd);
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());

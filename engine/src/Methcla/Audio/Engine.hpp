@@ -288,10 +288,6 @@ namespace Methcla { namespace Audio
         static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
         static void methclaHostPerformCommand(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
 
-    protected:
-        friend class Node;
-        ResourceMap<NodeId,Node>& nodes() { return m_nodes; }
-
     private:
         const size_t                            m_sampleRate;
         const size_t                            m_blockSize;

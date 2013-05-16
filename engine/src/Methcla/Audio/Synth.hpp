@@ -168,6 +168,7 @@ protected:
     };
 
     Synth( Environment& env
+         , NodeId nodeId
          , Group* target
          , AddAction addAction
          , const SynthDef& synthDef
@@ -187,7 +188,7 @@ protected:
     ~Synth();
 
 public:
-    static Synth* construct(Environment& env, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args);
+    static Synth* construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args);
 
     virtual bool isSynth() const override { return true; }
 

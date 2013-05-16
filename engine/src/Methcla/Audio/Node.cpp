@@ -18,10 +18,9 @@
 
 using namespace Methcla::Audio;
 
-Node::Node(Environment& env, Group* target, AddAction addAction)
-    : Resource(env, env.nodes().nextId())
+Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
+    : Resource(env, nodeId)
 {
-    env.nodes().insert(id(), this);
     if (target == nullptr) {
         m_parent = nullptr;
     } else {

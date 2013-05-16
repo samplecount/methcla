@@ -64,7 +64,7 @@ namespace Methcla { namespace Audio {
         virtual void process(size_t numFrames) = 0;
 
     protected:
-        Node(Environment& env, Group* target, AddAction addAction);
+        Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
         virtual ~Node();
 
         //* Free a node.

@@ -17,9 +17,9 @@
 
 using namespace Methcla::Audio;
 
-Group* Group::construct(Environment& env, Group* target, Node::AddAction addAction)
+Group* Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
 {
-    return new (env.rtMem()) Group(env, target, addAction);
+    return new (env.rtMem()) Group(env, nodeId, target, addAction);
 }
 
 void Group::free()

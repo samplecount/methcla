@@ -22,13 +22,14 @@ namespace Methcla { namespace Audio {
 class Group : public Node
 {
 protected:
-    Group(Environment& env, Group* target, Node::AddAction addAction)
-        : Node(env, target, addAction)
+    Group(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
+        : Node(env, nodeId, target, addAction)
     { }
 
-public:
-    static Group* construct(Environment& env, Group* target, AddAction addAction);
     virtual void free() override;
+
+public:
+    static Group* construct(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
 
     virtual bool isGroup() const override { return true; }
 
