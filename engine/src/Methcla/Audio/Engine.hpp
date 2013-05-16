@@ -50,7 +50,7 @@ namespace Methcla { namespace Audio
     //     ValueType   m_data;
     // };
 
-    using std::size_t;
+    // using std::size_t;
 
     struct EngineException : virtual Methcla::Exception { };
     struct InvalidNodeId : virtual EngineException { };
