@@ -21,7 +21,8 @@
 
 static const size_t kCacheLineSize = 64;
 static const size_t kDiskBlockSize = 8192;
-static const size_t kDiskTransferSize = kDiskBlockSize * 4;
+static const size_t kDiskTransferSize = kDiskBlockSize * 16;
+static const size_t kNumTransfersPerBuffer = 2;
 
 static inline size_t bytesToFrames(size_t channels, size_t bytes)
 {
@@ -75,8 +76,8 @@ struct State
     size_t channels;
     size_t frames;
 
-    size_t bufferFrames;
     size_t transferFrames;
+    size_t bufferFrames;
     float* buffer;
 
     std::atomic<size_t> readPos;
@@ -238,8 +239,6 @@ inline static void init_buffer_cleanup(Synth* self)
 
 static void init_buffer(const Methcla_Host* host, void* data)
 {
-    std::cout << "init_buffer\n";
-
     Methcla_Resource resource = (Methcla_Resource)data;
     Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
 
@@ -257,8 +256,10 @@ static void init_buffer(const Methcla_Host* host, void* data)
         self->state.frames = self->state.frames <= 0 ? info.frames : std::min<int64_t>(self->state.frames, info.frames);
         const size_t transferFrames = bytesToFrames(self->state.channels, kDiskTransferSize);
         if (self->state.frames <= transferFrames) {
-            self->state.bufferFrames = self->state.frames;
+            // If the file's number of frames is less than transferFrames,
+            // read it once and play back directly from memory.
             self->state.transferFrames = 0;
+            self->state.bufferFrames = self->state.frames;
             self->state.buffer = (float*)malloc(framesToBytes(self->state.channels, self->state.bufferFrames));
             if (self->state.buffer == nullptr) {
                 init_buffer_cleanup(self);
@@ -276,8 +277,9 @@ static void init_buffer(const Methcla_Host* host, void* data)
                 }
             }
         } else {
-            self->state.bufferFrames = transferFrames * 4;
+            // Load the first transferFrames into memory for streaming.
             self->state.transferFrames = transferFrames;
+            self->state.bufferFrames = self->state.transferFrames * kNumTransfersPerBuffer;
             self->state.buffer = (float*)malloc(framesToBytes(self->state.channels, self->state.bufferFrames));
             if (self->state.buffer == nullptr) {
                 init_buffer_cleanup(self);
