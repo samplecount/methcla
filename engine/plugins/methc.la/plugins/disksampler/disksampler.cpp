@@ -282,8 +282,9 @@ static void init_buffer(const Methcla_Host* host, void* data)
                 size_t numFrames = 0;
                 Methcla_FileError err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.transferFrames, &numFrames);
-                if (err == kMethcla_FileNoError && numFrames == self->state.transferFrames) {
-                    self->state.writePos.store(numFrames, std::memory_order_relaxed);
+                if (err == kMethcla_FileNoError) {
+                    assert( numFrames == self->state.transferFrames );
+                    self->state.writePos.store(numFrames == self->state.bufferFrames ? 0 : numFrames, std::memory_order_relaxed);
                     self->state.state.store(kIdle, std::memory_order_release);
                 } else {
                     init_buffer_cleanup(self);
