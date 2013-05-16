@@ -366,7 +366,7 @@ process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, floa
     // if state.readable < numFrames
     // then output what's there, zero the rest and drop the corresponding amount the next time around?
     const size_t readable = std::min(numFrames, self->state.readable());
-    const size_t readPos = self->state.readPos;
+    const size_t readPos = self->state.readPos.load(std::memory_order_consume);
     const size_t readable1 = std::min(readable, self->state.bufferFrames - readPos);
     const size_t readable2 = readable - readable1;
     const size_t channels = self->state.channels;
