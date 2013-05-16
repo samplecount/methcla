@@ -190,24 +190,21 @@ static void release_synth(const Methcla_World* world, void* data)
 
 static void fill_buffer(const Methcla_Host* host, void* data)
 {
-//    std::cout << "fill_buffer\n";
     Methcla_Resource resource = (Methcla_Resource)data;
     Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
 
     assert( self->state.writable() >= self->state.transferFrames );
+    assert( (self->state.bufferFrames % self->state.transferFrames) == 0 );
 
     const size_t bufferFrames = self->state.bufferFrames;
     const size_t transferFrames = self->state.transferFrames;
     const size_t writePos = self->state.writePos.load(std::memory_order_relaxed);
 
-    const size_t numFrames1 = std::min(transferFrames, bufferFrames-writePos);
-    const size_t numFrames2 = transferFrames - numFrames1;
-
     size_t numFrames;
     Methcla_FileError err = read_all(
         self->state.file,
         self->state.buffer + self->state.channels * writePos,
-        numFrames1,
+        transferFrames,
         &numFrames,
         self->loop);
     if (err != kMethcla_FileNoError) {
@@ -215,20 +212,9 @@ static void fill_buffer(const Methcla_Host* host, void* data)
         return;
     }
 
-    if ((numFrames == numFrames1) && (numFrames2 > 0)) {
-        err = read_all(
-            self->state.file,
-            self->state.buffer,
-            numFrames2,
-            &numFrames,
-            self->loop);
-        if (err != kMethcla_FileNoError) {
-            finish(self);
-            return;
-        }
-    }
+    assert( !self->loop || (numFrames == transferFrames) );
 
-    const size_t nextWritePos = numFrames2 > 0 ? numFrames2 : writePos + numFrames1;
+    const size_t nextWritePos = writePos + numFrames;
     self->state.writePos.store(nextWritePos == bufferFrames ? 0 : nextWritePos, std::memory_order_relaxed);
     self->state.state.store(kIdle, std::memory_order_release);
 
