@@ -58,27 +58,6 @@ namespace Methcla { namespace Audio
     struct ErrorInfoNodeIdTag { };
     typedef boost::error_info<ErrorInfoNodeIdTag, NodeId> ErrorInfoNodeId;
 
-    class Node;
-
-    class NodeMap
-    {
-        typedef std::vector<Node*> Nodes;
-
-    public:
-        typedef Nodes::const_reference const_reference;
-
-        NodeMap(size_t maxNumNodes)
-            : m_nodes(maxNumNodes, 0)
-        { }
-
-        void insert(Node* node);
-        const_reference lookup(const NodeId& nodeId) const { return m_nodes.at(nodeId); }
-        void release(const NodeId& nodeId);
-
-    private:
-        Nodes m_nodes;
-    };
-
     class Group;
 
     typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;

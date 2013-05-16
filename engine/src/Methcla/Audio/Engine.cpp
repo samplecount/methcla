@@ -24,22 +24,6 @@
 using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
-using namespace std;
-
-void NodeMap::insert(Node* node)
-{
-    NodeId id = node->id();
-    if (m_nodes[id] != 0)
-        BOOST_THROW_EXCEPTION(DuplicateNodeId() << ErrorInfoNodeId(id));
-    m_nodes[id] = node;
-}
-
-void NodeMap::release(const NodeId& nodeId)
-{
-    if (m_nodes[nodeId] == 0)
-        BOOST_THROW_EXCEPTION(InvalidNodeId() << ErrorInfoNodeId(nodeId));
-    m_nodes[nodeId] = 0;
-}
 
 static void methclaHostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
