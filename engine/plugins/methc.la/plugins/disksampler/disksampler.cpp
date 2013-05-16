@@ -161,14 +161,19 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
 }
 
 static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t inNumFrames, size_t* outNumFrames, bool loop)
+static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
 {
     size_t numFramesToRead = inNumFrames;
     size_t numFramesRead = 0;
+
     for (;;) {
         size_t numFrames;
         Methcla_FileError err =
-            methcla_soundfile_read_float(file, buffer, numFramesToRead, &numFrames);
+            methcla_soundfile_read_float(file, buffer + channels * numFramesRead, numFramesToRead, &numFrames);
         if (err != kMethcla_FileNoError) return err;
+        if (numFrames == 0)
+            // EOF
+            break;
         numFramesToRead -= numFrames;
         numFramesRead += numFrames;
         if (!loop || numFramesToRead == 0)
@@ -176,7 +181,10 @@ static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t
         err = methcla_soundfile_seek(file, 0);
         if (err != kMethcla_FileNoError) return err;
     }
+
     *outNumFrames = numFramesRead;
+    assert( !loop || (*outNumFrames == inNumFrames) );
+
     return kMethcla_FileNoError;
 }
 
@@ -206,6 +214,7 @@ static void fill_buffer(const Methcla_Host* host, void* data)
     Methcla_FileError err = read_all(
         self->state.file,
         self->state.buffer + self->state.channels * writePos,
+        self->state.channels,
         transferFrames,
         &numFrames,
         self->loop);
