@@ -39,6 +39,9 @@ Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
 
 Node::~Node()
 {
+#if DEBUG
+    std::cout << "~Node " << id() << "\n";
+#endif
 }
 
 void Node::free()
