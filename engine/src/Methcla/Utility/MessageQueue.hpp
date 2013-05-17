@@ -167,7 +167,7 @@ public:
     }
     ~WorkerThread()
     {
-        m_continue.store(false, std::memory_order_acquire);
+        m_continue.store(false, std::memory_order_relaxed);
         m_sem.post();
         for_each(m_threads.begin(), m_threads.end(), std::mem_fun_ref(&std::thread::join));
     }
@@ -177,7 +177,7 @@ private:
     {
         for (;;) {
             m_sem.wait();
-            bool cont = m_continue.load(std::memory_order_release);
+            bool cont = m_continue.load(std::memory_order_relaxed);
             if (cont) {
                 this->work();
             } else {
