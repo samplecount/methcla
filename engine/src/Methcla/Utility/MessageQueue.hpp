@@ -71,13 +71,13 @@ public:
 
     void perform()
     {
-        drain(m_fromWorker, m_toWorker);
+        drain(m_fromWorker);
     }
 
 protected:
     void work()
     {
-        drain(m_toWorker, m_fromWorker);
+        drain(m_toWorker);
     }
 
     friend class Transport;
@@ -140,11 +140,11 @@ private:
         std::mutex m_mutex;
     };
 
-    inline static void drain(Transport& input, Transport& output)
+    inline static void drain(Transport& transport)
     {
         for (;;) {
             Command cmd;
-            bool success = input.dequeue(cmd);
+            bool success = transport.dequeue(cmd);
             if (success) cmd.perform();
             else break;
         }
