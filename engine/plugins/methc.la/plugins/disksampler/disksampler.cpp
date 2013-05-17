@@ -21,8 +21,8 @@
 
 static const size_t kCacheLineSize = 64;
 static const size_t kDiskBlockSize = 8192;
-static const size_t kDiskTransferSize = kDiskBlockSize * 16;
-static const size_t kNumTransfersPerBuffer = 2;
+static const size_t kDiskTransferSize = kDiskBlockSize * 4;
+static const size_t kNumTransfersPerBuffer = 4;
 
 static inline size_t bytesToFrames(size_t channels, size_t bytes)
 {
@@ -41,33 +41,33 @@ typedef enum {
     kSamplerPorts
 } PortIndex;
 
-enum
+enum StateVar
 {
     kInitializing,
     kIdle,
     kFilling,
+    kFinishing,
     kMemoryPlayback,
     kFinished
 };
 
 struct State
 {
-    // State()
-    //     : state(kInitializing)
-    //     , file(nullptr)
-    //     , buffer(nullptr)
-    // { }
-    // ~State()
-    // {
-    //     if (file != nullptr) {
-    //         methcla_soundfile_close(file);
-    //         file = nullptr;
-    //     }
-    //     if (buffer != nullptr) {
-    //         std::free(buffer);
-    //         buffer = nullptr;
-    //     }
-    // }
+   State(size_t inFrames)
+       : state(kInitializing)
+       , file(nullptr)
+       , channels(0)
+       , frames(inFrames)
+       , transferFrames(0)
+       , bufferFrames(0)
+       , buffer(nullptr)
+       , readPos(0)
+       , writePos(0)
+   {
+       assert( state.is_lock_free() );
+       assert( writePos.is_lock_free() );
+       assert( readPos.is_lock_free() );
+   }
 
     std::atomic<int> state;
 
@@ -93,20 +93,6 @@ struct State
     inline static size_t writable(size_t w, size_t r, size_t n)
     {
         return w >= r ? r - w + n - 1 : r - w - 1;
-    }
-
-    inline size_t readable() const
-    {
-        size_t w = writePos.load(std::memory_order_relaxed);
-        size_t r = readPos.load(std::memory_order_relaxed);
-        return readable(w, r, bufferFrames);
-    }
-
-    inline size_t writable() const
-    {
-        size_t w = writePos.load(std::memory_order_relaxed);
-        size_t r = readPos.load(std::memory_order_relaxed);
-        return writable(w, r, bufferFrames);
     }
 };
 
@@ -160,7 +146,6 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
               << options->frames << "\n";
 }
 
-static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t inNumFrames, size_t* outNumFrames, bool loop)
 static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
 {
     size_t numFramesToRead = inNumFrames;
@@ -178,19 +163,24 @@ static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t
         numFramesRead += numFrames;
         if (!loop || numFramesToRead == 0)
             break;
+        // If looping, seek back to the beginning
         err = methcla_soundfile_seek(file, 0);
         if (err != kMethcla_FileNoError) return err;
     }
 
     *outNumFrames = numFramesRead;
-    assert( !loop || (*outNumFrames == inNumFrames) );
 
     return kMethcla_FileNoError;
 }
 
+static inline void finish(State* state)
+{
+    state->state.store(kFinished, std::memory_order_relaxed);
+}
+
 static inline void finish(Synth* self)
 {
-    self->state.state.store(kFinished, std::memory_order_relaxed);
+    finish(&self->state);
 }
 
 static void release_synth(const Methcla_World* world, void* data)
@@ -198,37 +188,53 @@ static void release_synth(const Methcla_World* world, void* data)
     methcla_world_release(world, (Methcla_Resource)data);
 }
 
-static void fill_buffer(const Methcla_Host* host, void* data)
+static void fill_buffer(State* self, bool loop)
 {
-    Methcla_Resource resource = (Methcla_Resource)data;
-    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
+    // std::cout << "fill_buffer\n";
 
-    assert( self->state.writable() >= self->state.transferFrames );
-    assert( (self->state.bufferFrames % self->state.transferFrames) == 0 );
+    const size_t transferFrames = self->transferFrames;
+    const size_t bufferFrames = self->bufferFrames;
+    const size_t writePos = self->writePos.load(std::memory_order_relaxed);
 
-    const size_t bufferFrames = self->state.bufferFrames;
-    const size_t transferFrames = self->state.transferFrames;
-    const size_t writePos = self->state.writePos.load(std::memory_order_relaxed);
+    assert( (bufferFrames % transferFrames) == 0 );
+    assert( State::writable(
+                writePos,
+                self->readPos.load(std::memory_order_acquire),
+                bufferFrames)
+            >= transferFrames );
 
     size_t numFrames;
     Methcla_FileError err = read_all(
-        self->state.file,
-        self->state.buffer + self->state.channels * writePos,
-        self->state.channels,
+        self->file,
+        self->buffer + self->channels * writePos,
+        self->channels,
         transferFrames,
         &numFrames,
-        self->loop);
+        loop);
     if (err != kMethcla_FileNoError) {
         finish(self);
         return;
     }
 
-    assert( !self->loop || (numFrames == transferFrames) );
+    assert( !loop || (numFrames == transferFrames) );
 
     const size_t nextWritePos = writePos + numFrames;
-    self->state.writePos.store(nextWritePos == bufferFrames ? 0 : nextWritePos, std::memory_order_relaxed);
-    self->state.state.store(kIdle, std::memory_order_release);
+    self->writePos.store(nextWritePos == bufferFrames ? 0 : nextWritePos, std::memory_order_release);
 
+    if (!loop && (numFrames < transferFrames)) {
+        self->state.store(kFinishing, std::memory_order_release);
+    } else {
+        self->state.store(kIdle, std::memory_order_release);
+    }
+}
+
+static void command_fill_buffer(const Methcla_Host* host, void* data)
+{
+    // std::cout << "fill_buffer\n";
+
+    Methcla_Resource resource = (Methcla_Resource)data;
+    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
+    fill_buffer(&self->state, self->loop);
     methcla_host_perform_command(host, release_synth, resource);
 }
 
@@ -246,7 +252,7 @@ inline static void init_buffer_cleanup(Synth* self)
     }
 }
 
-static void init_buffer(const Methcla_Host* host, void* data)
+static void command_init_buffer(const Methcla_Host* host, void* data)
 {
     Methcla_Resource resource = (Methcla_Resource)data;
     Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
@@ -298,7 +304,7 @@ static void init_buffer(const Methcla_Host* host, void* data)
                     self->state.file, self->state.buffer, self->state.transferFrames, &numFrames);
                 if (err == kMethcla_FileNoError) {
                     assert( numFrames == self->state.transferFrames );
-                    self->state.writePos.store(numFrames == self->state.bufferFrames ? 0 : numFrames, std::memory_order_relaxed);
+                    self->state.writePos.store(numFrames == self->state.bufferFrames ? 0 : numFrames, std::memory_order_release);
                     self->state.state.store(kIdle, std::memory_order_release);
                 } else {
                     init_buffer_cleanup(self);
@@ -328,13 +334,12 @@ construct( const Methcla_World* world
 
     self->loop = options->loop;
 
-    new (&self->state) State();
-    self->state.frames = options->frames;
+    new (&self->state) State(options->frames);
 
     // Need to retain a reference to the outer Synth, otherwise the self pointer might dangle if the synth is freed while the
     // async command is still being executed. This can be solved differently at the cost of allocating the State struct on the
     // realtime memory heap. Maybe cleaner and the API would keep smaller.
-    methcla_world_perform_command(world, init_buffer, methcla_world_synth_acquire_resource(world, self));
+    methcla_world_perform_command(world, command_init_buffer, methcla_world_synth_acquire_resource(world, self));
 }
 
 static void free_cb(const Methcla_Host*, void* data)
@@ -374,22 +379,26 @@ connect( Methcla_Synth* synth
 }
 
 inline static void
-process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
+process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1, StateVar state)
 {
     assert( self->state.file != nullptr );
 
-    // Check readable
-    // if state.readable < numFrames
-    // then output what's there, zero the rest and drop the corresponding amount the next time around?
-    const size_t readable = std::min(numFrames, self->state.readable());
-    const size_t readPos = self->state.readPos.load(std::memory_order_consume);
+    const size_t bufferFrames = self->state.bufferFrames;
+    const size_t writePos = self->state.writePos.load(std::memory_order_acquire);
+    const size_t readPos = self->state.readPos.load(std::memory_order_relaxed);
+
+    if (state == kIdle) {
+        if (State::writable(writePos, readPos, bufferFrames) >= self->state.transferFrames) {
+            // Trigger refill
+            self->state.state.store(kFilling, std::memory_order_relaxed);
+            methcla_world_perform_command(world, command_fill_buffer, methcla_world_synth_acquire_resource(world, self));
+        }
+    }
+
+    const size_t readable = std::min(numFrames, State::readable(writePos, readPos, bufferFrames));
     const size_t readable1 = std::min(readable, self->state.bufferFrames - readPos);
     const size_t readable2 = readable - readable1;
     const size_t channels = self->state.channels;
-
-    if (readable < numFrames) {
-        std::cerr << "process_disk: underrun " << numFrames - readable << "\n";
-    }
 
     if (channels == 1) {
         for (size_t k = 0; k < readable1; k++) {
@@ -408,8 +417,8 @@ process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, floa
             out1[k] = amp * buffer[j+1];
         }
         for (size_t k = 0; k < readable2; k++) {
-            const size_t j = k*channels;
             const size_t m = readable1+k;
+            const size_t j = k*channels;
             out0[m] = amp * buffer[j];
             out1[m] = amp * buffer[j+1];
         }
@@ -418,8 +427,19 @@ process_disk(Synth* self, size_t numFrames, float amp, const float* buffer, floa
         }
     }
 
+    if (readable < numFrames) {
+        if (state == kFinishing) {
+            self->state.state.store(kFinished, std::memory_order_relaxed);
+        }
+#if DEBUG
+        else {
+            std::cerr << "process_disk: underrun " << numFrames << " " << readable << " " << numFrames - readable << "\n";
+        }
+#endif
+    }
+
     const size_t nextReadPos = readable2 > 0 ? readable2 : readPos + readable1;
-    self->state.readPos.store(nextReadPos == self->state.bufferFrames ? 0 : nextReadPos, std::memory_order_relaxed);
+    self->state.readPos.store(nextReadPos == bufferFrames ? 0 : nextReadPos, std::memory_order_release);
 }
 
 inline static void
@@ -468,7 +488,7 @@ process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, fl
             pos += toPlay;
             if (pos >= self->state.frames)
                 pos = 0;
-            toPlay = std::min(numFrames - played, self->state.frames);
+            toPlay = std::min<size_t>(numFrames - played, self->state.frames);
         }
         self->state.readPos = pos;
     } else {
@@ -500,16 +520,12 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
     float* out1 = self->ports[kSampler_output_1];
     const float* buffer = self->state.buffer;
 
-    int state = self->state.state.load(std::memory_order_consume);
+    StateVar state = (StateVar)self->state.state.load(std::memory_order_consume);
     switch (state) {
         case kIdle:
-        if (self->state.writable() >= self->state.transferFrames) {
-            // Trigger refill
-            self->state.state.store(kFilling, std::memory_order_relaxed);
-            methcla_world_perform_command(world, fill_buffer, methcla_world_synth_acquire_resource(world, self));
-        }
         case kFilling:
-        process_disk(self, numFrames, amp, buffer, out0, out1);
+        case kFinishing:
+        process_disk(world, self, numFrames, amp, buffer, out0, out1, state);
         break;
         case kMemoryPlayback:
         process_memory(self, numFrames, amp, buffer, out0, out1);
