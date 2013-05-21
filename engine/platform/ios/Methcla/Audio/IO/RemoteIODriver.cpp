@@ -45,7 +45,7 @@ static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRa
 	desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
 }
 
-RemoteIODriver::RemoteIODriver() throw (IO::Exception)
+RemoteIODriver::RemoteIODriver()
     : m_numInputs(2)
     , m_numOutputs(2)
     , m_inputBuffers(0)

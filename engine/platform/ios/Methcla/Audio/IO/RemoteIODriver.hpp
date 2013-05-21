@@ -33,7 +33,7 @@ namespace Methcla { namespace Audio { namespace IO
     class RemoteIODriver : public Driver
     {
     public:
-        RemoteIODriver() throw (IO::Exception);
+        RemoteIODriver();
         virtual ~RemoteIODriver();
 
         virtual double sampleRate() const { return m_sampleRate; }
