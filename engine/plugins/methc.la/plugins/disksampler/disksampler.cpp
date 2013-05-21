@@ -156,9 +156,6 @@ static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t
         Methcla_FileError err =
             methcla_soundfile_read_float(file, buffer + channels * numFramesRead, numFramesToRead, &numFrames);
         if (err != kMethcla_FileNoError) return err;
-        if (numFrames == 0)
-            // EOF
-            break;
         numFramesToRead -= numFrames;
         numFramesRead += numFrames;
         if (!loop || numFramesToRead == 0)
