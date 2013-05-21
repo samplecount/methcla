@@ -76,6 +76,7 @@ commonBuildFlags = append compilerFlags [
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
   , (Just Cpp, flag "-fvisibility-inlines-hidden")
+  , (Nothing, flag "-fstrict-aliasing")
   ]
 
 -- | Build flags for static library
