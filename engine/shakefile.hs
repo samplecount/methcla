@@ -158,7 +158,7 @@ parseConfig x =
 configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
-        append compilerFlags [(Nothing, flag "-O2")]
+        append compilerFlags [(Nothing, flag "-O2" ++ flag "-fvisibility=hidden")]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
