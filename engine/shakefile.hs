@@ -75,7 +75,6 @@ commonBuildFlags = append compilerFlags [
     (Just C, flag "-std=c11")
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
   , (Nothing, flag "-Wall")
-  , (Nothing, flag "-fvisibility=hidden")
   , (Just Cpp, flag "-fvisibility-inlines-hidden")
   ]
 
