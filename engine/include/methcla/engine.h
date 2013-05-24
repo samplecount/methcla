@@ -19,33 +19,14 @@
 
 #include <methcla/common.h>
 #include <methcla/file.h>
-#include <methcla/plugin.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#define METHCLA_ENGINE_PREFIX   "http://methc.la/engine#"
-#define METHCLA_PLUGINS_URI     "http://methc.la/plugins"
-
 typedef struct
 {
-    const char* key;    //*< Option key URI.
-    const void* value;  //*< Option value.
-} Methcla_Option;
-
-#define METHCLA_END_OPTIONS { NULL, NULL }
-
-#define METHCLA_OPTIONS_URI                 "http://methc.la/engine/options"
-#define METHCLA_OPTIONS_PREFIX              METHCLA_OPTIONS_URI "#"
-
-#define METHCLA_OPTION__PLUGIN_PATH         METHCLA_OPTIONS_PREFIX "pluginPath"
-#define METHCLA_OPTION__PLUGIN_LIBRARIES    METHCLA_OPTIONS_PREFIX "pluginLibraries"
-
-typedef struct
-{
-    Methcla_LibraryFunction function;
-} Methcla_PluginLibrary;
-
-#define METHCLA_END_PLUGIN_LIBRARIES { NULL }
+    const void* data;
+    size_t      size;
+} Methcla_OSCPacket;
 
 typedef enum
 {
@@ -74,7 +55,7 @@ typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId requ
 typedef struct Methcla_Engine Methcla_Engine;
 
 //* Create a new engine with the given packet handling closure and options.
-METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options, Methcla_Engine** engine);
+METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine);
 
 //* Free the resources associated with engine.
 //

@@ -22,6 +22,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define METHCLA_PLUGINS_URI "http://methc.la/plugins"
+
 //* Realtime interface.
 typedef struct Methcla_World Methcla_World;
 

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <methcla/engine.h>
+#include <methcla/plugin.h>
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 
@@ -20,30 +21,10 @@
 #include <cstring>
 #include <iostream>
 #include <new>
+#include <oscpp/server.hpp>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-
-class Options
-{
-public:
-    Options(const Methcla_Option* options)
-    {
-        for (const Methcla_Option* cur = options; cur->key != nullptr; cur++) {
-            m_options[cur->key] = cur->value;
-        }
-    }
-
-    template <typename T> T lookup(const std::string& key, const T& def=nullptr)
-    {
-        auto it = m_options.find(key);
-        return it == m_options.end() ? def : static_cast<T>(it->second);
-    }
-
-private:
-    typedef std::unordered_map<std::string,const void*> OptionMap;
-    OptionMap m_options;
-};
 
 static const char* kNoErrorMsg = "no error";
 static const char* kBadAllocMsg = "memory allocation failure";
@@ -61,21 +42,34 @@ struct Methcla_Engine
         }
     };
 
-    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_Option* inOptions) noexcept
+    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions) noexcept
         : m_errorMessage(kNoErrorMsg)
     {
-        Options options(inOptions);
+        // Options options(inOptions);
+        OSC::Server::Packet packet(inOptions->data, inOptions->size);
 
         // TODO: Put this somewhere else
         std::list<Methcla_LibraryFunction> libs;
-        for ( auto it = options.lookup<const Methcla_PluginLibrary*>(METHCLA_OPTION__PLUGIN_LIBRARIES)
-            ; it->function != nullptr
-            ; it++ )
-        {
-            libs.push_back(it->function);
+        std::string pluginPath = ".";
+
+        if (packet.isBundle()) {
+            for (auto optionPacket : OSC::Server::Bundle(packet)) {
+                if (optionPacket.isMessage()) {
+                    OSC::Server::Message option(optionPacket);
+                    if (option == "/engine/option/plugin-library") {
+                        OSC::Blob x = option.args().blob();
+                        if (x.size == sizeof(Methcla_LibraryFunction)) {
+                            Methcla_LibraryFunction f;
+                            memcpy(&f, x.data, sizeof(Methcla_LibraryFunction));
+                            libs.push_back(f);
+                        }
+                    } else if (option == "/engine/option/plugin-path") {
+                        pluginPath = option.args().string();
+                    }
+                }
+            }
         }
 
-        const char* pluginPath = options.lookup<const char*>(METHCLA_OPTION__PLUGIN_PATH, ".");
         m_engine = new Methcla::Audio::Engine(
             m_pluginManager,
             PacketHandler { .handler = handler, .data = handlerData },
@@ -96,7 +90,7 @@ struct Methcla_Engine
     std::string                    m_errorBuffer;
 };
 
-Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_Option* options, Methcla_Engine** engine)
+Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
 {
     // cout << "Methcla_Engine_new" << endl;
     if (handler == nullptr)

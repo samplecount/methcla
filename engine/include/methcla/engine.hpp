@@ -211,10 +211,11 @@ namespace Methcla
     class Engine
     {
     public:
-        Engine(const Methcla_Option* options)
+        Engine(const OSC::Server::Packet& options)
             : m_requestId(kMethcla_Notification+1)
         {
-            check(nullptr, methcla_engine_new(handlePacket, this, options, &m_engine));
+            const Methcla_OSCPacket packet = { .data = options.data(), .size = options.size() };
+            check(nullptr, methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
         ~Engine()
         {

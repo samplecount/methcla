@@ -17,7 +17,7 @@
 #ifndef METHCLA_PLUGINS_SINE_H_INCLUDED
 #define METHCLA_PLUGINS_SINE_H_INCLUDED
 
-#include <methcla/engine.h>
+#include <methcla/plugin.h>
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_sine(const Methcla_Host*, const char*);
 #define METHCLA_PLUGINS_SINE_URI METHCLA_PLUGINS_URI "/sine"
