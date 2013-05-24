@@ -362,8 +362,6 @@ namespace Methcla
 
         void set(const SynthId& synth, size_t index, double value)
         {
-            std::cout << "Synth::set " << index << " " << value << std::endl;
-
             const char address[] = "/n_set";
             const size_t numArgs = 4;
             const size_t packetSize = OSC::Size::message(address, numArgs)
