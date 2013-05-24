@@ -71,10 +71,10 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     options->path = argStream.string();
     options->loop = argStream.atEnd() ? false : argStream.int32();
     options->numFrames = argStream.atEnd() ? -1 : argStream.int32();
-    std::cout << "Sampler: "
-              << options->path << " "
-              << options->loop << " "
-              << options->numFrames << "\n";
+    // std::cout << "Sampler: "
+    //           << options->path << " "
+    //           << options->loop << " "
+    //           << options->numFrames << "\n";
 }
 
 struct LoadMessage
@@ -88,7 +88,7 @@ struct LoadMessage
 
 static void set_buffer(const Methcla_World* world, void* data)
 {
-    std::cout << "set_buffer\n";
+    // std::cout << "set_buffer\n";
     LoadMessage* msg = (LoadMessage*)data;
     msg->synth->buffer = msg->buffer;
     msg->synth->channels = msg->numChannels;
@@ -98,7 +98,7 @@ static void set_buffer(const Methcla_World* world, void* data)
 
 static void load_sound_file(const Methcla_Host* host, void* data)
 {
-    std::cout << "load_sound_file\n";
+//    std::cout << "load_sound_file\n";
     LoadMessage* msg = (LoadMessage*)data;
 
     Methcla_SoundFile* file;
@@ -109,7 +109,7 @@ static void load_sound_file(const Methcla_Host* host, void* data)
         msg->numFrames = msg->numFrames < 0 ? info.frames : std::min<int64_t>(msg->numFrames, info.frames);
         msg->numChannels = info.channels;
         msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
-        std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
+        // std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
         // TODO: error handling
         if (msg->buffer != nullptr) {
             size_t numFrames;
@@ -123,7 +123,7 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 
 static void free_buffer_cb(const Methcla_Host*, void* data)
 {
-    std::cout << "free_buffer\n";
+    // std::cout << "free_buffer\n";
     free(data);
 }
 

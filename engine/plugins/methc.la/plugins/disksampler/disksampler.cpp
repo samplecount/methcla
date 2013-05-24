@@ -140,10 +140,10 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     options->path = argStream.string();
     options->loop = argStream.atEnd() ? false : argStream.int32();
     options->frames = argStream.atEnd() ? -1 : argStream.int32();
-    std::cout << "DiskSampler: "
-              << options->path << " "
-              << options->loop << " "
-              << options->frames << "\n";
+    // std::cout << "DiskSampler: "
+    //           << options->path << " "
+    //           << options->loop << " "
+    //           << options->frames << "\n";
 }
 
 static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
@@ -550,7 +550,7 @@ static const Methcla_SynthDef descriptor =
     destroy
 };
 
-static const Methcla_Library library = { NULL, NULL };
+static const Methcla_Library library = { nullptr, nullptr };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_disksampler(const Methcla_Host* host, const char* bundlePath)
 {
