@@ -106,8 +106,6 @@ namespace Methcla { namespace Audio
 
         const Epoch& epoch() const { return m_epoch; }
 
-        void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
-
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
 
@@ -128,6 +126,8 @@ namespace Methcla { namespace Audio
         operator const Methcla_World* () const { return &m_world; }
 
     protected:
+        friend class Engine;
+
         ResourceMap<NodeId,Node>& nodes()
         {
             return m_nodes;
@@ -151,6 +151,7 @@ namespace Methcla { namespace Audio
 
     private:
         static const size_t kQueueSize = 8192;
+        void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
         struct Request
         {
@@ -328,7 +329,7 @@ namespace Methcla { namespace Audio
         void stop();
 
     private:
-        static void processCallback(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs);
+        static void processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
     private:
         IO::Driver*     m_driver;

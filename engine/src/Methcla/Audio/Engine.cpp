@@ -175,7 +175,7 @@ void Environment::send(const void* packet, size_t size)
     m_requests.send(req);
 }
 
-void Environment::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
+void Environment::process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
 
@@ -526,7 +526,7 @@ void Engine::stop()
     m_driver->stop();
 }
 
-void Engine::processCallback(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs)
+void Engine::processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     static_cast<Engine*>(data)->m_env->process(numFrames, inputs, outputs);
 }

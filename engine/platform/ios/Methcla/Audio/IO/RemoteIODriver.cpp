@@ -389,9 +389,9 @@ OSStatus RemoteIODriver::RenderCallback(
 {
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inRefCon);
 
-	sample_t** inputBuffers = self->m_inputBuffers;
-	const UInt32 numOutputs = self->m_numOutputs;
-	sample_t** outputBuffers = self->m_outputBuffers;
+    const sample_t* const* inputBuffers = self->m_inputBuffers;
+    const UInt32 numOutputs = self->m_numOutputs;
+    sample_t* const* outputBuffers = self->m_outputBuffers;
 
 	for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
 		AudioBuffer& buf = ioData->mBuffers[bufCount];

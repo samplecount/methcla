@@ -26,7 +26,7 @@ struct Exception : virtual Methcla::Exception { };
 class Driver
 {
 public:
-    typedef void (*ProcessCallback)(void* data, size_t numFrames, sample_t** inputs, sample_t** outputs);
+    typedef void (*ProcessCallback)(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
     Driver();
     virtual ~Driver();
@@ -42,7 +42,7 @@ public:
     virtual void stop() = 0;
 
 protected:
-    void process(size_t numFrames, sample_t** inputs, sample_t** outputs);
+    void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
     
 private:
     struct Process

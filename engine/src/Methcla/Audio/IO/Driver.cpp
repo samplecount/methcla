@@ -18,7 +18,8 @@ void Driver::setProcessCallback(ProcessCallback callback, void* data)
     m_process.data = data;
 }
 
-void Driver::process(size_t numFrames, sample_t** inputs, sample_t** outputs)
+void Driver::process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
-    if (m_process.callback != nullptr) m_process.callback(m_process.data, numFrames, inputs, outputs);
+    if (m_process.callback != nullptr)
+        m_process.callback(m_process.data, numFrames, inputs, outputs);
 }
