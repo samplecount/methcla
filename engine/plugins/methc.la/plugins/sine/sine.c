@@ -50,11 +50,11 @@ port_descriptor( const Methcla_SynthOptions* options
     return false;
 }
 
-static void print_freq(const Methcla_Host* host, void* data)
-{
-    Sine* sine = (Sine*)data;
-    fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->ports[kSine_freq]);
-}
+// static void print_freq(const Methcla_Host* host, void* data)
+// {
+//     Sine* sine = (Sine*)data;
+//     fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->ports[kSine_freq]);
+// }
 
 static void
 construct( const Methcla_World* world
@@ -65,7 +65,7 @@ construct( const Methcla_World* world
     Sine* sine = (Sine*)synth;
     sine->phase = 0.;
     sine->freqToPhaseInc = 2.*M_PI/methcla_world_samplerate(world);
-    methcla_world_perform_command(world, print_freq, sine);
+    // methcla_world_perform_command(world, print_freq, sine);
 }
 
 static void
