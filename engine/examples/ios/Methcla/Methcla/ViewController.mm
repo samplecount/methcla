@@ -106,7 +106,8 @@ GLfloat gCubeVertexData[216] =
 
 @implementation ViewController
 {
-    Methcla::Engine* m_engine;
+    Methcla::Engine* engine;
+    NSMutableDictionary* synths;
 }
 
 - (void)viewDidLoad
@@ -122,12 +123,16 @@ GLfloat gCubeVertexData[216] =
     GLKView *view = (GLKView *)self.view;
     view.context = self.context;
     view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
-    
+
     [self setupGL];
 
+    // Enable multitouch
+    [self.view setMultipleTouchEnabled:YES];
+
+    // Set up sound engine
     try {
         // Initialize and configure the audio session
-        m_engine = makeEngine();
+        engine = makeEngine();
 //        m_engine->start();
 //    } catch (boost::exception& e) {
 //        if (OSStatus const* err = boost::get_error_info<Methcla::Audio::IO::OSStatusInfo>(e)) {
@@ -140,6 +145,10 @@ GLfloat gCubeVertexData[216] =
 //        }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
+    }
+
+    if (!synths) {
+        synths = [[NSMutableDictionary alloc] init];
     }
 }
 
@@ -416,4 +425,65 @@ GLfloat gCubeVertexData[216] =
     return YES;
 }
 
+- (CGPoint)relativeLocation:(UITouch*)touch inView:(UIView*)view
+{
+    const CGPoint pt = [touch locationInView:view];
+    const CGSize sz = view.bounds.size;
+    return { .x = pt.x / sz.width, .y = pt.y / sz.height };
+}
+
+struct SynthParams
+{
+    float freq;
+    float amp;
+};
+
+- (SynthParams)synthParamsForTouch:(UITouch*)touch
+{
+    const CGPoint pt = [self relativeLocation:touch inView:self.view];
+    return {
+        .freq = (1.f-pt.y) * 900.f + 100.f,
+        .amp = pt.x
+    };
+}
+
+- (void) touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event
+{
+//    NSLog(@"%@ %f", event, self.view.bounds.size.height);
+
+    for (UITouch* touch in touches) {
+        SynthParams ps = [self synthParamsForTouch:touch];
+        Methcla::SynthId synth = engine->synth(METHCLA_PLUGINS_SINE_URI, { ps.freq });
+        engine->mapOutput(synth, 0, Methcla::AudioBusId(1));
+//        std::cout << "Synth " << synth << " started: freq=" << ps.freq << " amp=" << ps.amp << std::endl;
+        [synths setObject:[NSNumber numberWithLong:(long)synth]
+                forKey:[NSValue valueWithPointer:(const void*)touch]];
+    }
+}
+
+- (void) touchesMoved:(NSSet*)touches withEvent:(UIEvent*)event
+{
+//    NSLog(@"%@", event);
+
+    for (UITouch* touch in touches) {
+        Methcla::SynthId synth([[synths objectForKey:[NSValue valueWithPointer:(const void*)touch]] longValue]);
+        SynthParams ps = [self synthParamsForTouch:touch];
+        engine->set(synth, 0, ps.freq);
+//        std::cout << "Synth " << synth << ": freq=" << ps.freq << " amp=" << ps.amp << std::endl;
+    }
+}
+
+- (void) touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    for (UITouch* touch in touches) {
+        Methcla::SynthId synth([[synths objectForKey:[NSValue valueWithPointer:(const void*)touch]] longValue]);
+        engine->freeNode(synth);
+//        std::cout << "Synth " << synth << " stopped" << std::endl;
+    }
+}
+
+- (void) touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    [self touchesEnded:touches withEvent:event];
+}
 @end
