@@ -110,6 +110,11 @@ namespace Methcla { namespace Audio
             return m_elems.size();
         }
 
+        bool contains(const Id& id) const
+        {
+            return m_elems[id] != nullptr;
+        }
+
         Id nextId()
         {
             for (size_t i=0; i < m_elems.size(); i++) {
