@@ -225,6 +225,7 @@ GLfloat gCubeVertexData[216] =
 
 - (void)update
 {
+#if 0
     float aspect = fabsf(self.view.bounds.size.width / self.view.bounds.size.height);
     GLKMatrix4 projectionMatrix = GLKMatrix4MakePerspective(GLKMathDegreesToRadians(65.0f), aspect, 0.1f, 100.0f);
     
@@ -250,6 +251,7 @@ GLfloat gCubeVertexData[216] =
     _modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
     
     _rotation += self.timeSinceLastUpdate * 0.5f;
+#endif
 }
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
