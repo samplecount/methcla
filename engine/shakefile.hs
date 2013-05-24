@@ -93,6 +93,11 @@ pluginSources = [
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
   , "plugins/methc.la/plugins/sine/sine.c" ]
 
+-- vectorBuildFlags :: CBuildFlags -> CBuildFlags
+-- vectorBuildFlags = append compilerFlags [
+--     (Nothing, [ "-O3", "-save-temps" ])
+--   ]
+
 methclaLib :: Platform -> Library
 methclaLib platform =
     Library "methcla" $ sourceFlags commonBuildFlags [
