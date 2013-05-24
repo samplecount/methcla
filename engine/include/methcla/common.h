@@ -50,4 +50,6 @@
 //* Audio sample type
 typedef float Methcla_AudioSample;
 
+METHCLA_EXPORT void methcla_init();
+
 #endif /* METHCLA_COMMON_H_INCLUDED */

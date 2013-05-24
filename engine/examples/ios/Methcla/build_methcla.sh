@@ -19,4 +19,7 @@ case $ACTION in
         TARGET="$PLATFORM_NAME"
 esac
 
-./shake -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET
+./shake -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET || exit $?
+
+# Touch this to force relinking against libmethcla.a in Xcode
+touch platform/xcode/methcla_init.c
