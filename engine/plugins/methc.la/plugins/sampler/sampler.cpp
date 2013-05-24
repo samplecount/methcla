@@ -83,7 +83,7 @@ struct LoadMessage
     size_t numChannels;
     int64_t numFrames;
     float* buffer;
-    char path[];
+    char* path;
 };
 
 static void set_buffer(const Methcla_World* world, void* data)
@@ -100,9 +100,11 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 {
 //    std::cout << "load_sound_file\n";
     LoadMessage* msg = (LoadMessage*)data;
+    assert( msg != nullptr );
 
-    Methcla_SoundFile* file;
+    Methcla_SoundFile* file = nullptr;
     Methcla_SoundFileInfo info;
+    memset(&info, 0, sizeof(info));
     Methcla_FileError err = methcla_host_soundfile_open(host, msg->path, kMethcla_Read, &file, &info);
 
     if (err == kMethcla_FileNoError) {
@@ -152,7 +154,9 @@ construct( const Methcla_World* world
 
     LoadMessage* msg = (LoadMessage*)methcla_world_alloc(world, sizeof(LoadMessage) + strlen(options->path)+1);
     msg->synth = self;
+    msg->numChannels = 0;
     msg->numFrames = options->numFrames;
+    msg->path = (char*)msg + sizeof(LoadMessage);
     strcpy(msg->path, options->path);
 
     methcla_world_perform_command(world, load_sound_file, msg);
