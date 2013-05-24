@@ -211,6 +211,7 @@ mkRules options = do
                             (mkBuildPrefix cTarget config)
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
+    applyEnv <- toolChainFromEnvironment
     fmap sequence_ $ sequence [
         do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
@@ -220,7 +221,7 @@ mkRules options = do
                 iphoneosLib <- do
                     let platform = iPhoneOS
                         cTarget = mkCTarget platform Armv7
-                        toolChain = cToolChain_IOS developer
+                        toolChain = applyEnv $ cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
                                    . staticBuidFlags
@@ -231,7 +232,7 @@ mkRules options = do
                 iphonesimulatorLib <- do
                     let platform = iPhoneSimulator
                         cTarget = mkCTarget platform I386
-                        toolChain = cToolChain_IOS_Simulator developer
+                        toolChain = applyEnv $ cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
                                    . staticBuidFlags
@@ -254,7 +255,7 @@ mkRules options = do
             jackBuildFlags <- liftIO $ pkgConfig "jack"
             let platform = macOSX
                 cTarget = mkCTarget platform X86_64
-                toolChain = cToolChain_MacOSX developer
+                toolChain = applyEnv $ cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
                            . jackBuildFlags

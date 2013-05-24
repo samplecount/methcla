@@ -26,6 +26,7 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
 import           Shakefile.Lens (append)
+import           System.Environment (getEnvironment)
 
 {-import Debug.Trace-}
 
@@ -196,7 +197,10 @@ tool f toolChain = maybe cmd (flip combine ("bin" </> cmd))
                          (toolChain ^. prefix)
     where cmd = toolChain ^. f
 
-
+toolChainFromEnvironment :: IO (CToolChain -> CToolChain)
+toolChainFromEnvironment = do
+  env <- getEnvironment
+  return $ maybe id (\cc -> set compilerCmd cc) (lookup "CC" env)
 
 defaultCBuildFlags :: CBuildFlags
 defaultCBuildFlags =
