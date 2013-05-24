@@ -208,12 +208,12 @@
 /* Begin PBXLegacyTarget section */
 		A5D0BA7116C2B32800C3A046 /* methcla */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "\"${PROJECT_DIR}/build_methcla.sh\" \"${PROJECT_DIR}/../../..\"";
+			buildArgumentsString = "${PROJECT_DIR}/build_methcla.sh";
 			buildConfigurationList = A5D0BA7216C2B32800C3A046 /* Build configuration list for PBXLegacyTarget "methcla" */;
 			buildPhases = (
 			);
 			buildToolPath = /bin/sh;
-			buildWorkingDirectory = "";
+			buildWorkingDirectory = "${PROJECT_DIR}/../../../";
 			dependencies = (
 			);
 			name = methcla;

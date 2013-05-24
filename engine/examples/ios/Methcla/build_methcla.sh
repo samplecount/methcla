@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# env
-echo $CONFIGURATION # Debug | Release
-
-ROOT_DIR="$1"
-
 case $ACTION in
     clean)
         TARGET=clean ;;
@@ -24,6 +19,4 @@ case $ACTION in
         TARGET="$PLATFORM_NAME"
 esac
 
-# CURRENT_ARCH
-cd "$ROOT_DIR" && ./shake -j`sysctl -n hw.ncpu` $TARGET
-
+./shake -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET
