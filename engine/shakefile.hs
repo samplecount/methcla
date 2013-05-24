@@ -74,7 +74,7 @@ commonBuildFlags :: CBuildFlags -> CBuildFlags
 commonBuildFlags = append compilerFlags [
     (Just C, flag "-std=c11")
   , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
-  , (Nothing, flag "-Wall")
+  , (Nothing, ["-Wall", "-Wstrict-aliasing=2"])
   , (Just Cpp, flag "-fvisibility-inlines-hidden")
   , (Nothing, flag "-fstrict-aliasing")
   ]
