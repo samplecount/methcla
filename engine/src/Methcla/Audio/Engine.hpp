@@ -25,7 +25,6 @@
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory/Manager.hpp"
-#include "Methcla/Utility/MessageQueue.hpp"
 
 #include <boost/utility.hpp>
 
@@ -58,9 +57,47 @@ namespace Methcla { namespace Audio
     struct ErrorInfoNodeIdTag { };
     typedef boost::error_info<ErrorInfoNodeIdTag, NodeId> ErrorInfoNodeId;
 
+    class Environment;
+
+    typedef void CommandData;
+
+    struct Command
+    {
+        typedef void (*PerformFunc)(Environment* env, void* data);
+
+        Command()
+            : m_env(nullptr)
+            , m_perform(nullptr)
+            , m_data(nullptr)
+                { }
+        Command(Environment* e, PerformFunc f, void* data=nullptr)
+            : m_env(e)
+            , m_perform(f)
+            , m_data(data)
+        { }
+        Command(const Command& other)
+            : m_env(other.m_env)
+            , m_perform(other.m_perform)
+            , m_data(other.m_data)
+        { }
+
+        void perform()
+        {
+            if (m_perform != nullptr)
+                m_perform(m_env, m_data);
+        }
+
+    private:
+        Environment* m_env;
+        PerformFunc  m_perform;
+        void*        m_data;
+    };
+
     class Group;
 
     typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;
+
+    class EnvironmentImpl;
 
     class Environment : public boost::noncopyable
     {
@@ -88,7 +125,7 @@ namespace Methcla { namespace Audio
             size_t numHardwareOutputChannels;
         };
 
-        Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options);
+        Environment(PluginManager& pluginManager, PacketHandler handler, const Options& options);
         ~Environment();
 
         const PluginManager& plugins() const { return m_plugins; }
@@ -126,6 +163,7 @@ namespace Methcla { namespace Audio
         operator const Methcla_World* () const { return &m_world; }
 
     protected:
+        friend class EnvironmentImpl;
         friend class Engine;
 
         ResourceMap<NodeId,Node>& nodes()
@@ -149,96 +187,21 @@ namespace Methcla { namespace Audio
         //* Return external audio input bus at index.
         AudioBus& externalAudioInput(size_t index);
 
-    private:
-        static const size_t kQueueSize = 8192;
         void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
+    private:
         struct Request
         {
             void* packet;
             size_t size;
-            void (*free)(void*);
         };
 
-        typedef Utility::MessageQueue<Request,kQueueSize> MessageQueue;
-
-        union CommandData
-        {
-            struct
-            {
-                void (*func)(void*);
-                void* ptr;
-            } free;
-
-            struct
-            {
-                Methcla_RequestId requestId;
-                union {
-                    uint32_t nodeId;
-                    char error[32];
-                } data;
-            } response;
-
-            struct
-            {
-                Methcla_HostPerformFunction perform;
-                void* data;
-            } hostCommand;
-
-            struct
-            {
-                Methcla_WorldPerformFunction perform;
-                void* data;
-            } worldCommand;
-        };
-
-        struct Command
-        {
-            typedef void (*PerformFunc)(Command& cmd);
-
-            Command()
-                : env(nullptr)
-                , performFunc(nullptr)
-            {
-                memset(&data, 0, sizeof(data));
-            }
-            Command(Environment* e, PerformFunc f)
-                : env(e)
-                , performFunc(f)
-            {
-                memset(&data, 0, sizeof(data));
-            }
-            Command(const Command& other)
-                : env(other.env)
-                , performFunc(other.performFunc)
-            {
-                memcpy(&data, &other.data, sizeof(data));
-            }
-            Command(Environment* e, PerformFunc f, Methcla_RequestId requestId)
-                : Command(e, f)
-            {
-                data.response.requestId = requestId;
-            }
-
-            void perform()
-            {
-                if (performFunc != nullptr) performFunc(*this);
-            }
-            
-            Environment* env;
-            PerformFunc  performFunc;
-            CommandData  data;
-        };
-
-        static void perform_free(Command&);
-        static void perform_response_ack(Command&);
-        static void perform_response_nodeId(Command&);
-        static void perform_response_error(Command&);
-        static void perform_response_query_external_inputs(Command&);
-        static void perform_response_query_external_outputs(Command&);
-
-        // Worker thread
-        typedef Utility::WorkerThread<Command,kQueueSize> Worker;
+        static void perform_free(Environment*, CommandData*);
+        static void perform_response_ack(Environment*, CommandData*);
+        static void perform_response_nodeId(Environment*, CommandData*);
+        static void perform_response_error(Environment*, CommandData*);
+        static void perform_response_query_external_inputs(Environment*, CommandData*);
+        static void perform_response_query_external_outputs(Environment*, CommandData*);
 
         void processRequests();
         void processMessage(const OSC::Server::Message& message);
@@ -271,25 +234,20 @@ namespace Methcla { namespace Audio
         //* Send a command from the realtime thread to the worker thread.
         //
         // Context: RT
-        void sendToWorker(const Command& cmd)
-        {
-            m_worker.sendToWorker(cmd);
-        }
+        void sendToWorker(const Command& cmd);
 
         //* Send a command from the worker thread to the realtime thread.
         //
         // Context: NRT
-        void sendFromWorker(const Command& cmd)
-        {
-            m_worker.sendFromWorker(cmd);
-        }
+        void sendFromWorker(const Command& cmd);
 
-        static void perform_worldCommand(Command&);
-        static void perform_hostCommand(Command&);
+        static void perform_worldCommand(Environment*, CommandData*);
+        static void perform_hostCommand(Environment*, CommandData*);
         static void methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
         static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
 
     private:
+        EnvironmentImpl*                        m_impl;
         const size_t                            m_sampleRate;
         const size_t                            m_blockSize;
         Memory::RTMemoryManager                 m_rtMem;
@@ -303,8 +261,6 @@ namespace Methcla { namespace Audio
         std::vector<ExternalAudioBus*>          m_audioInputChannels;
         std::vector<ExternalAudioBus*>          m_audioOutputChannels;
         Epoch                                   m_epoch;
-        MessageQueue                            m_requests;
-        Worker                                  m_worker;
         Methcla_Host                            m_host;
         Methcla_World                           m_world;
         std::list<const Methcla_SoundFileAPI*>  m_soundFileAPIs;
@@ -325,6 +281,7 @@ namespace Methcla { namespace Audio
             return *m_env;
         }
 
+        void makeSine();
         void start();
         void stop();
 

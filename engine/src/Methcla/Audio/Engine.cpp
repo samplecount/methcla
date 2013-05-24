@@ -15,6 +15,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
+#include "Methcla/Utility/MessageQueue.hpp"
 
 #include <boost/current_function.hpp>
 #include <cstdlib>
@@ -24,6 +25,28 @@
 using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
+
+class Methcla::Audio::EnvironmentImpl
+{
+public:
+    struct ErrorData
+    {
+        int32_t requestId;
+        char*   message;
+    };
+
+    static const size_t kQueueSize = 8192;
+
+    EnvironmentImpl()
+        : m_worker(kQueueSize, 2)
+    { }
+
+    typedef Utility::MessageQueue<Environment::Request,kQueueSize> MessageQueue;
+    typedef Utility::WorkerThread<Command> Worker;
+
+    MessageQueue m_requests;
+    Worker       m_worker;
+};
 
 static void methclaHostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
@@ -75,7 +98,7 @@ static Methcla_Synth* methcla_api_host_resource_get_synth(const Methcla_Host*, M
     return static_cast<Synth*>(resource)->asHandle();
 }
 
-Environment::Environment(PluginManager& pluginManager, const PacketHandler& handler, const Options& options)
+Environment::Environment(PluginManager& pluginManager, PacketHandler handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_rtMem(options.realtimeMemorySize)
@@ -84,10 +107,11 @@ Environment::Environment(PluginManager& pluginManager, const PacketHandler& hand
     , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_nodes(options.maxNumNodes)
-    , m_rootNode(Group::construct(*this, nodes().nextId(), nullptr, Node::kAddToTail))
     , m_epoch(0)
-    , m_worker(2)
 {
+    m_impl = new EnvironmentImpl();
+
+    m_rootNode = Group::construct(*this, m_nodes.nextId(), nullptr, Node::kAddToTail);
     m_nodes.insert(m_rootNode->id(), m_rootNode);
 
     const Epoch prevEpoch = epoch() - 1;
@@ -159,11 +183,6 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
-static void freePacket(void* packet)
-{
-    Memory::free(packet);
-}
-
 void Environment::send(const void* packet, size_t size)
 {
     char* myPacket = Memory::allocAlignedOf<char>(OSC::kAlignment, size);
@@ -171,8 +190,17 @@ void Environment::send(const void* packet, size_t size)
     Request req;
     req.packet = myPacket;
     req.size = size;
-    req.free = freePacket;
-    m_requests.send(req);
+    m_impl->m_requests.send(req);
+}
+
+void Environment::sendToWorker(const Command& cmd)
+{
+    m_impl->m_worker.sendToWorker(cmd);
+}
+
+void Environment::sendFromWorker(const Command& cmd)
+{
+    m_impl->m_worker.sendFromWorker(cmd);
 }
 
 void Environment::process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
@@ -183,14 +211,14 @@ void Environment::process(size_t numFrames, const sample_t* const* inputs, sampl
     processRequests();
 
     // Process non-realtime commands
-    m_worker.perform();
+    m_impl->m_worker.perform();
 
     const size_t numInputs = m_audioInputChannels.size();
     const size_t numOutputs = m_audioOutputChannels.size();
 
     // Connect input and output buses
     for (size_t i=0; i < numInputs; i++) {
-        m_audioInputChannels[i]->setData(inputs[i]);
+        m_audioInputChannels[i]->setData(const_cast<sample_t*>(inputs[i]));
         m_audioInputChannels[i]->setEpoch(epoch());
     }
     for (size_t i=0; i < numOutputs; i++) {
@@ -210,104 +238,116 @@ void Environment::process(size_t numFrames, const sample_t* const* inputs, sampl
     m_epoch++;
 }
 
-void Environment::perform_free(Command& cmd)
+static void perform_nrt_free(Environment* env, CommandData* data)
 {
-    cmd.data.free.func(cmd.data.free.ptr);
+    Methcla::Memory::free(data);
 }
 
-void Environment::perform_response_ack(Command& cmd)
+static void perform_rt_free(Environment* env, CommandData* data)
+{
+    env->rtMem().free(data);
+}
+
+void Environment::perform_response_ack(Environment* env, CommandData* data)
 {
     const char address[] = "/ack";
     const size_t numArgs = 1;
     const size_t packetSize = OSC::Size::message(address, numArgs)
                                 + OSC::Size::int32();
+    const int32_t requestId = *static_cast<int32_t*>(data);
     OSC::Client::StaticPacket<packetSize> packet;
     // OSC::Client::DynamicPacket packet(kPacketSize);
     packet
         .openMessage(address, numArgs)
-            .int32(cmd.data.response.requestId)
+            .int32(requestId)
         .closeMessage();
-    cmd.env->reply(cmd.data.response.requestId, packet);
+    env->reply(requestId, packet);
+    env->sendFromWorker(Command(env, perform_rt_free, data));
 }
 
-void Environment::perform_response_nodeId(Command& cmd)
+void Environment::perform_response_nodeId(Environment* env, CommandData* data)
 {
     const char address[] = "/ack";
     const size_t numArgs = 2;
     const size_t packetSize = OSC::Size::message(address, numArgs)
                                 + 2 * OSC::Size::int32();
+    const int32_t requestId = ((int32_t*)data)[0];
+    const int32_t nodeId = ((int32_t*)data)[1];
     OSC::Client::StaticPacket<packetSize> packet;
     // OSC::Client::DynamicPacket packet(kPacketSize);
     packet
         .openMessage(address, numArgs)
-            .int32(cmd.data.response.requestId)
-            .int32(cmd.data.response.data.nodeId)
+            .int32(requestId)
+            .int32(nodeId)
         .closeMessage();
-    cmd.env->reply(cmd.data.response.requestId, packet);
+    env->reply(requestId, packet);
+    env->sendFromWorker(Command(env, perform_rt_free, data));
 }
 
-void Environment::perform_response_error(Command& cmd)
+void Environment::perform_response_query_external_inputs(Environment* env, CommandData* data)
 {
+    // const char address[] = "/ack";
+    // const size_t numBuses = env->numExternalAudioInputs();
+    // const size_t numArgs = 1 + numBuses;
+    // const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
+    // OSC::Client::DynamicPacket packet(packetSize);
+    // packet.openMessage(address, numArgs);
+    // packet.int32(data->response.requestId);
+    // for (size_t i=0; i < numBuses; i++) {
+    //     packet.int32(env->externalAudioInput(i).id());
+    // }
+    // packet.closeMessage();
+    // env->reply(data->response.requestId, packet);
+}
+
+void Environment::perform_response_query_external_outputs(Environment* env, CommandData* data)
+{
+    // const char address[] = "/ack";
+    // const size_t numBuses = env->numExternalAudioOutputs();
+    // const size_t numArgs = 1 + numBuses;
+    // const size_t packetSize = OSC::Size::message(address, numArgs) +  numArgs * OSC::Size::int32();
+    // OSC::Client::DynamicPacket packet(packetSize);
+    // packet.openMessage(address, numArgs);
+    // packet.int32(data->response.requestId);
+    // for (size_t i=0; i < numBuses; i++) {
+    //     packet.int32(env->externalAudioOutput(i).id());
+    // }
+    // packet.closeMessage();
+    // env->reply(data->response.requestId, packet);
+}
+
+void Environment::perform_response_error(Environment* env, CommandData* commandData)
+{
+    EnvironmentImpl::ErrorData* data = (EnvironmentImpl::ErrorData*)commandData;
     const char address[] = "/error";
     const size_t numArgs = 2;
     const size_t packetSize = OSC::Size::message(address, numArgs)
-                                + OSC::Size::int32()
-                                + OSC::Size::string(sizeof(cmd.data.response.data.error));
-    OSC::Client::StaticPacket<packetSize> packet;
-    // OSC::Client::DynamicPacket packet(kPacketSize);
+                             + OSC::Size::int32()
+                             + OSC::Size::string(strlen(data->message));
+    OSC::Client::DynamicPacket packet(packetSize);
     packet
         .openMessage(address, numArgs)
-            .int32(cmd.data.response.requestId)
-            .string(cmd.data.response.data.error)
+            .int32(data->requestId)
+            .string(data->message)
         .closeMessage();
-    cmd.env->reply(cmd.data.response.requestId, packet);
-}
-
-void Environment::perform_response_query_external_inputs(Command& cmd)
-{
-    Environment* env = cmd.env;
-    const char address[] = "/ack";
-    const size_t numBuses = env->numExternalAudioInputs();
-    const size_t numArgs = 1 + numBuses;
-    const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
-    OSC::Client::DynamicPacket packet(packetSize);
-    packet.openMessage(address, numArgs);
-    packet.int32(cmd.data.response.requestId);
-    for (size_t i=0; i < numBuses; i++) {
-        packet.int32(env->externalAudioInput(i).id());
-    }
-    packet.closeMessage();
-    env->reply(cmd.data.response.requestId, packet);
-}
-
-void Environment::perform_response_query_external_outputs(Command& cmd)
-{
-    Environment* env = cmd.env;
-    const char address[] = "/ack";
-    const size_t numBuses = env->numExternalAudioOutputs();
-    const size_t numArgs = 1 + numBuses;
-    const size_t packetSize = OSC::Size::message(address, numArgs) +  numArgs * OSC::Size::int32();
-    OSC::Client::DynamicPacket packet(packetSize);
-    packet.openMessage(address, numArgs);
-    packet.int32(cmd.data.response.requestId);
-    for (size_t i=0; i < numBuses; i++) {
-        packet.int32(env->externalAudioOutput(i).id());
-    }
-    packet.closeMessage();
-    env->reply(cmd.data.response.requestId, packet);
+    env->reply(data->requestId, packet);
+    env->sendFromWorker(Command(env, perform_rt_free, data));
 }
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
-    Command cmd(this, perform_response_error, requestId);
-    strncpy(cmd.data.response.data.error, msg, sizeof(cmd.data.response.data.error));
-    sendToWorker(cmd);
+    EnvironmentImpl::ErrorData* data =
+        (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
+    data->requestId = requestId;
+    data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
+    strcpy(data->message, msg);
+    sendToWorker(Command(this, perform_response_error, data));
 }
 
 void Environment::processRequests()
 {
     Request msg;
-    while (m_requests.next(msg)) {
+    while (m_impl->m_requests.next(msg)) {
         try {
             OSC::Server::Packet packet(msg.packet, msg.size);
             if (packet.isBundle()) {
@@ -319,16 +359,15 @@ void Environment::processRequests()
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
         // Free packet in NRT thread
-        Command cmd(this, perform_free);
-        cmd.data.free.func = msg.free;
-        cmd.data.free.ptr  = msg.packet;
-        sendToWorker(cmd);
+        sendToWorker(Command(this, perform_nrt_free, msg.packet));
     }
 }
 
 void Environment::processMessage(const OSC::Server::Message& msg)
 {
+#if DEBUG
     std::cerr << "Request (recv): " << msg << std::endl;
+#endif
 
     auto args = msg.args();
     Methcla_RequestId requestId = args.int32();
@@ -361,9 +400,10 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 synthArgs);
             nodes().insert(synth->id(), synth);
 
-            Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = synth->id();
-            sendToWorker(cmd);
+            int32_t* data = rtMem().allocOf<int32_t>(2);
+            data[0] = requestId;
+            data[1] = synth->id();
+            sendToWorker(Command(this, perform_response_nodeId, data));
         } else if (msg == "/g_new") {
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
@@ -374,17 +414,27 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             Group* group = Group::construct(*this, nodes().nextId(), targetGroup, Node::kAddToTail);
             nodes().insert(group->id(), group);
 
-            Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = group->id();
-            sendToWorker(cmd);
+            int32_t* data = rtMem().allocOf<int32_t>(2);
+            data[0] = requestId;
+            data[1] = group->id();
+            sendToWorker(Command(this, perform_response_nodeId, data));
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
+
+            // Check node id validity
+            if (!nodes().contains(nodeId)) {
+                throw std::runtime_error("Invalid node id");
+            } else if (nodeId == rootNode()->id()) {
+                throw std::runtime_error("Cannot free root node");
+            }
+
             // Drop reference from node map
             m_nodes.remove(nodeId);
 
-            Command cmd(this, perform_response_nodeId, requestId);
-            cmd.data.response.data.nodeId = nodeId;
-            sendToWorker(cmd);
+            // Send reply
+            int32_t* data = rtMem().allocOf<int32_t>(1);
+            data[0] = requestId;
+            sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/n_set") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -397,7 +447,9 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 throw std::runtime_error("Control input index out of range");
             }
             synth->controlInput(index) = value;
-            sendToWorker(Command(this, perform_response_ack, requestId));
+            int32_t* data = rtMem().allocOf<int32_t>(1);
+            data[0] = requestId;
+            sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -415,11 +467,13 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             synth->mapOutput(index, busId, kOut);
 
             // Could reply with previous bus mapping
-            sendToWorker(Command(this, perform_response_ack, requestId));
+            int32_t* data = rtMem().allocOf<int32_t>(1);
+            data[0] = requestId;
+            sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/query/external_inputs") {
-            sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
+            // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
         } else if (msg == "/query/external_outputs") {
-            sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
+            // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
     } catch (Exception& e) {
         const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
@@ -466,32 +520,42 @@ const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) cons
     return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
 }
 
-void Environment::perform_worldCommand(Command& cmd)
+template <typename T> struct CallbackData
 {
-    cmd.data.worldCommand.perform(static_cast<const Methcla_World*>(*cmd.env), cmd.data.worldCommand.data);
+    T     func;
+    void* arg;
+};
+
+void Environment::perform_worldCommand(Environment* env, CommandData* data)
+{
+    auto self = (CallbackData<Methcla_WorldPerformFunction>*)data;
+    self->func(static_cast<const Methcla_World*>(*env), self->arg);
+    env->sendToWorker(Command(env, perform_nrt_free, data));
 }
 
-void Environment::perform_hostCommand(Command& cmd)
+void Environment::perform_hostCommand(Environment* env, CommandData* data)
 {
-    cmd.data.hostCommand.perform(static_cast<const Methcla_Host*>(*cmd.env), cmd.data.hostCommand.data);
+    auto self = (CallbackData<Methcla_HostPerformFunction>*)data;
+    self->func(static_cast<const Methcla_Host*>(*env), self->arg);
+    env->sendFromWorker(Command(env, perform_rt_free, data));
 }
 
 void Environment::methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(host->handle);
-    Command cmd(env, perform_worldCommand);
-    cmd.data.worldCommand.perform = perform;
-    cmd.data.worldCommand.data = data;
-    env->sendFromWorker(cmd);
+    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_WorldPerformFunction>>(1);
+    callbackData->func = perform;
+    callbackData->arg = data;
+    env->sendFromWorker(Command(env, perform_worldCommand, callbackData));
 }
 
 void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
-    Environment* self = static_cast<Environment*>(world->handle);
-    Command cmd(self, perform_hostCommand);
-    cmd.data.hostCommand.perform = perform;
-    cmd.data.hostCommand.data = data;
-    self->sendToWorker(cmd);
+    Environment* env = static_cast<Environment*>(world->handle);
+    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_HostPerformFunction>>(1);
+    callbackData->func = perform;
+    callbackData->arg = data;
+    env->sendToWorker(Command(env, perform_hostCommand, callbackData));
 }
 
 Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)
@@ -529,4 +593,30 @@ void Engine::stop()
 void Engine::processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     static_cast<Engine*>(data)->m_env->process(numFrames, inputs, outputs);
+}
+
+void Engine::makeSine()
+{
+    const std::shared_ptr<SynthDef> def = env().synthDef("http://methc.la/plugins/sine");
+
+    for (auto freq : { 440, 660, 880, 1320 }) {
+        OSC::Client::DynamicPacket packet(128);
+        packet.openMessage("/foo", 1);
+        packet.float32(freq);
+        packet.closeMessage();
+        auto synthControls = static_cast<OSC::Server::Message>(OSC::Server::Packet(packet.data(), packet.size())).args();
+        auto synthOptions = OSC::Server::ArgStream();
+
+        Synth* synth = Synth::construct(
+            env(),
+            env().nodes().nextId(),
+            env().rootNode(),
+            Node::kAddToTail,
+            *def,
+            synthControls,
+            synthOptions);
+        env().nodes().insert(synth->id(), synth);
+
+        synth->mapOutput(0, AudioBusId(1), kOut);
+    }
 }
