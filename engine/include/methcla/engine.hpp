@@ -40,7 +40,9 @@ namespace Methcla
 {
     inline static void dumpRequest(std::ostream& out, const OSC::Server::Packet& packet)
     {
+#if DEBUG
         out << "Request (send): " << packet << std::endl;
+#endif
     }
 
     inline static std::exception_ptr responseToException(const OSC::Server::Packet& packet)
@@ -330,7 +332,7 @@ namespace Methcla
                     int32_t requestId_ = args.int32();
                     BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
                     int32_t nodeId = args.int32();
-                    std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
+                    // std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
                     result.set(SynthId(nodeId));
                 }
             });
