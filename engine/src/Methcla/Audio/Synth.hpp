@@ -16,6 +16,7 @@
 #define METHCLA_AUDIO_SYNTH_HPP_INCLUDED
 
 #include "Methcla/Audio/AudioBus.hpp"
+// #include "Methcla/Audio/DSP.h"
 #include "Methcla/Audio/Engine.hpp"
 
 #include <boost/intrusive/list.hpp>
@@ -138,6 +139,7 @@ public:
                 if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
                     // Accumulate
                     sample_t* dst = bus->data();
+                    // accumulate(dst, src, numFrames);
                     for (size_t i=0; i < numFrames; i++) {
                         dst[i] += src[i];
                     }
