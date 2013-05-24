@@ -90,7 +90,7 @@ namespace Methcla
 
             void set_exception(std::exception_ptr exc)
             {
-                BOOST_ASSERT(m_cond);
+                BOOST_ASSERT(!m_cond);
                 std::lock_guard<std::mutex> lock(m_mutex);
                 m_exc = exc;
                 notify();
