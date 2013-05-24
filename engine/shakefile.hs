@@ -163,11 +163,11 @@ parseConfig x =
 configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
-        append compilerFlags [(Nothing, flag "-Os" ++ flag "-gdwarf-2" ++ flag "-fvisibility=hidden")]
+        append compilerFlags [(Nothing, ["-O2", "-gdwarf-2", "-fvisibility=hidden"])]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
-        append compilerFlags [(Nothing, flag "-O0" ++ flag "-gdwarf-2")]
+        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2"])]
       . append defines [("DEBUG", Just "1")]
     )
   ]
