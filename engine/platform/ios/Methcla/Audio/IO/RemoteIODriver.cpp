@@ -33,16 +33,16 @@ const AudioUnitElement kInputBus = 1;
 
 static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRate, UInt32 numChannels)
 {
-	memset(&desc, 0, sizeof(desc));
-	desc.mSampleRate = sampleRate;
-	desc.mFormatID = kAudioFormatLinearPCM;
-	// desc.mFormatFlags = kAudioFormatFlagsNativeFloatPacked | kAudioFormatFlagIsNonInterleaved;
-	desc.mFormatFlags = kAudioFormatFlagsCanonical;
-	desc.mChannelsPerFrame = numChannels;
-	desc.mBitsPerChannel = 8 * sizeof(AudioSampleType);
-	desc.mBytesPerFrame = desc.mChannelsPerFrame * sizeof(AudioSampleType);
-	desc.mFramesPerPacket = 1;
-	desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
+    memset(&desc, 0, sizeof(desc));
+    desc.mSampleRate = sampleRate;
+    desc.mFormatID = kAudioFormatLinearPCM;
+    // desc.mFormatFlags = kAudioFormatFlagsNativeFloatPacked | kAudioFormatFlagIsNonInterleaved;
+    desc.mFormatFlags = kAudioFormatFlagsCanonical;
+    desc.mChannelsPerFrame = numChannels;
+    desc.mBitsPerChannel = 8 * sizeof(AudioSampleType);
+    desc.mBytesPerFrame = desc.mChannelsPerFrame * sizeof(AudioSampleType);
+    desc.mFramesPerPacket = 1;
+    desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
 }
 
 RemoteIODriver::RemoteIODriver()
@@ -83,25 +83,25 @@ RemoteIODriver::RemoteIODriver()
 
     Float32 hwBufferSize;
     outSize = sizeof(hwBufferSize);
-	METHCLA_THROW_IF_ERROR(
-	    AudioSessionGetProperty(
+    METHCLA_THROW_IF_ERROR(
+        AudioSessionGetProperty(
             kAudioSessionProperty_CurrentHardwareIOBufferDuration
           , &outSize
           , &hwBufferSize)
       , "couldn't set i/o buffer duration");
     
     // Check whether input is available
-	UInt32 inputAvailable;
+    UInt32 inputAvailable;
     outSize = sizeof(inputAvailable);
-	METHCLA_THROW_IF_ERROR(
+    METHCLA_THROW_IF_ERROR(
         AudioSessionGetProperty(
             kAudioSessionProperty_AudioInputAvailable
-          ,	&outSize
-          ,	&inputAvailable)
+          , &outSize
+          , &inputAvailable)
       , "couldn't determine whether audio input is available");
 
-	// Number of hardware inputs
-	UInt32 hwNumInputs = 0;
+    // Number of hardware inputs
+    UInt32 hwNumInputs = 0;
     if (inputAvailable) {
         outSize = sizeof(hwNumInputs);
         METHCLA_THROW_IF_ERROR(
@@ -113,16 +113,16 @@ RemoteIODriver::RemoteIODriver()
     }
     m_numInputs = hwNumInputs;
 
-	// Number of hardware outputs
-	UInt32 hwNumOutputs;
+    // Number of hardware outputs
+    UInt32 hwNumOutputs;
     outSize = sizeof(m_numOutputs);
-	METHCLA_THROW_IF_ERROR(
-	    AudioSessionGetProperty(
+    METHCLA_THROW_IF_ERROR(
+        AudioSessionGetProperty(
             kAudioSessionProperty_CurrentHardwareOutputNumberChannels
           , &outSize
           , &hwNumOutputs)
      ,  "couldn't determine number of hardware output channels");
-	m_numOutputs = hwNumOutputs;
+    m_numOutputs = hwNumOutputs;
 
     // Float32 preferredBufferSize = .005;
     // METHCLA_THROW_IF_ERROR(
@@ -139,7 +139,7 @@ RemoteIODriver::RemoteIODriver()
     
     AudioComponent comp = AudioComponentFindNext(NULL, &desc);
     
-	// Instantiate remote I/O unit
+    // Instantiate remote I/O unit
     METHCLA_THROW_IF_ERROR(
         AudioComponentInstanceNew(comp, &m_rioUnit)
       , "couldn't open the remote I/O unit");
@@ -221,8 +221,8 @@ RemoteIODriver::RemoteIODriver()
     }
 
     // Set output format
-	AudioStreamBasicDescription outputFormat;
-	initStreamFormat(outputFormat, m_sampleRate, m_numOutputs);
+    AudioStreamBasicDescription outputFormat;
+    initStreamFormat(outputFormat, m_sampleRate, m_numOutputs);
     METHCLA_THROW_IF_ERROR(
         AudioUnitSetProperty(
             m_rioUnit
@@ -271,7 +271,7 @@ RemoteIODriver::RemoteIODriver()
           , sizeof(outputCallback))
       , "couldn't set remote i/o output callback");
     
-	// Initialize audio unit
+    // Initialize audio unit
     METHCLA_THROW_IF_ERROR(
         AudioUnitInitialize(m_rioUnit)
       , "couldn't initialize the remote I/O unit");
@@ -291,8 +291,8 @@ RemoteIODriver::RemoteIODriver()
 
 RemoteIODriver::~RemoteIODriver()
 {
-	// Free audio units
-	AudioComponentInstanceDispose(m_rioUnit);
+    // Free audio units
+    AudioComponentInstanceDispose(m_rioUnit);
 
     // Free input buffer memory
     for (size_t i=0; i < m_numInputs; i++) {
@@ -349,7 +349,7 @@ OSStatus RemoteIODriver::InputCallback(
 
     AudioBufferList* ioData = &bufferList;
 
-	// Pull data from input bus
+    // Pull data from input bus
     OSStatus err = AudioUnitRender(
         self->m_rioUnit
       , ioActionFlags
@@ -359,22 +359,22 @@ OSStatus RemoteIODriver::InputCallback(
       , ioData);
     if (err != noErr) return err;
 
-	const UInt32 numInputs = self->m_numInputs;
-	sample_t** inputBuffers = self->m_inputBuffers;
+    const UInt32 numInputs = self->m_numInputs;
+    sample_t** inputBuffers = self->m_inputBuffers;
 
-	for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
-		AudioBuffer& buf = ioData->mBuffers[bufCount];
-		BOOST_ASSERT( buf.mNumberChannels == numInputs );
+    for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
+        AudioBuffer& buf = ioData->mBuffers[bufCount];
+        BOOST_ASSERT( buf.mNumberChannels == numInputs );
 
-		AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
+        AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
 
-		// Deinterleave and convert input
-		for (UInt32 curChan = 0; curChan < numInputs; curChan++) {
-			for (UInt32 curFrame = 0; curFrame < inNumberFrames; curFrame++) {
-				inputBuffers[curChan][curFrame] = pcm[curFrame * numInputs + curChan] / 32768.f;
-			}
-		}
-	}
+        // Deinterleave and convert input
+        for (UInt32 curChan = 0; curChan < numInputs; curChan++) {
+            for (UInt32 curFrame = 0; curFrame < inNumberFrames; curFrame++) {
+                inputBuffers[curChan][curFrame] = pcm[curFrame * numInputs + curChan] / 32768.f;
+            }
+        }
+    }
 
     return noErr;
 }
@@ -393,18 +393,18 @@ OSStatus RemoteIODriver::RenderCallback(
     const UInt32 numOutputs = self->m_numOutputs;
     sample_t* const* outputBuffers = self->m_outputBuffers;
 
-	for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
-		AudioBuffer& buf = ioData->mBuffers[bufCount];
-		BOOST_ASSERT( buf.mNumberChannels == numOutputs );
+    for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
+        AudioBuffer& buf = ioData->mBuffers[bufCount];
+        BOOST_ASSERT( buf.mNumberChannels == numOutputs );
 
-		AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
+        AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
 
-	    // Run DSP graph
+        // Run DSP graph
         self->process(inNumberFrames, inputBuffers, outputBuffers);
 
-	    // Convert and interleave output
-		for (UInt32 curChan = 0; curChan < numOutputs; curChan++) {
-			for (UInt32 curFrame = 0; curFrame < inNumberFrames; curFrame++) {
+        // Convert and interleave output
+        for (UInt32 curChan = 0; curChan < numOutputs; curChan++) {
+            for (UInt32 curFrame = 0; curFrame < inNumberFrames; curFrame++) {
 #if METHCLA_AUDIO_THROUGH
                 if (curChan < self->m_numInputs) {
                     pcm[curFrame * numOutputs + curChan] = inputBuffers[curChan][curFrame] * 32767.f;
@@ -414,9 +414,9 @@ OSStatus RemoteIODriver::RenderCallback(
 #else
                 pcm[curFrame * numOutputs + curChan] = outputBuffers[curChan][curFrame] * 32767.f;
 #endif
-			}
-		}
-	}
+            }
+        }
+    }
 
     return noErr;
 }
