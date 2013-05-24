@@ -16,9 +16,11 @@
 #define METHCLA_ENGINE_HPP_INCLUDED
 
 #include <methcla/engine.h>
+#include <methcla/plugin.h>
 
 #include <future>
 #include <iostream>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -208,13 +210,58 @@ namespace Methcla
         std::string m_string;
     };
 
+    class Option
+    {
+    public:
+        virtual ~Option() { }
+        virtual void put(OSC::Client::Packet& packet) const = 0;
+    };
+
+    class OptionPluginLibrary : public Option
+    {
+    public:
+        OptionPluginLibrary(Methcla_LibraryFunction f)
+            : m_function(f)
+        { }
+
+        virtual void put(OSC::Client::Packet& packet) const override
+        {
+            char buffer[sizeof(Methcla_LibraryFunction)];
+            std::memcpy(buffer, &m_function, sizeof(Methcla_LibraryFunction));
+            OSC::Blob b = {
+                .data = buffer,
+                .size = sizeof(Methcla_LibraryFunction)
+            };
+            packet
+                .openMessage("/engine/option/plugin-library", 1)
+                .blob(b)
+                .closeMessage();
+        }
+
+    private:
+        Methcla_LibraryFunction m_function;
+    };
+
+    inline std::shared_ptr<Option> optionPluginLibrary(Methcla_LibraryFunction f)
+    {
+        return std::make_shared<OptionPluginLibrary>(f);
+    }
+
+    typedef std::vector<std::shared_ptr<Option>> Options;
+
     class Engine
     {
     public:
-        Engine(const OSC::Server::Packet& options)
+        Engine(const Options& options)
             : m_requestId(kMethcla_Notification+1)
         {
-            const Methcla_OSCPacket packet = { .data = options.data(), .size = options.size() };
+            OSC::Client::DynamicPacket bundle(8192);
+            bundle.openBundle(1);
+            for (auto option : options) {
+                option->put(bundle);
+            }
+            bundle.closeBundle();
+            const Methcla_OSCPacket packet = { .data = bundle.data(), .size = bundle.size() };
             check(nullptr, methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
         ~Engine()
