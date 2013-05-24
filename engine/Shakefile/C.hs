@@ -289,8 +289,11 @@ sourceTree_ f fs = sourceTree f fs []
 sourceFlags :: (a -> a) -> [SourceTree a] -> SourceTree a
 sourceFlags f = sourceTree f []
 
-sourceFiles :: [FilePath] -> [(FilePath, [FilePath])]
-sourceFiles = map (flip (,) [])
+sourceFiles :: [(FilePath, [FilePath])] -> SourceTree a
+sourceFiles fs = sourceTree id fs []
+
+sourceFiles_ :: [FilePath] -> SourceTree a
+sourceFiles_ = sourceFiles . map (flip (,) [])
 
 applySourceTree :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
 applySourceTree = go

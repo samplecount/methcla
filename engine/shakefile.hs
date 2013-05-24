@@ -96,51 +96,56 @@ pluginSources = [
 methclaLib :: Platform -> Library
 methclaLib platform =
     Library "methcla" $ sourceFlags commonBuildFlags [
-        sourceTree_ boostBuildFlags $ sourceFiles $
-            under (boostDir </> "libs") [
-              --   "date_time/src/gregorian/date_generators.cpp"
-              -- , "date_time/src/gregorian/greg_month.cpp"
-              -- , "date_time/src/gregorian/greg_weekday.cpp"
-              -- , "date_time/src/gregorian/gregorian_types.cpp"
-              -- , "date_time/src/posix_time/posix_time_types.cpp"
-              -- , "exception/src/clone_current_exception_non_intrusive.cpp"
-              -- , "system/src/error_code.cpp"
-              ]
-        -- TLSF
-      , sourceTree_ id $ sourceFiles $ [
-            tlsfDir </> "tlsf.c" ]
-        -- engine
-      , sourceTree_ (engineBuildFlags platform) $ sourceFiles $
-            under "src" [
-                "Methcla/API.cpp"
-              , "Methcla/Audio/AudioBus.cpp"
-              , "Methcla/Audio/Engine.cpp"
-              , "Methcla/Audio/Group.cpp"
-              , "Methcla/Audio/IO/Driver.cpp"
-              , "Methcla/Audio/Node.cpp"
-              -- , "Methcla/Audio/Resource.cpp"
-              , "Methcla/Audio/Synth.cpp"
-              , "Methcla/Audio/SynthDef.cpp"
-              , "Methcla/Memory/Manager.cpp"
-              , "Methcla/Memory.cpp"
-              , "Methcla/Plugin/Loader.cpp"
-              , "Methcla/Utility/Semaphore.cpp"
-              ]
-            -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
-            -- plugins
-            ++ pluginSources
-            -- platform dependent
-            ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
-                then under "platform/ios" [ "Methcla/Audio/IO/RemoteIODriver.cpp" ]
-                else if platform == macOSX
-                     then under "platform/jack" [ "Methcla/Audio/IO/JackDriver.cpp" ]
-                     else [])
+        sourceFlags boostBuildFlags [ sourceFiles_ $
+          under (boostDir </> "libs") [
+            --   "date_time/src/gregorian/date_generators.cpp"
+            -- , "date_time/src/gregorian/greg_month.cpp"
+            -- , "date_time/src/gregorian/greg_weekday.cpp"
+            -- , "date_time/src/gregorian/gregorian_types.cpp"
+            -- , "date_time/src/posix_time/posix_time_types.cpp"
+            -- , "exception/src/clone_current_exception_non_intrusive.cpp"
+            "system/src/error_code.cpp"
+            ]
         ]
+        -- TLSF
+      , sourceFiles_ [ tlsfDir </> "tlsf.c" ]
+        -- engine
+      , sourceFlags (engineBuildFlags platform) [
+          sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
+            [ sourceFiles_ [ "src/Methcla/Audio/Engine.cpp" ] ],
+          sourceFiles_ $
+          [ "src/Methcla/API.cpp"
+          , "src/Methcla/Audio/AudioBus.cpp"
+          -- , "src/Methcla/Audio/Engine.cpp"
+          , "src/Methcla/Audio/Group.cpp"
+          , "src/Methcla/Audio/IO/Driver.cpp"
+          , "src/Methcla/Audio/Node.cpp"
+          -- , "src/Methcla/Audio/Resource.cpp"
+          , "src/Methcla/Audio/Synth.cpp"
+          , "src/Methcla/Audio/SynthDef.cpp"
+          , "src/Methcla/Memory/Manager.cpp"
+          , "src/Methcla/Memory.cpp"
+          , "src/Methcla/Plugin/Loader.cpp"
+          , "src/Methcla/Utility/Semaphore.cpp"
+          ]
+          -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
+          -- plugins
+          ++ pluginSources
+          -- platform dependent
+          ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
+              then [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp" ]
+              else if platform == macOSX
+                   then [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp" ]
+                   else [])
+      -- , sourceTree_ (vectorBuildFlags . engineBuildFlags platform) $ sourceFiles $
+      --     under "src" [ "Methcla/Audio/DSP.c" ]
+          ]
+      ]
 
 plugins :: Platform -> [Library]
 plugins platform = [
     -- TODO: Provide more SourceTree combinators
-    Library "sine" $ sourceTree_ (engineBuildFlags platform) $ sourceFiles [ "plugins/methc.la/plugins/sine/sine.c" ]
+    Library "sine" $ sourceFlags (engineBuildFlags platform) [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
   ]
 
 -- ====================================================================
