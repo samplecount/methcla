@@ -25,7 +25,7 @@ Methcla::Engine* makeEngine()
 //    NSString* resources = [[NSBundle mainBundle] resourcePath];
 //    NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
 
-    Methcla::Engine* engine = new Methcla::Engine({ Methcla::optionPluginLibrary(methcla_plugins_sine) });
+    Methcla::Engine* engine = new Methcla::Engine({ Methcla::Option::pluginLibrary(methcla_plugins_sine) });
     engine->start();
 
     return engine;

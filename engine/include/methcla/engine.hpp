@@ -217,6 +217,8 @@ namespace Methcla
     public:
         virtual ~Option() { }
         virtual void put(OSC::Client::Packet& packet) const = 0;
+
+        static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f);
     };
 
     class OptionPluginLibrary : public Option
@@ -244,7 +246,7 @@ namespace Methcla
         Methcla_LibraryFunction m_function;
     };
 
-    inline std::shared_ptr<Option> optionPluginLibrary(Methcla_LibraryFunction f)
+    std::shared_ptr<Option> Option::pluginLibrary(Methcla_LibraryFunction f)
     {
         return std::make_shared<OptionPluginLibrary>(f);
     }
