@@ -65,7 +65,7 @@ namespace Methcla
     BOOST_STRONG_TYPEDEF(int32_t, SynthId);
     BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
 
-    namespace impl
+    namespace detail
     {
         struct Result : boost::noncopyable
         {
@@ -105,7 +105,7 @@ namespace Methcla
         };
     };
 
-    template <class T> class Result : impl::Result
+    template <class T> class Result : detail::Result
     {
     public:
         void set(std::exception_ptr exc)
@@ -131,7 +131,7 @@ namespace Methcla
         T m_value;
     };
 
-    template <> class Result<void> : impl::Result
+    template <> class Result<void> : detail::Result
     {
     public:
         void set(std::exception_ptr exc)
