@@ -154,13 +154,10 @@ public:
 
     void drain()
     {
-        for (;;) {
-            Command cmd;
+        Command cmd;
+        while (dequeue(cmd)) {
             METHCLA_WORKER_MEMORY_BARRIER;
-            bool success = dequeue(cmd);
-            METHCLA_WORKER_MEMORY_BARRIER;
-            if (success) cmd.perform();
-            else break;
+            cmd.perform();
         }
     }
 
