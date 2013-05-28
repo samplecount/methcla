@@ -48,32 +48,32 @@ public:
     Worker       m_worker;
 };
 
-static void methclaHostRegisterSynthDef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
+static void methcla_api_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
     return static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
 }
 
-static const Methcla_SoundFileAPI* methclaHostSoundFileAPI(const Methcla_Host* host, const char* mimeType)
+static const Methcla_SoundFileAPI* methcla_api_host_get_soundfile_api(const Methcla_Host* host, const char* mimeType)
 {
     return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
 }
 
-static double methclaWorldSampleRate(const Methcla_World* world)
+static double methcla_api_world_samplerate(const Methcla_World* world)
 {
     return static_cast<Environment*>(world->handle)->sampleRate();
 }
 
-static void* methclaWorldAlloc(const Methcla_World* world, size_t size)
+static void* methcla_api_world_alloc(const Methcla_World* world, size_t size)
 {
     return static_cast<Environment*>(world->handle)->rtMem().alloc(size);
 }
 
-static void* methclaWorldAllocAligned(const Methcla_World* world, size_t alignment, size_t size)
+static void* methcla_api_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
 {
     return static_cast<Environment*>(world->handle)->rtMem().allocAligned(alignment, size);
 }
 
-static void methclaWorldFree(const Methcla_World* world, void* ptr)
+static void methcla_api_world_free(const Methcla_World* world, void* ptr)
 {
     return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
 }
@@ -144,20 +144,20 @@ Environment::Environment(PluginManager& pluginManager, PacketHandler handler, co
     // Initialize Methcla_Host interface
     m_host = {
         .handle = this,
-        .registerSynthDef = methclaHostRegisterSynthDef,
-        .soundFileAPI = methclaHostSoundFileAPI,
-        .performCommand = methcla_api_host_perform_command,
+        .register_synthdef = methcla_api_host_register_synthdef,
+        .get_soundfile_api = methcla_api_host_get_soundfile_api,
+        .perform_command = methcla_api_host_perform_command,
         .resource_get_synth = methcla_api_host_resource_get_synth
     };
 
     // Initialize Methcla_World interface
     m_world = {
         .handle = this,
-        .sampleRate = methclaWorldSampleRate,
-        .alloc = methclaWorldAlloc,
-        .allocAligned = methclaWorldAllocAligned,
-        .free = methclaWorldFree,
-        .performCommand = methcla_api_world_perform_command,
+        .samplerate = methcla_api_world_samplerate,
+        .alloc = methcla_api_world_alloc,
+        .alloc_aligned = methcla_api_world_alloc_aligned,
+        .free = methcla_api_world_free,
+        .perform_command = methcla_api_world_perform_command,
         .retain = methcla_api_world_resource_retain,
         .release = methcla_api_world_resource_release,
         .synth_get_resource = methcla_api_world_synth_get_resource,

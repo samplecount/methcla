@@ -46,15 +46,15 @@ struct Methcla_World
     void* handle;
 
     //* Return engine sample rate.
-    double (*sampleRate)(const struct Methcla_World* world);
+    double (*samplerate)(const struct Methcla_World* world);
 
     // Realtime memory allocation
     void* (*alloc)(const struct Methcla_World* world, size_t size);
-    void* (*allocAligned)(const struct Methcla_World* world, size_t alignment, size_t size);
+    void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
     void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    void (*performCommand)(const struct Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+    void (*perform_command)(const struct Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
 
     //* Reference counted resources.
     void (*retain)(const struct Methcla_World* world, Methcla_Resource resource);
@@ -66,7 +66,7 @@ struct Methcla_World
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
 {
-    return world->sampleRate(world);
+    return world->samplerate(world);
 }
 
 static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
@@ -76,7 +76,7 @@ static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
 
 static inline void* methcla_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
 {
-    return world->allocAligned(world, alignment, size);
+    return world->alloc_aligned(world, alignment, size);
 }
 
 static inline void methcla_world_free(const Methcla_World* world, void* ptr)
@@ -86,7 +86,7 @@ static inline void methcla_world_free(const Methcla_World* world, void* ptr)
 
 static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
-    world->performCommand(world, perform, data);
+    world->perform_command(world, perform, data);
 }
 
 static inline void methcla_world_retain(const Methcla_World* world, Methcla_Resource resource)
@@ -184,13 +184,13 @@ typedef struct Methcla_Host
     void* handle;
 
     //* Register a synth definition.
-    void (*registerSynthDef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
+    void (*register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
     //* Lookup sound file API.
-    const Methcla_SoundFileAPI* (*soundFileAPI)(const struct Methcla_Host* host, const char* mimeType);
+    const Methcla_SoundFileAPI* (*get_soundfile_api)(const struct Methcla_Host* host, const char* mimeType);
 
     //* Schedule a command for execution in the realtime context.
-    void (*performCommand)(const struct Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
+    void (*perform_command)(const struct Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
 
     Methcla_Synth* (*resource_get_synth)(const struct Methcla_Host* host, Methcla_Resource resource);
 } Methcla_Host;
@@ -202,28 +202,25 @@ static inline Methcla_Synth* methcla_host_resource_get_synth(const Methcla_Host*
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
-    if ((host == NULL) || (host->registerSynthDef == NULL) ||
-        (synthDef == NULL))
-        return; // TODO: return error code
-    host->registerSynthDef(host, synthDef);
+    host->register_synthdef(host, synthDef);
 }
 
 static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     if ((host == NULL) ||
-        (host->soundFileAPI == NULL) ||
+        (host->get_soundfile_api == NULL) ||
         (path == NULL) || (*path == '\0') ||
         (file == NULL) ||
         (info == NULL))
         return kMethcla_FileInvalidArgument;
-    const Methcla_SoundFileAPI* api = host->soundFileAPI(host, "audio/*");
+    const Methcla_SoundFileAPI* api = host->get_soundfile_api(host, "audio/*");
     return api == NULL ? kMethcla_FileUnspecifiedError
                        : api->open(api, path, mode, file, info);
 }
 
 static inline void methcla_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
-    host->performCommand(host, perform, data);
+    host->perform_command(host, perform, data);
 }
 
 typedef struct Methcla_Library
