@@ -157,7 +157,7 @@ Environment::Environment(PluginManager& pluginManager, PacketHandler handler, co
         .alloc = methclaWorldAlloc,
         .allocAligned = methclaWorldAllocAligned,
         .free = methclaWorldFree,
-        .performCommand = methclaWorldPerformCommand,
+        .performCommand = methcla_api_world_perform_command,
         .retain = methcla_api_world_resource_retain,
         .release = methcla_api_world_resource_release,
         .synth_get_resource = methcla_api_world_synth_get_resource,
@@ -547,16 +547,16 @@ void Environment::perform_hostCommand(Environment* env, CommandData* data)
 void Environment::methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(host->handle);
-    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_WorldPerformFunction>>(1);
+    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_WorldPerformFunction>>();
     callbackData->func = perform;
     callbackData->arg = data;
     env->sendFromWorker(Command(env, perform_worldCommand, callbackData));
 }
 
-void Environment::methclaWorldPerformCommand(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
+void Environment::methcla_api_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(world->handle);
-    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_HostPerformFunction>>(1);
+    auto callbackData = env->rtMem().allocOf<CallbackData<Methcla_HostPerformFunction>>();
     callbackData->func = perform;
     callbackData->arg = data;
     env->sendToWorker(Command(env, perform_hostCommand, callbackData));
