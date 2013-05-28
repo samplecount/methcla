@@ -75,7 +75,7 @@ struct Methcla_Engine
             PacketHandler { .handler = handler, .data = handlerData },
             pluginPath );
 
-        m_pluginManager.loadPlugins(m_engine->env(), libs);
+        m_pluginManager.loadPlugins(m_engine->env().asHost(), libs);
     }
 
     ~Methcla_Engine()

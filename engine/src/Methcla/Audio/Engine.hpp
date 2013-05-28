@@ -157,10 +157,10 @@ namespace Methcla { namespace Audio
         const Methcla_SoundFileAPI* soundFileAPI(const char* mimeType) const;
 
         //* Convert environment to Methcla_Host.
-        operator const Methcla_Host* () const { return &m_host; }
+        const Methcla_Host* asHost() const { return &m_host; }
 
         //* Convert environment to Methcla_World.
-        operator const Methcla_World* () const { return &m_world; }
+        const Methcla_World* asWorld() const { return &m_world; }
 
     protected:
         friend class EnvironmentImpl;

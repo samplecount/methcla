@@ -51,7 +51,7 @@ Synth::Synth( Environment& env
 {
     const size_t blockSize = env.blockSize();
 
-    m_synth = synthDef.construct(env, synthOptions, offset_cast<void*>(this, synthOffset));
+    m_synth = synthDef.construct(env.asWorld(), synthOptions, offset_cast<void*>(this, synthOffset));
     m_controlBuffers = offset_cast<sample_t*>(this, controlBufferOffset);
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(offset_cast<sample_t*>(this, audioBufferOffset));
@@ -121,12 +121,12 @@ Synth::Synth( Environment& env
 
     // Activate synth instance
     // This might be deferred to when the synth is actually started by the scheduler
-    synthDef.activate(env, m_synth);
+    synthDef.activate(env.asWorld(), m_synth);
 }
 
 Synth::~Synth()
 {
-    m_synthDef.destroy(env(), m_synth);
+    m_synthDef.destroy(env().asWorld(), m_synth);
 }
 
 Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream options)
@@ -279,7 +279,7 @@ void Synth::process(size_t numFrames)
         x.read(env, numFrames, inputBuffers + x.index() * blockSize);
     }
 
-    m_synthDef.process(env, m_synth, numFrames);
+    m_synthDef.process(env.asWorld(), m_synth, numFrames);
 
     sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
     for (auto& x : m_audioOutputConnections) {

@@ -532,16 +532,16 @@ template <typename T> struct CallbackData
 
 void Environment::perform_worldCommand(Environment* env, CommandData* data)
 {
-    auto self = (CallbackData<Methcla_WorldPerformFunction>*)data;
-    self->func(static_cast<const Methcla_World*>(*env), self->arg);
-    env->sendToWorker(Command(env, perform_nrt_free, data));
+    CallbackData<Methcla_WorldPerformFunction>* self = (CallbackData<Methcla_WorldPerformFunction>*)data;
+    self->func(env->asWorld(), self->arg);
+    env->sendToWorker(Command(env, perform_nrt_free, self));
 }
 
 void Environment::perform_hostCommand(Environment* env, CommandData* data)
 {
-    auto self = (CallbackData<Methcla_HostPerformFunction>*)data;
-    self->func(static_cast<const Methcla_Host*>(*env), self->arg);
-    env->sendFromWorker(Command(env, perform_rt_free, data));
+    CallbackData<Methcla_HostPerformFunction>* self = (CallbackData<Methcla_HostPerformFunction>*)data;
+    self->func(env->asHost(), self->arg);
+    env->sendFromWorker(Command(env, perform_rt_free, self));
 }
 
 void Environment::methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
@@ -574,7 +574,7 @@ Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const
     options.numHardwareOutputChannels = m_driver->numOutputs();
     m_env = new Environment(pluginManager, handler, options);
 
-    pluginManager.loadPlugins(*m_env, pluginDirectory);
+    pluginManager.loadPlugins(m_env->asHost(), pluginDirectory);
 }
 
 Engine::~Engine()
