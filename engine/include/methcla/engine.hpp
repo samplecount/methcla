@@ -333,7 +333,7 @@ namespace Methcla
         virtual ~Option() { }
         virtual void put(OSC::Client::Packet& packet) const = 0;
 
-        static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f);
+        inline static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f);
     };
 
     class OptionPluginLibrary : public Option
