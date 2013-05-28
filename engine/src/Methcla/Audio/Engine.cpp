@@ -111,7 +111,7 @@ Environment::Environment(PluginManager& pluginManager, PacketHandler handler, co
 {
     m_impl = new EnvironmentImpl();
 
-    m_rootNode = Group::construct(*this, m_nodes.nextId(), nullptr, Node::kAddToTail);
+    m_rootNode = Group::construct(*this, NodeId(0), nullptr, Node::kAddToTail);
     m_nodes.insert(m_rootNode->id(), m_rootNode);
 
     const Epoch prevEpoch = epoch() - 1;
@@ -365,16 +365,17 @@ void Environment::processRequests()
 
 void Environment::processMessage(const OSC::Server::Message& msg)
 {
-#if DEBUG
+#if 0
     std::cerr << "Request (recv): " << msg << std::endl;
 #endif
 
     auto args = msg.args();
-    Methcla_RequestId requestId = args.int32();
+    // Methcla_RequestId requestId = args.int32();
 
     try {
         if (msg == "/s_new") {
             const char* defName = args.string();
+            NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
 
@@ -392,7 +393,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Synth* synth = Synth::construct(
                 *this,
-                nodes().nextId(),
+                nodeId,
                 targetGroup,
                 Node::kAddToTail,
                 *def,
@@ -400,24 +401,25 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 synthArgs);
             nodes().insert(synth->id(), synth);
 
-            int32_t* data = rtMem().allocOf<int32_t>(2);
-            data[0] = requestId;
-            data[1] = synth->id();
-            sendToWorker(Command(this, perform_response_nodeId, data));
+            // int32_t* data = rtMem().allocOf<int32_t>(2);
+            // data[0] = requestId;
+            // data[1] = synth->id();
+            // sendToWorker(Command(this, perform_response_nodeId, data));
         } else if (msg == "/g_new") {
+            NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
 
             Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Group* group = Group::construct(*this, nodes().nextId(), targetGroup, Node::kAddToTail);
+            Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
             nodes().insert(group->id(), group);
 
-            int32_t* data = rtMem().allocOf<int32_t>(2);
-            data[0] = requestId;
-            data[1] = group->id();
-            sendToWorker(Command(this, perform_response_nodeId, data));
+            // int32_t* data = rtMem().allocOf<int32_t>(2);
+            // data[0] = requestId;
+            // data[1] = group->id();
+            // sendToWorker(Command(this, perform_response_nodeId, data));
         } else if (msg == "/n_free") {
             NodeId nodeId = NodeId(args.int32());
 
@@ -432,9 +434,9 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             m_nodes.remove(nodeId);
 
             // Send reply
-            int32_t* data = rtMem().allocOf<int32_t>(1);
-            data[0] = requestId;
-            sendToWorker(Command(this, perform_response_ack, data));
+            // int32_t* data = rtMem().allocOf<int32_t>(1);
+            // data[0] = requestId;
+            // sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/n_set") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -447,9 +449,9 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 throw std::runtime_error("Control input index out of range");
             }
             synth->controlInput(index) = value;
-            int32_t* data = rtMem().allocOf<int32_t>(1);
-            data[0] = requestId;
-            sendToWorker(Command(this, perform_response_ack, data));
+            // int32_t* data = rtMem().allocOf<int32_t>(1);
+            // data[0] = requestId;
+            // sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
@@ -467,20 +469,22 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             synth->mapOutput(index, busId, kOut);
 
             // Could reply with previous bus mapping
-            int32_t* data = rtMem().allocOf<int32_t>(1);
-            data[0] = requestId;
-            sendToWorker(Command(this, perform_response_ack, data));
+            // int32_t* data = rtMem().allocOf<int32_t>(1);
+            // data[0] = requestId;
+            // sendToWorker(Command(this, perform_response_ack, data));
         } else if (msg == "/query/external_inputs") {
+    // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
         } else if (msg == "/query/external_outputs") {
+    // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
     } catch (Exception& e) {
         const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
         const char* errorMessage = errorInfo == nullptr ? "Unknown error" : errorInfo->c_str();
-        replyError(requestId, errorMessage);
+        replyError(kMethcla_Notification, errorMessage);
     } catch (std::exception& e) {
-        replyError(requestId, e.what());
+        replyError(kMethcla_Notification, e.what());
     }
 }
 
@@ -597,26 +601,26 @@ void Engine::processCallback(void* data, size_t numFrames, const sample_t* const
 
 void Engine::makeSine()
 {
-    const std::shared_ptr<SynthDef> def = env().synthDef("http://methc.la/plugins/sine");
-
-    for (auto freq : { 440, 660, 880, 1320 }) {
-        OSC::Client::DynamicPacket packet(128);
-        packet.openMessage("/foo", 1);
-        packet.float32(freq);
-        packet.closeMessage();
-        auto synthControls = static_cast<OSC::Server::Message>(OSC::Server::Packet(packet.data(), packet.size())).args();
-        auto synthOptions = OSC::Server::ArgStream();
-
-        Synth* synth = Synth::construct(
-            env(),
-            env().nodes().nextId(),
-            env().rootNode(),
-            Node::kAddToTail,
-            *def,
-            synthControls,
-            synthOptions);
-        env().nodes().insert(synth->id(), synth);
-
-        synth->mapOutput(0, AudioBusId(1), kOut);
-    }
+    // const std::shared_ptr<SynthDef> def = env().synthDef("http://methc.la/plugins/sine");
+    // 
+    // for (auto freq : { 440, 660, 880, 1320 }) {
+    //     OSC::Client::DynamicPacket packet(128);
+    //     packet.openMessage("/foo", 1);
+    //     packet.float32(freq);
+    //     packet.closeMessage();
+    //     auto synthControls = static_cast<OSC::Server::Message>(OSC::Server::Packet(packet.data(), packet.size())).args();
+    //     auto synthOptions = OSC::Server::ArgStream();
+    // 
+    //     Synth* synth = Synth::construct(
+    //         env(),
+    //         env().nodes().nextId(),
+    //         env().rootNode(),
+    //         Node::kAddToTail,
+    //         *def,
+    //         synthControls,
+    //         synthOptions);
+    //     env().nodes().insert(synth->id(), synth);
+    // 
+    //     synth->mapOutput(0, AudioBusId(1), kOut);
+    // }
 }

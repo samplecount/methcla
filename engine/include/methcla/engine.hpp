@@ -65,6 +65,121 @@ namespace Methcla
     BOOST_STRONG_TYPEDEF(int32_t, SynthId);
     BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
 
+    template <typename T> class ResourceIdAllocator
+    {
+    public:
+        ResourceIdAllocator(T minValue, size_t n)
+            : m_offset(minValue)
+            , m_bits(n)
+            , m_pos(0)
+        { }
+
+        T alloc()
+        {
+            for (size_t i=m_pos; i < m_bits.size(); i++) {
+                if (!m_bits[i]) {
+                    m_bits[i] = true;
+                    m_pos = (i+1) == m_bits.size() ? 0 : i+1;
+                    return T(m_offset + i);
+                }
+            }
+            for (size_t i=0; i < m_pos; i++) {
+                if (!m_bits[i]) {
+                    m_bits[i] = true;
+                    m_pos = i+1;
+                    return T(m_offset + i);
+                }
+            }
+            throw std::runtime_error("No free ids");
+        }
+
+        void free(T id)
+        {
+            T i = id - m_offset;
+            if ((i >= 0) && (i < m_bits.size())) {
+                m_bits[i] = false;
+            } else {
+                throw std::runtime_error("Invalid id");
+            }
+        }
+
+    private:
+        T                 m_offset;
+        std::vector<bool> m_bits;
+        size_t            m_pos;
+    };
+
+    class PacketPool : public boost::noncopyable
+    {
+    public:
+        PacketPool(size_t packetSize)
+            : m_packetSize(packetSize)
+        { }
+        ~PacketPool()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            while (!m_freeList.empty()) {
+                void* ptr = m_freeList.front();
+                delete [] (char*)ptr;
+                m_freeList.pop_front();
+            }
+        }
+
+        size_t packetSize() const
+        {
+            return m_packetSize;
+        }
+
+        void* alloc()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (m_freeList.empty())
+                return new char[m_packetSize];
+            void* result = m_freeList.back();
+            m_freeList.pop_back();
+            return result;
+        }
+
+        void free(void* ptr)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_freeList.push_back(ptr);
+        }
+
+    private:
+        size_t m_packetSize;
+        // TODO: Use boost::lockfree::queue for free list
+        std::list<void*> m_freeList;
+        std::mutex m_mutex;
+    };
+
+    class Packet
+    {
+    public:
+        Packet(PacketPool& pool)
+            : m_pool(pool)
+            , m_packet(pool.alloc(), pool.packetSize())
+        { }
+        ~Packet()
+        {
+            m_pool.free(m_packet.data());
+        }
+
+        const OSC::Client::Packet& packet() const
+        {
+            return m_packet;
+        }
+
+        OSC::Client::Packet& packet()
+        {
+            return m_packet;
+        }
+
+    private:
+        PacketPool&         m_pool;
+        OSC::Client::Packet m_packet;
+    };
+
     namespace detail
     {
         struct Result : boost::noncopyable
@@ -257,7 +372,9 @@ namespace Methcla
     {
     public:
         Engine(const Options& options)
-            : m_requestId(kMethcla_Notification+1)
+            : m_nodeIds(1, 1023)
+            , m_requestId(kMethcla_Notification+1)
+            , m_packets(8192)
         {
             OSC::Client::DynamicPacket bundle(8192);
             bundle.openBundle(1);
@@ -298,108 +415,118 @@ namespace Methcla
             const char address[] = "/s_new";
             const size_t numArgs = 4 + OSC::Size::array(controls.size()) + OSC::Size::array(options.size());
             const size_t packetSize = OSC::Size::message(address, numArgs)
-                                         + OSC::Size::int32()
                                          + OSC::Size::string(256)
+                                         + OSC::Size::int32()
                                          + 2 * OSC::Size::int32()
                                          + controls.size() * OSC::Size::float32()
                                          + 256; // margin for options. better: pool allocator with fixed size packets.
 
-            const Methcla_RequestId requestId = getRequestId();
+            const int32_t nodeId = m_nodeIds.alloc();
+            // const Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::DynamicPacket request(packetSize);
-            request
+            Packet request(m_packets);
+            request.packet()
                 .openMessage(address, numArgs)
-                .int32(requestId)
                 .string(synthDef)
+                .int32(nodeId)
                 .int32(0)
                 .int32(0)
                 .putArray(controls.begin(), controls.end());
 
-            request.openArray();
+            request.packet().openArray();
             for (const auto& x : options) {
-                x.put(request);
+                x.put(request.packet());
             }
-            request.closeArray();
+            request.packet().closeArray();
 
-            request.closeMessage();
+            request.packet().closeMessage();
 
-            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
+            dumpRequest(std::cerr, request.packet());
 
-            Result<SynthId> result;
+            send(request);
 
-            withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
-                OSC::Server::Packet response(buffer, size);
-                if (checkResponse(response, result)) {
-                    auto args = ((OSC::Server::Message)response).args();
-                    int32_t requestId_ = args.int32();
-                    BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
-                    int32_t nodeId = args.int32();
-                    // std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
-                    result.set(SynthId(nodeId));
-                }
-            });
+            // Result<SynthId> result;
+            // 
+            // withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
+            //     OSC::Server::Packet response(buffer, size);
+            //     if (checkResponse(response, result)) {
+            //         auto args = ((OSC::Server::Message)response).args();
+            //         int32_t requestId_ = args.int32();
+            //         BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
+            //         int32_t nodeId = args.int32();
+            //         // std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
+            //         result.set(SynthId(nodeId));
+            //     }
+            // });
+            // 
+            // return result.get();
 
-            return result.get();
+            return SynthId(nodeId);
         }
 
         void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
         {
             const char address[] = "/synth/map/output";
-            const size_t numArgs = 4;
+            const size_t numArgs = 3;
             const size_t packetSize = OSC::Size::message(address, numArgs)
                                         + numArgs * OSC::Size::int32();
 
-            Methcla_RequestId requestId = getRequestId();
+            // Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<packetSize> request;
-            request
+            Packet request(m_packets);
+            request.packet()
                 .openMessage(address, numArgs)
-                    .int32(requestId)
+                    // .int32(requestId)
                     .int32(synth)
                     .int32(index)
                     .int32(bus)
                 .closeMessage();
 
-            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
-            execRequest(requestId, request);
+            dumpRequest(std::cerr, request.packet());
+            // execRequest(requestId, request);
+            send(request);
         }
 
         void set(const SynthId& synth, size_t index, double value)
         {
             const char address[] = "/n_set";
-            const size_t numArgs = 4;
+            const size_t numArgs = 3;
             const size_t packetSize = OSC::Size::message(address, numArgs)
-                                        + 3 * OSC::Size::int32()
+                                        + 2 * OSC::Size::int32()
                                         + OSC::Size::float32();
 
-            Methcla_RequestId requestId = getRequestId();
+            // Methcla_RequestId requestId = getRequestId();
 
-            OSC::Client::StaticPacket<packetSize> request;
-            request
+            Packet request(m_packets);
+            request.packet()
                 .openMessage(address, numArgs)
-                    .int32(requestId)
+                    // .int32(requestId)
                     .int32(synth)
                     .int32(index)
                     .float32(value)
                 .closeMessage();
 
-            dumpRequest(std::cerr, OSC::Server::Packet(request.data(), request.size()));
-            execRequest(requestId, request);
+            dumpRequest(std::cerr, request.packet());
+            // execRequest(requestId, request);
+            send(request);
         }
 
         void freeNode(const SynthId& synth)
         {
             const char address[] = "/n_free";
-            const size_t numArgs = 2;
+            const size_t numArgs = 1;
             const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
-            const Methcla_RequestId requestId = getRequestId();
-            OSC::Client::StaticPacket<packetSize> request;
-            request
+            // const Methcla_RequestId requestId = getRequestId();
+            Packet request(m_packets);
+            request.packet()
                 .openMessage(address, numArgs)
-                    .int32(requestId)
+                    // .int32(requestId)
                     .int32(synth)
                 .closeMessage();
-            execRequest(requestId, request);
+            // execRequest(requestId, request);
+            dumpRequest(std::cerr, request.packet());
+            send(request);
+            m_nodeIds.free(synth);
         }
 
     private:
@@ -418,10 +545,17 @@ namespace Methcla
 
         static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
-            static_cast<Engine*>(data)->handlePacket(requestId, packet, size);
+            if (requestId == kMethcla_Notification)
+                static_cast<Engine*>(data)->handleNotification(packet, size);
+            else
+                static_cast<Engine*>(data)->handleReply(requestId, packet, size);
         }
 
-        void handlePacket(Methcla_RequestId requestId, const void* packet, size_t size)
+        void handleNotification(const void* packet, size_t size)
+        {
+        }
+
+        void handleReply(Methcla_RequestId requestId, const void* packet, size_t size)
         {
             std::lock_guard<std::mutex> lock(m_callbacksMutex);
             // look up request id and invoke callback
@@ -445,6 +579,11 @@ namespace Methcla
         void send(const OSC::Client::Packet& packet)
         {
             send(packet.data(), packet.size());
+        }
+
+        void send(const Packet& packet)
+        {
+            send(packet.packet());
         }
 
         Methcla_RequestId getRequestId()
@@ -484,10 +623,12 @@ namespace Methcla
 
     private:
         Methcla_Engine*     m_engine;
+        ResourceIdAllocator<int32_t> m_nodeIds;
         Methcla_RequestId   m_requestId;
         std::mutex          m_requestIdMutex;
         std::unordered_map<Methcla_RequestId,std::function<void (Methcla_RequestId, const void*, size_t)>> m_callbacks;
         std::mutex          m_callbacksMutex;
+        PacketPool          m_packets;
     };
 };
 
