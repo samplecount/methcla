@@ -28,16 +28,20 @@
 
 #include "Methcla/Utility/Semaphore.hpp"
 
-#define METHCLA_WORKER_USE_LIST 0
+#define METHCLA_WORKER_USE_LIST 1
 #define METHCLA_WORKER_USE_PTHREAD 0
+#define METHCLA_WORKER_AUDIO_THREAD 1
 
-#if METHCLA_WORKER_USE_LIST
+// #if METHCLA_WORKER_USE_LIST
 # include <libkern/OSAtomic.h>
-#endif
+// #endif
 
 #if METHCLA_WORKER_USE_PTHREAD
 # include <pthread.h>
 #endif
+
+// #define METHCLA_WORKER_MEMORY_BARRIER OSMemoryBarrier()
+#define METHCLA_WORKER_MEMORY_BARRIER
 
 namespace Methcla { namespace Utility {
 
@@ -45,27 +49,66 @@ namespace Methcla { namespace Utility {
 template <class T> class ListQueue
 {
 public:
+#if METHCLA_WORKER_USE_PTHREAD && !METHCLA_WORKER_AUDIO_THREAD
+    ListQueue()
+    {
+        pthread_mutex_init(&m_mutex, nullptr);
+    }
+    ~ListQueue()
+    {
+        pthread_mutex_destroy(&m_mutex);
+    }
+#endif
+
     bool push(const T& a)
     {
+#if !METHCLA_WORKER_AUDIO_THREAD
+#if METHCLA_WORKER_USE_PTHREAD
+        pthread_mutex_lock(&m_mutex);
+#else
         boost::lock_guard<boost::mutex> lock(m_mutex);
+#endif
+#endif
         m_list.push_back(a);
+#if !METHCLA_WORKER_AUDIO_THREAD
         OSMemoryBarrier();
+#endif
+#if METHCLA_WORKER_USE_PTHREAD && !METHCLA_WORKER_AUDIO_THREAD
+        pthread_mutex_unlock(&m_mutex);
+#endif
         return true;
     }
 
     bool pop(T& a)
     {
+#if !METHCLA_WORKER_AUDIO_THREAD
+#if METHCLA_WORKER_USE_PTHREAD
+        pthread_mutex_lock(&m_mutex);
+#else
         boost::lock_guard<boost::mutex> lock(m_mutex);
+#endif
+#endif
         if (m_list.empty())
             return false;
         a = m_list.front();
         m_list.pop_front();
+#if !METHCLA_WORKER_AUDIO_THREAD
         OSMemoryBarrier();
+#endif
+#if METHCLA_WORKER_USE_PTHREAD && !METHCLA_WORKER_AUDIO_THREAD
+        pthread_mutex_unlock(&m_mutex);
+#endif
         return true;
     }
 
 private:
+#if !METHCLA_WORKER_AUDIO_THREAD
+#if METHCLA_WORKER_USE_PTHREAD
+    pthread_mutex_t m_mutex;
+#else
     boost::mutex   m_mutex;
+#endif
+#endif
     std::list<T> m_list;
 };
 #endif // METHCLA_WORKER_USE_LIST
@@ -113,7 +156,9 @@ public:
     {
         for (;;) {
             Command cmd;
+            METHCLA_WORKER_MEMORY_BARRIER;
             bool success = dequeue(cmd);
+            METHCLA_WORKER_MEMORY_BARRIER;
             if (success) cmd.perform();
             else break;
         }
@@ -122,7 +167,9 @@ public:
 protected:
     void sendCommand(const Command& cmd)
     {
+        METHCLA_WORKER_MEMORY_BARRIER;
         bool success = m_queue.push(cmd);
+        METHCLA_WORKER_MEMORY_BARRIER;
         if (!success) throw std::runtime_error("Channel overflow");
     }
 
@@ -147,18 +194,24 @@ public:
     virtual void send(const Command& cmd) override
     {
         this->sendCommand(cmd);
+#if !METHCLA_WORKER_AUDIO_THREAD
         m_signal();
+#endif
     }
 
     bool dequeue(Command& cmd)
     {
+#if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
         boost::lock_guard<boost::mutex> lock(m_mutex);
+#endif
         return this->m_queue.pop(cmd);
     }
 
 private:
     std::function<void()> m_signal;
+#if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
     boost::mutex          m_mutex;
+#endif
 };
 
 template <class Command> class FromWorker : public Transport<Command>
@@ -170,7 +223,9 @@ public:
 
     virtual void send(const Command& cmd) override
     {
+#if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
         boost::lock_guard<boost::mutex> lock(m_mutex);
+#endif
         this->sendCommand(cmd);
     }
 
@@ -180,7 +235,9 @@ public:
     }
 
 private:
+#if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
     boost::mutex m_mutex;
+#endif
 };
 
 template <typename Command> class Worker : boost::noncopyable
@@ -204,6 +261,9 @@ public:
     void perform()
     {
         m_fromWorker.drain();
+#if METHCLA_WORKER_AUDIO_THREAD
+        work();
+#endif
     }
 
 protected:
@@ -226,15 +286,19 @@ public:
         : Worker<Command>(queueSize)
         , m_continue(true)
     {
+#if !METHCLA_WORKER_AUDIO_THREAD
         start(numThreads);
+#endif
     }
 
     ~WorkerThread()
     {
+#if !METHCLA_WORKER_AUDIO_THREAD
         m_continue.store(false, boost::memory_order_relaxed);
         // m_continue = false;
         m_sem.post();
         join();
+#endif
     }
 
 private:
