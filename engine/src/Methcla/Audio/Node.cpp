@@ -39,7 +39,7 @@ Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
 
 Node::~Node()
 {
-#if DEBUG
+#if 0
     std::cout << "~Node " << id() << "\n";
 #endif
 }
