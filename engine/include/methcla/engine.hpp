@@ -40,7 +40,7 @@ namespace Methcla
 {
     inline static void dumpRequest(std::ostream& out, const OSC::Client::Packet& packet)
     {
-#if DEBUG
+#if 0
         out << "Request (send): " << packet << std::endl;
 #endif
     }
