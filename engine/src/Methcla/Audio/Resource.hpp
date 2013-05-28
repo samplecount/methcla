@@ -127,7 +127,11 @@ namespace Methcla { namespace Audio
 
         void insert(const Id& id, Pointer a)
         {
-            m_elems[id] = a;
+            if ((id >= Id(0)) && (id < Id(m_elems.size()))) {
+                m_elems[id] = a;
+            } else {
+                throw std::out_of_range("Invalid resource id");
+            }
         }
 
         void insert(const Id& id, T* a)
