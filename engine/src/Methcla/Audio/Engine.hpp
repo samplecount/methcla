@@ -61,37 +61,7 @@ namespace Methcla { namespace Audio
 
     typedef void CommandData;
 
-    struct Command
-    {
-        typedef void (*PerformFunc)(Environment* env, void* data);
-
-        Command()
-            : m_env(nullptr)
-            , m_perform(nullptr)
-            , m_data(nullptr)
-                { }
-        Command(Environment* e, PerformFunc f, void* data=nullptr)
-            : m_env(e)
-            , m_perform(f)
-            , m_data(data)
-        { }
-        Command(const Command& other)
-            : m_env(other.m_env)
-            , m_perform(other.m_perform)
-            , m_data(other.m_data)
-        { }
-
-        void perform()
-        {
-            if (m_perform != nullptr)
-                m_perform(m_env, m_data);
-        }
-
-    private:
-        Environment* m_env;
-        PerformFunc  m_perform;
-        void*        m_data;
-    };
+    extern "C" typedef void (*PerformFunc)(Environment* env, void* data);
 
     class Group;
 
@@ -139,7 +109,7 @@ namespace Methcla { namespace Audio
         //* Return audio bus with id (needed by Synth).
         AudioBus* audioBus(const AudioBusId& id);
 
-        Memory::RTMemoryManager& rtMem() { return m_rtMem; }
+        Memory::RTMemoryManager& rtMem();
 
         const Epoch& epoch() const { return m_epoch; }
 
@@ -161,6 +131,16 @@ namespace Methcla { namespace Audio
 
         //* Convert environment to Methcla_World.
         const Methcla_World* asWorld() const { return &m_world; }
+
+        //* Send a command from the realtime thread to the worker thread.
+        //
+        // Context: RT
+        void sendToWorker(PerformFunc f, void* data);
+
+        //* Send a command from the worker thread to the realtime thread.
+        //
+        // Context: NRT
+        void sendFromWorker(PerformFunc f, void* data);
 
     protected:
         friend class EnvironmentImpl;
@@ -231,26 +211,10 @@ namespace Methcla { namespace Audio
             notify(packet.data(), packet.size());
         }
 
-        //* Send a command from the realtime thread to the worker thread.
-        //
-        // Context: RT
-        void sendToWorker(const Command& cmd);
-
-        //* Send a command from the worker thread to the realtime thread.
-        //
-        // Context: NRT
-        void sendFromWorker(const Command& cmd);
-
-        static void perform_worldCommand(Environment*, CommandData*);
-        static void perform_hostCommand(Environment*, CommandData*);
-        static void methcla_api_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
-        static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data);
-
     private:
         EnvironmentImpl*                        m_impl;
         const size_t                            m_sampleRate;
         const size_t                            m_blockSize;
-        Memory::RTMemoryManager                 m_rtMem;
         PluginManager&                          m_plugins;
         SynthDefMap                             m_synthDefs;
         PacketHandler                           m_listener;

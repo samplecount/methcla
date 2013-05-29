@@ -26,6 +26,19 @@ using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
+struct Command
+{
+    void perform()
+    {
+        if (m_perform != nullptr)
+            m_perform(m_env, m_data);
+    }
+
+    Environment* m_env;
+    PerformFunc  m_perform;
+    void*        m_data;
+};
+
 class Methcla::Audio::EnvironmentImpl
 {
 public:
@@ -37,16 +50,20 @@ public:
 
     static const size_t kQueueSize = 8192;
 
-    EnvironmentImpl()
-        : m_worker(kQueueSize, 2)
+    EnvironmentImpl(size_t realtimeMemorySize)
+        : m_rtMem(realtimeMemorySize)
+        , m_worker(kQueueSize, 2)
     { }
 
     typedef Utility::MessageQueue<Environment::Request,kQueueSize> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
 
-    MessageQueue m_requests;
-    Worker       m_worker;
+    Memory::RTMemoryManager m_rtMem;
+    MessageQueue            m_requests;
+    Worker                  m_worker;
 };
+
+extern "C" {
 
 static void methcla_api_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
@@ -98,10 +115,14 @@ static Methcla_Synth* methcla_api_host_resource_get_synth(const Methcla_Host*, M
     return static_cast<Synth*>(resource)->asHandle();
 }
 
+static void methcla_api_host_perform_command(const Methcla_Host*, Methcla_WorldPerformFunction, void*);
+static void methcla_api_world_perform_command(const Methcla_World*, Methcla_HostPerformFunction, void*);
+
+} // extern "C"
+
 Environment::Environment(PluginManager& pluginManager, PacketHandler handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
-    , m_rtMem(options.realtimeMemorySize)
     , m_plugins(pluginManager)
     , m_listener(handler)
     , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
@@ -109,7 +130,7 @@ Environment::Environment(PluginManager& pluginManager, PacketHandler handler, co
     , m_nodes(options.maxNumNodes)
     , m_epoch(0)
 {
-    m_impl = new EnvironmentImpl();
+    m_impl = new EnvironmentImpl(options.realtimeMemorySize);
 
     m_rootNode = Group::construct(*this, NodeId(0), nullptr, Node::kAddToTail);
     m_nodes.insert(m_rootNode->id(), m_rootNode);
@@ -179,6 +200,11 @@ AudioBus& Environment::externalAudioInput(size_t index)
     return *m_audioInputChannels[index];
 }
 
+Memory::RTMemoryManager& Environment::rtMem()
+{
+    return m_impl->m_rtMem;
+}
+
 void Environment::send(const void* packet, size_t size)
 {
     char* myPacket = Memory::allocAlignedOf<char>(OSC::kAlignment, size);
@@ -189,13 +215,21 @@ void Environment::send(const void* packet, size_t size)
     m_impl->m_requests.send(req);
 }
 
-void Environment::sendToWorker(const Command& cmd)
+void Environment::sendToWorker(PerformFunc f, void* data)
 {
+    Command cmd;
+    cmd.m_env = this;
+    cmd.m_perform = f;
+    cmd.m_data = data;
     m_impl->m_worker.sendToWorker(cmd);
 }
 
-void Environment::sendFromWorker(const Command& cmd)
+void Environment::sendFromWorker(PerformFunc f, void* data)
 {
+    Command cmd;
+    cmd.m_env = this;
+    cmd.m_perform = f;
+    cmd.m_data = data;
     m_impl->m_worker.sendFromWorker(cmd);
 }
 
@@ -258,7 +292,7 @@ void Environment::perform_response_ack(Environment* env, CommandData* data)
             .int32(requestId)
         .closeMessage();
     env->reply(requestId, packet);
-    env->sendFromWorker(Command(env, perform_rt_free, data));
+    env->sendFromWorker(perform_rt_free, data);
 }
 
 void Environment::perform_response_nodeId(Environment* env, CommandData* data)
@@ -277,7 +311,7 @@ void Environment::perform_response_nodeId(Environment* env, CommandData* data)
             .int32(nodeId)
         .closeMessage();
     env->reply(requestId, packet);
-    env->sendFromWorker(Command(env, perform_rt_free, data));
+    env->sendFromWorker(perform_rt_free, data);
 }
 
 void Environment::perform_response_query_external_inputs(Environment* env, CommandData* data)
@@ -327,7 +361,7 @@ void Environment::perform_response_error(Environment* env, CommandData* commandD
             .string(data->message)
         .closeMessage();
     env->reply(data->requestId, packet);
-    env->sendFromWorker(Command(env, perform_rt_free, data));
+    env->sendFromWorker(perform_rt_free, data);
 }
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
@@ -337,7 +371,7 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
     data->requestId = requestId;
     data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
     strcpy(data->message, msg);
-    sendToWorker(Command(this, perform_response_error, data));
+    sendToWorker(perform_response_error, data);
 }
 
 void Environment::processRequests()
@@ -355,7 +389,7 @@ void Environment::processRequests()
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
         // Free packet in NRT thread
-        sendToWorker(Command(this, perform_nrt_free, msg.packet));
+        sendToWorker(perform_nrt_free, msg.packet);
     }
 }
 
@@ -526,37 +560,41 @@ template <typename T> struct CallbackData
     void* arg;
 };
 
-void Environment::perform_worldCommand(Environment* env, CommandData* data)
+extern "C" {
+
+static void perform_worldCommand(Environment* env, CommandData* data)
 {
     CallbackData<Methcla_WorldPerformFunction>* self = (CallbackData<Methcla_WorldPerformFunction>*)data;
     self->func(env->asWorld(), self->arg);
-    env->sendToWorker(Command(env, perform_nrt_free, self));
+    env->sendToWorker(perform_nrt_free, self);
 }
 
-void Environment::perform_hostCommand(Environment* env, CommandData* data)
+static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+{
+    Environment* env = static_cast<Environment*>(host->handle);
+    CallbackData<Methcla_WorldPerformFunction>* callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_WorldPerformFunction>>();
+    callbackData->func = perform;
+    callbackData->arg = data;
+    env->sendFromWorker(perform_worldCommand, callbackData);
+}
+
+static void perform_hostCommand(Environment* env, CommandData* data)
 {
     CallbackData<Methcla_HostPerformFunction>* self = (CallbackData<Methcla_HostPerformFunction>*)data;
     self->func(env->asHost(), self->arg);
-    env->sendFromWorker(Command(env, perform_rt_free, self));
+    env->sendFromWorker(perform_rt_free, self);
 }
 
-void Environment::methcla_api_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
-{
-    Environment* env = static_cast<Environment*>(host->handle);
-    auto callbackData = Methcla::Memory::allocOf<CallbackData<Methcla_WorldPerformFunction>>();
-    callbackData->func = perform;
-    callbackData->arg = data;
-    env->sendFromWorker(Command(env, perform_worldCommand, callbackData));
-}
-
-void Environment::methcla_api_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
+static void methcla_api_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(world->handle);
-    auto callbackData = env->rtMem().allocOf<CallbackData<Methcla_HostPerformFunction>>();
+    CallbackData<Methcla_HostPerformFunction>* callbackData = env->rtMem().allocOf<CallbackData<Methcla_HostPerformFunction>>();
     callbackData->func = perform;
     callbackData->arg = data;
-    env->sendToWorker(Command(env, perform_hostCommand, callbackData));
+    env->sendToWorker(perform_hostCommand, callbackData);
 }
+
+} // extern "C"
 
 Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)
 {
