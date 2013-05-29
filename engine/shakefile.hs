@@ -85,7 +85,7 @@ staticBuidFlags = id
 
 -- | Build flags for shared library
 sharedBuildFlags :: CBuildFlags -> CBuildFlags
-sharedBuildFlags = append libraries [ "c++", "m" ]
+sharedBuildFlags = append libraries ["c++", "m"]
 
 pluginSources :: [FilePath]
 pluginSources = [
