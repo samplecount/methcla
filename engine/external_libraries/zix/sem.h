@@ -105,7 +105,7 @@ struct ZixSemImpl {
 static inline ZixStatus
 zix_sem_init(ZixSem* sem, unsigned initial)
 {
-	return semaphore_create(mach_task_self(), &sem->sem, SYNC_POLICY_FIFO, 0)
+	return semaphore_create(mach_task_self(), &sem->sem, SYNC_POLICY_FIFO, initial)
 		? ZIX_STATUS_ERROR : ZIX_STATUS_SUCCESS;
 }
 
