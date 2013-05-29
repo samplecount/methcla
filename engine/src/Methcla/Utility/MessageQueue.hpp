@@ -28,9 +28,9 @@
 
 #include "Methcla/Utility/Semaphore.hpp"
 
-#define METHCLA_WORKER_USE_LIST 1
+#define METHCLA_WORKER_USE_LIST 0
 #define METHCLA_WORKER_USE_PTHREAD 0
-#define METHCLA_WORKER_AUDIO_THREAD 1
+#define METHCLA_WORKER_AUDIO_THREAD 0
 
 // #if METHCLA_WORKER_USE_LIST
 # include <libkern/OSAtomic.h>
