@@ -303,6 +303,7 @@ private:
     typedef std::thread thread;
 #endif
 
+#if !METHCLA_WORKER_AUDIO_THREAD
     void start(size_t numThreads)
     {
 #if METHCLA_WORKER_USE_PTHREAD
@@ -343,7 +344,6 @@ private:
     {
         m_sem.post();
     }
-
 #if METHCLA_WORKER_USE_PTHREAD
     static void* threadFunc(void* data)
     {
@@ -351,6 +351,7 @@ private:
         return nullptr;
     }
 #endif
+#endif // !METHCLA_WORKER_AUDIO_THREAD
 
 private:
     Semaphore           m_sem;

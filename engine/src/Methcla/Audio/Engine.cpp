@@ -234,7 +234,7 @@ void Environment::process(size_t numFrames, const sample_t* const* inputs, sampl
     m_epoch++;
 }
 
-static void perform_nrt_free(Environment* env, CommandData* data)
+static void perform_nrt_free(Environment*, CommandData* data)
 {
     Methcla::Memory::free(data);
 }
@@ -510,12 +510,12 @@ const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
     return it->second;
 }
 
-void Environment::registerSoundFileAPI(const char* mimeType, const Methcla_SoundFileAPI* api)
+void Environment::registerSoundFileAPI(const char* /* mimeType */, const Methcla_SoundFileAPI* api)
 {
     m_soundFileAPIs.push_back(api);
 }
 
-const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* mimeType) const
+const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* /* mimeType */) const
 {
     return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
 }

@@ -40,7 +40,7 @@ Synth::Synth( Environment& env
             , size_t audioOutputOffset
             , size_t controlBufferOffset
             , size_t audioBufferOffset
-            , size_t audioBufferSize
+            , size_t /* audioBufferAllocSize */
             )
     : Node(env, nodeId, target, addAction)
     , m_synthDef(synthDef)

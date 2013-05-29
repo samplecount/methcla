@@ -33,8 +33,10 @@ namespace Methcla { namespace Memory {
 class RTMemoryManager
 {
 public:
+#if METHCLA_NO_RT_MEMORY
+    RTMemoryManager(size_t)
+#else
     RTMemoryManager(size_t poolSize)
-#if !METHCLA_NO_RT_MEMORY
         : m_memory(nullptr)
         , m_pool(nullptr)
 #endif
