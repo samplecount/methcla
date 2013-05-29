@@ -19,6 +19,8 @@
 #include "Methcla/Memory.hpp"
 
 #include <boost/cstdint.hpp>
+#include <boost/type_traits/alignment_of.hpp>
+
 #include <tlsf.h>
 #include <cstddef>
 #include <stdexcept>
@@ -135,7 +137,8 @@ template <class T, class Allocator> class AllocatedBase
     struct Chunk
     {
         Allocator*       alloc;
-        std::max_align_t data[];
+        char             padding[boost::alignment_of<T>::value-sizeof(Allocator*)];
+        char             data[];
     };
 
 protected:
@@ -143,7 +146,9 @@ protected:
     {
         Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
-        BOOST_ASSERT( Alignment::isAligned(alignof(std::max_align_t), reinterpret_cast<std::uintptr_t>(chunk->data)) );
+        BOOST_ASSERT( Alignment::isAligned(
+            boost::alignment_of<T>::value,
+            reinterpret_cast<std::uintptr_t>(chunk->data)) );
         return chunk->data;
     }
 
