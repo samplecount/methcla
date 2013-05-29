@@ -21,6 +21,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef enum
 {
     kMethcla_FileNoError,
@@ -53,12 +57,16 @@ typedef struct Methcla_SoundFile
     Methcla_FileError (*read_float)(const struct Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
 } Methcla_SoundFile;
 
-typedef struct Methcla_SoundFileAPI
+typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
+
+METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFileAPI_open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+
+struct Methcla_SoundFileAPI
 {
     void* handle;
     const char* (*error_message)(const struct Methcla_SoundFileAPI* api, Methcla_FileError error);
-    Methcla_FileError (*open)(const struct Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
-} Methcla_SoundFileAPI;
+    Methcla_SoundFileAPI_open open;
+};
 
 static inline const char* methcla_soundfile_error_message(const Methcla_SoundFileAPI* api, Methcla_FileError error)
 {
@@ -96,5 +104,9 @@ static inline Methcla_FileError methcla_soundfile_read_float(Methcla_SoundFile* 
         return kMethcla_FileInvalidArgument;
     return file->read_float(file, buffer, numFrames, outNumFrames);
 }
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* METHCLA_FILE_H_INCLUDED */

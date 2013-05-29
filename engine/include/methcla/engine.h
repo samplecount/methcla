@@ -22,6 +22,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 typedef struct
 {
     const void* data;
@@ -78,5 +82,9 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine);
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
 METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* METHCLA_ENGINE_H_INCLUDED */

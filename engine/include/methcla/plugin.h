@@ -22,6 +22,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #define METHCLA_PLUGINS_URI "http://methc.la/plugins"
 
 //* Realtime interface.
@@ -39,6 +43,9 @@ typedef void* Methcla_Resource;
 //* Callback function type for performing commands in the non-realtime context.
 typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
 
+METHCLA_C_LINKAGE typedef double (*Methcla_World_samplerate)(const Methcla_World*);
+METHCLA_C_LINKAGE typedef void (*Methcla_World_perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+
 //* Realtime interface
 struct Methcla_World
 {
@@ -46,7 +53,8 @@ struct Methcla_World
     void* handle;
 
     //* Return engine sample rate.
-    double (*samplerate)(const struct Methcla_World* world);
+    // double (*samplerate)(const struct Methcla_World* world);
+    Methcla_World_samplerate samplerate;
 
     // Realtime memory allocation
     void* (*alloc)(const struct Methcla_World* world, size_t size);
@@ -54,7 +62,7 @@ struct Methcla_World
     void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    void (*perform_command)(const struct Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+    Methcla_World_perform_command perform_command;
 
     //* Reference counted resources.
     void (*retain)(const struct Methcla_World* world, Methcla_Resource resource);
@@ -178,7 +186,10 @@ struct Methcla_SynthDef
 //* Callback function type for performing commands in the realtime context.
 typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* data);
 
-typedef struct Methcla_Host
+METHCLA_C_LINKAGE typedef const Methcla_SoundFileAPI* (*Methcla_Host_get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
+METHCLA_C_LINKAGE typedef void (*Methcla_Host_perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
+
+struct Methcla_Host
 {
     //* Handle for implementation specific data.
     void* handle;
@@ -187,13 +198,13 @@ typedef struct Methcla_Host
     void (*register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
     //* Lookup sound file API.
-    const Methcla_SoundFileAPI* (*get_soundfile_api)(const struct Methcla_Host* host, const char* mimeType);
+    Methcla_Host_get_soundfile_api get_soundfile_api;
 
     //* Schedule a command for execution in the realtime context.
-    void (*perform_command)(const struct Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
+    Methcla_Host_perform_command perform_command;
 
     Methcla_Synth* (*resource_get_synth)(const struct Methcla_Host* host, Methcla_Resource resource);
-} Methcla_Host;
+};
 
 static inline Methcla_Synth* methcla_host_resource_get_synth(const Methcla_Host* host, Methcla_Resource resource)
 {
@@ -236,5 +247,9 @@ typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* ho
 
 // #define MESCALINE_MAKE_INIT_FUNC(name) MethclaInit_##name
 // #define MESCALINE_INIT_FUNC(name) MESCALINE_MAKE_INIT_FUNC(name)
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* METHCLA_PLUGIN_H_INCLUDED */
