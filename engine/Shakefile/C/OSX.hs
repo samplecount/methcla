@@ -103,6 +103,13 @@ iosMinVersion = "50000" -- Required for C++11
 cToolChain_IOS :: DeveloperPath -> CToolChain
 cToolChain_IOS = cToolChain_MacOSX
 
+cToolChain_IOS_gcc :: DeveloperPath -> CToolChain
+cToolChain_IOS_gcc developer =
+    prefix .~ Just (developerPath developer </> "Platforms/iPhoneOS.platform/Developer/usr")
+  $ compilerCmd .~ "llvm-gcc"
+  $ linkerCmd .~ "llvm-g++"
+  $ cToolChain_IOS developer
+
 cBuildFlags_IOS :: DeveloperPath -> SDKVersion -> CBuildFlags
 cBuildFlags_IOS developer sdkVersion =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
@@ -110,6 +117,11 @@ cBuildFlags_IOS developer sdkVersion =
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator = cToolChain_MacOSX
+
+cToolChain_IOS_Simulator_gcc :: DeveloperPath -> CToolChain
+cToolChain_IOS_Simulator_gcc developer =
+    prefix .~ Just (developerPath developer </> "Platforms/iPhoneSimulator.platform/Developer/usr")
+  $ cToolChain_IOS_gcc developer
 
 cBuildFlags_IOS_Simulator :: DeveloperPath -> SDKVersion -> CBuildFlags
 cBuildFlags_IOS_Simulator developer sdkVersion =
