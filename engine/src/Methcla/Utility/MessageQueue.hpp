@@ -304,7 +304,7 @@ private:
 #endif
 
 #if !METHCLA_WORKER_AUDIO_THREAD
-    void start(size_t numThreads)
+    void start(size_t /*numThreads*/)
     {
 #if METHCLA_WORKER_USE_PTHREAD
         pthread_create(&m_thread, nullptr, threadFunc, this);

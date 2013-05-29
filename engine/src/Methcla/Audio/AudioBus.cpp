@@ -18,7 +18,7 @@
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
-AudioBus::AudioBus(Environment& env, const AudioBusId& id, size_t numFrames, sample_t* data, const Epoch& epoch)
+AudioBus::AudioBus(Environment& env, const AudioBusId& id, size_t /*numFrames*/, sample_t* data, const Epoch& epoch)
     : Resource(env, id)
     , m_epoch(epoch)
     , m_data(data)
