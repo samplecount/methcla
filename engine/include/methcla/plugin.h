@@ -99,12 +99,12 @@ static inline void methcla_world_perform_command(const Methcla_World* world, Met
 
 static inline void methcla_world_retain(const Methcla_World* world, Methcla_Resource resource)
 {
-    return world->retain(world, resource);
+    world->retain(world, resource);
 }
 
 static inline void methcla_world_release(const Methcla_World* world, Methcla_Resource resource)
 {
-    return world->release(world, resource);
+    world->release(world, resource);
 }
 
 static inline Methcla_Resource methcla_world_synth_get_resource(const Methcla_World* world, Methcla_Synth* synth)
