@@ -475,7 +475,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
             if (!node->isSynth())
                 throw std::runtime_error("Node is not a synth");
             Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= synth->numControlInputs())) {
+            if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
                 throw std::runtime_error("Control input index out of range");
             }
             synth->controlInput(index) = value;
@@ -493,7 +493,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
                 throw std::runtime_error("Node is not a synth");
 
             Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= synth->numAudioOutputs()))
+            if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
                 throw std::runtime_error("Synth output index out of range");
 
             synth->mapOutput(index, busId, kOut);
