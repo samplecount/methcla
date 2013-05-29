@@ -116,12 +116,12 @@ methclaLib platform =
       , sourceFiles_ [ tlsfDir </> "tlsf.c" ]
         -- engine
       , sourceFlags (engineBuildFlags platform) [
-          sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
-            [ sourceFiles_ [ "src/Methcla/Audio/Engine.cpp" ] ],
+          -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
+          --   [ sourceFiles_ [ "src/Methcla/Audio/Engine.cpp" ] ],
           sourceFiles_ $
           [ "src/Methcla/API.cpp"
           , "src/Methcla/Audio/AudioBus.cpp"
-          -- , "src/Methcla/Audio/Engine.cpp"
+          , "src/Methcla/Audio/Engine.cpp"
           , "src/Methcla/Audio/Group.cpp"
           , "src/Methcla/Audio/IO/Driver.cpp"
           , "src/Methcla/Audio/Node.cpp"
