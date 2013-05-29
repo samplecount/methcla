@@ -34,6 +34,8 @@ typedef struct {
     size_t pos;
 } Synth;
 
+extern "C" {
+
 static bool
 port_descriptor( const Methcla_SynthOptions* options
                , size_t index
@@ -259,6 +261,8 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         }
     }
 }
+
+} // extern "C"
 
 static const Methcla_SynthDef descriptor =
 {

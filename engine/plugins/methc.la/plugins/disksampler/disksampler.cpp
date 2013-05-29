@@ -103,6 +103,8 @@ struct Synth {
     State state;
 };
 
+extern "C" {
+
 static bool
 port_descriptor( const Methcla_SynthOptions* options
                , size_t index
@@ -236,7 +238,7 @@ static void command_fill_buffer(const Methcla_Host* host, void* data)
 }
 
 // Only safe to be called during initialization
-inline static void init_buffer_cleanup(Synth* self)
+static inline void init_buffer_cleanup(Synth* self)
 {
     finish(self);
     if (self->state.file) {
@@ -308,7 +310,7 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 }
             }
         }
-    } else {
+   } else {
         init_buffer_cleanup(self);
     }
 
@@ -375,7 +377,7 @@ connect( Methcla_Synth* synth
     ((Synth*)synth)->ports[index] = (float*)data;
 }
 
-inline static void
+static inline void
 process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1, StateVar state)
 {
     assert( self->state.file != nullptr );
@@ -439,7 +441,7 @@ process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float am
     self->state.readPos.store(nextReadPos == bufferFrames ? 0 : nextReadPos, std::memory_order_release);
 }
 
-inline static void
+static inline void
 process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
 {
     size_t pos = self->state.readPos;
@@ -535,6 +537,8 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         break;
     }
 }
+
+} // extern "C"
 
 static const Methcla_SynthDef descriptor =
 {
