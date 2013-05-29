@@ -142,26 +142,22 @@ Environment::Environment(PluginManager& pluginManager, PacketHandler handler, co
     }
 
     // Initialize Methcla_Host interface
-    m_host = {
-        .handle = this,
-        .register_synthdef = methcla_api_host_register_synthdef,
-        .get_soundfile_api = methcla_api_host_get_soundfile_api,
-        .perform_command = methcla_api_host_perform_command,
-        .resource_get_synth = methcla_api_host_resource_get_synth
-    };
+    m_host.handle = this;
+    m_host.register_synthdef = methcla_api_host_register_synthdef;
+    m_host.get_soundfile_api = methcla_api_host_get_soundfile_api;
+    m_host.perform_command = methcla_api_host_perform_command;
+    m_host.resource_get_synth = methcla_api_host_resource_get_synth;
 
     // Initialize Methcla_World interface
-    m_world = {
-        .handle = this,
-        .samplerate = methcla_api_world_samplerate,
-        .alloc = methcla_api_world_alloc,
-        .alloc_aligned = methcla_api_world_alloc_aligned,
-        .free = methcla_api_world_free,
-        .perform_command = methcla_api_world_perform_command,
-        .retain = methcla_api_world_resource_retain,
-        .release = methcla_api_world_resource_release,
-        .synth_get_resource = methcla_api_world_synth_get_resource,
-    };
+    m_world.handle = this;
+    m_world.samplerate = methcla_api_world_samplerate;
+    m_world.alloc = methcla_api_world_alloc;
+    m_world.alloc_aligned = methcla_api_world_alloc_aligned;
+    m_world.free = methcla_api_world_free;
+    m_world.perform_command = methcla_api_world_perform_command;
+    m_world.retain = methcla_api_world_resource_retain;
+    m_world.release = methcla_api_world_resource_release;
+    m_world.synth_get_resource = methcla_api_world_synth_get_resource;
 }
 
 Environment::~Environment()

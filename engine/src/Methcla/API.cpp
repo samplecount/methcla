@@ -72,7 +72,7 @@ struct Methcla_Engine
 
         m_engine = new Methcla::Audio::Engine(
             m_pluginManager,
-            PacketHandler { .handler = handler, .data = handlerData },
+            PacketHandler { handler, handlerData },
             pluginPath );
 
         m_pluginManager.loadPlugins(m_engine->env().asHost(), libs);

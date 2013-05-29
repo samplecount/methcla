@@ -112,15 +112,15 @@ port_descriptor( const Methcla_SynthOptions* options
 {
     switch ((PortIndex)index) {
         case kSampler_amp:
-            *port = { .type = kMethcla_ControlPort,
-                      .direction = kMethcla_Input,
-                      .flags = kMethcla_PortFlags };
+            port->type = kMethcla_ControlPort;
+            port->direction = kMethcla_Input;
+            port->flags = kMethcla_PortFlags;
             return true;
         case kSampler_output_0:
         case kSampler_output_1:
-            *port = { .type = kMethcla_AudioPort,
-                      .direction = kMethcla_Output,
-                      .flags = kMethcla_PortFlags };
+            port->type = kMethcla_AudioPort;
+            port->direction = kMethcla_Output;
+            port->flags = kMethcla_PortFlags;
             return true;
         default:
             return false;
