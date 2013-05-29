@@ -263,16 +263,18 @@ static inline void methcla_host_perform_command(const Methcla_Host* host, Methcl
     host->perform_command(host, perform, data);
 }
 
-METHCLA_C_LINKAGE typedef void (*Methcla_Library_destroy)(const struct Methcla_Library* library);
+typedef struct Methcla_Library Methcla_Library;
 
-typedef struct Methcla_Library
+METHCLA_C_LINKAGE typedef void (*Methcla_Library_destroy)(const Methcla_Library* library);
+
+struct Methcla_Library
 {
     //* Handle for implementation specific data.
     void* handle;
 
     //* Destroy the library and clean up associated resources.
     Methcla_Library_destroy destroy;
-} Methcla_Library;
+};
 
 METHCLA_C_LINKAGE typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
 

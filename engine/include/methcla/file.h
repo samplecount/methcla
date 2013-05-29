@@ -48,19 +48,21 @@ typedef struct
     unsigned int samplerate;
 } Methcla_SoundFileInfo;
 
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_close)(const struct Methcla_SoundFile* file);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_seek)(const struct Methcla_SoundFile* file, int64_t numFrames);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_tell)(const struct Methcla_SoundFile* file, int64_t* numFrames);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_read_float)(const struct Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
+typedef struct Methcla_SoundFile Methcla_SoundFile;
 
-typedef struct Methcla_SoundFile
+METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_close)(const Methcla_SoundFile* file);
+METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_seek)(const Methcla_SoundFile* file, int64_t numFrames);
+METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_tell)(const Methcla_SoundFile* file, int64_t* numFrames);
+METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_read_float)(const Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
+
+struct Methcla_SoundFile
 {
     void* handle;
     Methcla_SoundFile_close close;
     Methcla_SoundFile_seek seek;
     Methcla_SoundFile_tell tell;
     Methcla_SoundFile_read_float read_float;
-} Methcla_SoundFile;
+};
 
 typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
 
