@@ -44,8 +44,6 @@ typedef struct
     unsigned int samplerate;
 } Methcla_SoundFileInfo;
 
-typedef void* Methcla_SoundFileHandle;
-
 typedef struct Methcla_SoundFile
 {
     void* handle;
