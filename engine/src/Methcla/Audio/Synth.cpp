@@ -14,6 +14,9 @@
 
 #include "Methcla/Audio/Synth.hpp"
 
+#include <algorithm>
+#include <boost/type_traits/alignment_of.hpp>
+
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
@@ -51,14 +54,24 @@ Synth::Synth( Environment& env
 {
     const size_t blockSize = env.blockSize();
 
+    // Initialize flags
+    // memset(&m_flags, 0, sizeof(m_flags));
+
     m_synth = synthDef.construct(env.asWorld(), synthOptions, offset_cast<void*>(this, synthOffset));
     m_controlBuffers = offset_cast<sample_t*>(this, controlBufferOffset);
+    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<sample_t>::value,
+                                       (uintptr_t)m_controlBuffers) );
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(offset_cast<sample_t*>(this, audioBufferOffset));
+    BOOST_ASSERT( kBufferAlignment.isAligned(m_audioBuffers) );
 
     // Uninitialized audio connection memory
-    AudioInputConnection* audioInputConnections   = offset_cast<AudioInputConnection*>(this, audioInputOffset);
-    AudioOutputConnection* audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
+    m_audioInputConnections = offset_cast<AudioInputConnection*>(this, audioInputOffset);
+    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
+                                       (uintptr_t)m_audioInputConnections) );
+    m_audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
+    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioOutputConnection>::value,
+                                       (uintptr_t)m_audioOutputConnections) );
 
     // Connect ports
     Methcla_PortDescriptor port;
@@ -89,19 +102,17 @@ Synth::Synth( Environment& env
         case kMethcla_AudioPort:
             switch (port.direction) {
             case kMethcla_Input: {
-                new (&audioInputConnections[audioInputIndex]) AudioInputConnection(m_audioInputConnections.size());
-                m_audioInputConnections.push_back(audioInputConnections[audioInputIndex]);
+                new (&m_audioInputConnections[audioInputIndex]) AudioInputConnection(audioInputIndex);
                 sample_t* buffer = m_audioBuffers + audioInputIndex * blockSize;
-                BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
+                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
                 m_synthDef.connect(m_synth, i, buffer);
                 audioInputIndex++;
                 };
                 break;
             case kMethcla_Output: {
-                new (&audioOutputConnections[audioOutputIndex]) AudioOutputConnection(m_audioOutputConnections.size());
-                m_audioOutputConnections.push_back(audioOutputConnections[audioOutputIndex]);
+                new (&m_audioOutputConnections[audioOutputIndex]) AudioOutputConnection(audioOutputIndex);
                 sample_t* buffer = m_audioBuffers + (numAudioInputs + audioOutputIndex) * blockSize;
-                BOOST_ASSERT( kBufferAlignment.isAligned(reinterpret_cast<uintptr_t>(buffer)) );
+                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
                 m_synthDef.connect(m_synth, i, buffer);
                 audioOutputIndex++;
                 };
@@ -206,25 +217,26 @@ Synth* Synth::asSynth(Methcla_Synth* handle)
     return reinterpret_cast<Synth*>(reinterpret_cast<char*>(handle) - sizeof(Synth));
 }
 
-template <class Connection>
-struct IfConnectionIndex
+template <class T>
+struct IfIndex
 {
-    IfConnectionIndex(Methcla_PortCount index)
+    IfIndex(Methcla_PortCount index)
         : m_index(index)
     { }
 
-    bool operator () (const Connection& conn)
+    inline bool operator () (const T& x) const
     {
-        return conn.index() == m_index;
+        return x.index() == m_index;
     }
 
+private:
     Methcla_PortCount m_index;
 };
 
-template <class Connection>
-struct SortByBusId
+template <class T>
+struct ByBusId
 {
-    bool operator () (const Connection& a, const Connection& b)
+    inline bool operator () (const T& a, const T& b) const
     {
         return a.busId() < b.busId();
     }
@@ -232,57 +244,71 @@ struct SortByBusId
 
 void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, InputConnectionType type)
 {
-    AudioInputConnections::iterator conn =
-        find_if( m_audioInputConnections.begin()
-               , m_audioInputConnections.end()
-               , IfConnectionIndex<AudioInputConnection>(index) );
-    if (conn != m_audioInputConnections.end()) {
-        if (conn->connect(busId, type)) {
-            m_flags.set(kAudioInputConnectionsChanged);
-        }
+    AudioInputConnection* const begin = m_audioInputConnections;
+    AudioInputConnection* const end = begin + numAudioInputs();
+
+    AudioInputConnection* conn =
+        std::find_if(begin, end, IfIndex<AudioInputConnection>(index));
+
+    if (conn != end) {
+        conn->connect(busId, type);
+        // if () {
+        //     m_flags.audioInputConnectionsChanged = true;
+        // }
     }
 }
 
 void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, OutputConnectionType type)
 {
-    size_t offset = sampleOffset();
+    AudioOutputConnection* const begin = m_audioOutputConnections;
+    AudioOutputConnection* const end = begin + numAudioOutputs();
+    const size_t offset = sampleOffset();
     sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kBufferAlignment, offset) : 0;
-    AudioOutputConnections::iterator conn =
-        find_if( m_audioOutputConnections.begin()
-               , m_audioOutputConnections.end()
-               , IfConnectionIndex<AudioOutputConnection>(index) );
-    if (conn != m_audioOutputConnections.end()) {
+
+    AudioOutputConnection* conn =
+        std::find_if(begin, end, IfIndex<AudioOutputConnection>(index));
+
+    if (conn != end) {
         conn->release(env());
-        if (conn->connect(busId, type, offset, buffer)) {
-            m_flags.set(kAudioOutputConnectionsChanged);
-        }
+        conn->connect(busId, type, offset, buffer);
+        // if () {
+        //     m_flags.audioOutputConnectionsChanged = true;
+        // }
     }
 }
 
 void Synth::process(size_t numFrames)
 {
     // Sort connections by bus id (if necessary)
-    if (m_flags.test(kAudioInputConnectionsChanged)) {
-        m_audioInputConnections.sort(SortByBusId<AudioInputConnection>());
-        m_flags.reset(kAudioInputConnectionsChanged);
-    }
-    if (m_flags.test(kAudioOutputConnectionsChanged)) {
-        m_audioOutputConnections.sort(SortByBusId<AudioOutputConnection>());
-        m_flags.reset(kAudioOutputConnectionsChanged);
-    }
+    // Only needed for bus locking protocol in a parallel implementation
+    // if (m_flags.audioInputConnectionsChanged) {
+    //     m_flags.audioInputConnectionsChanged = false;
+    //     std::sort( m_audioInputConnections
+    //              , m_audioInputConnections + numAudioInputs()
+    //              , ByBusId<AudioInputConnection>() );
+    // }
+    // if (m_flags.audioOutputConnectionsChanged) {
+    //     m_flags.audioOutputConnectionsChanged = false;
+    //     std::sort( m_audioOutputConnections
+    //              , m_audioOutputConnections + numAudioOutputs()
+    //              , ByBusId<AudioOutputConnection>() );
+    // }
 
     Environment& env = this->env();
     const size_t blockSize = env.blockSize();
 
     sample_t* const inputBuffers = m_audioBuffers;
-    for (auto& x : m_audioInputConnections) {
+    // TODO: Iterate only over connected connections (by tracking number of connections).
+    for (size_t i=0; i < numAudioInputs(); i++) {
+        AudioInputConnection& x = m_audioInputConnections[i];
         x.read(env, numFrames, inputBuffers + x.index() * blockSize);
     }
 
     m_synthDef.process(env.asWorld(), m_synth, numFrames);
 
     sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
-    for (auto& x : m_audioOutputConnections) {
+    for (size_t i=0; i < numAudioOutputs(); i++) {
+        AudioOutputConnection& x = m_audioOutputConnections[i];
         x.write(env, numFrames, outputBuffers + x.index() * blockSize);
     }
 

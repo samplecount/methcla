@@ -19,11 +19,9 @@
 // #include "Methcla/Audio/DSP.h"
 #include "Methcla/Audio/Engine.hpp"
 
-#include <methcla/plugin.h>
-
-#include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
 #include <cstdint>
+#include <methcla/plugin.h>
 #include <oscpp/server.hpp>
 #include <thread>
 
@@ -45,7 +43,6 @@ class Synth;
 
 template <typename BusId, typename ConnectionType>
 class Connection : public boost::noncopyable
-                 , public boost::intrusive::list_base_hook<>
 {
 public:
     Connection(Methcla_PortCount index, ConnectionType type)
@@ -98,7 +95,7 @@ public:
             AudioBus* bus = env.audioBus(busId());
 
             if (bus != nullptr) {
-                std::lock_guard<AudioBus::Lock> lock(bus->lock());
+                // std::lock_guard<AudioBus::Lock> lock(bus->lock());
                 if ((type() == kInFeedback) || (bus->epoch() == env.epoch())) {
                     memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
                 } else {
@@ -144,7 +141,7 @@ public:
 
             if (bus != nullptr) {
                 const Epoch epoch = env.epoch();
-                std::lock_guard<AudioBus::Lock> lock(bus->lock());
+                // std::lock_guard<AudioBus::Lock> lock(bus->lock());
                 if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
                     // Accumulate
                     sample_t* dst = bus->data();
@@ -169,15 +166,6 @@ private:
 class Synth : public Node
 {
 protected:
-    enum Flags
-    {
-        kAudioInputConnectionsChanged
-      , kAudioOutputConnectionsChanged
-      , kControlInputConnectionsChanged
-      , kControlOutputConnectionsChanged
-      , kHasTriggerInput
-    };
-
     Synth( Environment& env
          , NodeId nodeId
          , Group* target
@@ -224,11 +212,6 @@ public:
     //* Map output to bus.
     void mapOutput(Methcla_PortCount output, const AudioBusId& busId, OutputConnectionType type);
 
-    typedef boost::intrusive::list<AudioInputConnection>  AudioInputConnections;
-    typedef boost::intrusive::list<AudioOutputConnection> AudioOutputConnections;
-    // typedef boost::container::vector<Connection<ControlBus, InputConnectionType> > ControlInputConnections;
-    // typedef boost::container::vector<Connection<ControlBus, OutputConnectionType> > ControlOutputConnections;
-
     Methcla_PortCount numControlInputs() const { return m_numControlInputs; }
     Methcla_PortCount numControlOutputs() const { return m_numControlOutputs; }
 
@@ -257,15 +240,24 @@ public:
     virtual void process(size_t numFrames) override;
 
 private:
+    // struct Flags
+    // {
+    //     bool audioInputConnectionsChanged       : 1;
+    //     bool audioOutputConnectionsChanged      : 1;
+    //     // bool controlInputConnectionsChanged     : 1;
+    //     // bool controlOutputConnectionsChanged    : 1;
+    //     // bool hasTriggerInput                    : 1;
+    // };
+
     const SynthDef&         m_synthDef;
-    std::bitset<32>         m_flags;
-    Methcla_Synth*          m_synth;
-    AudioInputConnections   m_audioInputConnections;
-    AudioOutputConnections  m_audioOutputConnections;
     const Methcla_PortCount m_numControlInputs;
     const Methcla_PortCount m_numControlOutputs;
     const Methcla_PortCount m_numAudioInputs;
     const Methcla_PortCount m_numAudioOutputs;
+    // Flags                   m_flags;
+    Methcla_Synth*          m_synth;
+    AudioInputConnection*   m_audioInputConnections;
+    AudioOutputConnection*  m_audioOutputConnections;
     sample_t*               m_controlBuffers;
     sample_t*               m_audioBuffers;
 };
