@@ -1,6 +1,3 @@
-[submodule "engine/external_libraries/faust"]
-	path = engine/external_libraries/faust
-	url = git://faudiostream.git.sourceforge.net/gitroot/faudiostream/faudiostream
 [submodule "engine/external_libraries/tlsf"]
 	path = engine/external_libraries/tlsf
 	url = https://github.com/samplecount/tlsf.git
