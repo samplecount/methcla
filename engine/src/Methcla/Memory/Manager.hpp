@@ -20,6 +20,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/type_traits/alignment_of.hpp>
+#include <boost/type_traits/aligned_storage.hpp>
 #include <cstddef>
 #include <tlsf.h>
 
@@ -74,9 +75,11 @@ template <class T, class Allocator> class AllocatedBase
 {
     struct Chunk
     {
-        Allocator*       alloc;
-        char             padding[boost::alignment_of<T>::value-sizeof(Allocator*)];
-        char             data[];
+        typedef boost::aligned_storage<1,boost::alignment_of<T>::value> Padding;
+
+        Allocator*  alloc;
+        Padding     padding;
+        char        data[];
     };
 
 protected:
