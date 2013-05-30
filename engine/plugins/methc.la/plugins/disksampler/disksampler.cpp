@@ -106,8 +106,8 @@ struct Synth {
 extern "C" {
 
 static bool
-port_descriptor( const Methcla_SynthOptions* options
-               , size_t index
+port_descriptor( const Methcla_SynthOptions* /* options */
+               , Methcla_PortCount index
                , Methcla_PortDescriptor* port )
 {
     switch ((PortIndex)index) {
@@ -371,7 +371,7 @@ destroy(const Methcla_World* world, Methcla_Synth* synth)
 
 static void
 connect( Methcla_Synth* synth
-       , size_t index
+       , Methcla_PortCount index
        , void* data )
 {
     ((Synth*)synth)->ports[index] = (float*)data;

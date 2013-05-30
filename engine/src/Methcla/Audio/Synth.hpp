@@ -19,8 +19,11 @@
 // #include "Methcla/Audio/DSP.h"
 #include "Methcla/Audio/Engine.hpp"
 
+#include <methcla/plugin.h>
+
 #include <boost/intrusive/list.hpp>
 #include <boost/utility.hpp>
+#include <cstdint>
 #include <oscpp/server.hpp>
 #include <thread>
 
@@ -45,41 +48,47 @@ class Connection : public boost::noncopyable
                  , public boost::intrusive::list_base_hook<>
 {
 public:
-    Connection(size_t index, ConnectionType type)
+    Connection(Methcla_PortCount index, ConnectionType type)
         : m_index(index)
-        , m_connected(false)
         , m_busId(0)
-        , m_type(type)
-    { }
+    {
+        m_flags.connected = false;
+        m_flags.type = type;
+    }
 
-    size_t index() const { return m_index; }
-    bool isConnected() const { return m_connected; }
+    Methcla_PortCount index() const { return m_index; }
+    bool isConnected() const { return m_flags.connected; }
     BusId busId() const { return m_busId; }
-    const ConnectionType& type() const { return m_type; }
+    ConnectionType type() const { return (ConnectionType)m_flags.type; }
 
-    bool connect(const BusId& busId, const ConnectionType& type)
+    bool connect(const BusId& busId, ConnectionType type)
     {
         bool changed = false;
-        if (!m_connected || (busId != m_busId)) {
-            m_connected = true;
+        if (!m_flags.connected || (busId != m_busId)) {
+            m_flags.connected = true;
             m_busId = busId;
             changed = true;
         }
-        m_type = type;
+        m_flags.type = type;
         return changed;
     }
 
 private:
-    size_t          m_index;
-    bool            m_connected;
-    BusId           m_busId;
-    ConnectionType  m_type;
+    struct Flags
+    {
+        bool connected : 1;
+        int type       : 4;
+    };
+
+    Flags               m_flags;
+    Methcla_PortCount   m_index;
+    BusId               m_busId;
 };
 
 class AudioInputConnection : public Connection<AudioBusId,InputConnectionType>
 {
 public:
-    AudioInputConnection(size_t index)
+    AudioInputConnection(Methcla_PortCount index)
         : Connection<AudioBusId,InputConnectionType>(index, kIn)
     { }
 
@@ -105,7 +114,7 @@ public:
 class AudioOutputConnection : public Connection<AudioBusId,OutputConnectionType>
 {
 public:
-    AudioOutputConnection(size_t index)
+    AudioOutputConnection(Methcla_PortCount index)
         : Connection<AudioBusId,OutputConnectionType>(index, kOut)
         , m_offset(0)
         , m_buffer(0)
@@ -176,10 +185,10 @@ protected:
          , const SynthDef& synthDef
          , OSC::Server::ArgStream controls
          , const Methcla_SynthOptions* synthOptions
-         , size_t numControlInputs
-         , size_t numControlOutputs
-         , size_t numAudioInputs
-         , size_t numAudioOutputs
+         , Methcla_PortCount numControlInputs
+         , Methcla_PortCount numControlOutputs
+         , Methcla_PortCount numAudioInputs
+         , Methcla_PortCount numAudioOutputs
          , size_t synthOffset
          , size_t audioInputConnectionsOffset
          , size_t audioOutputConnectionsOffset
@@ -204,38 +213,38 @@ public:
     static Synth* asSynth(Methcla_Synth* handle);
 
     //* Return number of audio inputs.
-    size_t numAudioInputs() const { return m_numAudioInputs; }
+    Methcla_PortCount numAudioInputs() const { return m_numAudioInputs; }
 
     //* Map input to bus.
-    void mapInput(size_t input, const AudioBusId& busId, InputConnectionType type);
+    void mapInput(Methcla_PortCount input, const AudioBusId& busId, InputConnectionType type);
 
     //* Return number of audio outputs.
-    size_t numAudioOutputs() const { return m_numAudioOutputs; }
+    Methcla_PortCount numAudioOutputs() const { return m_numAudioOutputs; }
 
     //* Map output to bus.
-    void mapOutput(size_t output, const AudioBusId& busId, OutputConnectionType type);
+    void mapOutput(Methcla_PortCount output, const AudioBusId& busId, OutputConnectionType type);
 
     typedef boost::intrusive::list<AudioInputConnection>  AudioInputConnections;
     typedef boost::intrusive::list<AudioOutputConnection> AudioOutputConnections;
     // typedef boost::container::vector<Connection<ControlBus, InputConnectionType> > ControlInputConnections;
     // typedef boost::container::vector<Connection<ControlBus, OutputConnectionType> > ControlOutputConnections;
 
-    size_t numControlInputs() const { return m_numControlInputs; }
-    size_t numControlOutputs() const { return m_numControlOutputs; }
+    Methcla_PortCount numControlInputs() const { return m_numControlInputs; }
+    Methcla_PortCount numControlOutputs() const { return m_numControlOutputs; }
 
-    float controlInput(size_t index) const
+    float controlInput(Methcla_PortCount index) const
     {
         BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
         return m_controlBuffers[index];
     }
 
-    float& controlInput(size_t index)
+    float& controlInput(Methcla_PortCount index)
     {
         BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
         return m_controlBuffers[index];
     }
 
-    float controlOutput(size_t index) const
+    float controlOutput(Methcla_PortCount index) const
     {
         BOOST_ASSERT_MSG( index < numControlOutputs(), "control output index out of range" );
         return m_controlBuffers[numControlInputs() + index];
@@ -253,10 +262,10 @@ private:
     Methcla_Synth*          m_synth;
     AudioInputConnections   m_audioInputConnections;
     AudioOutputConnections  m_audioOutputConnections;
-    const size_t            m_numControlInputs;
-    const size_t            m_numControlOutputs;
-    const size_t            m_numAudioInputs;
-    const size_t            m_numAudioOutputs;
+    const Methcla_PortCount m_numControlInputs;
+    const Methcla_PortCount m_numControlOutputs;
+    const Methcla_PortCount m_numAudioInputs;
+    const Methcla_PortCount m_numAudioOutputs;
     sample_t*               m_controlBuffers;
     sample_t*               m_audioBuffers;
 };

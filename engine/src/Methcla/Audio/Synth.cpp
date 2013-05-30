@@ -31,10 +31,10 @@ Synth::Synth( Environment& env
             , const SynthDef& synthDef
             , OSC::Server::ArgStream controls
             , const Methcla_SynthOptions* synthOptions
-            , size_t numControlInputs
-            , size_t numControlOutputs
-            , size_t numAudioInputs
-            , size_t numAudioOutputs
+            , Methcla_PortCount numControlInputs
+            , Methcla_PortCount numControlOutputs
+            , Methcla_PortCount numAudioInputs
+            , Methcla_PortCount numAudioOutputs
             , size_t synthOffset
             , size_t audioInputOffset
             , size_t audioOutputOffset
@@ -62,10 +62,10 @@ Synth::Synth( Environment& env
 
     // Connect ports
     Methcla_PortDescriptor port;
-    size_t controlInputIndex  = 0;
-    size_t controlOutputIndex = 0;
-    size_t audioInputIndex    = 0;
-    size_t audioOutputIndex   = 0;
+    Methcla_PortCount controlInputIndex  = 0;
+    Methcla_PortCount controlOutputIndex = 0;
+    Methcla_PortCount audioInputIndex    = 0;
+    Methcla_PortCount audioOutputIndex   = 0;
     for (size_t i=0; synthDef.portDescriptor(synthOptions, i, &port); i++) {
         switch (port.type) {
         case kMethcla_ControlPort:
@@ -137,10 +137,10 @@ Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::Ad
 
     const Methcla_SynthOptions* synthOptions = synthDef.configure(options);
 
-    size_t numControlInputs  = 0;
-    size_t numControlOutputs = 0;
-    size_t numAudioInputs    = 0;
-    size_t numAudioOutputs   = 0;
+    Methcla_PortCount numControlInputs  = 0;
+    Methcla_PortCount numControlOutputs = 0;
+    Methcla_PortCount numAudioInputs    = 0;
+    Methcla_PortCount numAudioOutputs   = 0;
 
     // Get port counts.
     Methcla_PortDescriptor port;
@@ -209,7 +209,7 @@ Synth* Synth::asSynth(Methcla_Synth* handle)
 template <class Connection>
 struct IfConnectionIndex
 {
-    IfConnectionIndex(size_t index)
+    IfConnectionIndex(Methcla_PortCount index)
         : m_index(index)
     { }
 
@@ -218,7 +218,7 @@ struct IfConnectionIndex
         return conn.index() == m_index;
     }
 
-    size_t m_index;
+    Methcla_PortCount m_index;
 };
 
 template <class Connection>
@@ -230,7 +230,7 @@ struct SortByBusId
     }
 };
 
-void Synth::mapInput(size_t index, const AudioBusId& busId, InputConnectionType type)
+void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, InputConnectionType type)
 {
     AudioInputConnections::iterator conn =
         find_if( m_audioInputConnections.begin()
@@ -243,7 +243,7 @@ void Synth::mapInput(size_t index, const AudioBusId& busId, InputConnectionType 
     }
 }
 
-void Synth::mapOutput(size_t index, const AudioBusId& busId, OutputConnectionType type)
+void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, OutputConnectionType type)
 {
     size_t offset = sampleOffset();
     sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kBufferAlignment, offset) : 0;

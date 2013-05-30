@@ -152,6 +152,8 @@ struct Methcla_PortDescriptor
     Methcla_PortFlags     flags;
 };
 
+typedef uint16_t Methcla_PortCount;
+
 typedef void Methcla_SynthOptions;
 
 typedef struct Methcla_SynthDef Methcla_SynthDef;
@@ -160,13 +162,13 @@ typedef struct Methcla_SynthDef Methcla_SynthDef;
 METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_configure)(const void* tag_buffer, size_t tag_size, const void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
 
 //* Get port descriptor at index.
-METHCLA_C_LINKAGE typedef bool (*Methcla_SynthDef_port_descriptor)(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port);
+METHCLA_C_LINKAGE typedef bool (*Methcla_SynthDef_port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
 
 //* Construct a synth instance at the location given.
 METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Synth* synth);
 
 //* Connect port at index to data.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_connect)(Methcla_Synth* synth, size_t index, void* data);
+METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
 
 //* Activate the synth instance just before starting to call `process`.
 METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_activate)(const Methcla_World* world, Methcla_Synth* synth);

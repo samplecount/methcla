@@ -78,7 +78,7 @@ public:
 
     Methcla_Synth* construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const;
 
-    inline void connect(Methcla_Synth* synth, uint32_t port, void* data) const
+    inline void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data) const
     {
         m_descriptor->connect(synth, port, data);
     }

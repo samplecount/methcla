@@ -40,7 +40,7 @@ static const Methcla_PortDescriptor kPortDescriptors[] = {
 
 static bool
 port_descriptor( const Methcla_SynthOptions* options
-               , size_t index
+               , Methcla_PortCount index
                , Methcla_PortDescriptor* port )
 {
     if (index < kSinePorts) {
@@ -70,7 +70,7 @@ construct( const Methcla_World* world
 
 static void
 connect( Methcla_Synth* synth
-       , size_t port
+       , Methcla_PortCount port
        , void* data)
 {
     ((Sine*)synth)->ports[port] = (float*)data;
