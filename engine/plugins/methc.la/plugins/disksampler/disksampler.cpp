@@ -319,7 +319,7 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
 
 static void
 construct( const Methcla_World* world
-         , const Methcla_SynthDef* synthDef
+         , const Methcla_SynthDef* /* synthDef */
          , const Methcla_SynthOptions* inOptions
          , Methcla_Synth* synth )
 {
@@ -556,7 +556,7 @@ static const Methcla_SynthDef descriptor =
 
 static const Methcla_Library library = { nullptr, nullptr };
 
-METHCLA_EXPORT const Methcla_Library* methcla_plugins_disksampler(const Methcla_Host* host, const char* bundlePath)
+METHCLA_EXPORT const Methcla_Library* methcla_plugins_disksampler(const Methcla_Host* host, const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
     return &library;
