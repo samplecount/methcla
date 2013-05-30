@@ -4,3 +4,5 @@
 [submodule "engine/external_libraries/oscpp"]
 	path = engine/external_libraries/oscpp
 	url = https://github.com/kaoskorobase/oscpp.git
+        branch = master
+        ignore = untracked
