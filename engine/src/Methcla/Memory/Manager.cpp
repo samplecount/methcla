@@ -13,29 +13,74 @@
 // limitations under the License.
 
 #include "Methcla/Memory/Manager.hpp"
-#include <cstdlib>
+#include <stdexcept>
 
-//using namespace Methcla::Memory;
-//
-//void* RTMemoryManager::malloc(size_t numBytes) throw(MemoryAllocationFailure)
-//{
-//    void* ptr = ::malloc(numBytes);
-//    if (ptr == 0)
-//        BOOST_THROW_EXCEPTION(MemoryAllocationFailure());
-//    return ptr;
-//}
-//
-//void* RTMemoryManager::memalign(const Alignment& align, size_t numBytes) throw(MemoryAllocationFailure)
-//{
-//    void* ptr;
-//    int err = posix_memalign(&ptr, align.alignment(), numBytes);
-//    if (err != 0)
-//        BOOST_THROW_EXCEPTION(MemoryAllocationFailure());
-//    return ptr;
-//}
-//
-//void RTMemoryManager::free(void* ptr) throw(MemoryAllocationFailure)
-//{
-//    if (ptr != 0)
-//        ::free(ptr);
-//}
+// Set to 1 to disable the realtime memory manager.
+#define METHCLA_NO_RT_MEMORY 0
+
+using namespace Methcla::Memory;
+
+#if METHCLA_NO_RT_MEMORY
+RTMemoryManager::RTMemoryManager(size_t)
+    : m_memory(nullptr)
+    , m_pool(nullptr
+{ }
+#else
+RTMemoryManager::RTMemoryManager(size_t poolSize)
+    : m_memory(nullptr)
+    , m_pool(nullptr)
+{
+    m_memory = Memory::alloc(poolSize);
+    m_pool = tlsf_create(m_memory, poolSize);
+    if (m_pool == nullptr) {
+        Memory::free(m_memory);
+        throw std::bad_alloc();
+    }
+}
+#endif
+
+RTMemoryManager::~RTMemoryManager()
+{
+#if !METHCLA_NO_RT_MEMORY
+    tlsf_destroy(m_pool);
+    Memory::free(m_memory);
+#endif
+}
+
+void* RTMemoryManager::alloc(size_t size)
+{
+#if METHCLA_NO_RT_MEMORY
+    return Methcla::Memory::alloc(size);
+#else
+    if (size == 0)
+        throw std::invalid_argument("allocation size must be greater than zero");
+    void* ptr = tlsf_malloc(m_pool, size);
+    if (ptr == nullptr)
+        throw std::bad_alloc();
+    return ptr;
+#endif
+}
+
+void* RTMemoryManager::allocAligned(Alignment align, size_t size)
+{
+#if METHCLA_NO_RT_MEMORY
+    return Methcla::Memory::allocAligned(align, size);
+#else
+    if (size == 0)
+        throw std::invalid_argument("allocation size must be greater than zero");
+    void* ptr = tlsf_memalign(m_pool, align, size);
+    if (ptr == nullptr)
+        throw std::bad_alloc();
+    return ptr;
+#endif
+}
+
+void RTMemoryManager::free(void* ptr) noexcept
+{
+#if METHCLA_NO_RT_MEMORY
+    Methcla::Memory::free(ptr);
+#else
+    if (ptr != nullptr)
+        tlsf_free(m_pool, ptr);
+#endif
+}
