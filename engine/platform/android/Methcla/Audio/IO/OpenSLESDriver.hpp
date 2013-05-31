@@ -12,26 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef METHCLA_AUDIO_IO_JACKDRIVER_HPP
-#define METHCLA_AUDIO_IO_JACKDRIVER_HPP
+#ifndef METHCLA_AUDIO_IO_OPENSLESDRIVER_HPP
+#define METHCLA_AUDIO_IO_OPENSLESDRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
-
-#include <jack/jack.h>
-
-#include <boost/cstdint.hpp>
-#include <boost/exception/all.hpp>
+#include "Methcla/Audio/Types.h"
+#include "opensl_io.h"
 
 namespace Methcla { namespace Audio { namespace IO
 {
-    class JackDriver : public Driver
+    class OpenSLESDriver : public Driver
     {
     public:
-        JackDriver();
-        virtual ~JackDriver();
+        OpenSLESDriver();
+        virtual ~OpenSLESDriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }
-        virtual size_t numInputs() const override { return m_numInputs; }
+        virtual size_t numInputs()  const override { return m_numInputs; }
         virtual size_t numOutputs() const override { return m_numOutputs; }
         virtual size_t bufferSize() const override { return m_bufferSize; }
 
@@ -39,21 +36,20 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void stop() override;
 
     private:
-        static int sampleRateCallback(jack_nframes_t nframes, void* arg);
-        static int bufferSizeCallback(jack_nframes_t nframes, void* arg);
-        static int processCallback(jack_nframes_t nframes, void* arg);
+        static void processCallback(
+            void* context, int sample_rate, int buffer_frames,
+            int input_channels, const short* input_buffer,
+            int output_channels, short* output_buffer);
 
     private:
-        double              m_sampleRate;
-        size_t              m_numInputs;
-        size_t              m_numOutputs;
-        size_t              m_bufferSize;
-        jack_client_t*      m_jackClient;
-        jack_port_t**       m_jackInputPorts;
-        jack_port_t**       m_jackOutputPorts;
-        sample_t**          m_inputBuffers;
-        sample_t**          m_outputBuffers;
+        OPENSL_STREAM*  m_stream;
+        double          m_sampleRate;
+        size_t          m_numInputs;
+        size_t          m_numOutputs;
+        size_t          m_bufferSize;
+        sample_t**      m_inputBuffers;
+        sample_t**      m_outputBuffers;
     };
 }; }; };
 
-#endif // METHCLA_AUDIO_IO_JACKDRIVER_HPP
+#endif // METHCLA_AUDIO_IO_OPENSLESDRIVER_HPP

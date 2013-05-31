@@ -41,9 +41,11 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
 
+    static sample_t** makeBuffers(size_t numChannels, size_t numFrames);
+
 protected:
     void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
-    
+
 private:
     struct Process
     {
@@ -57,6 +59,6 @@ private:
 //* Instantiate the default driver for the current platform.
 Driver* defaultPlatformDriver();
 
-}; }; };
+} } }
 
 #endif // METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED

@@ -32,16 +32,16 @@
 #define METHCLA_WORKER_USE_PTHREAD 0
 #define METHCLA_WORKER_AUDIO_THREAD 0
 
-// #if METHCLA_WORKER_USE_LIST
+#if __APPLE__
 # include <libkern/OSAtomic.h>
-// #endif
+# define METHCLA_WORKER_MEMORY_BARRIER OSMemoryBarrier()
+#else
+# define METHCLA_WORKER_MEMORY_BARRIER
+#endif
 
 #if METHCLA_WORKER_USE_PTHREAD
 # include <pthread.h>
 #endif
-
-// #define METHCLA_WORKER_MEMORY_BARRIER OSMemoryBarrier()
-#define METHCLA_WORKER_MEMORY_BARRIER
 
 namespace Methcla { namespace Utility {
 
@@ -71,7 +71,7 @@ public:
 #endif
         m_list.push_back(a);
 #if !METHCLA_WORKER_AUDIO_THREAD
-        OSMemoryBarrier();
+        METHCLA_WORKER_MEMORY_BARRIER;
 #endif
 #if METHCLA_WORKER_USE_PTHREAD && !METHCLA_WORKER_AUDIO_THREAD
         pthread_mutex_unlock(&m_mutex);
@@ -93,7 +93,7 @@ public:
         a = m_list.front();
         m_list.pop_front();
 #if !METHCLA_WORKER_AUDIO_THREAD
-        OSMemoryBarrier();
+        METHCLA_WORKER_MEMORY_BARRIER;
 #endif
 #if METHCLA_WORKER_USE_PTHREAD && !METHCLA_WORKER_AUDIO_THREAD
         pthread_mutex_unlock(&m_mutex);
@@ -156,7 +156,6 @@ public:
     {
         Command cmd;
         while (dequeue(cmd)) {
-            METHCLA_WORKER_MEMORY_BARRIER;
             cmd.perform();
         }
     }
@@ -164,9 +163,7 @@ public:
 protected:
     void sendCommand(const Command& cmd)
     {
-        METHCLA_WORKER_MEMORY_BARRIER;
         bool success = m_queue.push(cmd);
-        METHCLA_WORKER_MEMORY_BARRIER;
         if (!success) throw std::runtime_error("Channel overflow");
     }
 
@@ -365,6 +362,6 @@ private:
 #endif
 };
 
-}; };
+} }
 
 #endif // METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED

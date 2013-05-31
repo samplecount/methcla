@@ -186,6 +186,8 @@ protected:
          );
     ~Synth();
 
+    virtual void doProcess(size_t numFrames) override;
+
 public:
     static Synth* construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args);
 
@@ -236,9 +238,6 @@ public:
     /// Sample offset for sample accurate synth scheduling.
     size_t sampleOffset() const { return 0; }
 
-    /// Sets up inputs and outputs and calls compute.
-    virtual void process(size_t numFrames) override;
-
 private:
     // struct Flags
     // {
@@ -262,6 +261,6 @@ private:
     sample_t*               m_audioBuffers;
 };
 
-}; };
+} }
 
 #endif // METHCLA_AUDIO_SYNTH_HPP_INCLUDED

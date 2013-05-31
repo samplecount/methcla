@@ -35,7 +35,7 @@ void Group::free()
     }
 }
 
-void Group::process(size_t numFrames)
+void Group::doProcess(size_t numFrames)
 {
     for (Node& node : m_children) { node.process(numFrames); }
 }

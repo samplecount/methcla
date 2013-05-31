@@ -25,6 +25,7 @@ import           Data.Tree (Tree(Node))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
+import           Data.Version
 import           Shakefile.Lens (append)
 import           System.Environment (getEnvironment)
 
@@ -62,31 +63,64 @@ makeLenses ''Env
 defaultEnv :: Env
 defaultEnv = Env "."
 
-newtype Platform = Platform String deriving (Eq, Ord, Show)
+data Platform = Platform {
+    platformName :: String
+  , platformVersion :: Version
+  } deriving (Eq, Show)
 
 platformString :: Platform -> String
-platformString (Platform x) = map toLower x
+platformString = map toLower . platformName
 
-data Arch =
+data X86Version =
     I386
+  | I686
   | X86_64
-  | Armv6
+  deriving (Eq, Show)
+
+data ArmVersion =
+    Armv6
   | Armv7
   | Armv7s
   deriving (Eq, Show)
 
+data Arch =
+    X86 X86Version
+  | Arm ArmVersion
+  deriving (Eq, Show)
+
+archShortString :: Arch -> String
+archShortString arch =
+  case arch of
+    X86 _ -> "x86"
+    Arm _ -> "arm"
+
 archString :: Arch -> String
-archString = map toLower . show
+archString arch =
+  case arch of
+    X86 I386 -> "i386"
+    X86 I686 -> "i686"
+    X86 X86_64 -> "x86_64"
+    Arm Armv6 -> "armv6"
+    Arm Armv7 -> "armv7"
+    Arm Armv7s -> "armv7s"
 
 data CTarget = CTarget {
-    _targetPlatform :: Platform
-  , _targetArch :: Arch
+    _targetArch :: Arch
+  , _targetVendor :: String
+  , _targetOS :: String
+  , _targetPlatform :: Platform
   } deriving (Show)
 
 makeLenses ''CTarget
 
-mkCTarget :: Platform -> Arch -> CTarget
+mkCTarget :: Arch -> String -> String -> Platform -> CTarget
 mkCTarget = CTarget
+
+targetString :: CTarget -> String
+targetString target =
+     archShortString (target ^. targetArch)
+  ++ "-" ++ (target ^. targetVendor)
+  ++ "-" ++ (target ^. targetOS)
 
 buildDir :: Env -> CTarget -> FilePath
 {-buildDir env target =-}
@@ -99,8 +133,6 @@ buildDir env _ = env ^. buildPrefix
 data CLanguage = C | Cpp | ObjC | ObjCpp
                  deriving (Enum, Eq, Show)
 
-data CABI = CABI | CppABI
-
 data LinkResult = Executable
                 | SharedLibrary
                 | DynamicLibrary
@@ -109,7 +141,7 @@ data LinkResult = Executable
 defaultCLanguageMap :: [(String, CLanguage)]
 defaultCLanguageMap = concatMap f [
     ([".c"], C)
-  , ([".cc", ".cpp", ".C"], Cpp)
+  , ([".cc", ".cpp", ".C", ".cxx"], Cpp)
   , ([".m"], ObjC)
   , ([".mm"], ObjCpp)
   ]
@@ -150,7 +182,7 @@ data CToolChain = CToolChain {
 makeLenses ''CToolChain
 
 defaultArchiver :: Archiver
-defaultArchiver _ toolChain buildFlags inputs output = do
+defaultArchiver target toolChain buildFlags inputs output = do
     need inputs
     system' (tool archiverCmd toolChain)
         $ buildFlags ^. archiverFlags
@@ -165,7 +197,6 @@ defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     system' (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flag_ "-arch" (archString $ target ^. targetArch)
           ++ flags "-L" (buildFlags ^. libraryPath)
           ++ flags "-l" (buildFlags ^. libraries)
           ++ flag_ "-o" output
@@ -249,8 +280,7 @@ dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         system' (tool compilerCmd toolChain)
-                $  flag_ "-arch" (archString $ target ^. targetArch)
-                ++ flags "-I" (buildFlags ^. systemIncludes)
+                $  flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)
@@ -270,8 +300,7 @@ staticObject target toolChain buildFlags input deps output = do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         system' (tool compilerCmd toolChain)
-                $  flag_ "-arch" (archString $ target ^. targetArch)
-                ++ flags "-I" (buildFlags ^. systemIncludes)
+                $  flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)

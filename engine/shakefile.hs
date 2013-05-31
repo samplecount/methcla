@@ -16,10 +16,12 @@
 
 import           Control.Lens hiding (Action, (<.>), under)
 import           Data.Char (toLower)
+import           Data.Version (Version(..))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
-import           Shakefile.C.OSX
+import qualified Shakefile.C.Android as Android
+import           Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           Shakefile.Lens
@@ -47,16 +49,11 @@ boostBuildFlags = append systemIncludes [ boostDir ]
 tlsfDir :: FilePath
 tlsfDir = externalLibrary "tlsf"
 
-engineBuildFlags :: Platform -> CBuildFlags -> CBuildFlags
-engineBuildFlags platform =
+engineBuildFlags :: CBuildFlags -> CBuildFlags
+engineBuildFlags =
     append userIncludes
       ( -- Library headers
         [ "src" ]
-        -- Platform specific modules
-     ++ (if      platform == iPhoneOS then[ "platform/ios" ]
-         else if platform == iPhoneSimulator then [ "platform/ios" ]
-         else if platform == macOSX then [ "platform/jack" ]
-         else [])
         -- External libs and plugins
      ++ [ "external_libraries", "plugins" ] )
   . append systemIncludes
@@ -72,20 +69,25 @@ engineBuildFlags platform =
 -- | Build flags common to all targets
 commonBuildFlags :: CBuildFlags -> CBuildFlags
 commonBuildFlags = append compilerFlags [
-    (Just C, flag "-std=c11")
-  , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
-  , (Nothing, ["-Wall", "-Wstrict-aliasing=2"])
-  , (Just Cpp, flag "-fvisibility-inlines-hidden")
-  , (Nothing, flag "-fstrict-aliasing")
+    (Just C, ["-std=c11"])
+  , (Just Cpp, ["-std=c++11"])
+  , (Nothing, ["-Wall", "-Wextra"])
+  , (Just Cpp, ["-fvisibility-inlines-hidden"])
+  , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
+  , (Nothing, ["-fstack-protector", "-Wstack-protector"])
   ]
 
 -- | Build flags for static library
-staticBuidFlags :: CBuildFlags -> CBuildFlags
-staticBuidFlags = id
+staticBuildFlags :: CBuildFlags -> CBuildFlags
+staticBuildFlags = id
 
 -- | Build flags for shared library
 sharedBuildFlags :: CBuildFlags -> CBuildFlags
 sharedBuildFlags = append libraries ["c++", "m"]
+
+-- | Build flags for building with clang.
+clangBuildFlags :: String -> CBuildFlags -> CBuildFlags
+clangBuildFlags libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
 
 pluginSources :: [FilePath]
 pluginSources = [
@@ -98,8 +100,8 @@ pluginSources = [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaLib :: Platform -> Library
-methclaLib platform =
+methclaLib :: SourceTree CBuildFlags -> Library
+methclaLib platformSources =
     Library "methcla" $ sourceFlags commonBuildFlags [
         sourceFlags boostBuildFlags [ sourceFiles_ $
           under (boostDir </> "libs") [
@@ -115,42 +117,38 @@ methclaLib platform =
         -- TLSF
       , sourceFiles_ [ tlsfDir </> "tlsf.c" ]
         -- engine
-      , sourceFlags (engineBuildFlags platform) [
+      , sourceFlags engineBuildFlags [
           -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
           --   [ sourceFiles_ [ "src/Methcla/Audio/Engine.cpp" ] ],
           sourceFiles_ $
-          [ "src/Methcla/API.cpp"
-          , "src/Methcla/Audio/AudioBus.cpp"
-          , "src/Methcla/Audio/Engine.cpp"
-          , "src/Methcla/Audio/Group.cpp"
-          , "src/Methcla/Audio/IO/Driver.cpp"
-          , "src/Methcla/Audio/Node.cpp"
-          -- , "src/Methcla/Audio/Resource.cpp"
-          , "src/Methcla/Audio/Synth.cpp"
-          , "src/Methcla/Audio/SynthDef.cpp"
-          , "src/Methcla/Memory/Manager.cpp"
-          , "src/Methcla/Memory.cpp"
-          , "src/Methcla/Plugin/Loader.cpp"
-          , "src/Methcla/Utility/Semaphore.cpp"
-          ]
-          -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
-          -- plugins
-          ++ pluginSources
+            [ "src/Methcla/API.cpp"
+            , "src/Methcla/Audio/AudioBus.cpp"
+            , "src/Methcla/Audio/Engine.cpp"
+            , "src/Methcla/Audio/Group.cpp"
+            , "src/Methcla/Audio/IO/Driver.cpp"
+            , "src/Methcla/Audio/Node.cpp"
+            -- , "src/Methcla/Audio/Resource.cpp"
+            , "src/Methcla/Audio/Synth.cpp"
+            , "src/Methcla/Audio/SynthDef.cpp"
+            , "src/Methcla/Memory/Manager.cpp"
+            , "src/Methcla/Memory.cpp"
+            , "src/Methcla/Plugin/Loader.cpp"
+            , "src/Methcla/Utility/Semaphore.cpp"
+            ]
+            -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
+            -- plugins
+            ++ pluginSources
           -- platform dependent
-          ++ (if platform `elem` [iPhoneOS, iPhoneSimulator]
-              then [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp" ]
-              else if platform == macOSX
-                   then [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp" ]
-                   else [])
-      -- , sourceTree_ (vectorBuildFlags . engineBuildFlags platform) $ sourceFiles $
+        , platformSources
+      -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
       --     under "src" [ "Methcla/Audio/DSP.c" ]
-          ]
+        ]
       ]
 
 plugins :: Platform -> [Library]
 plugins platform = [
     -- TODO: Provide more SourceTree combinators
-    Library "sine" $ sourceFlags (engineBuildFlags platform) [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
+    Library "sine" $ sourceFlags engineBuildFlags [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
   ]
 
 -- ====================================================================
@@ -168,20 +166,20 @@ parseConfig x =
 configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
-        append compilerFlags [(Nothing, ["-O2", "-gdwarf-2", "-fvisibility=hidden"])]
+        append compilerFlags [
+          (Nothing, ["-O1", "-gdwarf-2", "-fvisibility=hidden"])
+        , (Nothing, ["-Wno-unused-parameter"])
+        ]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
-        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2"])]
+        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2", "-ftrapv"])]
       . append defines [("DEBUG", Just "1")]
     )
   ]
 
 -- ====================================================================
 -- Commandline targets
-
-iOS_SDK :: SDKVersion
-iOS_SDK = SDKVersion "6.1"
 
 shakeBuildDir :: String
 shakeBuildDir = "build"
@@ -221,28 +219,35 @@ mkRules options = do
         do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
       , do -- iphone
+            let iOS_SDK = Version [6,1] []
             developer <- liftIO getDeveloperPath
             return $ do
                 iphoneosLib <- do
-                    let platform = iPhoneOS
-                        cTarget = mkCTarget platform Armv7
+                    let platform = iPhoneOS iOS_SDK
+                        cTarget = OSX.target (Arm Armv7) platform
                         toolChain = applyEnv $ cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . staticBuidFlags
-                                   $ cBuildFlags_IOS developer iOS_SDK
-                    lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
+                                   . append userIncludes ["platform/ios"]
+                                   . clangBuildFlags "libc++"
+                                   . staticBuildFlags
+                                   $ cBuildFlags_IOS cTarget developer
+                    lib <- staticLibrary env cTarget toolChain buildFlags
+                            (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
                 iphonesimulatorLib <- do
-                    let platform = iPhoneSimulator
-                        cTarget = mkCTarget platform I386
+                    let platform = iPhoneSimulator iOS_SDK
+                        cTarget = OSX.target (X86 I386) platform
                         toolChain = applyEnv $ cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . staticBuidFlags
-                                   $ cBuildFlags_IOS_Simulator developer iOS_SDK
-                    lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
+                                   . append userIncludes ["platform/ios"]
+                                   . clangBuildFlags "libc++"
+                                   . staticBuildFlags
+                                   $ cBuildFlags_IOS_Simulator cTarget developer
+                    lib <- staticLibrary env cTarget toolChain buildFlags
+                            (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
                 let universalTarget = "iphone-universal"
@@ -253,20 +258,38 @@ mkRules options = do
                                       </> universalTarget
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
-
+      , do -- android
+          return $ do
+            let platform = Android.platform 9
+                cTarget = Android.target (Arm Armv7) platform
+                toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
+                toolChain = applyEnv $ Android.standaloneToolChain toolChainPath cTarget
+                env = mkEnv cTarget
+                buildFlags = applyConfiguration config configurations
+                           . append userIncludes ["platform/android"]
+                           . staticBuildFlags
+                           $ Android.buildFlags cTarget
+            lib <- staticLibrary env cTarget toolChain buildFlags
+                    (methclaLib (sourceFiles_ [
+                      "platform/android/opensl_io.c",
+                      "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
+            platformAlias platform lib
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion
             jackBuildFlags <- liftIO $ pkgConfig "jack"
-            let platform = macOSX
-                cTarget = mkCTarget platform X86_64
+            let platform = macOSX sdkVersion
+                cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
+                           . append userIncludes ["platform/jack"]
                            . jackBuildFlags
+                           . clangBuildFlags "libc++"
                            . sharedBuildFlags
-                           $ cBuildFlags_MacOSX developer sdkVersion
-            return $ sharedLibrary env cTarget toolChain buildFlags (methclaLib platform)
+                           $ cBuildFlags_MacOSX cTarget developer
+            return $ sharedLibrary env cTarget toolChain buildFlags
+                        (methclaLib (sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]))
                         >>= platformAlias platform
       , do -- tags
             let and a b = do { as <- a; bs <- b; return $! as ++ bs }

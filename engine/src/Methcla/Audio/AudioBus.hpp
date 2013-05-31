@@ -77,6 +77,6 @@ public:
     virtual ~InternalAudioBus();
 };
 
-}; };
+} }
 
 #endif // METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED

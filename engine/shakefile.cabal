@@ -20,6 +20,7 @@ Executable shakefile
   Main-Is: shakefile.hs
   Other-Modules:
     Shakefile.C
+    Shakefile.C.Android
     Shakefile.C.OSX
     Shakefile.C.PkgConfig
     Shakefile.Configuration

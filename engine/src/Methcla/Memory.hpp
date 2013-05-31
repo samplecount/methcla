@@ -88,7 +88,13 @@ private:
 };
 
 //* Default alignment.
-static const Alignment kDefaultAlignment(alignof(std::max_align_t));
+static const Alignment kDefaultAlignment(
+#if defined(__ANDROID__)
+    alignof(max_align_t)
+#else
+    alignof(std::max_align_t)
+#endif
+    );
 
 //* Alignment needed for data accessed by SIMD instructions.
 static const Alignment kSIMDAlignment(16);
@@ -126,6 +132,6 @@ template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
     return static_cast<T*>(allocAligned(align, n * sizeof(T)));
 }
 
-}; };
+} }
 
 #endif // METHCLA_MEMORY_HPP_INCLUDED

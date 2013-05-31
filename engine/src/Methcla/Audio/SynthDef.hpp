@@ -141,6 +141,6 @@ private:
     Libraries m_libs;
 };
 
-}; };
+} }
 
 #endif // METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
