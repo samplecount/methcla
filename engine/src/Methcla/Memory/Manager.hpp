@@ -79,7 +79,6 @@ template <class T, class Allocator> class AllocatedBase
 
         Allocator*  alloc;
         Padding     padding;
-        char        data[];
     };
 
 protected:
@@ -87,16 +86,16 @@ protected:
     {
         Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
+        void* ptr = chunk + 1;
         BOOST_ASSERT( Alignment::isAligned(
             boost::alignment_of<T>::value,
-            reinterpret_cast<std::uintptr_t>(chunk->data)) );
-        return chunk->data;
+            reinterpret_cast<std::uintptr_t>(ptr)) );
+        return ptr;
     }
 
     static void destroy(void* ptr)
     {
         Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
-        BOOST_ASSERT( chunk->data == ptr );
         chunk->alloc->free(chunk);
     }
 
