@@ -27,6 +27,7 @@ protected:
     { }
 
     virtual void free() override;
+    virtual void doProcess(size_t numFrames) override;
 
 public:
     static Group* construct(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
@@ -36,8 +37,6 @@ public:
     const NodeList& children() const { return m_children; }
     void addToHead(Node& node) { m_children.push_front(node); }
     void addToTail(Node& node) { m_children.push_back(node); }
-
-    virtual void process(size_t numFrames) override;
 
 private:
     NodeList m_children;

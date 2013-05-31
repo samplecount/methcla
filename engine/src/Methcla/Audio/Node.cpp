@@ -44,7 +44,16 @@ Node::~Node()
 #endif
 }
 
+void Node::process(size_t numFrames)
+{
+    doProcess(numFrames);
+}
+
 void Node::free()
 {
     delete this;
+}
+
+void Node::doProcess(size_t numFrames)
+{
 }

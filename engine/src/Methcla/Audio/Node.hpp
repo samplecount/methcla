@@ -61,7 +61,7 @@ namespace Methcla { namespace Audio {
         bool isRootNode() const { return parent() == 0; }
 
         // Process a number of frames.
-        virtual void process(size_t numFrames) = 0;
+        void process(size_t numFrames);
 
     protected:
         Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
@@ -69,6 +69,8 @@ namespace Methcla { namespace Audio {
 
         //* Free a node.
         virtual void free() override;
+
+        virtual void doProcess(size_t numFrames);
 
     private:
         Group* m_parent;

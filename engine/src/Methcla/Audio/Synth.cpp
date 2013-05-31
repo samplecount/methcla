@@ -277,7 +277,7 @@ void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, OutputCo
     }
 }
 
-void Synth::process(size_t numFrames)
+void Synth::doProcess(size_t numFrames)
 {
     // Sort connections by bus id (if necessary)
     // Only needed for bus locking protocol in a parallel implementation
