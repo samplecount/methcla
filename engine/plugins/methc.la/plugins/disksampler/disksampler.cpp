@@ -104,6 +104,17 @@ struct Synth {
 };
 
 extern "C" {
+    static bool port_descriptor(const Methcla_SynthOptions*, Methcla_PortCount, Methcla_PortDescriptor*);
+    static void configure(const void*, size_t, const void*, size_t, Methcla_SynthOptions*);
+    static void command_fill_buffer(const Methcla_Host*, void*);
+    static void command_init_buffer(const Methcla_Host*, void*);
+    static void construct( const Methcla_World*, const Methcla_SynthDef*, const Methcla_SynthOptions*, Methcla_Synth*);
+    static void free_cb(const Methcla_Host*, void*);
+    static void close_cb(const Methcla_Host*, void*);
+    static void destroy(const Methcla_World*, Methcla_Synth*);
+    static void connect(Methcla_Synth*, Methcla_PortCount, void* data);
+    static void process(const Methcla_World*, Methcla_Synth*, size_t);
+}
 
 static bool
 port_descriptor( const Methcla_SynthOptions* /* options */
@@ -148,7 +159,7 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     //           << options->frames << "\n";
 }
 
-static Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
+static inline Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
 {
     size_t numFramesToRead = inNumFrames;
     size_t numFramesRead = 0;
@@ -182,12 +193,12 @@ static inline void finish(Synth* self)
     finish(&self->state);
 }
 
-static void release_synth(const Methcla_World* world, void* data)
+static inline void release_synth(const Methcla_World* world, void* data)
 {
     methcla_world_release(world, (Methcla_Resource)data);
 }
 
-static void fill_buffer(State* self, bool loop)
+static inline void fill_buffer(State* self, bool loop)
 {
     // std::cout << "fill_buffer\n";
 
@@ -537,8 +548,6 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         break;
     }
 }
-
-} // extern "C"
 
 static const Methcla_SynthDef descriptor =
 {
