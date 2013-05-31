@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Methcla/Audio/IO/RemoteIODriver.hpp"
+#include "Methcla/Memory.hpp"
 
 #include <AudioToolbox/AudioToolbox.h>
 

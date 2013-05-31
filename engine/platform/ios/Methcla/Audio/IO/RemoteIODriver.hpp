@@ -18,7 +18,6 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Types.h"
 #include "Methcla/Exception.hpp"
-#include "Methcla/Memory.hpp"
 
 #include <AudioUnit/AudioUnit.h>
 
