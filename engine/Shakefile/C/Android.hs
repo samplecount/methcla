@@ -6,13 +6,20 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.List (intercalate)
 import           Data.List.Split (splitOn)
+import           Data.Version (Version(..))
 import           Shakefile.C
 import           Shakefile.Lens (append, prepend)
 import           System.Process (readProcess)
 import qualified System.Info as System
 
-standaloneToolChain :: FilePath -> String -> CToolChain
-standaloneToolChain path name =
+platform :: Int -> Platform
+platform apiVersion = Platform "android" (Version [apiVersion] [])
+
+target :: Arch -> Platform -> CTarget
+target arch = mkCTarget arch "linux" "androideabi"
+
+standaloneToolChain :: FilePath -> CTarget -> CToolChain
+standaloneToolChain path target =
     prefix .~ Just path
   $ compilerCmd .~ mkTool "gcc"
   $ archiverCmd .~ mkTool "ar"
@@ -21,14 +28,13 @@ standaloneToolChain path name =
   -- $ linker .~ osxLinker
   -- $ linkResultFileName .~ osxLinkResultFileName 
   $ defaultCToolChain
-  where mkTool x = name ++ "-" ++ x
+  where mkTool x = targetString target ++ "-" ++ x
 
 androidArchString :: Arch -> String
 androidArchString arch =
   case arch of
-    I386 -> "x86"
-    Armv7 -> "armv7-a"
-    _     -> archString arch
+    Arm Armv7 -> "armv7-a"
+    _         -> archString arch
 
 buildFlags :: CTarget -> CBuildFlags
 buildFlags target =

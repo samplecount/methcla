@@ -6,6 +6,7 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.List (intercalate)
 import           Data.List.Split (splitOn)
+import           Data.Version (Version(..), showVersion)
 import           Shakefile.C
 import           Shakefile.Lens (append, prepend)
 import           System.Process (readProcess)
@@ -42,28 +43,30 @@ platformDeveloperPath :: DeveloperPath -> String -> FilePath
 platformDeveloperPath developer platform =
   developerPath developer </> "Platforms" </> (platform ++ ".platform") </> "Developer"
 
-macOSX :: Platform
+macOSX :: Version -> Platform
 macOSX = Platform "MacOSX"
 
-iPhoneOS :: Platform
+iPhoneOS :: Version -> Platform
 iPhoneOS = Platform "iPhoneOS"
 
-iPhoneSimulator :: Platform
+iPhoneSimulator :: Version -> Platform
 iPhoneSimulator = Platform "iPhoneSimulator"
 
-newtype SDKVersion = SDKVersion { sdkVersionString :: String } deriving (Show)
+target :: Arch -> Platform -> CTarget
+target arch = mkCTarget arch "apple" "darwin10"
 
-data SDK = SDK Platform SDKVersion deriving (Show)
-
-platformSDKPath :: DeveloperPath -> SDK -> FilePath
-platformSDKPath developer (SDK (Platform platform) (SDKVersion sdkVersion)) =
-  platformDeveloperPath developer platform </> "SDKs" </> (platform ++ sdkVersion ++ ".sdk")
+platformSDKPath :: DeveloperPath -> Platform -> FilePath
+platformSDKPath developer platform =
+      platformDeveloperPath developer name
+  </> "SDKs"
+  </> (name ++ showVersion (platformVersion platform) ++ ".sdk")
+  where name = platformName platform
 
 -- | Get OSX system version (first two digits).
-getSystemVersion :: IO SDKVersion
+getSystemVersion :: IO Version
 getSystemVersion =
-  SDKVersion
-    <$> (intercalate "." . take 2 . splitOn ".")
+  flip Version []
+    <$> (map read . take 2 . splitOn ".")
     <$> readProcess "sw_vers" ["-productVersion"] ""
 
 osxLinkResultFileName :: LinkResult -> String -> FilePath
@@ -88,18 +91,18 @@ cToolChain_MacOSX_gcc developer =
   $ linkerCmd .~ "g++"
   $ cToolChain_MacOSX developer
 
-osxDefaultCBuildFlags :: CTarget -> DeveloperPath -> SDK -> CBuildFlags
-osxDefaultCBuildFlags target developer sdk =
+osxDefaultCBuildFlags :: CTarget -> DeveloperPath -> CBuildFlags
+osxDefaultCBuildFlags target developer =
     append preprocessorFlags [ "-isysroot", sysRoot ]
   . append compilerFlags [(Nothing, archFlags target)]
   . append linkerFlags (archFlags target ++ [ "-isysroot", sysRoot ])
   $ defaultCBuildFlags
-  where sysRoot = platformSDKPath developer sdk
+  where sysRoot = platformSDKPath developer (target ^. targetPlatform)
 
-cBuildFlags_MacOSX :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_MacOSX target developer sdkVersion =
-    append compilerFlags [(Nothing, ["-mmacosx-version-min=" ++ sdkVersionString sdkVersion])]
-  $ osxDefaultCBuildFlags target developer (SDK macOSX sdkVersion)
+cBuildFlags_MacOSX :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_MacOSX target developer =
+    append compilerFlags [(Nothing, ["-mmacosx-version-min=" ++ showVersion (platformVersion (target ^. targetPlatform))])]
+  $ osxDefaultCBuildFlags target developer
 
 iosMinVersion :: String
 iosMinVersion = "50000" -- Required for C++11
@@ -115,10 +118,10 @@ cToolChain_IOS_gcc developer =
   $ linkerCmd .~ "llvm-g++"
   $ cToolChain_IOS developer
 
-cBuildFlags_IOS :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_IOS target developer sdkVersion =
+cBuildFlags_IOS :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_IOS target developer =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  $ osxDefaultCBuildFlags target developer (SDK iPhoneOS sdkVersion)
+  $ osxDefaultCBuildFlags target developer
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator = cToolChain_MacOSX
@@ -128,10 +131,10 @@ cToolChain_IOS_Simulator_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneSimulator.platform/Developer/usr")
   $ cToolChain_IOS_gcc developer
 
-cBuildFlags_IOS_Simulator :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_IOS_Simulator target developer sdkVersion =
+cBuildFlags_IOS_Simulator :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_IOS_Simulator target developer =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  $ osxDefaultCBuildFlags target developer (SDK iPhoneSimulator sdkVersion)
+  $ osxDefaultCBuildFlags target developer
 
 universalBinary :: [FilePath] -> FilePath -> Rules FilePath
 universalBinary inputs output = do
@@ -139,4 +142,3 @@ universalBinary inputs output = do
         need inputs
         system' "lipo" $ ["-create", "-output", output] ++ inputs
     return output
-
