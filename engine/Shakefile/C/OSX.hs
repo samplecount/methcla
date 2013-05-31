@@ -19,12 +19,16 @@ osxArchiver _ toolChain buildFlags inputs output = do
           ++ flag_ "-o" output
           ++ inputs
 
+archFlags :: CTarget -> [String]
+archFlags target = ["-arch", (archString $ target ^. targetArch)]
+
 osxLinker :: LinkResult -> Linker
 osxLinker link target toolChain =
     case link of
-        Executable     -> defaultLinker target toolChain
-        SharedLibrary  -> defaultLinker target toolChain . prepend linkerFlags (flag "-dynamiclib")
-        DynamicLibrary -> defaultLinker target toolChain . prepend linkerFlags (flag "-bundle")
+        Executable     -> defaultLinker target toolChain . arch
+        SharedLibrary  -> defaultLinker target toolChain . arch . prepend linkerFlags ["-dynamiclib"]
+        DynamicLibrary -> defaultLinker target toolChain . arch . prepend linkerFlags ["-bundle"]
+    where arch = prepend linkerFlags (archFlags target)
 
 newtype DeveloperPath = DeveloperPath { developerPath :: FilePath }
 
@@ -84,17 +88,18 @@ cToolChain_MacOSX_gcc developer =
   $ linkerCmd .~ "g++"
   $ cToolChain_MacOSX developer
 
-osxDefaultCBuildFlags :: DeveloperPath -> SDK -> CBuildFlags
-osxDefaultCBuildFlags developer sdk =
+osxDefaultCBuildFlags :: CTarget -> DeveloperPath -> SDK -> CBuildFlags
+osxDefaultCBuildFlags target developer sdk =
     append preprocessorFlags [ "-isysroot", sysRoot ]
-  . append linkerFlags [ "-isysroot", sysRoot ]
+  . append compilerFlags [(Nothing, archFlags target)]
+  . append linkerFlags (archFlags target ++ [ "-isysroot", sysRoot ])
   $ defaultCBuildFlags
   where sysRoot = platformSDKPath developer sdk
 
-cBuildFlags_MacOSX :: DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_MacOSX developer sdkVersion =
-    append compilerFlags [(Nothing, flag ("-mmacosx-version-min=" ++ sdkVersionString sdkVersion))]
-  $ osxDefaultCBuildFlags developer (SDK macOSX sdkVersion)
+cBuildFlags_MacOSX :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
+cBuildFlags_MacOSX target developer sdkVersion =
+    append compilerFlags [(Nothing, ["-mmacosx-version-min=" ++ sdkVersionString sdkVersion])]
+  $ osxDefaultCBuildFlags target developer (SDK macOSX sdkVersion)
 
 iosMinVersion :: String
 iosMinVersion = "50000" -- Required for C++11
@@ -110,10 +115,10 @@ cToolChain_IOS_gcc developer =
   $ linkerCmd .~ "llvm-g++"
   $ cToolChain_IOS developer
 
-cBuildFlags_IOS :: DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_IOS developer sdkVersion =
+cBuildFlags_IOS :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
+cBuildFlags_IOS target developer sdkVersion =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  $ osxDefaultCBuildFlags developer (SDK iPhoneOS sdkVersion)
+  $ osxDefaultCBuildFlags target developer (SDK iPhoneOS sdkVersion)
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
 cToolChain_IOS_Simulator = cToolChain_MacOSX
@@ -123,10 +128,10 @@ cToolChain_IOS_Simulator_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneSimulator.platform/Developer/usr")
   $ cToolChain_IOS_gcc developer
 
-cBuildFlags_IOS_Simulator :: DeveloperPath -> SDKVersion -> CBuildFlags
-cBuildFlags_IOS_Simulator developer sdkVersion =
+cBuildFlags_IOS_Simulator :: CTarget -> DeveloperPath -> SDKVersion -> CBuildFlags
+cBuildFlags_IOS_Simulator target developer sdkVersion =
     append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
-  $ osxDefaultCBuildFlags developer (SDK iPhoneSimulator sdkVersion)
+  $ osxDefaultCBuildFlags target developer (SDK iPhoneSimulator sdkVersion)
 
 universalBinary :: [FilePath] -> FilePath -> Rules FilePath
 universalBinary inputs output = do

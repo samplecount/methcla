@@ -19,6 +19,7 @@ import           Data.Char (toLower)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
+import qualified Shakefile.C.Android as Android
 import           Shakefile.C.OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
@@ -72,20 +73,26 @@ engineBuildFlags platform =
 -- | Build flags common to all targets
 commonBuildFlags :: CBuildFlags -> CBuildFlags
 commonBuildFlags = append compilerFlags [
-    (Just C, flag "-std=c11")
-  , (Just Cpp, flag "-std=c++11" ++ flag "-stdlib=libc++")
-  , (Nothing, ["-Wall", "-Wstrict-aliasing=2"])
-  , (Just Cpp, flag "-fvisibility-inlines-hidden")
-  , (Nothing, flag "-fstrict-aliasing")
+    (Just C, ["-std=c11"])
+  , (Just Cpp, ["-std=c++11"])
+  -- , (Nothing, ["-Wall", "-Wextra", "-Wstrict-aliasing=2", "-fcatch-undefined-behavior", "-ftrapv"])
+  , (Nothing, ["-Wall", "-Wextra", "-Wstrict-aliasing=2", "-pedantic"])
+  , (Just Cpp, ["-fvisibility-inlines-hidden"])
+  -- , (Nothing, ["--serialize-diagnostics"])
+  -- , (Nothing, ["-fstrict-aliasing", "-fstack-protector"])
   ]
 
 -- | Build flags for static library
-staticBuidFlags :: CBuildFlags -> CBuildFlags
-staticBuidFlags = id
+staticBuildFlags :: CBuildFlags -> CBuildFlags
+staticBuildFlags = id
 
 -- | Build flags for shared library
 sharedBuildFlags :: CBuildFlags -> CBuildFlags
 sharedBuildFlags = append libraries ["c++", "m"]
+
+-- | Build flags for building with clang.
+clangBuildFlags :: String -> CBuildFlags -> CBuildFlags
+clangBuildFlags libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
 
 pluginSources :: [FilePath]
 pluginSources = [
@@ -168,11 +175,11 @@ parseConfig x =
 configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
-        append compilerFlags [(Nothing, ["-O2", "-gdwarf-2", "-fvisibility=hidden"])]
+        append compilerFlags [(Nothing, ["-O1", "-gdwarf-2", "-fvisibility=hidden"])]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
-        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2"])]
+        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2", "-ftrapv"])]
       . append defines [("DEBUG", Just "1")]
     )
   ]
@@ -229,8 +236,9 @@ mkRules options = do
                         toolChain = applyEnv $ cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . staticBuidFlags
-                                   $ cBuildFlags_IOS developer iOS_SDK
+                                   . clangBuildFlags "libc++"
+                                   . staticBuildFlags
+                                   $ cBuildFlags_IOS cTarget developer iOS_SDK
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
                     return lib
@@ -240,8 +248,9 @@ mkRules options = do
                         toolChain = applyEnv $ cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
-                                   . staticBuidFlags
-                                   $ cBuildFlags_IOS_Simulator developer iOS_SDK
+                                   . clangBuildFlags "libc++"
+                                   . staticBuildFlags
+                                   $ cBuildFlags_IOS_Simulator cTarget developer iOS_SDK
                     lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
                     platformAlias platform lib
                     return lib
@@ -253,7 +262,18 @@ mkRules options = do
                                       </> universalTarget
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
-
+      , do -- android
+          return $ do
+            let platform = Platform "arm-linux-androideabi"
+                cTarget = mkCTarget platform Armv7
+                toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
+                toolChain = applyEnv $ Android.standaloneToolChain toolChainPath (platformString platform)
+                env = mkEnv cTarget
+                buildFlags = applyConfiguration config configurations
+                           . staticBuildFlags
+                           $ Android.buildFlags cTarget
+            lib <- staticLibrary env cTarget toolChain buildFlags (methclaLib platform)
+            platformAlias platform lib
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion
@@ -263,9 +283,10 @@ mkRules options = do
                 toolChain = applyEnv $ cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
+                           . clangBuildFlags "libc++"
                            . jackBuildFlags
                            . sharedBuildFlags
-                           $ cBuildFlags_MacOSX developer sdkVersion
+                           $ cBuildFlags_MacOSX cTarget developer sdkVersion
             return $ sharedLibrary env cTarget toolChain buildFlags (methclaLib platform)
                         >>= platformAlias platform
       , do -- tags

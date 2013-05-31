@@ -150,7 +150,7 @@ data CToolChain = CToolChain {
 makeLenses ''CToolChain
 
 defaultArchiver :: Archiver
-defaultArchiver _ toolChain buildFlags inputs output = do
+defaultArchiver target toolChain buildFlags inputs output = do
     need inputs
     system' (tool archiverCmd toolChain)
         $ buildFlags ^. archiverFlags
@@ -165,7 +165,6 @@ defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     system' (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flag_ "-arch" (archString $ target ^. targetArch)
           ++ flags "-L" (buildFlags ^. libraryPath)
           ++ flags "-l" (buildFlags ^. libraries)
           ++ flag_ "-o" output
@@ -249,8 +248,7 @@ dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         system' (tool compilerCmd toolChain)
-                $  flag_ "-arch" (archString $ target ^. targetArch)
-                ++ flags "-I" (buildFlags ^. systemIncludes)
+                $  flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)
@@ -270,8 +268,7 @@ staticObject target toolChain buildFlags input deps output = do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         system' (tool compilerCmd toolChain)
-                $  flag_ "-arch" (archString $ target ^. targetArch)
-                ++ flags "-I" (buildFlags ^. systemIncludes)
+                $  flags "-I" (buildFlags ^. systemIncludes)
                 ++ flags_ "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)
