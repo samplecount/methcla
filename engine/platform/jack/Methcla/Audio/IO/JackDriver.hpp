@@ -17,7 +17,6 @@
 
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Types.h"
-#include "Methcla/Memory.hpp"
 
 #include <jack/jack.h>
 
@@ -29,30 +28,22 @@ namespace Methcla { namespace Audio { namespace IO
     class JackDriver : public Driver
     {
     public:
-        JackDriver() throw (IO::Exception);
+        JackDriver();
         virtual ~JackDriver();
 
-        virtual double sampleRate() const { return m_sampleRate; }
-        virtual size_t numInputs() const { return m_numInputs; }
-        virtual size_t numOutputs() const { return m_numOutputs; }
-        virtual size_t bufferSize() const { return m_bufferSize; }
+        virtual double sampleRate() const override { return m_sampleRate; }
+        virtual size_t numInputs() const override { return m_numInputs; }
+        virtual size_t numOutputs() const override { return m_numOutputs; }
+        virtual size_t bufferSize() const override { return m_bufferSize; }
 
-        virtual void start();
-        virtual void stop();
+        virtual void start() override;
+        virtual void stop() override;
 
     private:
         static int sampleRateCallback(jack_nframes_t nframes, void* arg);
         static int bufferSizeCallback(jack_nframes_t nframes, void* arg);
         static int processCallback(jack_nframes_t nframes, void* arg);
 
-        // static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
-        // static OSStatus RenderCallback(void                         *inRefCon, 
-        //                                AudioUnitRenderActionFlags   *ioActionFlags, 
-        //                                const AudioTimeStamp         *inTimeStamp, 
-        //                                UInt32                       inBusNumber, 
-        //                                UInt32                       inNumberFrames, 
-        //                                AudioBufferList              *ioData);
-    
     private:
         double              m_sampleRate;
         size_t              m_numInputs;
@@ -63,7 +54,6 @@ namespace Methcla { namespace Audio { namespace IO
         jack_port_t**       m_jackOutputPorts;
         sample_t**          m_inputBuffers;
         sample_t**          m_outputBuffers;
-        // AudioBufferList*    m_CAInputBuffers;
     };
 }; }; };
 

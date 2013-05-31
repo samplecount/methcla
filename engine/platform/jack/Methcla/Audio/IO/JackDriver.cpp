@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Methcla/Audio/IO/JackDriver.hpp"
+#include "Methcla/Memory.hpp"
 
 #include <boost/assert.hpp>
 #include <sstream>
