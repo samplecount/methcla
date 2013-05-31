@@ -75,6 +75,6 @@ public:
 	virtual void init(int samplingRate) 							= 0;
  	virtual void compute(int len, float** inputs, float** outputs) 	= 0;
 };
-}; // namespace Faust
+} // namespace Faust
 
 #endif // METHCLA_FAUST_HPP_INCLUDED

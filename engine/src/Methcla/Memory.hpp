@@ -126,6 +126,6 @@ template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
     return static_cast<T*>(allocAligned(align, n * sizeof(T)));
 }
 
-}; };
+} }
 
 #endif // METHCLA_MEMORY_HPP_INCLUDED

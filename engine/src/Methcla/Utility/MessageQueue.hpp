@@ -365,6 +365,6 @@ private:
 #endif
 };
 
-}; };
+} }
 
 #endif // METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED

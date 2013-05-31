@@ -35,6 +35,6 @@ private:
     struct detail::SemaphoreImpl* m_impl;
 };
 
-}; };
+} }
 
 #endif // METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED

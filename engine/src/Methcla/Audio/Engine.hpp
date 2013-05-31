@@ -256,6 +256,6 @@ namespace Methcla { namespace Audio
         IO::Driver*     m_driver;
         Environment*    m_env;
     };
-}; };
+} }
 
 #endif // METHCLA_AUDIO_ENGINE_HPP_INCLUDED

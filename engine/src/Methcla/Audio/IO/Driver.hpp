@@ -57,6 +57,6 @@ private:
 //* Instantiate the default driver for the current platform.
 Driver* defaultPlatformDriver();
 
-}; }; };
+} } }
 
 #endif // METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED

@@ -21,6 +21,6 @@ namespace Methcla { namespace Audio
 {
     typedef uint32_t Epoch;
     typedef float sample_t;
-}; };
+} }
 
 #endif // METHCLA_AUDIO_HPP_INCLUDED

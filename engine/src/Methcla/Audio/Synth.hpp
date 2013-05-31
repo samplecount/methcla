@@ -262,6 +262,6 @@ private:
     sample_t*               m_audioBuffers;
 };
 
-}; };
+} }
 
 #endif // METHCLA_AUDIO_SYNTH_HPP_INCLUDED

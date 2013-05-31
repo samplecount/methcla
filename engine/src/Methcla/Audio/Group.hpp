@@ -43,6 +43,6 @@ private:
     NodeList m_children;
 };
 
-}; };
+} }
 
 #endif // METHCLA_AUDIO_GROUP_HPP_INCLUDED

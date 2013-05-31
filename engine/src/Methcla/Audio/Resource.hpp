@@ -154,6 +154,6 @@ namespace Methcla { namespace Audio
     private:
         std::vector<Pointer> m_elems;
     };
-}; };
+} }
 
 #endif // METHCLA_AUDIO_RESOURCE_HPP_INCLUDED

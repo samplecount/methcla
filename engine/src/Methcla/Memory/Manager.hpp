@@ -131,6 +131,6 @@ public:
         super::destroy(ptr);
     }
 };
-}; };
+} }
 
 #endif // METHCLA_MEMORY_MANAGER_HPP_INCLUDED

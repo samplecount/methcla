@@ -75,6 +75,6 @@ namespace Methcla { namespace Audio {
     };
 
     typedef boost::intrusive::list<Node,boost::intrusive::constant_time_size<false>> NodeList;
-}; };
+} }
 
 #endif // METHCLA_AUDIO_NODE_HPP_INCLUDED

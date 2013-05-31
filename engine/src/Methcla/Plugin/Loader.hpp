@@ -90,6 +90,6 @@ private:
 //     SymbolMap m_symbols;
 // };
 
-}; };
+} }
 
 #endif // METHCLA_PLUGIN_LOADER_HPP_INCLUDED
