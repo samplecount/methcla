@@ -18,6 +18,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 
 using namespace Methcla::Audio::IO;
+using Methcla::Audio::sample_t;
 
 #define METHCLA_THROW_IF_ERROR(expr, msg) \
     do { \

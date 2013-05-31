@@ -19,6 +19,7 @@
 #include <sstream>
 
 using namespace Methcla::Audio::IO;
+using Methcla::Audio::sample_t;
 using namespace std;
 
 struct tag_jack_status_t { };

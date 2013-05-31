@@ -16,7 +16,6 @@
 #define METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
-#include "Methcla/Audio/Types.h"
 #include "Methcla/Exception.hpp"
 
 #include <AudioUnit/AudioUnit.h>

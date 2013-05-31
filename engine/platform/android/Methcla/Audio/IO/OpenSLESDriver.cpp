@@ -21,15 +21,6 @@
 
 using namespace Methcla::Audio::IO;
 
-static sample_t** makeBuffers(size_t numChannels, size_t numFrames)
-{
-    sample_t** buffers = Methcla::Memory::allocOf<sample_t*>(numChannels);
-    for (size_t i=0; i < numChannels; i++) {
-        buffers[i] = Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, numFrames);
-    }
-    return buffers;
-}
-
 OpenSLESDriver::OpenSLESDriver()
     : m_sampleRate(44100)
     , m_numInputs(1)
@@ -81,7 +72,7 @@ void OpenSLESDriver::processCallback(
 
     assert( self->m_sampleRate == (double)sample_rate );
     assert( numInputs == (size_t)input_channels );
-    assert( numOutputs == (size_t)output_buffer );
+    assert( numOutputs == (size_t)output_channels );
     assert( buffer_frames >= 0 && bufferSize <= (size_t)buffer_frames );
 
     sample_t** inputBuffers = self->m_inputBuffers;
