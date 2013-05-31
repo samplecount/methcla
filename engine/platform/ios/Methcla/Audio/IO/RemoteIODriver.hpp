@@ -35,13 +35,13 @@ namespace Methcla { namespace Audio { namespace IO
         RemoteIODriver();
         virtual ~RemoteIODriver();
 
-        virtual double sampleRate() const { return m_sampleRate; }
-        virtual size_t numInputs() const { return m_numInputs; }
-        virtual size_t numOutputs() const { return m_numOutputs; }
-        virtual size_t bufferSize() const { return m_bufferSize; }
+        virtual double sampleRate() const override { return m_sampleRate; }
+        virtual size_t numInputs() const override { return m_numInputs; }
+        virtual size_t numOutputs() const override { return m_numOutputs; }
+        virtual size_t bufferSize() const override { return m_bufferSize; }
 
-        virtual void start();
-        virtual void stop();
+        virtual void start() override;
+        virtual void stop() override;
 
     private:
         static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
