@@ -54,6 +54,6 @@ void Node::free()
     delete this;
 }
 
-void Node::doProcess(size_t numFrames)
+void Node::doProcess(size_t)
 {
 }
