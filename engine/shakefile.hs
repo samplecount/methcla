@@ -270,7 +270,9 @@ mkRules options = do
                            . staticBuildFlags
                            $ Android.buildFlags cTarget
             lib <- staticLibrary env cTarget toolChain buildFlags
-                    (methclaLib (sourceFiles_ ["platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp"]))
+                    (methclaLib (sourceFiles_ [
+                      "platform/android/opensl_io.c",
+                      "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
             platformAlias platform lib
       , do -- macosx
             developer <- liftIO getDeveloperPath
