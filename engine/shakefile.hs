@@ -309,8 +309,8 @@ mkRules options = do
                     writeFileLines tagFiles fs
                     system' "ctags" $
                         (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
-                     ++ flag_ "-f" output
-                     ++ flag_ "-L" tagFiles
+                     ++ ["-f", output]
+                     ++ ["-L", tagFiles]
         ]
 
 main :: IO ()

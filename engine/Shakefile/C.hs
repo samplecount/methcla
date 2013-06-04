@@ -38,17 +38,11 @@ under dir = map prependDir
           prependDir ".." = takeDirectory dir
           prependDir x    = combine dir x
 
-flag_ :: String -> String -> [String]
-flag_ o x = [o, x]
+mapFlag :: String -> [String] -> [String]
+mapFlag f = concatMap (\x -> [f, x])
 
-flag :: String -> [String]
-flag f = [f]
-
-flags_ :: String -> [String] -> [String]
-flags_ o = concat . map (flag_ o)
-
-flags :: String -> [String] -> [String]
-flags f = map (f++)
+concatMapFlag :: String -> [String] -> [String]
+concatMapFlag f = map (f++)
 
 -- Shake utils
 (?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Rules ()
@@ -197,9 +191,9 @@ defaultLinker target toolChain buildFlags inputs output = do
     need inputs
     system' (tool linkerCmd toolChain)
           $  buildFlags ^. linkerFlags
-          ++ flags "-L" (buildFlags ^. libraryPath)
-          ++ flags "-l" (buildFlags ^. libraries)
-          ++ flag_ "-o" output
+          ++ concatMapFlag "-L" (buildFlags ^. libraryPath)
+          ++ concatMapFlag "-l" (buildFlags ^. libraries)
+          ++ ["-o", output]
           ++ inputs
 
 defaultLinkResultFileName :: LinkResult -> String -> FilePath
@@ -219,7 +213,7 @@ defaultCToolChain =
       , _linker = \link target toolChain ->
             case link of
                 Executable -> defaultLinker target toolChain
-                _          -> defaultLinker target toolChain . append linkerFlags (flag "-shared")
+                _          -> defaultLinker target toolChain . append linkerFlags ["-shared"]
       , _linkResultFileName = defaultLinkResultFileName
       }
 
@@ -248,7 +242,7 @@ defaultCBuildFlags =
       }
 
 defineFlags :: CBuildFlags -> [String]
-defineFlags = flags "-D" . map (\(a, b) -> maybe a (\b' -> a++"="++b') b) . flip (^.) defines
+defineFlags = concatMapFlag "-D" . map (\(a, b) -> maybe a (\b' -> a++"="++b') b) . flip (^.) defines
 
 compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
 compilerFlagsFor lang = concat
@@ -280,8 +274,8 @@ dependencyFile target toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         system' (tool compilerCmd toolChain)
-                $  flags "-I" (buildFlags ^. systemIncludes)
-                ++ flags_ "-iquote" (buildFlags ^. userIncludes)
+                $  concatMapFlag "-I" (buildFlags ^. systemIncludes)
+                ++ mapFlag "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)
                 ++ (compilerFlagsFor (languageOf input) buildFlags)
@@ -300,15 +294,15 @@ staticObject target toolChain buildFlags input deps output = do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         system' (tool compilerCmd toolChain)
-                $  flags "-I" (buildFlags ^. systemIncludes)
-                ++ flags_ "-iquote" (buildFlags ^. userIncludes)
+                $  concatMapFlag "-I" (buildFlags ^. systemIncludes)
+                ++ mapFlag "-iquote" (buildFlags ^. userIncludes)
                 ++ (defineFlags buildFlags)
                 ++ (buildFlags ^. preprocessorFlags)
                 ++ (compilerFlagsFor (languageOf input) buildFlags)
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, flag "-fPIC")]
+sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, ["-fPIC"])]
 
 -- | A tree with a transformation and a list of files and their dependencies at each node.
 type SourceTree a = Tree (a -> a, [(FilePath, [FilePath])])

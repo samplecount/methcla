@@ -16,8 +16,8 @@ osxArchiver _ toolChain buildFlags inputs output = do
     need inputs
     system' (tool archiverCmd toolChain)
           $  buildFlags ^. archiverFlags
-          ++ flag "-static"
-          ++ flag_ "-o" output
+          ++ ["-static"]
+          ++ ["-o", output]
           ++ inputs
 
 archFlags :: CTarget -> [String]
