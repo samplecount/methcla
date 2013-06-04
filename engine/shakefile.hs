@@ -172,7 +172,7 @@ configurations = [
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
-        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2", "-ftrapv"])]
+        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2"])]
       . append defines [("DEBUG", Just "1")]
     )
   ]
