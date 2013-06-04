@@ -28,10 +28,13 @@
 using namespace Methcla::Audio::IO;
 
 OpenSLESDriver::OpenSLESDriver()
-    : m_sampleRate(44100)
-    , m_numInputs(1)
+    : m_stream(nullptr)
+    , m_sampleRate(44100)
+    , m_numInputs(0)
     , m_numOutputs(2)
     , m_bufferSize(512)
+    , m_inputBuffers(nullptr)
+    , m_outputBuffers(nullptr)
 {
     m_stream = opensl_open(
         (int)m_sampleRate,
@@ -51,17 +54,20 @@ OpenSLESDriver::OpenSLESDriver()
 
 OpenSLESDriver::~OpenSLESDriver()
 {
-    opensl_close(m_stream);
+    if (m_stream != nullptr)
+        opensl_close(m_stream);
 }
 
 void OpenSLESDriver::start()
 {
-    opensl_start(m_stream);
+    if (m_stream != nullptr)
+        opensl_start(m_stream);
 }
 
 void OpenSLESDriver::stop()
 {
-    opensl_pause(m_stream);
+    if (m_stream != nullptr)
+        opensl_pause(m_stream);
 }
 
 void OpenSLESDriver::processCallback(
