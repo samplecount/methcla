@@ -27,9 +27,14 @@ void Driver::process(size_t numFrames, const sample_t* const* inputs, sample_t* 
 
 sample_t** Driver::makeBuffers(size_t numChannels, size_t numFrames)
 {
-    sample_t** buffers = Methcla::Memory::allocOf<sample_t*>(numChannels);
-    for (size_t i=0; i < numChannels; i++) {
-        buffers[i] = Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, numFrames);
+    if (numChannels > 0) {
+        sample_t** buffers = Methcla::Memory::allocOf<sample_t*>(numChannels);
+        for (size_t i=0; i < numChannels; i++) {
+            buffers[i] = numFrames > 0
+                ? Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, numFrames)
+                : nullptr;
+        }
+        return buffers;
     }
-    return buffers;
+    return nullptr;
 }
