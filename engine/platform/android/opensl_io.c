@@ -146,8 +146,8 @@ static void playerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 static SLuint32 convertSampleRate(SLuint32 sr)
 {
   const SLuint32 maxSRmHz = 0xFFFFFFFFul;
-  const SLuint32 maxSRHz = maxSRmHz / 1000ul;
-  return sr >= maxSRHz ? maxSRmHz : sr * 10ul;
+  const SLuint32 maxSR = maxSRmHz / 1000ul;
+  return sr >= maxSR ? maxSRmHz : sr * 1000ul;
 }
 
 static SLresult openSLCreateEngine(OPENSL_STREAM *p)
