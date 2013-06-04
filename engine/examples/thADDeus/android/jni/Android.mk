@@ -14,10 +14,16 @@
 
 LOCAL_PATH := $(call my-dir)
 METHCLA_SRC_DIR := ../../..
+METHCLA_BUILD_CONFIG := release
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+	METHCLA_ARCH := armv7
+else
+	METHCLA_ARCH := armv5
+endif
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := methcla
-LOCAL_SRC_FILES := ../$(METHCLA_SRC_DIR)/build/debug/android/armv5/libmethcla.a
+LOCAL_SRC_FILES := ../$(METHCLA_SRC_DIR)/build/$(METHCLA_BUILD_CONFIG)/android/$(METHCLA_ARCH)/libmethcla.a
 LOCAL_EXPORT_C_INCLUDES := $(METHCLA_SRC_DIR)/include $(METHCLA_SRC_DIR)/plugins
 include $(PREBUILT_STATIC_LIBRARY)
 

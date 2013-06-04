@@ -15,6 +15,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 import           Control.Lens hiding (Action, (<.>), under)
+import           Control.Monad (forM_)
 import           Data.Char (toLower)
 import           Data.Version (Version(..))
 import           Development.Shake as Shake
@@ -213,6 +214,8 @@ mkRules options = do
                             (mkBuildPrefix cTarget config)
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
+        targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
+                                . need . (:[])
     applyEnv <- toolChainFromEnvironment
     fmap sequence_ $ sequence [
         do
@@ -258,9 +261,9 @@ mkRules options = do
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
-          return $ do
+          return $ forM_ [Armv5, Armv7] $ \armVersion -> do
             let platform = Android.platform 9
-                cTarget = Android.target (Arm Armv5) platform
+                cTarget = Android.target (Arm armVersion) platform
                 toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
                 toolChain = applyEnv $ Android.standaloneToolChain toolChainPath cTarget
                 env = mkEnv cTarget
@@ -274,7 +277,7 @@ mkRules options = do
                     (methclaLib (sourceFiles_ [
                       "platform/android/opensl_io.c",
                       "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
-            platformAlias platform lib
+            targetAlias cTarget lib
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion

@@ -2,17 +2,44 @@
 <project name="thaddeus-native-code" default="help">
   <property name="methcla-src-dir"
             location="../../.."/>
-  <target name="-pre-build">
+
+  <!-- Determine CPU count -->
+  <target name="get-cores">
+      <property environment="env"/>
+      <!-- support for Windows -->
+      <condition property="cores.count" value="${env.NUMBER_OF_PROCESSORS}">
+          <os family="windows" />
+      </condition>
+      <!-- support for Linux and Solaris (package SUNWgnu-coreutils is required) -->
+      <exec executable="nproc" outputproperty="cores.count" os="Linux,SunOS,Solaris">
+          <arg value="--all"/>
+      </exec>
+      <!-- support for Mac OS X -->
+      <exec executable="sysctl" outputproperty="cores.count" osfamily="mac">
+          <arg value="-n"/>
+          <arg value="hw.ncpu"/>
+      </exec>
+      <echo message="Number of cores: ${cores.count}"/>
+  </target>
+
+  <target name="get-cores-default" unless="cores.count" depends="get-cores">
+      <echo message="Couldn't determine number of cores, using default value of 2"/>
+      <property name="cores.count" value="2"/>
+  </target>
+
+  <target name="-pre-build" depends="get-cores">
       <!-- Execute methcla build script -->
       <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
-        <arg value="android"/>
+        <arg value="android-armv7"/>
         <arg value="-c"/>
-        <arg value="debug"/>
-        <arg value="-j4"/>
+        <arg value="release"/>
+        <arg value="-j${cores.count}"/>
         <arg value="-V"/>
       </exec>
+
       <!-- Execute native code build script -->
       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+        <arg value="-j${cores.count}"/>
         <arg value="V=1"/>
       </exec>
   </target>
