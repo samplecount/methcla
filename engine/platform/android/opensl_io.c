@@ -143,11 +143,39 @@ static void playerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
       p->totalBufferFrames;
 }
 
-static SLuint32 convertSampleRate(SLuint32 sr)
+static SLresult convertSampleRate(SLuint32 sampleRate, SLuint32* outSampleRate)
 {
-  const SLuint32 maxSRmHz = 0xFFFFFFFFul;
-  const SLuint32 maxSR = maxSRmHz / 1000ul;
-  return sr >= maxSR ? maxSRmHz : sr * 1000ul;
+  // Only return supported sample rates, see $NDK/docs/opensles/index.html
+  switch (sampleRate) {
+    case 8000:
+      *outSampleRate = SL_SAMPLINGRATE_8;
+      return SL_RESULT_SUCCESS;
+    case 11025:
+      *outSampleRate = SL_SAMPLINGRATE_11_025;
+      return SL_RESULT_SUCCESS;
+    case 12000:
+      *outSampleRate = SL_SAMPLINGRATE_12;
+      return SL_RESULT_SUCCESS;
+    case 16000:
+      *outSampleRate = SL_SAMPLINGRATE_16;
+      return SL_RESULT_SUCCESS;
+    case 22050:
+      *outSampleRate = SL_SAMPLINGRATE_22_05;
+      return SL_RESULT_SUCCESS;
+    case 24000:
+      *outSampleRate = SL_SAMPLINGRATE_24;
+      return SL_RESULT_SUCCESS;
+    case 32000:
+      *outSampleRate = SL_SAMPLINGRATE_32;
+      return SL_RESULT_SUCCESS;
+    case 44100:
+      *outSampleRate = SL_SAMPLINGRATE_44_1;
+      return SL_RESULT_SUCCESS;
+    case 48000:
+      *outSampleRate = SL_SAMPLINGRATE_48;
+      return SL_RESULT_SUCCESS;
+  }
+  return SL_RESULT_PARAMETER_INVALID;
 }
 
 static SLresult openSLCreateEngine(OPENSL_STREAM *p)
@@ -315,11 +343,21 @@ OPENSL_STREAM *opensl_open(
     int sampleRate, int inChans, int outChans, int callbackBufferFrames,
     opensl_process_t proc, void *context)
 {
-  if (!proc || !outChans) {
+  if (sampleRate <= 0)
     return NULL;
-  }
+  if (inChans < 0)
+    return NULL;
+  if (outChans <= 0)
+    return NULL;
+  if (callbackBufferFrames <= 0)
+    return NULL;
+  if (proc == NULL)
+    return NULL;
 
-  SLuint32 srmillihz = convertSampleRate(sampleRate);
+  SLuint32 srmillihz;
+  SLresult result = convertSampleRate(sampleRate, &srmillihz);
+  if (result != SL_RESULT_SUCCESS)
+    return NULL;
 
   OPENSL_STREAM *p = (OPENSL_STREAM *) calloc(1, sizeof(OPENSL_STREAM));
   if (!p) {
