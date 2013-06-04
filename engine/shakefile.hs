@@ -147,7 +147,6 @@ methclaLib platformSources =
 
 plugins :: Platform -> [Library]
 plugins platform = [
-    -- TODO: Provide more SourceTree combinators
     Library "sine" $ sourceFlags engineBuildFlags [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
   ]
 
