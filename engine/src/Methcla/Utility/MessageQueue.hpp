@@ -189,7 +189,7 @@ public:
     {
         this->sendCommand(cmd);
 #if !METHCLA_WORKER_AUDIO_THREAD
-        m_signal();
+        if (m_signal) m_signal();
 #endif
     }
 
