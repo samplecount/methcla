@@ -72,7 +72,8 @@ data X86Version =
   deriving (Eq, Show)
 
 data ArmVersion =
-    Armv6
+    Armv5
+  | Armv6
   | Armv7
   | Armv7s
   deriving (Eq, Show)
@@ -94,6 +95,7 @@ archString arch =
     X86 I386 -> "i386"
     X86 I686 -> "i686"
     X86 X86_64 -> "x86_64"
+    Arm Armv5 -> "armv5"
     Arm Armv6 -> "armv6"
     Arm Armv7 -> "armv7"
     Arm Armv7s -> "armv7s"
