@@ -58,9 +58,9 @@ struct Methcla_Engine
                     OSC::Server::Message option(optionPacket);
                     if (option == "/engine/option/plugin-library") {
                         OSC::Blob x = option.args().blob();
-                        if (x.size == sizeof(Methcla_LibraryFunction)) {
+                        if (x.size() == sizeof(Methcla_LibraryFunction)) {
                             Methcla_LibraryFunction f;
-                            memcpy(&f, x.data, sizeof(Methcla_LibraryFunction));
+                            memcpy(&f, x.data(), x.size());
                             libs.push_back(f);
                         }
                     } else if (option == "/engine/option/plugin-path") {

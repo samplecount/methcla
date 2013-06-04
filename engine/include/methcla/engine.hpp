@@ -347,13 +347,9 @@ namespace Methcla
         {
             char buffer[sizeof(Methcla_LibraryFunction)];
             std::memcpy(buffer, &m_function, sizeof(Methcla_LibraryFunction));
-            OSC::Blob b = {
-                .data = buffer,
-                .size = sizeof(Methcla_LibraryFunction)
-            };
             packet
                 .openMessage("/engine/option/plugin-library", 1)
-                .blob(b)
+                .blob(OSC::Blob(buffer, sizeof(Methcla_LibraryFunction)))
                 .closeMessage();
         }
 
