@@ -18,6 +18,7 @@
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
 
+#include <exception>
 #include <future>
 #include <iostream>
 #include <list>
