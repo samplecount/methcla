@@ -46,6 +46,7 @@ namespace Methcla
 #endif
     }
 
+#if 0
     inline static std::exception_ptr responseToException(const OSC::Server::Packet& packet)
     {
         if (packet.isMessage()) {
@@ -62,6 +63,7 @@ namespace Methcla
             return std::make_exception_ptr(std::invalid_argument("Response is not a message"));
         }
     }
+#endif
 
     BOOST_STRONG_TYPEDEF(int32_t, SynthId);
     BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
@@ -181,6 +183,7 @@ namespace Methcla
         OSC::Client::Packet m_packet;
     };
 
+#if 0
     namespace detail
     {
         struct Result : boost::noncopyable
@@ -277,6 +280,7 @@ namespace Methcla
         }
         return true;
     }
+#endif
 
     class Value
     {
@@ -601,6 +605,7 @@ namespace Methcla
             m_callbacks[requestId] = callback;
         }
 
+#if 0
         void withRequest(Methcla_RequestId requestId, const OSC::Client::Packet& request, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
         {
             registerResponse(requestId, callback);
@@ -617,6 +622,7 @@ namespace Methcla
             });
             result.get();
         }
+#endif
 
     private:
         Methcla_Engine*     m_engine;
