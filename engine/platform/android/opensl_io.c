@@ -80,11 +80,13 @@ struct _opensl_stream {
   int callbacks;
 };
 
-static double time_diff_millis(struct timespec *a, struct timespec *b) {
+static double time_diff_millis(struct timespec *a, struct timespec *b)
+{
   return (a->tv_sec - b->tv_sec) * 1e3 + (a->tv_nsec - b->tv_nsec) * 1e-6;
 }
 
-static void recorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
+static void recorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
+{
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
   if (p->intervals < INITIAL_DELAY) {
     struct timespec t;
@@ -108,7 +110,8 @@ static void recorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
       p->callbackBufferFrames * p->inputChannels * sizeof(short));
 }
 
-static void playerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
+static void playerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
+{
   OPENSL_STREAM *p = (OPENSL_STREAM *) context;
   if (p->callbacks < 2) {
     if (++p->callbacks == 2) {
@@ -140,7 +143,8 @@ static void playerCallback(SLAndroidSimpleBufferQueueItf bq, void *context) {
       p->totalBufferFrames;
 }
 
-static SLuint32 convertSampleRate(SLuint32 sr) {
+static SLuint32 convertSampleRate(SLuint32 sr)
+{
   switch(sr) {
   case 8000:
     return SL_SAMPLINGRATE_8;
@@ -172,8 +176,9 @@ static SLuint32 convertSampleRate(SLuint32 sr) {
   return -1;
 }
 
-static SLresult openSLCreateEngine(OPENSL_STREAM *p) {
   SLresult result = slCreateEngine(&p->engineObject, 0, NULL, 0, NULL, NULL);
+static SLresult openSLCreateEngine(OPENSL_STREAM *p)
+{
   if (result != SL_RESULT_SUCCESS) return result;
   result = (*p->engineObject)->Realize(p->engineObject, SL_BOOLEAN_FALSE);
   if (result != SL_RESULT_SUCCESS) return result;
@@ -182,7 +187,8 @@ static SLresult openSLCreateEngine(OPENSL_STREAM *p) {
   return result;
 }
 
-static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr) {
+static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr)
+{
   // enforce (temporary?) bounds on channel numbers)
   if (p->inputChannels < 0 || p->inputChannels > 2) {
     return SL_RESULT_PARAMETER_INVALID;
@@ -231,7 +237,8 @@ static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr) {
   return result;
 }
 
-static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr) {
+static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr)
+{
   // enforce (temporary?) bounds on channel numbers)
   if (p->outputChannels < 0 || p->outputChannels > 2) {
     return SL_RESULT_PARAMETER_INVALID;
@@ -290,7 +297,8 @@ static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr) {
   return result;
 }
 
-static void openSLDestroyEngine(OPENSL_STREAM *p) {
+static void openSLDestroyEngine(OPENSL_STREAM *p)
+{
   if (p->playerObject) {
     (*p->playerObject)->Destroy(p->playerObject);
   }
@@ -307,7 +315,8 @@ static void openSLDestroyEngine(OPENSL_STREAM *p) {
 
 OPENSL_STREAM *opensl_open(
     int sampleRate, int inChans, int outChans, int callbackBufferFrames,
-    opensl_process_t proc, void *context) {
+    opensl_process_t proc, void *context)
+{
   if (!proc || !outChans) {
     return NULL;
   }
@@ -372,7 +381,8 @@ OPENSL_STREAM *opensl_open(
   return p;
 }
 
-void opensl_close(OPENSL_STREAM *p) {
+void opensl_close(OPENSL_STREAM *p)
+{
   opensl_pause(p);
   openSLDestroyEngine(p);
   sem_destroy(&p->semReady);
@@ -382,11 +392,13 @@ void opensl_close(OPENSL_STREAM *p) {
   free(p);
 }
 
-int opensl_is_running(OPENSL_STREAM *p) {
+int opensl_is_running(OPENSL_STREAM *p)
+{
   return p->isRunning;
 }
 
-int opensl_start(OPENSL_STREAM *p) {
+int opensl_start(OPENSL_STREAM *p)
+{
   if (p->isRunning) {
     return 0;  // Already running.
   }
@@ -428,7 +440,6 @@ int opensl_start(OPENSL_STREAM *p) {
   return 0;
 }
 
-void opensl_pause(OPENSL_STREAM *p) {
   if (!p->isRunning) {
     return;
   }
@@ -436,6 +447,8 @@ void opensl_pause(OPENSL_STREAM *p) {
     (*p->recorderBufferQueue)->Clear(p->recorderBufferQueue);
     (*p->recorderRecord)->SetRecordState(p->recorderRecord,
         SL_RECORDSTATE_STOPPED);
+void opensl_pause(OPENSL_STREAM *p)
+{
   }
   (*p->playerBufferQueue)->Clear(p->playerBufferQueue);
   (*p->playerPlay)->SetPlayState(p->playerPlay,
