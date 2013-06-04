@@ -23,10 +23,10 @@ include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE    := thaddeus
-LOCAL_SRC_FILES := main.cpp synth.cpp
+LOCAL_SRC_FILES := main.cpp ../../src/synth.cpp
 LOCAL_CPPFLAGS  := -std=c++11
 LOCAL_CPP_FEATURES := rtti exceptions
-LOCAL_C_INCLUDES  := $(METHCLA_SRC_DIR)/external_libraries/boost $(METHCLA_SRC_DIR)/external_libraries/oscpp
+LOCAL_C_INCLUDES  := ../src $(METHCLA_SRC_DIR)/external_libraries/boost $(METHCLA_SRC_DIR)/external_libraries/oscpp
 LOCAL_LDLIBS    := -llog -landroid -lEGL -lGLESv1_CM -lOpenSLES
 LOCAL_STATIC_LIBRARIES := android_native_app_glue methcla
 LOCAL_DISABLE_NO_EXECUTE := true
