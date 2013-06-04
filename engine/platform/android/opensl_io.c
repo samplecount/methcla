@@ -190,7 +190,7 @@ static SLresult openSLCreateEngine(OPENSL_STREAM *p)
 static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr)
 {
   // enforce (temporary?) bounds on channel numbers)
-  if (p->inputChannels < 0 || p->inputChannels > 2) {
+  if (p->inputChannels > 2) {
     return SL_RESULT_PARAMETER_INVALID;
   }
 
@@ -240,7 +240,7 @@ static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr)
 static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr)
 {
   // enforce (temporary?) bounds on channel numbers)
-  if (p->outputChannels < 0 || p->outputChannels > 2) {
+  if (p->outputChannels > 2) {
     return SL_RESULT_PARAMETER_INVALID;
   }
 
@@ -322,9 +322,6 @@ OPENSL_STREAM *opensl_open(
   }
 
   SLuint32 srmillihz = convertSampleRate(sampleRate);
-  if (srmillihz < 0) {
-    return NULL;
-  }
 
   OPENSL_STREAM *p = (OPENSL_STREAM *) calloc(1, sizeof(OPENSL_STREAM));
   if (!p) {
