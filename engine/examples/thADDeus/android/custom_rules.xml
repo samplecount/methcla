@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="thADDeus" default="help">
+<project name="thaddeus-native-code" default="help">
   <property name="methcla-src-dir"
             location="../../.."/>
   <target name="-pre-build">
