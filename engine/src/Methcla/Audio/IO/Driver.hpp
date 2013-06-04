@@ -47,13 +47,8 @@ protected:
     void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
 private:
-    struct Process
-    {
-        ProcessCallback callback;
-        void*           data;
-    };
-
-    Process m_process;
+    ProcessCallback m_processCallback;
+    void*           m_processData;
 };
 
 //* Instantiate the default driver for the current platform.
