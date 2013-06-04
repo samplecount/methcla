@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="thADDeus" default="help">
+  <property name="methcla-src-dir"
+            location="../../.."/>
+  <target name="-pre-build">
+      <!-- Execute methcla build script -->
+      <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
+        <arg value="android"/>
+        <arg value="-c"/>
+        <arg value="debug"/>
+        <arg value="-j4"/>
+        <arg value="-V"/>
+      </exec>
+      <!-- Execute native code build script -->
+      <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+        <arg value="V=1"/>
+      </exec>
+  </target>
+
+  <target name="clean" depends="android_rules.clean">
+      <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
+          <arg value="clean"/>
+      </exec>
+      <exec executable="${ndk.dir}/ndk-build" failonerror="true">
+          <arg value="clean"/>
+      </exec>
+  </target>
+</project>
