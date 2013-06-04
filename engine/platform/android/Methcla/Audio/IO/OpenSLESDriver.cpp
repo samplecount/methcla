@@ -16,8 +16,14 @@
 #include "Methcla/Memory.hpp"
 #include "opensl_io.h"
 
+#include <android/log.h>
 #include <cassert>
 #include <stdexcept>
+
+#define LOGI(...) \
+  __android_log_print(ANDROID_LOG_INFO, "OpenSLESDriver", __VA_ARGS__)
+#define LOGW(...) \
+  __android_log_print(ANDROID_LOG_WARN, "OpenSLESDriver", __VA_ARGS__)
 
 using namespace Methcla::Audio::IO;
 
@@ -86,7 +92,16 @@ void OpenSLESDriver::processCallback(
     }
 
     // Run DSP graph
-    self->process(numFrames, inputBuffers, outputBuffers);
+    try {
+        self->process(numFrames, inputBuffers, outputBuffers);
+    } catch (std::exception& e) {
+        LOGW(e.what());
+    }
+#ifndef NDEBUG
+    catch (...) {
+        LOGW("Unknown exception caught");
+    }
+#endif
 
     // Convert and interleave output
     for (size_t curChan = 0; curChan < numOutputs; curChan++) {
