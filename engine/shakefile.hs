@@ -166,7 +166,7 @@ configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
         append compilerFlags [
-          (Nothing, ["-O1", "-gdwarf-2", "-fvisibility=hidden"])
+          (Nothing, ["-Os", "-gdwarf-2", "-fvisibility=hidden"])
         , (Nothing, ["-Wno-unused-parameter"])
         ]
       . append defines [("NDEBUG", Nothing)]
