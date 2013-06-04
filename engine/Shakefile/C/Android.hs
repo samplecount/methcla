@@ -31,18 +31,30 @@ standaloneToolChain path target =
   where mkTool x = targetString target ++ "-" ++ x
 
 androidArchString :: Arch -> String
-androidArchString arch =
-  case arch of
-    Arm Armv7 -> "armv7-a"
-    _         -> archString arch
+androidArchString (Arm Armv5) = "armv5te"
+androidArchString (Arm Armv6) = "armv5te"
+androidArchString (Arm Armv7) = "armv7-a"
+androidArchString arch = archString arch
+
+archCompilerFlags :: Arch -> [(Maybe CLanguage, [String])]
+archCompilerFlags (Arm Armv5) = [(Nothing, ["-mfloat-abi=soft"])]
+archCompilerFlags (Arm Armv6) = [(Nothing, ["-mfloat-abi=soft"])]
+archCompilerFlags (Arm Armv7) = [(Nothing, ["-mfloat-abi=softfp", "-mfpu=neon"])]
+archCompilerFlags _ = []
+
+archLinkerFlags :: Arch -> [String]
+archLinkerFlags (Arm Armv7) = ["-Wl,--fix-cortex-a8"]
+archLinkerFlags _ = []
 
 buildFlags :: CTarget -> CBuildFlags
 buildFlags target =
-    append compilerFlags [(Nothing, ["-march="++arch, "-mfloat-abi=softfp", "-mfpu=neon"])]
-  . append linkerFlags ["-march="++arch, "-Wl,--fix-cortex-a8"]
+    append compilerFlags ([(Nothing, march)] ++ archCompilerFlags arch)
+  . append linkerFlags (march ++ archLinkerFlags arch)
   . append archiverFlags ["-rs"]
   $ defaultCBuildFlags
-  where arch = androidArchString $ target ^. targetArch
+  where
+    arch = target ^. targetArch
+    march = ["-march=" ++ androidArchString arch]
 
 -- toolChain :: FilePath -> String -> Int -> CToolChain
 -- toolChain ndkRoot name apiLevel =

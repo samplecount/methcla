@@ -261,13 +261,15 @@ mkRules options = do
       , do -- android
           return $ do
             let platform = Android.platform 9
-                cTarget = Android.target (Arm Armv7) platform
+                cTarget = Android.target (Arm Armv5) platform
                 toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
                 toolChain = applyEnv $ Android.standaloneToolChain toolChainPath cTarget
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
                            . append userIncludes ["platform/android"]
                            . staticBuildFlags
+                           . append compilerFlags [ (Nothing, ["-fpic"])
+                                                  , (Just Cpp, ["-frtti", "-fexceptions"]) ]
                            $ Android.buildFlags cTarget
             lib <- staticLibrary env cTarget toolChain buildFlags
                     (methclaLib (sourceFiles_ [
