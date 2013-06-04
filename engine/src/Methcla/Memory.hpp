@@ -16,7 +16,7 @@
 #define METHCLA_MEMORY_HPP_INCLUDED
 
 #include <boost/assert.hpp>
-#include <cstddef>
+#include <cstdint>
 
 namespace Methcla { namespace Memory {
 
