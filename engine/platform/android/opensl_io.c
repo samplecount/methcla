@@ -270,7 +270,7 @@ static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr)
   audioSnk.pFormat = NULL;
 
   // create audio player
-  const SLuint32 playIIDCount = 1;
+  const SLuint32 playIIDCount = 2;
   const SLInterfaceID playIIDs[] = {SL_IID_PLAY,SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
   const SLboolean playReqs[] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
   result = (*p->engineEngine)->CreateAudioPlayer(
