@@ -136,12 +136,12 @@ data LinkResult = Executable
 
 defaultCLanguageMap :: [(String, CLanguage)]
 defaultCLanguageMap = concatMap f [
-    ([".c"], C)
-  , ([".cc", ".cpp", ".C", ".cxx"], Cpp)
-  , ([".m"], ObjC)
-  , ([".mm"], ObjCpp)
+    (C, [".c"])
+  , (Cpp, [".cc", ".CC", ".cpp", ".CPP", ".C", ".cxx", ".CXX"])
+  , (ObjC, [".m"])
+  , (ObjCpp, [".mm", ".M"])
   ]
-  where f (es, l) = map (flip (,) l) es
+  where f (lang, exts) = map (\ext -> (ext, lang)) exts
 
 languageOf :: FilePath -> Maybe CLanguage
 languageOf = flip lookup defaultCLanguageMap . takeExtension
