@@ -1,6 +1,5 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Memory.hpp"
-#include <memory>
 
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
