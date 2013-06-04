@@ -150,15 +150,21 @@ static SLuint32 convertSampleRate(SLuint32 sr)
   return sr >= maxSRHz ? maxSRmHz : sr * 10ul;
 }
 
-  SLresult result = slCreateEngine(&p->engineObject, 0, NULL, 0, NULL, NULL);
 static SLresult openSLCreateEngine(OPENSL_STREAM *p)
 {
+  const SLuint32 engineIIDCount = 1;
+  const SLInterfaceID engineIIDs[] = {SL_IID_ENGINE};
+  const SLboolean engineReqs[] = {SL_BOOLEAN_TRUE};
+
+  SLresult result = slCreateEngine(&p->engineObject, 0, NULL,
+    engineIIDCount, engineIIDs, engineReqs);
   if (result != SL_RESULT_SUCCESS) return result;
+
   result = (*p->engineObject)->Realize(p->engineObject, SL_BOOLEAN_FALSE);
   if (result != SL_RESULT_SUCCESS) return result;
-  result = (*p->engineObject)->GetInterface(
+
+  return (*p->engineObject)->GetInterface(
       p->engineObject, SL_IID_ENGINE, &p->engineEngine);
-  return result;
 }
 
 static SLresult openSLRecOpen(OPENSL_STREAM *p, SLuint32 sr)
@@ -218,40 +224,58 @@ static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr)
     return SL_RESULT_PARAMETER_INVALID;
   }
 
-  int speakers;
-  if (p->outputChannels > 1) {
-    speakers = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-  } else {
-    speakers = SL_SPEAKER_FRONT_CENTER;
-  }
-  SLDataFormat_PCM format_pcm =
-      {SL_DATAFORMAT_PCM, p->outputChannels, sr,
-       SL_PCMSAMPLEFORMAT_FIXED_16, SL_PCMSAMPLEFORMAT_FIXED_16,
-       speakers, SL_BYTEORDER_LITTLEENDIAN};
-  SLDataLocator_AndroidSimpleBufferQueue loc_bufq =
-      {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 1};
-  SLDataSource audioSrc = {&loc_bufq, &format_pcm};  // source: buffer queue
-
-  const SLInterfaceID mixIds[] = {SL_IID_VOLUME};
-  const SLboolean mixReq[] = {SL_BOOLEAN_FALSE};
+  // const SLInterfaceID mixIds[] = {SL_IID_VOLUME};
+  // const SLboolean mixReq[] = {SL_BOOLEAN_FALSE};
+  const SLuint32 mixIIDCount = 0;
+  const SLInterfaceID mixIIDs[] = {};
+  const SLboolean mixReqs[] = {};
   SLresult result = (*p->engineEngine)->CreateOutputMix(
-      p->engineEngine, &p->outputMixObject, 1, mixIds, mixReq);
+      p->engineEngine, &p->outputMixObject, mixIIDCount, mixIIDs, mixReqs);
   if (result != SL_RESULT_SUCCESS) return result;
 
   result = (*p->outputMixObject)->Realize(
       p->outputMixObject, SL_BOOLEAN_FALSE);
   if (result != SL_RESULT_SUCCESS) return result;
 
-  SLDataLocator_OutputMix loc_outmix =
-      {SL_DATALOCATOR_OUTPUTMIX, p->outputMixObject};
-  SLDataSink audioSnk = {&loc_outmix, NULL};  // sink: mixer (volume control)
+  SLDataFormat_PCM format_pcm;
+  memset(&format_pcm, 0, sizeof(format_pcm));
+  format_pcm.formatType = SL_DATAFORMAT_PCM;
+  format_pcm.numChannels = p->outputChannels;
+  format_pcm.samplesPerSec = sr;
+  format_pcm.bitsPerSample = SL_PCMSAMPLEFORMAT_FIXED_16;
+  format_pcm.containerSize = SL_PCMSAMPLEFORMAT_FIXED_16;
+  format_pcm.channelMask = p->outputChannels > 1
+                            ? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
+                            : SL_SPEAKER_FRONT_CENTER;
+  format_pcm.endianness = SL_BYTEORDER_LITTLEENDIAN;
+
+  SLDataLocator_AndroidSimpleBufferQueue loc_bufq;
+  memset(&loc_bufq, 0, sizeof(loc_bufq));
+  loc_bufq.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+  loc_bufq.numBuffers = 1;
+
+  SLDataSource audioSrc;
+  memset(&audioSrc, 0, sizeof(audioSrc));
+  audioSrc.pLocator = &loc_bufq;
+  audioSrc.pFormat = &format_pcm;
+
+  SLDataLocator_OutputMix loc_outmix;
+  memset(&loc_outmix, 0, sizeof(loc_outmix));
+  loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
+  loc_outmix.outputMix = p->outputMixObject;
+
+  SLDataSink audioSnk;
+  memset(&audioSnk, 0, sizeof(audioSnk));
+  audioSnk.pLocator = &loc_outmix;
+  audioSnk.pFormat = NULL;
 
   // create audio player
-  const SLInterfaceID playIds[] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
-  const SLboolean playRec[] = {SL_BOOLEAN_TRUE};
+  const SLuint32 playIIDCount = 1;
+  const SLInterfaceID playIIDs[] = {SL_IID_PLAY,SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
+  const SLboolean playReqs[] = {SL_BOOLEAN_TRUE,SL_BOOLEAN_TRUE};
   result = (*p->engineEngine)->CreateAudioPlayer(
       p->engineEngine, &p->playerObject, &audioSrc, &audioSnk,
-      1, playIds, playRec);
+      playIIDCount, playIIDs, playReqs);
   if (result != SL_RESULT_SUCCESS) return result;
 
   result = (*p->playerObject)->Realize(p->playerObject, SL_BOOLEAN_FALSE);
@@ -328,11 +352,11 @@ OPENSL_STREAM *opensl_open(
     return NULL;
   }
 
-  if (inChans) {
-    int inBufSize = p->totalBufferFrames * inChans;
+  if (p->inputChannels > 0) {
+    int inBufSize = p->totalBufferFrames * p->inputChannels;
     if (!(openSLRecOpen(p, srmillihz) == SL_RESULT_SUCCESS &&
         (p->inputBuffer = (short *) calloc(inBufSize, sizeof(short))) &&
-        (p->dummyBuffer = (short *) calloc(callbackBufferFrames * inChans,
+        (p->dummyBuffer = (short *) calloc(callbackBufferFrames * p->inputChannels,
              sizeof(short))))) {
       opensl_close(p);
       return NULL;
@@ -340,8 +364,8 @@ OPENSL_STREAM *opensl_open(
     memset(p->dummyBuffer, 0, sizeof(p->dummyBuffer));
   }
 
-  if (outChans) {
-    int outBufSize = p->totalBufferFrames * outChans;
+  if (p->outputChannels > 0) {
+    int outBufSize = p->totalBufferFrames * p->outputChannels;
     if (!(openSLPlayOpen(p, srmillihz) == SL_RESULT_SUCCESS &&
         (p->outputBuffer = (short *) calloc(outBufSize, sizeof(short))))) {
       opensl_close(p);
@@ -411,18 +435,17 @@ int opensl_start(OPENSL_STREAM *p)
   return 0;
 }
 
-  if (!p->isRunning) {
-    return;
-  }
-  if (p->recorderRecord) {
-    (*p->recorderBufferQueue)->Clear(p->recorderBufferQueue);
-    (*p->recorderRecord)->SetRecordState(p->recorderRecord,
-        SL_RECORDSTATE_STOPPED);
 void opensl_pause(OPENSL_STREAM *p)
 {
+  if (p->isRunning) {
+    if (p->recorderRecord) {
+      (*p->recorderBufferQueue)->Clear(p->recorderBufferQueue);
+      (*p->recorderRecord)->SetRecordState(p->recorderRecord,
+          SL_RECORDSTATE_STOPPED);
+    }
+    (*p->playerBufferQueue)->Clear(p->playerBufferQueue);
+    (*p->playerPlay)->SetPlayState(p->playerPlay,
+        SL_PLAYSTATE_STOPPED);
+    p->isRunning = 0;
   }
-  (*p->playerBufferQueue)->Clear(p->playerBufferQueue);
-  (*p->playerPlay)->SetPlayState(p->playerPlay,
-      SL_PLAYSTATE_STOPPED);
-  p->isRunning = 0;
 }
