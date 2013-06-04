@@ -176,7 +176,6 @@ namespace Methcla { namespace Audio
             size_t size;
         };
 
-        static void perform_free(Environment*, CommandData*);
         static void perform_response_ack(Environment*, CommandData*);
         static void perform_response_nodeId(Environment*, CommandData*);
         static void perform_response_error(Environment*, CommandData*);
