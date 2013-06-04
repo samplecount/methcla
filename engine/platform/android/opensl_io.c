@@ -252,8 +252,6 @@ static SLresult openSLPlayOpen(OPENSL_STREAM *p, SLuint32 sr)
     return SL_RESULT_PARAMETER_INVALID;
   }
 
-  // const SLInterfaceID mixIds[] = {SL_IID_VOLUME};
-  // const SLboolean mixReq[] = {SL_BOOLEAN_FALSE};
   const SLuint32 mixIIDCount = 0;
   const SLInterfaceID mixIIDs[] = {};
   const SLboolean mixReqs[] = {};
