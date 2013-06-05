@@ -27,6 +27,10 @@
       <property name="cores.count" value="2"/>
   </target>
 
+  <condition property="ndk.dir" value="${env.ANDROID_NDK}">
+      <isset property="env.ANDROID_NDK" />
+  </condition>
+
   <target name="-pre-build" depends="get-cores">
       <!-- Execute methcla build script -->
       <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
