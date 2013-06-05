@@ -1,4 +1,10 @@
-module Shakefile.C.Android where
+module Shakefile.C.Android (
+    platform
+  , target
+  , standaloneToolChain
+  , buildFlags
+  , abiString
+) where
 
 import           Control.Applicative ((<$>))
 import           Control.Lens hiding ((<.>))
@@ -66,3 +72,9 @@ buildFlags target =
 --   $ linker .~ osxLinker
 --   $ linkResultFileName .~ osxLinkResultFileName 
 --   $ defaultCToolChain
+
+abiString :: Arch -> String
+abiString (Arm Armv5) = "armeabi"
+abiString (Arm Armv6) = "armeabi"
+abiString (Arm Armv7) = "armeabi-v7a"
+abiString (X86 _)     = "x86"

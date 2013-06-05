@@ -261,23 +261,27 @@ mkRules options = do
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
-          return $ forM_ [Armv5, Armv7] $ \armVersion -> do
-            let platform = Android.platform 9
-                cTarget = Android.target (Arm armVersion) platform
-                toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
-                toolChain = applyEnv $ Android.standaloneToolChain toolChainPath cTarget
-                env = mkEnv cTarget
-                buildFlags = applyConfiguration config configurations
-                           . append userIncludes ["platform/android"]
-                           . staticBuildFlags
-                           . append compilerFlags [ (Nothing, ["-fpic"])
-                                                  , (Just Cpp, ["-frtti", "-fexceptions"]) ]
-                           $ Android.buildFlags cTarget
-            lib <- staticLibrary env cTarget toolChain buildFlags
-                    (methclaLib (sourceFiles_ [
-                      "platform/android/opensl_io.c",
-                      "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
-            targetAlias cTarget lib
+            return $ do
+                forM_ [Arm Armv5, Arm Armv7] $ \arch -> do
+                    let platform = Android.platform 9
+                        target = Android.target arch platform
+                        toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
+                        toolChain = applyEnv $ Android.standaloneToolChain toolChainPath target
+                        env = mkEnv target
+                        buildFlags = applyConfiguration config configurations
+                                   . append userIncludes ["platform/android"]
+                                   . staticBuildFlags
+                                   . append compilerFlags [ (Nothing, ["-fpic"])
+                                                          , (Just Cpp, ["-frtti", "-fexceptions"]) ]
+                                   $ Android.buildFlags target
+                    lib <- staticLibrary env target toolChain buildFlags
+                            (methclaLib (sourceFiles_ [
+                              "platform/android/opensl_io.c",
+                              "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
+                    let installPath = "libs/android" </> Android.abiString arch </> takeFileName lib
+                    installPath ?=> \_ -> copyFile' lib installPath
+                    targetAlias target installPath
+                phony "android" (need ["android-armv5", "android-armv7"])
       , do -- macosx
             developer <- liftIO getDeveloperPath
             sdkVersion <- liftIO getSystemVersion
