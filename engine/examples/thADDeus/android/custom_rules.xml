@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="thaddeus-native-code" default="help">
-  <property name="methcla-src-dir"
-            location="../../.."/>
+  <property name="methcla.src.dir" location="../../.."/>
 
   <!-- Determine CPU count -->
   <target name="get-cores">
@@ -33,7 +32,7 @@
 
   <target name="-pre-build" depends="get-cores">
       <!-- Execute methcla build script -->
-      <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
+      <exec executable="${methcla.src.dir}/shake" dir="${methcla.src.dir}" failonerror="true">
         <arg value="android-armv7"/>
         <arg value="-c"/>
         <arg value="release"/>
@@ -49,7 +48,7 @@
   </target>
 
   <target name="clean" depends="android_rules.clean">
-      <exec executable="${methcla-src-dir}/shake" dir="${methcla-src-dir}" failonerror="true">
+      <exec executable="${methcla.src.dir}/shake" dir="${methcla.src.dir}" failonerror="true">
           <arg value="clean"/>
       </exec>
       <exec executable="${ndk.dir}/ndk-build" failonerror="true">
