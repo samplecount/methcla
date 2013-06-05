@@ -79,13 +79,12 @@ void OpenSLESDriver::processCallback(
 
     const size_t numInputs = self->m_numInputs;
     const size_t numOutputs = self->m_numOutputs;
-    const size_t bufferSize = self->m_bufferSize;
     const size_t numFrames = (size_t)buffer_frames;
 
     assert( self->m_sampleRate == (double)sample_rate );
     assert( numInputs == (size_t)input_channels );
     assert( numOutputs == (size_t)output_channels );
-    assert( buffer_frames >= 0 && bufferSize <= (size_t)buffer_frames );
+    assert( buffer_frames >= 0 && self->m_bufferSize <= (size_t)buffer_frames );
 
     sample_t** inputBuffers = self->m_inputBuffers;
     sample_t** outputBuffers = self->m_outputBuffers;
