@@ -27,7 +27,12 @@ rtsopts="+RTS -N -RTS"
 
 function shakeit()
 {
-    ./cabal-dev/bin/shakefile $rtsopts "$@" 2>&1 | tee errors.err
+    ./cabal-dev/bin/shakefile $rtsopts "$@"
+}
+
+function shakeit_with_errors()
+{
+    shakeit "$@" 2>&1 | tee errors.err
     return ${PIPESTATUS[0]}
 }
 
