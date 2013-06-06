@@ -265,7 +265,7 @@ mkRules options = do
                 forM_ [Arm Armv5, Arm Armv7] $ \arch -> do
                     let platform = Android.platform 9
                         target = Android.target arch platform
-                        toolChainPath = "/Users/skersten/dev/android-toolchain-arm-linux-androideabi-4.7-9"
+                        toolChainPath = "tools/android-toolchain-arm-linux-androideabi-4.7-9"
                         toolChain = applyEnv $ Android.standaloneToolChain toolChainPath target
                         env = mkEnv target
                         buildFlags = applyConfiguration config configurations
