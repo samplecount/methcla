@@ -97,6 +97,7 @@ struct State
 };
 
 struct Synth {
+    Methcla_Resource* handle;
     float* ports[kSamplerPorts];
     char* path;
     bool loop;
@@ -108,7 +109,8 @@ extern "C" {
     static void configure(const void*, size_t, const void*, size_t, Methcla_SynthOptions*);
     static void command_fill_buffer(const Methcla_Host*, void*);
     static void command_init_buffer(const Methcla_Host*, void*);
-    static void construct( const Methcla_World*, const Methcla_SynthDef*, const Methcla_SynthOptions*, Methcla_Synth*);
+    static void construct( const Methcla_World*, const Methcla_SynthDef*, const Methcla_SynthOptions*, Methcla_Resource*, Methcla_Synth*);
+    static void release_synth_cb(const Methcla_World*, void*);
     static void free_cb(const Methcla_Host*, void*);
     static void close_cb(const Methcla_Host*, void*);
     static void destroy(const Methcla_World*, Methcla_Synth*);
@@ -193,9 +195,9 @@ static inline void finish(Synth* self)
     finish(&self->state);
 }
 
-static inline void release_synth(const Methcla_World* world, void* data)
+static void release_synth_cb(const Methcla_World* world, void* data)
 {
-    methcla_world_release(world, (Methcla_Resource)data);
+    methcla_world_resource_release(world, (Methcla_Resource*)data);
 }
 
 static inline void fill_buffer(State* self, bool loop)
@@ -241,11 +243,9 @@ static inline void fill_buffer(State* self, bool loop)
 static void command_fill_buffer(const Methcla_Host* host, void* data)
 {
     // std::cout << "fill_buffer\n";
-
-    Methcla_Resource resource = (Methcla_Resource)data;
-    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
+    Synth* self = static_cast<Synth*>(data);
     fill_buffer(&self->state, self->loop);
-    methcla_host_perform_command(host, release_synth, resource);
+    methcla_host_perform_command(host, release_synth_cb, self->handle);
 }
 
 // Only safe to be called during initialization
@@ -264,8 +264,7 @@ static inline void init_buffer_cleanup(Synth* self)
 
 static void command_init_buffer(const Methcla_Host* host, void* data)
 {
-    Methcla_Resource resource = (Methcla_Resource)data;
-    Synth* self = (Synth*)methcla_host_resource_get_synth(host, resource);
+    Synth* self = static_cast<Synth*>(data);
 
     Methcla_SoundFileInfo info;
 
@@ -325,13 +324,14 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
         init_buffer_cleanup(self);
     }
 
-    methcla_host_perform_command(host, release_synth, resource);
+    methcla_host_perform_command(host, release_synth_cb, self->handle);
 }
 
 static void
 construct( const Methcla_World* world
          , const Methcla_SynthDef* /* synthDef */
          , const Methcla_SynthOptions* inOptions
+         , Methcla_Resource* handle
          , Methcla_Synth* synth )
 {
     const Options* options = (const Options*)inOptions;
@@ -349,7 +349,9 @@ construct( const Methcla_World* world
     // Need to retain a reference to the outer Synth, otherwise the self pointer might dangle if the synth is freed while the
     // async command is still being executed. This can be solved differently at the cost of allocating the State struct on the
     // realtime memory heap. Maybe cleaner and the API would keep smaller.
-    methcla_world_perform_command(world, command_init_buffer, methcla_world_synth_acquire_resource(world, self));
+    self->handle = handle;
+    methcla_world_resource_retain(world, self->handle);
+    methcla_world_perform_command(world, command_init_buffer, self);
 }
 
 static void free_cb(const Methcla_Host*, void* data)
@@ -401,7 +403,8 @@ process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float am
         if (State::writable(writePos, readPos, bufferFrames) >= self->state.transferFrames) {
             // Trigger refill
             self->state.state.store(kFilling, std::memory_order_relaxed);
-            methcla_world_perform_command(world, command_fill_buffer, methcla_world_synth_acquire_resource(world, self));
+            methcla_world_resource_retain(world, self->handle);
+            methcla_world_perform_command(world, command_fill_buffer, self);
         }
     }
 

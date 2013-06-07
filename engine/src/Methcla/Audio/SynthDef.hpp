@@ -52,6 +52,8 @@ namespace Methcla { namespace Audio {
 //     std::string     m_symbol;
 // };
 
+class Synth;
+
 class SynthDef : boost::noncopyable
 {
 public:
@@ -76,7 +78,8 @@ public:
     //* Return port descriptor at index.
     bool portDescriptor(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port) const;
 
-    Methcla_Synth* construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const;
+    void construct(const Methcla_World* world, const Methcla_SynthOptions* options, Synth* owner, Methcla_Synth* synth) const;
+    void destroy(const Methcla_World* world, Methcla_Synth* synth) const;
 
     inline void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data) const
     {
@@ -91,11 +94,6 @@ public:
     inline void process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames) const
     {
         m_descriptor->process(world, synth, numFrames);
-    }
-
-    inline void destroy(const Methcla_World* world, Methcla_Synth* synth) const
-    {
-        if (m_descriptor->destroy) m_descriptor->destroy(world, synth);
     }
 
 private:

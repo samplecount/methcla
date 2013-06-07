@@ -38,7 +38,7 @@ typedef struct Methcla_Host Methcla_Host;
 typedef void Methcla_Synth;
 
 //* Shared resource handle managed by the realtime context.
-typedef void* Methcla_Resource;
+typedef void Methcla_Resource;
 
 //* Callback function type for performing commands in the non-realtime context.
 typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
@@ -48,9 +48,8 @@ METHCLA_C_LINKAGE typedef void* (*Methcla_World_alloc)(const struct Methcla_Worl
 METHCLA_C_LINKAGE typedef void* (*Methcla_World_alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
 METHCLA_C_LINKAGE typedef void (*Methcla_World_free)(const struct Methcla_World* world, void* ptr);
 METHCLA_C_LINKAGE typedef void (*Methcla_World_perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_retain)(const struct Methcla_World* world, Methcla_Resource resource);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_release)(const struct Methcla_World* world, Methcla_Resource resource);
-METHCLA_C_LINKAGE typedef Methcla_Resource (*Methcla_World_synth_get_resource)(const struct Methcla_World* world, Methcla_Synth* synth);
+METHCLA_C_LINKAGE typedef void (*Methcla_World_resource_retain)(const struct Methcla_World* world, Methcla_Resource* resource);
+METHCLA_C_LINKAGE typedef void (*Methcla_World_resource_release)(const struct Methcla_World* world, Methcla_Resource* resource);
 
 //* Realtime interface
 struct Methcla_World
@@ -71,11 +70,8 @@ struct Methcla_World
     Methcla_World_perform_command perform_command;
 
     //* Reference counted resources.
-    Methcla_World_retain retain;
-    Methcla_World_release release;
-
-    // This is necessary for some asynchronous command execution schemes.
-    Methcla_World_synth_get_resource synth_get_resource;
+    Methcla_World_resource_retain resource_retain;
+    Methcla_World_resource_release resource_release;
 };
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
@@ -103,26 +99,14 @@ static inline void methcla_world_perform_command(const Methcla_World* world, Met
     world->perform_command(world, perform, data);
 }
 
-static inline void methcla_world_retain(const Methcla_World* world, Methcla_Resource resource)
+static inline void methcla_world_resource_retain(const Methcla_World* world, Methcla_Resource* resource)
 {
-    world->retain(world, resource);
+    world->resource_retain(world, resource);
 }
 
-static inline void methcla_world_release(const Methcla_World* world, Methcla_Resource resource)
+static inline void methcla_world_resource_release(const Methcla_World* world, Methcla_Resource* resource)
 {
-    world->release(world, resource);
-}
-
-static inline Methcla_Resource methcla_world_synth_get_resource(const Methcla_World* world, Methcla_Synth* synth)
-{
-    return world->synth_get_resource(world, synth);
-}
-
-static inline Methcla_Resource methcla_world_synth_acquire_resource(const Methcla_World* world, Methcla_Synth* synth)
-{
-    Methcla_Resource resource = world->synth_get_resource(world, synth);
-    methcla_world_retain(world, resource);
-    return resource;
+    world->resource_release(world, resource);
 }
 
 typedef enum
@@ -165,7 +149,7 @@ METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_configure)(const void* tag_buf
 METHCLA_C_LINKAGE typedef bool (*Methcla_SynthDef_port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
 
 //* Construct a synth instance at the location given.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Synth* synth);
+METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Resource* owner, Methcla_Synth* synth);
 
 //* Connect port at index to data.
 METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
@@ -218,7 +202,6 @@ typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* d
 METHCLA_C_LINKAGE typedef void (*Methcla_Host_register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 METHCLA_C_LINKAGE typedef const Methcla_SoundFileAPI* (*Methcla_Host_get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
 METHCLA_C_LINKAGE typedef void (*Methcla_Host_perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
-METHCLA_C_LINKAGE typedef Methcla_Synth* (*Methcla_Host_resource_get_synth)(const struct Methcla_Host* host, Methcla_Resource resource);
 
 struct Methcla_Host
 {
@@ -233,14 +216,7 @@ struct Methcla_Host
 
     //* Schedule a command for execution in the realtime context.
     Methcla_Host_perform_command perform_command;
-
-    Methcla_Host_resource_get_synth resource_get_synth;
 };
-
-static inline Methcla_Synth* methcla_host_resource_get_synth(const Methcla_Host* host, Methcla_Resource resource)
-{
-    return host->resource_get_synth(host, resource);
-}
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {

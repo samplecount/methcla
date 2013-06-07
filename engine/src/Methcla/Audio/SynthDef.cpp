@@ -94,10 +94,14 @@ bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index,
     return m_descriptor->port_descriptor(options, index, port);
 }
 
-Methcla_Synth* SynthDef::construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const
+void SynthDef::construct(const Methcla_World* world, const Methcla_SynthOptions* options, Synth* owner, Methcla_Synth* synth) const
 {
-    m_descriptor->construct(world, m_descriptor, options, synth);
-    return synth;
+    m_descriptor->construct(world, m_descriptor, options, owner, synth);
+}
+
+void SynthDef::destroy(const Methcla_World* world, Methcla_Synth* synth) const
+{
+    if (m_descriptor->destroy) m_descriptor->destroy(world, synth);
 }
 
 PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)
