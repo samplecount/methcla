@@ -20,11 +20,6 @@
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
-template <class T> T offset_cast(Synth* self, size_t offset)
-{
-    return reinterpret_cast<T>(reinterpret_cast<char*>(self) + offset);
-}
-
 static const Alignment kBufferAlignment = kSIMDAlignment;
 
 Synth::Synth( Environment& env
@@ -38,12 +33,11 @@ Synth::Synth( Environment& env
             , Methcla_PortCount numControlOutputs
             , Methcla_PortCount numAudioInputs
             , Methcla_PortCount numAudioOutputs
-            , size_t synthOffset
-            , size_t audioInputOffset
-            , size_t audioOutputOffset
-            , size_t controlBufferOffset
-            , size_t audioBufferOffset
-            , size_t /* audioBufferAllocSize */
+            , Methcla_Synth* synth
+            , AudioInputConnection* audioInputConnections
+            , AudioOutputConnection* audioOutputConnections
+            , sample_t* controlBuffers
+            , sample_t* audioBuffers
             )
     : Node(env, nodeId, target, addAction)
     , m_synthDef(synthDef)
@@ -51,27 +45,32 @@ Synth::Synth( Environment& env
     , m_numControlOutputs(numControlOutputs)
     , m_numAudioInputs(numAudioInputs)
     , m_numAudioOutputs(numAudioOutputs)
+    , m_synth(synth)
+    , m_audioInputConnections(audioInputConnections)
+    , m_audioOutputConnections(audioOutputConnections)
+    , m_controlBuffers(controlBuffers)
+    , m_audioBuffers(audioBuffers)
 {
     const size_t blockSize = env.blockSize();
 
     // Initialize flags
     // memset(&m_flags, 0, sizeof(m_flags));
 
-    m_synth = synthDef.construct(env.asWorld(), synthOptions, offset_cast<void*>(this, synthOffset));
-    m_controlBuffers = offset_cast<sample_t*>(this, controlBufferOffset);
-    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<sample_t>::value,
-                                       (uintptr_t)m_controlBuffers) );
     // Align audio buffers
-    m_audioBuffers = kBufferAlignment.align(offset_cast<sample_t*>(this, audioBufferOffset));
-    BOOST_ASSERT( kBufferAlignment.isAligned(m_audioBuffers) );
+    m_audioBuffers = kBufferAlignment.align(audioBuffers);
 
-    // Uninitialized audio connection memory
-    m_audioInputConnections = offset_cast<AudioInputConnection*>(this, audioInputOffset);
+    // Construct synth
+    synthDef.construct(env.asWorld(), synthOptions, this, m_synth);
+
+    // Validate alignment
     BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
                                        (uintptr_t)m_audioInputConnections) );
-    m_audioOutputConnections = offset_cast<AudioOutputConnection*>(this, audioOutputOffset);
     BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioOutputConnection>::value,
                                        (uintptr_t)m_audioOutputConnections) );
+    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<sample_t>::value,
+                                       (uintptr_t)m_controlBuffers) );
+    BOOST_ASSERT( kBufferAlignment.isAligned(m_audioBuffers) );
+
 
     // Connect ports
     Methcla_PortDescriptor port;
@@ -196,25 +195,21 @@ Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::Ad
     const size_t audioBufferAllocSize       = (numAudioInputs + numAudioOutputs) * blockSize * sizeof(sample_t);
     const size_t allocSize                  = audioBufferOffset + audioBufferAllocSize + kBufferAlignment /* alignment margin */;
 
-    // Instantiate synth
-    return new (env.rtMem(), allocSize - sizeof(Synth))
-               Synth( env, nodeId, target, addAction
-                    , synthDef, controls, synthOptions
-                    , numControlInputs
-                    , numControlOutputs
-                    , numAudioInputs
-                    , numAudioOutputs
-                    , sizeof(Synth)
-                    , audioInputOffset
-                    , audioOutputOffset
-                    , controlBufferOffset
-                    , audioBufferOffset
-                    , audioBufferAllocSize );
-}
+    char* mem = env.rtMem().allocOf<char>(allocSize);
 
-Synth* Synth::asSynth(Methcla_Synth* handle)
-{
-    return reinterpret_cast<Synth*>(reinterpret_cast<char*>(handle) - sizeof(Synth));
+    // Instantiate synth
+    return new (mem) Synth( env, nodeId, target, addAction
+                          , synthDef, controls, synthOptions
+                          , numControlInputs
+                          , numControlOutputs
+                          , numAudioInputs
+                          , numAudioOutputs
+                          , reinterpret_cast<Methcla_Synth*>(mem + sizeof(Synth))
+                          , reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset)
+                          , reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset)
+                          , reinterpret_cast<sample_t*>(mem + controlBufferOffset)
+                          , reinterpret_cast<sample_t*>(mem + audioBufferOffset)
+                          );
 }
 
 template <class T>

@@ -32,7 +32,7 @@ namespace Methcla { namespace Audio {
     class Group;
 
     class Node : public Resource<NodeId>
-               , public Memory::Allocated<Node, Memory::RTMemoryManager>
+               // , public Memory::Allocated<Node, Memory::RTMemoryManager>
                , public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
     {
     protected:

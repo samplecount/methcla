@@ -177,12 +177,11 @@ protected:
          , Methcla_PortCount numControlOutputs
          , Methcla_PortCount numAudioInputs
          , Methcla_PortCount numAudioOutputs
-         , size_t synthOffset
-         , size_t audioInputConnectionsOffset
-         , size_t audioOutputConnectionsOffset
-         , size_t controlBufferOffset
-         , size_t audioBufferOffset
-         , size_t audioBufferSize
+         , Methcla_Synth* synth
+         , AudioInputConnection* audioInputConnections
+         , AudioOutputConnection* audioOutputConnections
+         , sample_t* controlBuffers
+         , sample_t* audioBuffers
          );
     ~Synth();
 
@@ -195,12 +194,6 @@ public:
 
     //* Return this synth's SynthDef.
     const SynthDef& synthDef() const { return m_synthDef; }
-
-    //* Return synth handle.
-    Methcla_Synth* asHandle() { return m_synth; }
-
-    //* Return the synth corresponding to handle.
-    static Synth* asSynth(Methcla_Synth* handle);
 
     //* Return number of audio inputs.
     Methcla_PortCount numAudioInputs() const { return m_numAudioInputs; }

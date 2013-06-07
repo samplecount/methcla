@@ -39,7 +39,7 @@ Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
 
 Node::~Node()
 {
-#if 0
+#if !defined(NDEBUG)
     std::cout << "~Node " << id() << "\n";
 #endif
 }
@@ -51,7 +51,9 @@ void Node::process(size_t numFrames)
 
 void Node::free()
 {
-    delete this;
+    Environment* pEnv = &env();
+    this->~Node();
+    pEnv->rtMem().free(this);
 }
 
 void Node::doProcess(size_t)

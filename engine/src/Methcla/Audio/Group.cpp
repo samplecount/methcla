@@ -19,17 +19,13 @@ using namespace Methcla::Audio;
 
 Group* Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
 {
-    return new (env.rtMem()) Group(env, nodeId, target, addAction);
+    return new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction);
 }
 
 void Group::free()
 {
     if (isRootNode()) {
-        BOOST_THROW_EXCEPTION(
-            InvalidNodeId()
-         << ErrorInfoNodeId(id())
-         << ErrorInfoString("cannot free root node")
-         );
+        throw std::runtime_error("Cannot free root node");
     } else {
         Node::free();
     }
