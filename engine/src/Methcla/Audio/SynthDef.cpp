@@ -60,7 +60,19 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     //     }
     // }
 
-    m_options = new char[m_descriptor->options_size];
+    // Validate descriptor fields (some are optional)
+    if (m_descriptor->uri == nullptr || m_descriptor->uri[0] == '\0')
+        throw std::invalid_argument("SynthDef: Missing URI");
+    if (m_descriptor->construct == nullptr)
+        throw std::invalid_argument("SynthDef: Missing `construct' function");
+    if (m_descriptor->port_descriptor == nullptr)
+        throw std::invalid_argument("SynthDef: Missing `port_descriptor' function");
+    if (m_descriptor->connect == nullptr)
+        throw std::invalid_argument("SynthDef: Missing `connect' function");
+    if (m_descriptor->process == nullptr)
+        throw std::invalid_argument("SynthDef: Missing `process' function");
+
+    m_options = m_descriptor->options_size > 0 ? new char[m_descriptor->options_size] : nullptr;
 
     std::cerr << "SynthDef " << uri() << " loaded (" << m_descriptor << "):" << std::endl
               << "    instance size: " << instanceSize() << std::endl;
