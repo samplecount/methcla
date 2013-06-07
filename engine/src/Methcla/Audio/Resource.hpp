@@ -73,20 +73,20 @@ namespace Methcla { namespace Audio
     /// Resource base class.
     //
     // A resource has a reference to its environment and a unique id.
-    template <class Id> class Resource : public Reference
+    template <typename Id> class Resource : public Reference
     {
     public:
-        Resource(Environment& env, const Id& id)
+        Resource(Environment& env, Id id)
             : m_env(env)
             , m_id(id)
         { }
 
-        /// Return environment.
+        /// Access environment.
         const Environment& env() const { return m_env; }
         Environment& env() { return m_env; }
 
         /// Return unique id.
-        const Id& id() const { return m_id; }
+        Id id() const { return m_id; }
 
     private:
         Environment&    m_env;
@@ -96,7 +96,7 @@ namespace Methcla { namespace Audio
     /// Simple map for holding pointers to resources.
     //
     // Also provides unique id allocation facility.
-    template <class Id, class T> class ResourceMap : boost::noncopyable
+    template <typename Id, class T> class ResourceMap : boost::noncopyable
     {
     public:
         typedef boost::intrusive_ptr<T> Pointer;
@@ -110,7 +110,7 @@ namespace Methcla { namespace Audio
             return m_elems.size();
         }
 
-        bool contains(const Id& id) const
+        bool contains(Id id) const
         {
             return m_elems[id] != nullptr;
         }
@@ -125,7 +125,7 @@ namespace Methcla { namespace Audio
             throw std::runtime_error("No free ids");
         }
 
-        void insert(const Id& id, Pointer a)
+        void insert(Id id, Pointer a)
         {
             if ((id >= Id(0)) && (id < Id(m_elems.size()))) {
                 m_elems[id] = a;
@@ -134,17 +134,17 @@ namespace Methcla { namespace Audio
             }
         }
 
-        void insert(const Id& id, T* a)
+        void insert(Id id, T* a)
         {
             insert(id, Pointer(a));
         }
 
-        void remove(const Id& id)
+        void remove(Id id)
         {
             m_elems[id] = nullptr;
         }
 
-        Pointer lookup(const Id& id) noexcept
+        Pointer lookup(Id id) noexcept
         {
             if ((id >= Id(0)) && (id < Id(m_elems.size())))
                 return m_elems[id];
