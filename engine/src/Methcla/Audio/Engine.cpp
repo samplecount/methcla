@@ -513,7 +513,9 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 void Environment::processBundle(const OSC::Server::Bundle& bundle)
 {
     // throw std::runtime_error("Bundle support not implemented yet");
-    for (auto p : bundle) {
+    auto packets = bundle.packets();
+    while (!packets.atEnd()) {
+        auto p = packets.next();
         if (p.isBundle()) {
             processBundle(p);
         } else {

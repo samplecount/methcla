@@ -53,7 +53,9 @@ struct Methcla_Engine
         std::string pluginPath = ".";
 
         if (packet.isBundle()) {
-            for (auto optionPacket : OSC::Server::Bundle(packet)) {
+            auto packets = OSC::Server::Bundle(packet).packets();
+            while (!packets.atEnd()) {
+                auto optionPacket = packets.next();
                 if (optionPacket.isMessage()) {
                     OSC::Server::Message option(optionPacket);
                     if (option == "/engine/option/plugin-library") {

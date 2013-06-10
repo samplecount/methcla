@@ -63,7 +63,7 @@ engineBuildFlags =
          -- Boost
       ++ [ boostDir ]
          -- oscpp
-      ++ [ "external_libraries/oscpp" ]
+      ++ [ "external_libraries/oscpp/include" ]
          -- TLSF
       ++ [ tlsfDir ] )
 

@@ -508,7 +508,7 @@
 					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
-					"$(METHCLA_SOURCE)/external_libraries/oscpp",
+					"$(METHCLA_SOURCE)/external_libraries/oscpp/include",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -543,7 +543,7 @@
 					"$(METHCLA_SOURCE)/include",
 					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
-					"$(METHCLA_SOURCE)/external_libraries/oscpp",
+					"$(METHCLA_SOURCE)/external_libraries/oscpp/include",
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;

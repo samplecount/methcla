@@ -414,8 +414,8 @@ namespace Methcla
         SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             const char address[] = "/s_new";
-            const size_t numArgs = 4 + OSC::Size::array(controls.size()) + OSC::Size::array(options.size());
-            const size_t packetSize = OSC::Size::message(address, numArgs)
+            const size_t numTags = 4 + OSC::Tags::array(controls.size()) + OSC::Tags::array(options.size());
+            const size_t packetSize = OSC::Size::message(address, numTags)
                                          + OSC::Size::string(256)
                                          + OSC::Size::int32()
                                          + 2 * OSC::Size::int32()
@@ -427,7 +427,7 @@ namespace Methcla
 
             Packet request(m_packets);
             request.packet()
-                .openMessage(address, numArgs)
+                .openMessage(address, numTags)
                 .string(synthDef)
                 .int32(nodeId)
                 .int32(0)

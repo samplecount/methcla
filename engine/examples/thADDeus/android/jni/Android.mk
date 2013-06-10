@@ -24,7 +24,7 @@ LOCAL_CPP_FEATURES := rtti exceptions
 LOCAL_C_INCLUDES := \
 	../src \
 	$(METHCLA_SRC_DIR)/external_libraries/boost \
-	$(METHCLA_SRC_DIR)/external_libraries/oscpp
+	$(METHCLA_SRC_DIR)/external_libraries/oscpp/include
 LOCAL_LDLIBS := -llog -landroid -lEGL -lGLESv1_CM -lOpenSLES
 LOCAL_STATIC_LIBRARIES := android_native_app_glue methcla
 include $(BUILD_SHARED_LIBRARY)
