@@ -47,6 +47,5 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
 
 void Methcla::Memory::free(void* ptr) noexcept
 {
-    if (ptr != nullptr)
-        std::free(ptr);
+    std::free(ptr);
 }
