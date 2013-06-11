@@ -38,3 +38,13 @@ sample_t** Driver::makeBuffers(size_t numChannels, size_t numFrames)
     }
     return nullptr;
 }
+
+void Driver::freeBuffers(size_t numChannels, sample_t** buffers)
+{
+    if (numChannels > 0 && buffers != nullptr) {
+        for (size_t i=0; i < numChannels; i++) {
+            Methcla::Memory::free(buffers[i]);
+        }
+        Memory::free(buffers);
+    }
+}

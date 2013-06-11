@@ -50,8 +50,8 @@ static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRa
 RemoteIODriver::RemoteIODriver()
     : m_numInputs(2)
     , m_numOutputs(2)
-    , m_inputBuffers(0)
-    , m_outputBuffers(0)
+    , m_inputBuffers(nullptr)
+    , m_outputBuffers(nullptr)
 {
     // Initialize and configure the audio session
     METHCLA_THROW_IF_ERROR(
@@ -103,17 +103,19 @@ RemoteIODriver::RemoteIODriver()
       , "couldn't determine whether audio input is available");
 
     // Number of hardware inputs
-    UInt32 hwNumInputs = 0;
-    if (inputAvailable) {
-        outSize = sizeof(hwNumInputs);
-        METHCLA_THROW_IF_ERROR(
-            AudioSessionGetProperty(
-                kAudioSessionProperty_CurrentHardwareInputNumberChannels
-              , &outSize
-              , &hwNumInputs)
-          , "couldn't determine number of hardware input channels");
+    if (m_numInputs > 0) {
+        UInt32 hwNumInputs = 0;
+        if (inputAvailable) {
+            outSize = sizeof(hwNumInputs);
+            METHCLA_THROW_IF_ERROR(
+                AudioSessionGetProperty(
+                    kAudioSessionProperty_CurrentHardwareInputNumberChannels
+                  , &outSize
+                  , &hwNumInputs)
+              , "couldn't determine number of hardware input channels");
+        }
+        m_numInputs = hwNumInputs;
     }
-    m_numInputs = hwNumInputs;
 
     // Number of hardware outputs
     UInt32 hwNumOutputs;
@@ -184,7 +186,7 @@ RemoteIODriver::RemoteIODriver()
           , &maxFPS
           , sizeof(maxFPS))
       , "couldn't set AudioUnit buffer size");
-    
+
     METHCLA_THROW_IF_ERROR(
         AudioUnitSetProperty(
             m_rioUnit
@@ -279,31 +281,21 @@ RemoteIODriver::RemoteIODriver()
       , "couldn't initialize the remote I/O unit");
 
     // Initialize I/O buffers
-    m_inputBuffers = new sample_t*[m_numInputs];
-    m_outputBuffers = new sample_t*[m_numOutputs];    
-    for (size_t i = 0; i < m_numInputs; i++) {
-        m_inputBuffers[i] =
-            Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, m_bufferSize);
-    }
-    for (size_t i = 0; i < m_numOutputs; i++) {
-        m_outputBuffers[i] =
-            Methcla::Memory::allocAlignedOf<sample_t>(Methcla::Memory::kSIMDAlignment, m_bufferSize);
-    }
+    m_inputBuffers = makeBuffers(m_numInputs, m_bufferSize);
+    m_outputBuffers = makeBuffers(m_numOutputs, m_bufferSize);
 }
 
 RemoteIODriver::~RemoteIODriver()
 {
-    // Free audio units
+    // Stop audio unit
+    stop();
+
+    // Free audio unit
     AudioComponentInstanceDispose(m_rioUnit);
 
-    // Free input buffer memory
-    for (size_t i=0; i < m_numInputs; i++) {
-        Methcla::Memory::free(m_inputBuffers[i]);
-    }
-
-    // Free buffer pointer arrays
-    delete [] m_inputBuffers;
-    delete [] m_outputBuffers;
+    // Free I/O buffers
+    freeBuffers(m_numInputs, m_inputBuffers);
+    freeBuffers(m_numOutputs, m_outputBuffers);
 }
 
 void RemoteIODriver::start()

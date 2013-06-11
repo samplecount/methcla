@@ -42,6 +42,7 @@ public:
     virtual void stop() = 0;
 
     static sample_t** makeBuffers(size_t numChannels, size_t numFrames);
+    static void freeBuffers(size_t numChannels, sample_t** buffers);
 
 protected:
     void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
