@@ -232,7 +232,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory);
+        Engine(PluginManager& pluginManager, PacketHandler handler, const std::string& pluginDirectory);
         virtual ~Engine();
 
         Environment& env()
