@@ -27,7 +27,7 @@ Synth::Synth( Environment& env
             , Group* target
             , Node::AddAction addAction
             , const SynthDef& synthDef
-            , OSC::Server::ArgStream controls
+            , OSCPP::Server::ArgStream controls
             , const Methcla_SynthOptions* synthOptions
             , Methcla_PortCount numControlInputs
             , Methcla_PortCount numControlOutputs
@@ -139,7 +139,7 @@ Synth::~Synth()
     m_synthDef.destroy(env().asWorld(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream options)
+Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))

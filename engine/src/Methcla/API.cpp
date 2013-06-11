@@ -46,20 +46,20 @@ struct Methcla_Engine
         : m_errorMessage(kNoErrorMsg)
     {
         // Options options(inOptions);
-        OSC::Server::Packet packet(inOptions->data, inOptions->size);
+        OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
 
         // TODO: Put this somewhere else
         std::list<Methcla_LibraryFunction> libs;
         std::string pluginPath = ".";
 
         if (packet.isBundle()) {
-            auto packets = OSC::Server::Bundle(packet).packets();
+            auto packets = OSCPP::Server::Bundle(packet).packets();
             while (!packets.atEnd()) {
                 auto optionPacket = packets.next();
                 if (optionPacket.isMessage()) {
-                    OSC::Server::Message option(optionPacket);
+                    OSCPP::Server::Message option(optionPacket);
                     if (option == "/engine/option/plugin-library") {
-                        OSC::Blob x = option.args().blob();
+                        OSCPP::Blob x = option.args().blob();
                         if (x.size() == sizeof(Methcla_LibraryFunction)) {
                             Methcla_LibraryFunction f;
                             memcpy(&f, x.data(), x.size());

@@ -68,7 +68,7 @@ struct Options
 static void
 configure(const void* tags, size_t tags_size, const void* args, size_t args_size, Methcla_SynthOptions* outOptions)
 {
-    OSC::Server::ArgStream argStream(OSC::ReadStream(tags, tags_size), OSC::ReadStream(args, args_size));
+    OSCPP::Server::ArgStream argStream(OSCPP::ReadStream(tags, tags_size), OSCPP::ReadStream(args, args_size));
     Options* options = (Options*)outOptions;
     options->path = argStream.string();
     options->loop = argStream.atEnd() ? false : argStream.int32();

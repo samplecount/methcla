@@ -183,8 +183,8 @@ namespace Methcla { namespace Audio
         static void perform_response_query_external_outputs(Environment*, CommandData*);
 
         void processRequests();
-        void processMessage(const OSC::Server::Message& message);
-        void processBundle(const OSC::Server::Bundle& bundle);
+        void processMessage(const OSCPP::Server::Message& message);
+        void processBundle(const OSCPP::Server::Bundle& bundle);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)
@@ -192,7 +192,7 @@ namespace Methcla { namespace Audio
             m_listener(requestId, packet, size);
         }
 
-        void reply(Methcla_RequestId requestId, const OSC::Client::Packet& packet)
+        void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet)
         {
             reply(requestId, packet.data(), packet.size());
         }
@@ -205,7 +205,7 @@ namespace Methcla { namespace Audio
             m_listener(kMethcla_Notification, packet, size);
         }
 
-        void notify(const OSC::Client::Packet& packet)
+        void notify(const OSCPP::Client::Packet& packet)
         {
             notify(packet.data(), packet.size());
         }

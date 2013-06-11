@@ -199,7 +199,7 @@ Memory::RTMemoryManager& Environment::rtMem()
 
 void Environment::send(const void* packet, size_t size)
 {
-    char* myPacket = Memory::allocAlignedOf<char>(OSC::kAlignment, size);
+    char* myPacket = Memory::allocAlignedOf<char>(OSCPP::kAlignment, size);
     memcpy(myPacket, packet, size);
     Request req;
     req.packet = myPacket;
@@ -274,11 +274,11 @@ void Environment::perform_response_ack(Environment* env, CommandData* data)
 {
     const char address[] = "/ack";
     const size_t numArgs = 1;
-    const size_t packetSize = OSC::Size::message(address, numArgs)
-                                + OSC::Size::int32();
+    const size_t packetSize = OSCPP::Size::message(address, numArgs)
+                                + OSCPP::Size::int32();
     const int32_t requestId = *static_cast<int32_t*>(data);
-    OSC::Client::StaticPacket<packetSize> packet;
-    // OSC::Client::DynamicPacket packet(kPacketSize);
+    OSCPP::Client::StaticPacket<packetSize> packet;
+    // OSCPP::Client::DynamicPacket packet(kPacketSize);
     packet
         .openMessage(address, numArgs)
             .int32(requestId)
@@ -291,12 +291,12 @@ void Environment::perform_response_nodeId(Environment* env, CommandData* data)
 {
     const char address[] = "/ack";
     const size_t numArgs = 2;
-    const size_t packetSize = OSC::Size::message(address, numArgs)
-                                + 2 * OSC::Size::int32();
+    const size_t packetSize = OSCPP::Size::message(address, numArgs)
+                                + 2 * OSCPP::Size::int32();
     const int32_t requestId = ((int32_t*)data)[0];
     const int32_t nodeId = ((int32_t*)data)[1];
-    OSC::Client::StaticPacket<packetSize> packet;
-    // OSC::Client::DynamicPacket packet(kPacketSize);
+    OSCPP::Client::StaticPacket<packetSize> packet;
+    // OSCPP::Client::DynamicPacket packet(kPacketSize);
     packet
         .openMessage(address, numArgs)
             .int32(requestId)
@@ -311,8 +311,8 @@ void Environment::perform_response_query_external_inputs(Environment* env, Comma
     // const char address[] = "/ack";
     // const size_t numBuses = env->numExternalAudioInputs();
     // const size_t numArgs = 1 + numBuses;
-    // const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
-    // OSC::Client::DynamicPacket packet(packetSize);
+    // const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
+    // OSCPP::Client::DynamicPacket packet(packetSize);
     // packet.openMessage(address, numArgs);
     // packet.int32(data->response.requestId);
     // for (size_t i=0; i < numBuses; i++) {
@@ -327,8 +327,8 @@ void Environment::perform_response_query_external_outputs(Environment* env, Comm
     // const char address[] = "/ack";
     // const size_t numBuses = env->numExternalAudioOutputs();
     // const size_t numArgs = 1 + numBuses;
-    // const size_t packetSize = OSC::Size::message(address, numArgs) +  numArgs * OSC::Size::int32();
-    // OSC::Client::DynamicPacket packet(packetSize);
+    // const size_t packetSize = OSCPP::Size::message(address, numArgs) +  numArgs * OSCPP::Size::int32();
+    // OSCPP::Client::DynamicPacket packet(packetSize);
     // packet.openMessage(address, numArgs);
     // packet.int32(data->response.requestId);
     // for (size_t i=0; i < numBuses; i++) {
@@ -343,10 +343,10 @@ void Environment::perform_response_error(Environment* env, CommandData* commandD
     EnvironmentImpl::ErrorData* data = (EnvironmentImpl::ErrorData*)commandData;
     const char address[] = "/error";
     const size_t numArgs = 2;
-    const size_t packetSize = OSC::Size::message(address, numArgs)
-                             + OSC::Size::int32()
-                             + OSC::Size::string(strlen(data->message));
-    OSC::Client::DynamicPacket packet(packetSize);
+    const size_t packetSize = OSCPP::Size::message(address, numArgs)
+                             + OSCPP::Size::int32()
+                             + OSCPP::Size::string(strlen(data->message));
+    OSCPP::Client::DynamicPacket packet(packetSize);
     packet
         .openMessage(address, numArgs)
             .int32(data->requestId)
@@ -371,7 +371,7 @@ void Environment::processRequests()
     Request msg;
     while (m_impl->m_requests.next(msg)) {
         try {
-            OSC::Server::Packet packet(msg.packet, msg.size);
+            OSCPP::Server::Packet packet(msg.packet, msg.size);
             if (packet.isBundle()) {
                 processBundle(packet);
             } else {
@@ -385,7 +385,7 @@ void Environment::processRequests()
     }
 }
 
-void Environment::processMessage(const OSC::Server::Message& msg)
+void Environment::processMessage(const OSCPP::Server::Message& msg)
 {
 #if 0
     std::cerr << "Request (recv): " << msg << std::endl;
@@ -403,12 +403,12 @@ void Environment::processMessage(const OSC::Server::Message& msg)
 
             const std::shared_ptr<SynthDef> def = synthDef(defName);
 
-            auto synthControls = args.atEnd() ? OSC::Server::ArgStream() : args.array();
+            auto synthControls = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
             // FIXME: Cannot be checked before the synth is instantiated.
             // if (def->numControlInputs() != synthControls.size()) {
             //     throw std::runtime_error("Missing synth control initialisers");
             // }
-            auto synthArgs = args.atEnd() ? OSC::Server::ArgStream() : args.array();
+            auto synthArgs = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
 
             Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
@@ -510,7 +510,7 @@ void Environment::processMessage(const OSC::Server::Message& msg)
     }
 }
 
-void Environment::processBundle(const OSC::Server::Bundle& bundle)
+void Environment::processBundle(const OSCPP::Server::Bundle& bundle)
 {
     // throw std::runtime_error("Bundle support not implemented yet");
     auto packets = bundle.packets();
@@ -632,12 +632,12 @@ void Engine::makeSine()
     // const std::shared_ptr<SynthDef> def = env().synthDef("http://methc.la/plugins/sine");
     // 
     // for (auto freq : { 440, 660, 880, 1320 }) {
-    //     OSC::Client::DynamicPacket packet(128);
+    //     OSCPP::Client::DynamicPacket packet(128);
     //     packet.openMessage("/foo", 1);
     //     packet.float32(freq);
     //     packet.closeMessage();
-    //     auto synthControls = static_cast<OSC::Server::Message>(OSC::Server::Packet(packet.data(), packet.size())).args();
-    //     auto synthOptions = OSC::Server::ArgStream();
+    //     auto synthControls = static_cast<OSCPP::Server::Message>(OSCPP::Server::Packet(packet.data(), packet.size())).args();
+    //     auto synthOptions = OSCPP::Server::ArgStream();
     // 
     //     Synth* synth = Synth::construct(
     //         env(),

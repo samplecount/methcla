@@ -73,7 +73,7 @@ public:
     // inline size_t numControlOutputs () const { return m_numControlOutputs; }
 
     // NOTE: Uses static data and should only be called from a single thread (normally the audio thread) at a time.
-    const Methcla_SynthOptions* configure(OSC::Server::ArgStream options) const;
+    const Methcla_SynthOptions* configure(OSCPP::Server::ArgStream options) const;
 
     //* Return port descriptor at index.
     bool portDescriptor(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port) const;

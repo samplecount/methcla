@@ -171,7 +171,7 @@ protected:
          , Group* target
          , AddAction addAction
          , const SynthDef& synthDef
-         , OSC::Server::ArgStream controls
+         , OSCPP::Server::ArgStream controls
          , const Methcla_SynthOptions* synthOptions
          , Methcla_PortCount numControlInputs
          , Methcla_PortCount numControlOutputs
@@ -188,7 +188,7 @@ protected:
     virtual void doProcess(size_t numFrames) override;
 
 public:
-    static Synth* construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSC::Server::ArgStream controls, OSC::Server::ArgStream args);
+    static Synth* construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
 
     virtual bool isSynth() const override { return true; }
 

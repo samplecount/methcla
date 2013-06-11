@@ -87,7 +87,7 @@ SynthDef::~SynthDef()
     delete [] static_cast<char*>(m_options);
 }
 
-const Methcla_SynthOptions* SynthDef::configure(OSC::Server::ArgStream options) const
+const Methcla_SynthOptions* SynthDef::configure(OSCPP::Server::ArgStream options) const
 {
     if (m_descriptor->configure) {
         auto state = options.state();

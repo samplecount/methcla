@@ -39,7 +39,7 @@
 
 namespace Methcla
 {
-    inline static void dumpRequest(std::ostream& out, const OSC::Client::Packet& packet)
+    inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
     {
 #if 0
         out << "Request (send): " << packet << std::endl;
@@ -47,10 +47,10 @@ namespace Methcla
     }
 
 #if 0
-    inline static std::exception_ptr responseToException(const OSC::Server::Packet& packet)
+    inline static std::exception_ptr responseToException(const OSCPP::Server::Packet& packet)
     {
         if (packet.isMessage()) {
-            OSC::Server::Message msg(packet);
+            OSCPP::Server::Message msg(packet);
             if (msg == "/error") {
                 auto args(msg.args());
                 args.drop(); // request id
@@ -168,19 +168,19 @@ namespace Methcla
             m_pool.free(m_packet.data());
         }
 
-        const OSC::Client::Packet& packet() const
+        const OSCPP::Client::Packet& packet() const
         {
             return m_packet;
         }
 
-        OSC::Client::Packet& packet()
+        OSCPP::Client::Packet& packet()
         {
             return m_packet;
         }
 
     private:
         PacketPool&         m_pool;
-        OSC::Client::Packet m_packet;
+        OSCPP::Client::Packet m_packet;
     };
 
 #if 0
@@ -271,7 +271,7 @@ namespace Methcla
         }
     };
 
-    template <typename T> bool checkResponse(const OSC::Server::Packet& response, Result<T>& result)
+    template <typename T> bool checkResponse(const OSCPP::Server::Packet& response, Result<T>& result)
     {
         auto error = responseToException(response);
         if (error) {
@@ -310,7 +310,7 @@ namespace Methcla
             , m_int(x)
         { }
 
-        void put(OSC::Client::Packet& packet) const
+        void put(OSCPP::Client::Packet& packet) const
         {
             switch (m_type) {
                 case kInt:
@@ -336,7 +336,7 @@ namespace Methcla
     {
     public:
         virtual ~Option() { }
-        virtual void put(OSC::Client::Packet& packet) const = 0;
+        virtual void put(OSCPP::Client::Packet& packet) const = 0;
 
         inline static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f);
     };
@@ -348,13 +348,13 @@ namespace Methcla
             : m_function(f)
         { }
 
-        virtual void put(OSC::Client::Packet& packet) const override
+        virtual void put(OSCPP::Client::Packet& packet) const override
         {
             char buffer[sizeof(Methcla_LibraryFunction)];
             std::memcpy(buffer, &m_function, sizeof(Methcla_LibraryFunction));
             packet
                 .openMessage("/engine/option/plugin-library", 1)
-                .blob(OSC::Blob(buffer, sizeof(Methcla_LibraryFunction)))
+                .blob(OSCPP::Blob(buffer, sizeof(Methcla_LibraryFunction)))
                 .closeMessage();
         }
 
@@ -377,7 +377,7 @@ namespace Methcla
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
         {
-            OSC::Client::DynamicPacket bundle(8192);
+            OSCPP::Client::DynamicPacket bundle(8192);
             bundle.openBundle(1);
             for (auto option : options) {
                 option->put(bundle);
@@ -414,12 +414,12 @@ namespace Methcla
         SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             const char address[] = "/s_new";
-            const size_t numTags = 4 + OSC::Tags::array(controls.size()) + OSC::Tags::array(options.size());
-            const size_t packetSize = OSC::Size::message(address, numTags)
-                                         + OSC::Size::string(256)
-                                         + OSC::Size::int32()
-                                         + 2 * OSC::Size::int32()
-                                         + controls.size() * OSC::Size::float32()
+            const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
+            const size_t packetSize = OSCPP::Size::message(address, numTags)
+                                         + OSCPP::Size::string(256)
+                                         + OSCPP::Size::int32()
+                                         + 2 * OSCPP::Size::int32()
+                                         + controls.size() * OSCPP::Size::float32()
                                          + 256; // margin for options. better: pool allocator with fixed size packets.
 
             const int32_t nodeId = m_nodeIds.alloc();
@@ -449,9 +449,9 @@ namespace Methcla
             // Result<SynthId> result;
             // 
             // withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
-            //     OSC::Server::Packet response(buffer, size);
+            //     OSCPP::Server::Packet response(buffer, size);
             //     if (checkResponse(response, result)) {
-            //         auto args = ((OSC::Server::Message)response).args();
+            //         auto args = ((OSCPP::Server::Message)response).args();
             //         int32_t requestId_ = args.int32();
             //         BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
             //         int32_t nodeId = args.int32();
@@ -469,8 +469,8 @@ namespace Methcla
         {
             const char address[] = "/synth/map/output";
             const size_t numArgs = 3;
-            const size_t packetSize = OSC::Size::message(address, numArgs)
-                                        + numArgs * OSC::Size::int32();
+            const size_t packetSize = OSCPP::Size::message(address, numArgs)
+                                        + numArgs * OSCPP::Size::int32();
 
             // Methcla_RequestId requestId = getRequestId();
 
@@ -492,9 +492,9 @@ namespace Methcla
         {
             const char address[] = "/n_set";
             const size_t numArgs = 3;
-            const size_t packetSize = OSC::Size::message(address, numArgs)
-                                        + 2 * OSC::Size::int32()
-                                        + OSC::Size::float32();
+            const size_t packetSize = OSCPP::Size::message(address, numArgs)
+                                        + 2 * OSCPP::Size::int32()
+                                        + OSCPP::Size::float32();
 
             // Methcla_RequestId requestId = getRequestId();
 
@@ -516,7 +516,7 @@ namespace Methcla
         {
             const char address[] = "/n_free";
             const size_t numArgs = 1;
-            const size_t packetSize = OSC::Size::message(address, numArgs) + numArgs * OSC::Size::int32();
+            const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
             // const Methcla_RequestId requestId = getRequestId();
             Packet request(m_packets);
             request.packet()
@@ -577,7 +577,7 @@ namespace Methcla
             methcla_engine_send(m_engine, packet, size);
         }
 
-        void send(const OSC::Client::Packet& packet)
+        void send(const OSCPP::Client::Packet& packet)
         {
             send(packet.data(), packet.size());
         }
@@ -606,17 +606,17 @@ namespace Methcla
         }
 
 #if 0
-        void withRequest(Methcla_RequestId requestId, const OSC::Client::Packet& request, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
+        void withRequest(Methcla_RequestId requestId, const OSCPP::Client::Packet& request, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
         {
             registerResponse(requestId, callback);
             send(request);
         }
 
-        void execRequest(Methcla_RequestId requestId, const OSC::Client::Packet& request)
+        void execRequest(Methcla_RequestId requestId, const OSCPP::Client::Packet& request)
         {
             Result<void> result;
             withRequest(requestId, request, [&result](Methcla_RequestId, const void* buffer, size_t size){
-                if (checkResponse(OSC::Server::Packet(buffer, size), result)) {
+                if (checkResponse(OSCPP::Server::Packet(buffer, size), result)) {
                     result.set();
                 }
             });
