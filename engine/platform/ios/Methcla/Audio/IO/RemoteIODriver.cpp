@@ -368,16 +368,16 @@ OSStatus RemoteIODriver::InputCallback(
                 inputBuffers[curChan][curFrame] = pcm[curFrame * numInputs + curChan] / 32768.f;
             }
         }
-    }
+//    }
 
     return noErr;
 }
 
 OSStatus RemoteIODriver::RenderCallback(
     void*                       inRefCon, 
-    AudioUnitRenderActionFlags* ioActionFlags, 
-    const AudioTimeStamp*       inTimeStamp, 
-    UInt32                      inBusNumber, 
+    AudioUnitRenderActionFlags* /* ioActionFlags */,
+    const AudioTimeStamp*       /* inTimeStamp */,
+    UInt32                      /* inBusNumber */,
     UInt32                      inNumberFrames, 
     AudioBufferList*            ioData)
 {
