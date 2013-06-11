@@ -111,7 +111,7 @@ namespace Methcla { namespace Audio
 
         Memory::RTMemoryManager& rtMem();
 
-        const Epoch& epoch() const { return m_epoch; }
+        Epoch epoch() const { return m_epoch; }
 
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
