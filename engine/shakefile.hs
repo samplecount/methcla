@@ -132,6 +132,7 @@ methclaLib platformSources =
             , "src/Methcla/Audio/Engine.cpp"
             , "src/Methcla/Audio/Group.cpp"
             , "src/Methcla/Audio/IO/Driver.cpp"
+            , "src/Methcla/Audio/IO/DummyDriver.cpp"
             , "src/Methcla/Audio/Node.cpp"
             -- , "src/Methcla/Audio/Resource.cpp"
             , "src/Methcla/Audio/Synth.cpp"

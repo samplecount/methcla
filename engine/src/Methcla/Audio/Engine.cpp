@@ -589,9 +589,12 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 
 } // extern "C"
 
+#include "Methcla/Audio/IO/DummyDriver.hpp"
+
 Engine::Engine(PacketHandler handler)
 {
     m_driver = IO::defaultPlatformDriver();
+    // m_driver = new IO::DummyDriver();
     m_driver->setProcessCallback(processCallback, this);
 
     Environment::Options options;
