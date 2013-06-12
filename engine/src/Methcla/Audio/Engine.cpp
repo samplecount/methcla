@@ -110,10 +110,9 @@ static void methcla_api_world_perform_command(const Methcla_World*, Methcla_Host
 
 } // extern "C"
 
-Environment::Environment(PluginManager& pluginManager, PacketHandler handler, const Options& options)
+Environment::Environment(PacketHandler handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
-    , m_plugins(pluginManager)
     , m_listener(handler)
     , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
@@ -590,7 +589,7 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 
 } // extern "C"
 
-Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const std::string& pluginDirectory)
+Engine::Engine(PacketHandler handler)
 {
     m_driver = IO::defaultPlatformDriver();
     m_driver->setProcessCallback(processCallback, this);
@@ -600,9 +599,7 @@ Engine::Engine(PluginManager& pluginManager, const PacketHandler& handler, const
     options.blockSize = m_driver->bufferSize();
     options.numHardwareInputChannels = m_driver->numInputs();
     options.numHardwareOutputChannels = m_driver->numOutputs();
-    m_env = new Environment(pluginManager, handler, options);
-
-    pluginManager.loadPlugins(m_env->asHost(), pluginDirectory);
+    m_env = new Environment(handler, options);
 }
 
 Engine::~Engine()
@@ -622,33 +619,12 @@ void Engine::stop()
     m_driver->stop();
 }
 
+void Engine::loadPlugins(const std::list<Methcla_LibraryFunction>& funcs)
+{
+    m_plugins.loadPlugins(m_env->asHost(), funcs);
+}
+
 void Engine::processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     static_cast<Engine*>(data)->m_env->process(numFrames, inputs, outputs);
-}
-
-void Engine::makeSine()
-{
-    // const std::shared_ptr<SynthDef> def = env().synthDef("http://methc.la/plugins/sine");
-    // 
-    // for (auto freq : { 440, 660, 880, 1320 }) {
-    //     OSCPP::Client::DynamicPacket packet(128);
-    //     packet.openMessage("/foo", 1);
-    //     packet.float32(freq);
-    //     packet.closeMessage();
-    //     auto synthControls = static_cast<OSCPP::Server::Message>(OSCPP::Server::Packet(packet.data(), packet.size())).args();
-    //     auto synthOptions = OSCPP::Server::ArgStream();
-    // 
-    //     Synth* synth = Synth::construct(
-    //         env(),
-    //         env().nodes().nextId(),
-    //         env().rootNode(),
-    //         Node::kAddToTail,
-    //         *def,
-    //         synthControls,
-    //         synthOptions);
-    //     env().nodes().insert(synth->id(), synth);
-    // 
-    //     synth->mapOutput(0, AudioBusId(1), kOut);
-    // }
 }

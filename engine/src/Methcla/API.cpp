@@ -49,7 +49,7 @@ struct Methcla_Engine
 
         // TODO: Put this somewhere else
         std::list<Methcla_LibraryFunction> libs;
-        std::string pluginPath = ".";
+        // std::string pluginPath = ".";
 
         if (packet.isBundle()) {
             auto packets = OSCPP::Server::Bundle(packet).packets();
@@ -64,19 +64,19 @@ struct Methcla_Engine
                             memcpy(&f, x.data(), x.size());
                             libs.push_back(f);
                         }
-                    } else if (option == "/engine/option/plugin-path") {
-                        pluginPath = option.args().string();
                     }
+                    // else if (option == "/engine/option/plugin-path") {
+                    //     pluginPath = option.args().string();
+                    // }
                 }
             }
         }
 
         m_engine = new Methcla::Audio::Engine(
-            m_pluginManager,
-            PacketHandler { handler, handlerData },
-            pluginPath );
+            PacketHandler { handler, handlerData }
+        );
 
-        m_pluginManager.loadPlugins(m_engine->env().asHost(), libs);
+        m_engine->loadPlugins(libs);
     }
 
     ~Methcla_Engine()
@@ -84,7 +84,6 @@ struct Methcla_Engine
         delete m_engine;
     }
 
-    Methcla::Audio::PluginManager  m_pluginManager;
     Methcla::Audio::Engine*        m_engine;
     // Methcla_Error                  m_error;
     const char*                    m_errorMessage;

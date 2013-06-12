@@ -95,11 +95,8 @@ namespace Methcla { namespace Audio
             size_t numHardwareOutputChannels;
         };
 
-        Environment(PluginManager& pluginManager, PacketHandler handler, const Options& options);
+        Environment(PacketHandler handler, const Options& options);
         ~Environment();
-
-        const PluginManager& plugins() const { return m_plugins; }
-        PluginManager& plugins() { return m_plugins; }
 
         Group* rootNode() { return m_rootNode; }
 
@@ -214,7 +211,6 @@ namespace Methcla { namespace Audio
         EnvironmentImpl*                        m_impl;
         const size_t                            m_sampleRate;
         const size_t                            m_blockSize;
-        PluginManager&                          m_plugins;
         SynthDefMap                             m_synthDefs;
         PacketHandler                           m_listener;
         ResourceMap<AudioBusId,AudioBus>        m_audioBuses;
@@ -232,7 +228,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PluginManager& pluginManager, PacketHandler handler, const std::string& pluginDirectory);
+        Engine(PacketHandler handler);
         virtual ~Engine();
 
         Environment& env()
@@ -244,7 +240,8 @@ namespace Methcla { namespace Audio
             return *m_env;
         }
 
-        void makeSine();
+        void loadPlugins(const std::list<Methcla_LibraryFunction>& funcs);
+
         void start();
         void stop();
 
@@ -252,6 +249,7 @@ namespace Methcla { namespace Audio
         static void processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
     private:
+        PluginManager   m_plugins;
         IO::Driver*     m_driver;
         Environment*    m_env;
     };
