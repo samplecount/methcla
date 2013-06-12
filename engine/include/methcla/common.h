@@ -82,7 +82,10 @@ typedef enum
     kMethcla_PermissionsError,
     kMethcla_UnsupportedFileTypeError,
     kMethcla_UnsupportedDataFormatError,
-    kMethcla_InvalidFileError
+    kMethcla_InvalidFileError,
+
+    /* Audio driver errors */
+    kMethcla_DeviceUnavailableError = 3000,
 } Methcla_Error;
 
 //* Return a descriptive error message associated with a given error code.

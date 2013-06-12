@@ -13,11 +13,15 @@
 // limitations under the License.
 
 #include "Methcla/Audio/IO/JackDriver.hpp"
+#include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
 
-#include <boost/assert.hpp>
+#include <methcla/common.h>
+
+#include <cassert>
 #include <sstream>
 
+using namespace Methcla;
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 using namespace std;
@@ -30,10 +34,11 @@ JackDriver::JackDriver() throw (IO::Exception)
     , m_bufferSize(0)
 {
     jack_status_t status;
+
     m_jackClient = jack_client_open("methcla", JackNullOption, &status);
-    if (m_jackClient == 0)
-        BOOST_THROW_EXCEPTION(Methcla::Audio::IO::Exception()
-                                << Methcla::ErrorInfoString("Failed to open jack client"));
+    if (m_jackClient == nullptr) {
+        throw Error(kMethcla_DeviceUnavailableError);
+    }
 
     m_sampleRate = jack_get_sample_rate(m_jackClient);
     m_bufferSize = jack_get_buffer_size(m_jackClient);

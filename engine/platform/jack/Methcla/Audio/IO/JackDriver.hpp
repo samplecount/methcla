@@ -17,10 +17,8 @@
 
 #include "Methcla/Audio/IO/Driver.hpp"
 
+#include <cstdint>
 #include <jack/jack.h>
-
-#include <boost/cstdint.hpp>
-#include <boost/exception/all.hpp>
 
 namespace Methcla { namespace Audio { namespace IO
 {
