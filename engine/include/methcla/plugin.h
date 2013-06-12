@@ -43,13 +43,8 @@ typedef void Methcla_Resource;
 //* Callback function type for performing commands in the non-realtime context.
 typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
 
-METHCLA_C_LINKAGE typedef double (*Methcla_World_samplerate)(const Methcla_World*);
-METHCLA_C_LINKAGE typedef void* (*Methcla_World_alloc)(const struct Methcla_World* world, size_t size);
-METHCLA_C_LINKAGE typedef void* (*Methcla_World_alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_free)(const struct Methcla_World* world, void* ptr);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_resource_retain)(const struct Methcla_World* world, Methcla_Resource* resource);
-METHCLA_C_LINKAGE typedef void (*Methcla_World_resource_release)(const struct Methcla_World* world, Methcla_Resource* resource);
+//* Callback function type for performing commands in the realtime context.
+typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* data);
 
 //* Realtime interface
 struct Methcla_World
@@ -58,20 +53,19 @@ struct Methcla_World
     void* handle;
 
     //* Return engine sample rate.
-    // double (*samplerate)(const struct Methcla_World* world);
-    Methcla_World_samplerate samplerate;
+    double (*samplerate)(const Methcla_World*);
 
     // Realtime memory allocation
-    Methcla_World_alloc alloc;
-    Methcla_World_alloc_aligned alloc_aligned;
-    Methcla_World_free free;
+    void* (*alloc)(const struct Methcla_World* world, size_t size);;
+    void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
+    void (*free)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    Methcla_World_perform_command perform_command;
+    void (*perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
 
     //* Reference counted resources.
-    Methcla_World_resource_retain resource_retain;
-    Methcla_World_resource_release resource_release;
+    void (*resource_retain)(const struct Methcla_World* world, Methcla_Resource* resource);
+    void (*resource_release)(const struct Methcla_World* world, Methcla_Resource* resource);
 };
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
@@ -142,27 +136,6 @@ typedef void Methcla_SynthOptions;
 
 typedef struct Methcla_SynthDef Methcla_SynthDef;
 
-//* Parse OSC options and fill options struct.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_configure)(const void* tag_buffer, size_t tag_size, const void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
-
-//* Get port descriptor at index.
-METHCLA_C_LINKAGE typedef bool (*Methcla_SynthDef_port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
-
-//* Construct a synth instance at the location given.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Resource* owner, Methcla_Synth* synth);
-
-//* Connect port at index to data.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
-
-//* Activate the synth instance just before starting to call `process`.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_activate)(const Methcla_World* world, Methcla_Synth* synth);
-
-//* Process numFrames of audio samples.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_process)(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames);
-
-//* Destroy a synth instance.
-METHCLA_C_LINKAGE typedef void (*Methcla_SynthDef_destroy)(const Methcla_World* world, Methcla_Synth* synth);
-
 struct Methcla_SynthDef
 {
     //* Synth definition URI.
@@ -175,33 +148,26 @@ struct Methcla_SynthDef
     size_t options_size;
 
     //* Parse OSC options and fill options struct.
-    Methcla_SynthDef_configure configure;
+    void (*configure)(const void* tag_buffer, size_t tag_size, const void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
 
     //* Get port descriptor at index.
-    Methcla_SynthDef_port_descriptor port_descriptor;
+    bool (*port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
 
     //* Construct a synth instance at the location given.
-    Methcla_SynthDef_construct construct;
+    void (*construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Resource* owner, Methcla_Synth* synth);
 
     //* Connect port at index to data.
-    Methcla_SynthDef_connect connect;
+    void (*connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
 
     //* Activate the synth instance just before starting to call `process`.
-    Methcla_SynthDef_activate activate;
+    void (*activate)(const Methcla_World* world, Methcla_Synth* synth);
 
     //* Process numFrames of audio samples.
-    Methcla_SynthDef_process process;
+    void (*process)(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames);
 
     //* Destroy a synth instance.
-    Methcla_SynthDef_destroy destroy;
+    void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);
 };
-
-//* Callback function type for performing commands in the realtime context.
-typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* data);
-
-METHCLA_C_LINKAGE typedef void (*Methcla_Host_register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
-METHCLA_C_LINKAGE typedef const Methcla_SoundFileAPI* (*Methcla_Host_get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
-METHCLA_C_LINKAGE typedef void (*Methcla_Host_perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
 
 struct Methcla_Host
 {
@@ -209,13 +175,13 @@ struct Methcla_Host
     void* handle;
 
     //* Register a synth definition.
-    Methcla_Host_register_synthdef register_synthdef;
+    void (*register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
     //* Lookup sound file API.
-    Methcla_Host_get_soundfile_api get_soundfile_api;
+    const Methcla_SoundFileAPI* (*get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
 
     //* Schedule a command for execution in the realtime context.
-    Methcla_Host_perform_command perform_command;
+    void (*perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
 };
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
@@ -243,18 +209,16 @@ static inline void methcla_host_perform_command(const Methcla_Host* host, Methcl
 
 typedef struct Methcla_Library Methcla_Library;
 
-METHCLA_C_LINKAGE typedef void (*Methcla_Library_destroy)(const Methcla_Library* library);
-
 struct Methcla_Library
 {
     //* Handle for implementation specific data.
     void* handle;
 
     //* Destroy the library and clean up associated resources.
-    Methcla_Library_destroy destroy;
+    void (*destroy)(const Methcla_Library* library);
 };
 
-METHCLA_C_LINKAGE typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
+typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
 
 // #define MESCALINE_MAKE_INIT_FUNC(name) MethclaInit_##name
 // #define MESCALINE_INIT_FUNC(name) MESCALINE_MAKE_INIT_FUNC(name)
