@@ -38,7 +38,7 @@ struct Methcla_Engine
         }
     };
 
-    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions) noexcept
+    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions)
     {
         // Options options(inOptions);
         OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
