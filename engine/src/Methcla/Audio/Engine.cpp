@@ -18,7 +18,6 @@
 #include "Methcla/Exception.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
-#include <boost/current_function.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <oscpp/print.hpp>
