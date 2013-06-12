@@ -24,7 +24,6 @@
 #include <oscpp/server.hpp>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 
 static const char* kNoErrorMsg = "no error";
 static const char* kBadAllocMsg = "memory allocation failure";
