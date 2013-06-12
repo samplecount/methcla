@@ -38,19 +38,6 @@
 
 namespace Methcla { namespace Audio
 {
-    // class ControlBus : boost::noncopyable
-    // {
-    // public:
-    //     typedef sample_t ValueType;
-    //
-    // private:
-    //     BusId       m_id;
-    //     Epoch       m_epoch;
-    //     ValueType   m_data;
-    // };
-
-    // using std::size_t;
-
     struct EngineException : virtual Methcla::Exception { };
     struct InvalidNodeId : virtual EngineException { };
     struct DuplicateNodeId : virtual EngineException { };
