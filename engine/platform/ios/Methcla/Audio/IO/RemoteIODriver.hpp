@@ -19,8 +19,6 @@
 
 #include <AudioUnit/AudioUnit.h>
 
-#include <boost/cstdint.hpp>
-
 namespace Methcla { namespace Audio { namespace IO
 {
     class RemoteIODriver : public Driver

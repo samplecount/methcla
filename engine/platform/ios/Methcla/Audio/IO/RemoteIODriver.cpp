@@ -448,11 +448,10 @@ OSStatus RemoteIODriver::RenderCallback(
     const UInt32 numOutputs = self->m_numOutputs;
     sample_t* const* outputBuffers = self->m_outputBuffers;
 
-    for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
-        AudioBuffer& buf = ioData->mBuffers[bufCount];
-        BOOST_ASSERT( buf.mNumberChannels == numOutputs );
+    for (UInt32 bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
+        assert(ioData->mBuffers[bufCount].mNumberChannels == numOutputs);
 
-        AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
+        AudioSampleType* pcm = static_cast<AudioSampleType*>(ioData->mBuffers[bufCount].mData);
 
         // Run DSP graph
         self->process(inNumberFrames, inputBuffers, outputBuffers);
