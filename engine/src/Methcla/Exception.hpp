@@ -15,11 +15,53 @@
 #ifndef METHCLA_EXCEPTION_HPP_INCLUDED
 #define METHCLA_EXCEPTION_HPP_INCLUDED
 
+#include <methcla/common.h>
+#include <stdexcept>
 #include <string>
 
 namespace Methcla {
 
-struct Exception : virtual std::exception;
+class Exception : public virtual std::exception
+{
+};
+
+class Error : public Exception
+{
+public:
+    Error(Methcla_Error code)
+        : m_code(code)
+    {}
+
+    Methcla_Error errorCode() const noexcept
+    {
+        return m_code;
+    }
+
+    const char* what() const noexcept override
+    {
+        return methcla_error_message(m_code);
+    }
+
+private:
+    Methcla_Error m_code;
+};
+
+class SystemError : public Error
+{
+public:
+    SystemError(const char* description)
+        : Error(kMethcla_SystemError)
+        , m_description(description)
+    {}
+
+    const char* what() const noexcept override
+    {
+        return m_description.c_str();
+    }
+
+private:
+    std::string m_description;
+};
 
 }
 

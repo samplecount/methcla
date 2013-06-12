@@ -14,8 +14,10 @@
 
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
+
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
+#include "Methcla/Exception.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -80,7 +82,7 @@ struct Methcla_Engine
         delete m_engine;
     }
 
-    Methcla::Audio::Engine*        m_engine;
+    Methcla::Audio::Engine* m_engine;
 };
 
 METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
@@ -94,6 +96,8 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, v
         return kMethcla_ArgumentError;
     try {
         *engine = new Methcla_Engine(handler, handler_data, options);
+    } catch (Methcla::Error& e) {
+        return e.errorCode();
     } catch (std::bad_alloc) {
         return kMethcla_MemoryError;
     } catch (...) {
@@ -111,7 +115,7 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
     } catch(...) { }
 }
 
-METHCLA_EXPORT const char* methcla_error_message(Methcla_Error error)
+METHCLA_EXPORT const char* methcla_error_message(Methcla_Error /* error */)
 {
     return "methcla_error_message not implemented yet.";
 }

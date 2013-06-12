@@ -15,6 +15,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
+#include "Methcla/Exception.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
 #include <boost/current_function.hpp>
@@ -446,9 +447,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
 
             // Check node id validity
             if (!nodes().contains(nodeId)) {
-                throw std::runtime_error("Invalid node id");
+                throw Error(kMethcla_NodeIdError);
             } else if (nodeId == rootNode()->id()) {
-                throw std::runtime_error("Cannot free root node");
+                throw Error(kMethcla_NodeIdError);
             }
 
             // Drop reference from node map
@@ -464,7 +465,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             float value = args.float32();
             Node* node = m_nodes.lookup(nodeId).get();
             if (!node->isSynth())
-                throw std::runtime_error("Node is not a synth");
+                throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
                 throw std::runtime_error("Control input index out of range");
@@ -500,6 +501,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
+    } catch (Exception& e) {
+        // TODO: Reply with error code
+        replyError(kMethcla_Notification, e.what());
     } catch (std::exception& e) {
         replyError(kMethcla_Notification, e.what());
     }

@@ -13,22 +13,85 @@
 // limitations under the License.
 
 #include "Methcla/Audio/IO/RemoteIODriver.hpp"
+#include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
 
+#include <methcla/common.h>
+
 #include <AudioToolbox/AudioToolbox.h>
+
 #include <cassert>
 #include <stdexcept>
+#include <string>
 
+using namespace Methcla;
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
+
+#define METHCLA_CASE_SYSTEM_ERROR(status) \
+    case status: throw SystemError(#status)
+
+static void throwAudioServicesError(OSStatus status)
+{
+    switch (status) {
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesUnsupportedPropertyError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesBadPropertySizeError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesBadSpecifierSizeError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesSystemSoundUnspecifiedError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesSystemSoundClientTimedOutError);
+    }
+}
+
+static void throwAudioSessionError(OSStatus status)
+{
+    switch (status) {
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionNoError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionNotInitialized);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionAlreadyInitialized);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionInitializationError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionUnsupportedPropertyError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionBadPropertySizeError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionNotActiveError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioServicesNoHardwareError);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionNoCategorySet);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionIncompatibleCategory);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioSessionUnspecifiedError);
+    }
+}
+
+static void throwAudioUnitError(OSStatus status)
+{
+    switch (status) {
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidProperty);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidParameter);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidElement);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_NoConnection);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_FailedInitialization);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_TooManyFramesToProcess);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidFile);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_FormatNotSupported);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_Uninitialized);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidScope);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_PropertyNotWritable);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_CannotDoInCurrentContext);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidPropertyValue);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_PropertyNotInUse);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_Initialized);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_InvalidOfflineRender);
+        METHCLA_CASE_SYSTEM_ERROR(kAudioUnitErr_Unauthorized);
+    }
+}
 
 #define METHCLA_THROW_IF_ERROR(expr, msg) \
     do { \
         OSStatus err__ = expr; \
         if (err__ != noErr) { \
-            throw std::runtime_error(msg); \
+            throwAudioServicesError(err__); \
+            throwAudioSessionError(err__); \
+            throwAudioUnitError(err__); \
+            throw Error(kMethcla_UnspecifiedError); \
         } \
-    } while (false);
+    } while (false)
 
 const AudioUnitElement kOutputBus = 0;
 const AudioUnitElement kInputBus = 1;
