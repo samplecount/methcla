@@ -16,7 +16,7 @@
 #define METHCLA_AUDIO_IO_OPENSLESDRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
-#include "Methcla/Audio/Types.h"
+#include "Methcla/Audio.hpp"
 #include "opensl_io.h"
 
 namespace Methcla { namespace Audio { namespace IO
