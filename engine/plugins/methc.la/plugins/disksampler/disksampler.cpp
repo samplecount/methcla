@@ -96,7 +96,8 @@ struct State
     }
 };
 
-struct Synth {
+struct DiskSampler
+{
     Methcla_Resource* handle;
     float* ports[kSamplerPorts];
     char* path;
@@ -190,7 +191,7 @@ static inline void finish(State* state)
     state->state.store(kFinished, std::memory_order_relaxed);
 }
 
-static inline void finish(Synth* self)
+static inline void finish(DiskSampler* self)
 {
     finish(&self->state);
 }
@@ -243,13 +244,13 @@ static inline void fill_buffer(State* self, bool loop)
 static void command_fill_buffer(const Methcla_Host* host, void* data)
 {
     // std::cout << "fill_buffer\n";
-    Synth* self = static_cast<Synth*>(data);
+    DiskSampler* self = static_cast<DiskSampler*>(data);
     fill_buffer(&self->state, self->loop);
     methcla_host_perform_command(host, release_synth_cb, self->handle);
 }
 
 // Only safe to be called during initialization
-static inline void init_buffer_cleanup(Synth* self)
+static inline void init_buffer_cleanup(DiskSampler* self)
 {
     finish(self);
     if (self->state.file) {
@@ -264,7 +265,7 @@ static inline void init_buffer_cleanup(Synth* self)
 
 static void command_init_buffer(const Methcla_Host* host, void* data)
 {
-    Synth* self = static_cast<Synth*>(data);
+    DiskSampler* self = static_cast<DiskSampler*>(data);
 
     Methcla_SoundFileInfo info;
 
@@ -309,6 +310,7 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 init_buffer_cleanup(self);
             } else {
                 size_t numFrames = 0;
+                fprintf(stderr, "self %p\n", self->state.file);
                 Methcla_FileError err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.transferFrames, &numFrames);
                 if (err == kMethcla_FileNoError) {
@@ -336,7 +338,7 @@ construct( const Methcla_World* world
 {
     const Options* options = (const Options*)inOptions;
 
-    Synth* self = (Synth*)synth;
+    DiskSampler* self = (DiskSampler*)synth;
 
     self->path = (char*)methcla_world_alloc(world, strlen(options->path)+1);
     if (self->path == nullptr) return;
@@ -367,7 +369,7 @@ static void close_cb(const Methcla_Host*, void* data)
 static void
 destroy(const Methcla_World* world, Methcla_Synth* synth)
 {
-    Synth* self = (Synth*)synth;
+    DiskSampler* self = (DiskSampler*)synth;
     if (self->path) {
         methcla_world_free(world, self->path);
         self->path = nullptr;
@@ -387,11 +389,11 @@ connect( Methcla_Synth* synth
        , Methcla_PortCount index
        , void* data )
 {
-    ((Synth*)synth)->ports[index] = (float*)data;
+    ((DiskSampler*)synth)->ports[index] = (float*)data;
 }
 
 static inline void
-process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1, StateVar state)
+process_disk(const Methcla_World* world, DiskSampler* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1, StateVar state)
 {
     assert( self->state.file != nullptr );
 
@@ -456,7 +458,7 @@ process_disk(const Methcla_World* world, Synth* self, size_t numFrames, float am
 }
 
 static inline void
-process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
+process_memory(DiskSampler* self, size_t numFrames, float amp, const float* buffer, float* out0, float* out1)
 {
     size_t pos = self->state.readPos;
     const size_t left = self->state.frames - pos;
@@ -526,7 +528,7 @@ process_memory(Synth* self, size_t numFrames, float amp, const float* buffer, fl
 static void
 process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 {
-    Synth* self = (Synth*)synth;
+    DiskSampler* self = static_cast<DiskSampler*>(synth);
 
     const float amp = *self->ports[kSampler_amp];
     float* out0 = self->ports[kSampler_output_0];
@@ -555,7 +557,7 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
 static const Methcla_SynthDef descriptor =
 {
     METHCLA_PLUGINS_DISKSAMPLER_URI,
-    sizeof(Synth),
+    sizeof(DiskSampler),
     sizeof(Options),
     configure,
     port_descriptor,
