@@ -50,30 +50,22 @@ typedef struct
 
 typedef struct Methcla_SoundFile Methcla_SoundFile;
 
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_close)(const Methcla_SoundFile* file);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_seek)(const Methcla_SoundFile* file, int64_t numFrames);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_tell)(const Methcla_SoundFile* file, int64_t* numFrames);
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFile_read_float)(const Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
-
 struct Methcla_SoundFile
 {
     void* handle;
-    Methcla_SoundFile_close close;
-    Methcla_SoundFile_seek seek;
-    Methcla_SoundFile_tell tell;
-    Methcla_SoundFile_read_float read_float;
+    Methcla_FileError (*close)(const Methcla_SoundFile* file);
+    Methcla_FileError (*seek)(const Methcla_SoundFile* file, int64_t numFrames);
+    Methcla_FileError (*tell)(const Methcla_SoundFile* file, int64_t* numFrames);
+    Methcla_FileError (*read_float)(const Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
 };
 
 typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
 
-METHCLA_C_LINKAGE typedef Methcla_FileError (*Methcla_SoundFileAPI_open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
-METHCLA_C_LINKAGE typedef const char* (*Methcla_SoundFileAPI_error_message)(const struct Methcla_SoundFileAPI* api, Methcla_FileError error);
-
 struct Methcla_SoundFileAPI
 {
     void* handle;
-    Methcla_SoundFileAPI_error_message error_message;
-    Methcla_SoundFileAPI_open open;
+    Methcla_FileError (*open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+    const char* (*error_message)(const struct Methcla_SoundFileAPI* api, Methcla_FileError error);
 };
 
 static inline const char* methcla_soundfile_error_message(const Methcla_SoundFileAPI* api, Methcla_FileError error)
