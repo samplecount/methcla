@@ -101,7 +101,7 @@ void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcl
     }
 }
 
-void PluginManager::loadPlugins(const Methcla_Host* host, const std::string& directory)
+void PluginManager::loadPlugins(const Methcla_Host* /*host*/, const std::string& /*directory*/)
 {
     std::cout << "PluginManager::loadPlugins not yet implemented" << std::endl;
 }
