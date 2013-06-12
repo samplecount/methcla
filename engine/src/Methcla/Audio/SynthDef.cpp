@@ -19,9 +19,7 @@
 #include <memory>
 #include <utility>
 
-using namespace boost;
 using namespace Methcla::Audio;
-using namespace std;
 
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
