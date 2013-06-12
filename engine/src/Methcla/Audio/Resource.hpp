@@ -43,7 +43,9 @@ namespace Methcla { namespace Audio
         Reference()
             : m_refs(0)
         { }
+
         Reference(const Reference&) = delete;
+        Reference& operator=(const Reference&) = delete;
 
         inline void retain() noexcept
         {
@@ -105,7 +107,9 @@ namespace Methcla { namespace Audio
         ResourceMap(size_t size)
             : m_elems(size, nullptr)
         { }
+
         ResourceMap(const ResourceMap&) = delete;
+        ResourceMap& operator=(const ResourceMap&) = delete;
 
         size_t size() const
         {
