@@ -16,7 +16,7 @@
 #define METHCLA_AUDIO_RESOURCE_HPP_INCLUDED
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/utility.hpp>
+#include <cassert>
 #include <stdexcept>
 #include <vector>
 
@@ -37,22 +37,23 @@ namespace Methcla { namespace Audio
     }
 
     //* Reference counted base class
-    class Reference : public boost::noncopyable
+    class Reference
     {
     public:
         Reference()
             : m_refs(0)
         { }
+        Reference(const Reference&) = delete;
 
-        inline void retain()
+        inline void retain() noexcept
         {
             m_refs++;
         }
 
-        inline void release()
+        inline void release() noexcept
         {
             m_refs--;
-            BOOST_ASSERT_MSG( m_refs >= 0 , "release() called once too many" );
+            assert(m_refs >= 0);
             if (m_refs == 0)
                 this->free();
         }
@@ -96,7 +97,7 @@ namespace Methcla { namespace Audio
     /// Simple map for holding pointers to resources.
     //
     // Also provides unique id allocation facility.
-    template <typename Id, class T> class ResourceMap : boost::noncopyable
+    template <typename Id, class T> class ResourceMap
     {
     public:
         typedef boost::intrusive_ptr<T> Pointer;
@@ -104,6 +105,7 @@ namespace Methcla { namespace Audio
         ResourceMap(size_t size)
             : m_elems(size, nullptr)
         { }
+        ResourceMap(const ResourceMap&) = delete;
 
         size_t size() const
         {
