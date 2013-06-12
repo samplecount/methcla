@@ -547,7 +547,9 @@
 				);
 				INFOPLIST_FILE = "Methcla/Methcla-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
-				LIBRARY_SEARCH_PATHS = "\"$(SRCROOT)/../../../build/release/iphoneos/armv7\"";
+				LIBRARY_SEARCH_PATHS = "";
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*][arch=armv7]" = "\"$(SRCROOT)/../../../build/release/iphoneos/armv7\"";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "\"$(SRCROOT)/../../../build/release/iphonesimulator/i386\"";
 				METHCLA_SOURCE = ../../..;
 				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
 				OTHER_LDFLAGS = "";
