@@ -15,18 +15,11 @@
 #ifndef METHCLA_EXCEPTION_HPP_INCLUDED
 #define METHCLA_EXCEPTION_HPP_INCLUDED
 
-#include <boost/exception/all.hpp>
 #include <string>
-#include <stdexcept>
 
 namespace Methcla {
 
-struct Exception : virtual std::exception, virtual boost::exception { };
-
-struct InvalidNodeId : virtual Exception { };
-
-struct ErrorInfoStringTag { };
-typedef boost::error_info<ErrorInfoStringTag, std::string> ErrorInfoString;
+struct Exception : virtual std::exception;
 
 }
 

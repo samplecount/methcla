@@ -500,10 +500,6 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
-    } catch (Exception& e) {
-        const std::string* errorInfo = boost::get_error_info<ErrorInfoString>(e);
-        const char* errorMessage = errorInfo == nullptr ? "Unknown error" : errorInfo->c_str();
-        replyError(kMethcla_Notification, errorMessage);
     } catch (std::exception& e) {
         replyError(kMethcla_Notification, e.what());
     }

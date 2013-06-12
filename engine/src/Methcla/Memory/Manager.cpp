@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include "Methcla/Memory/Manager.hpp"
-#include <stdexcept>
+#include <stdexcept>    // std::invalid_argument
+#include <new>          // std::bad_alloc
 
 // Set to 1 to disable the realtime memory manager.
 #define METHCLA_NO_RT_MEMORY 0

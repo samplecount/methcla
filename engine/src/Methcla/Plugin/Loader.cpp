@@ -2,11 +2,7 @@
 
 #include <dlfcn.h>
 
-// #include "lilv/lilv.h"
-
 using namespace Methcla::Plugin;
-using Methcla::Exception;
-using Methcla::ErrorInfoString;
 
 void clear_dlerror()
 {
@@ -17,7 +13,7 @@ void check_dlerror()
 {
     const char* errorString = dlerror();
     if (errorString != nullptr) {
-        BOOST_THROW_EXCEPTION(Exception() << ErrorInfoString(errorString));
+        throw std::runtime_error(errorString);
     }    
 }
 

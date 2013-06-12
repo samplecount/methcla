@@ -16,7 +16,6 @@
 #define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 
 #include <methcla/engine.h>
-#include "Methcla/Exception.hpp"
 
 #include <memory>
 #include <string>

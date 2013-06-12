@@ -23,7 +23,6 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
-#include "Methcla/Exception.hpp"
 #include "Methcla/Memory/Manager.hpp"
 
 #include <boost/utility.hpp>
@@ -38,12 +37,6 @@
 
 namespace Methcla { namespace Audio
 {
-    struct EngineException : virtual Methcla::Exception { };
-    struct InvalidNodeId : virtual EngineException { };
-    struct DuplicateNodeId : virtual EngineException { };
-    struct ErrorInfoNodeIdTag { };
-    typedef boost::error_info<ErrorInfoNodeIdTag, NodeId> ErrorInfoNodeId;
-
     class Environment;
 
     typedef void CommandData;

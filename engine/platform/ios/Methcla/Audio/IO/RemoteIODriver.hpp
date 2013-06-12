@@ -16,18 +16,13 @@
 #define METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
-#include "Methcla/Exception.hpp"
 
 #include <AudioUnit/AudioUnit.h>
 
 #include <boost/cstdint.hpp>
-#include <boost/exception/all.hpp>
 
 namespace Methcla { namespace Audio { namespace IO
 {
-    struct OSStatusInfoTag { };
-    typedef boost::error_info<OSStatusInfoTag,OSStatus> OSStatusInfo;
-
     class RemoteIODriver : public Driver
     {
     public:

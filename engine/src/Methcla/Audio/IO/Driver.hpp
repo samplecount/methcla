@@ -16,12 +16,9 @@
 #define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
-#include "Methcla/Exception.hpp"
 #include <boost/cstdint.hpp>
 
-namespace Methcla { namespace Audio { namespace IO
-{
-struct Exception : virtual Methcla::Exception { };
+namespace Methcla { namespace Audio { namespace IO {
 
 class Driver
 {

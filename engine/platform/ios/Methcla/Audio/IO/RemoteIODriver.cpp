@@ -17,6 +17,7 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 #include <cassert>
+#include <stdexcept>
 
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
@@ -24,10 +25,8 @@ using Methcla::Audio::sample_t;
 #define METHCLA_THROW_IF_ERROR(expr, msg) \
     do { \
         OSStatus err__ = expr; \
-        if (err__ != 0) { \
-            BOOST_THROW_EXCEPTION(Methcla::Audio::IO::Exception() \
-                    << Methcla::ErrorInfoString(msg) \
-                    << OSStatusInfo(err__)); \
+        if (err__ != noErr) { \
+            throw std::runtime_error(msg); \
         } \
     } while (false);
 
