@@ -13,11 +13,13 @@
 // limitations under the License.
 
 #include "Methcla/Utility/Semaphore.hpp"
+#include "Methcla/Exception.hpp"
 #include "zix/sem.h"
 
 #include <memory>
 #include <stdexcept>
 
+using namespace Methcla;
 using namespace Methcla::Utility;
 
 struct Methcla::Utility::detail::SemaphoreImpl : public ZixSem { };
@@ -28,17 +30,17 @@ static void check(ZixStatus status)
         case ZIX_STATUS_SUCCESS:
             break;
         case ZIX_STATUS_ERROR:
-            throw std::runtime_error("Semaphore: Unknown error");
+            throw Error(kMethcla_UnspecifiedError);
         case ZIX_STATUS_NO_MEM:
             throw std::bad_alloc();
         case ZIX_STATUS_NOT_FOUND:
-            throw std::runtime_error("Semaphore: Not found");
+            throw Error(kMethcla_FileNotFoundError);
         case ZIX_STATUS_EXISTS:
-            throw std::runtime_error("Semaphore: Exists");
+            throw Error(kMethcla_FileExistsError);
         case ZIX_STATUS_BAD_ARG:
-            throw std::invalid_argument("Semaphore");
+            throw Error(kMethcla_ArgumentError);
         case ZIX_STATUS_BAD_PERMS:
-            throw std::runtime_error("Semaphore: Access denied");
+            throw Error(kMethcla_PermissionsError);
     }
 }
 

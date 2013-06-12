@@ -78,6 +78,7 @@ typedef enum
 
     /* File errors */
     kMethcla_FileNotFoundError = 2000,
+    kMethcla_FileExistsError,
     kMethcla_PermissionsError,
     kMethcla_UnsupportedFileTypeError,
     kMethcla_UnsupportedDataFormatError,
