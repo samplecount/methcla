@@ -310,7 +310,6 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 init_buffer_cleanup(self);
             } else {
                 size_t numFrames = 0;
-                fprintf(stderr, "self %p\n", self->state.file);
                 Methcla_FileError err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.transferFrames, &numFrames);
                 if (err == kMethcla_FileNoError) {
