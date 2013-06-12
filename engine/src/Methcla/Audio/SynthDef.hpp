@@ -28,29 +28,8 @@
 #include <oscpp/server.hpp>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace Methcla { namespace Audio {
-
-// class Port
-// {
-// public:
-//     Port(Methcla_PortDescriptor port, uint32_t index, const char* symbol="")
-//         : m_port(port)
-//         , m_index(index)
-//         , m_symbol(symbol)
-//     { }
-// 
-//     Methcla_PortType type() const { return m_port.type; }
-//     Methcla_PortDirection direction() const { return m_port.direction; }
-//     uint32_t index() const { return m_index; }
-//     const char* symbol() const { return m_symbol.c_str(); }
-// 
-// private:
-//     Methcla_PortDescriptor    m_port;
-//     uint32_t        m_index;
-//     std::string     m_symbol;
-// };
 
 class Synth;
 
@@ -63,14 +42,6 @@ public:
     inline const char* uri() const { return m_descriptor->uri; }
 
     inline size_t instanceSize () const { return m_descriptor->instance_size; }
-
-    // inline size_t numPorts() const { return m_ports.size(); }
-    // inline const Port& port(size_t i) const { return m_ports.at(i); }
-    // 
-    // inline size_t numAudioInputs    () const { return m_numAudioInputs;    }
-    // inline size_t numAudioOutputs   () const { return m_numAudioOutputs;   }
-    // inline size_t numControlInputs  () const { return m_numControlInputs;  }
-    // inline size_t numControlOutputs () const { return m_numControlOutputs; }
 
     // NOTE: Uses static data and should only be called from a single thread (normally the audio thread) at a time.
     const Methcla_SynthOptions* configure(OSCPP::Server::ArgStream options) const;
@@ -99,11 +70,6 @@ public:
 private:
     const Methcla_SynthDef* m_descriptor;
     Methcla_SynthOptions*   m_options; // Only access from one thread
-    // std::vector<Port>       m_ports;
-    // size_t                  m_numAudioInputs;
-    // size_t                  m_numAudioOutputs;
-    // size_t                  m_numControlInputs;
-    // size_t                  m_numControlOutputs;
 };
 
 typedef std::unordered_map<const char*,
