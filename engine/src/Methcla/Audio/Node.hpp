@@ -18,10 +18,9 @@
 #include "Methcla/Audio/Resource.hpp"
 #include "Methcla/Memory/Manager.hpp"
 
-#include <boost/cstdint.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/serialization/strong_typedef.hpp>
-#include <boost/utility.hpp>
+#include <cstdint>
 
 namespace Methcla { namespace Audio {
 
@@ -32,13 +31,12 @@ namespace Methcla { namespace Audio {
     class Group;
 
     class Node : public Resource<NodeId>
-               // , public Memory::Allocated<Node, Memory::RTMemoryManager>
                , public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
     {
-    protected:
-        typedef Memory::Allocated<Node, Memory::RTMemoryManager> allocated_super;
-
     public:
+        Node(const Node&) = delete;
+        Node& operator=(const Node&) = delete;
+
         enum AddAction
         {
             kAddToHead
