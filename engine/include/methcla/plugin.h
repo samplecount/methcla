@@ -233,6 +233,13 @@ struct Methcla_Library
 
 typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
 
+static inline void methcla_library_destroy(const Methcla_Library* library)
+{
+    assert(library);
+    if (library->destroy)
+        library->destroy(library);
+}
+
 // #define MESCALINE_MAKE_INIT_FUNC(name) MethclaInit_##name
 // #define MESCALINE_INIT_FUNC(name) MESCALINE_MAKE_INIT_FUNC(name)
 

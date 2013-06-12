@@ -124,9 +124,7 @@ PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla
 
 PluginLibrary::~PluginLibrary()
 {
-    if ((m_lib != nullptr) && (m_lib->destroy != nullptr)) {
-        m_lib->destroy(m_lib);
-    }
+    methcla_library_destroy(m_lib);
 }
 
 void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs)
