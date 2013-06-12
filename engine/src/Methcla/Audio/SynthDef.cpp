@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "Methcla/Audio/Synth.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 
 #include <iostream>
@@ -107,7 +108,7 @@ bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index,
 
 void SynthDef::construct(const Methcla_World* world, const Methcla_SynthOptions* options, Synth* owner, Methcla_Synth* synth) const
 {
-    m_descriptor->construct(world, m_descriptor, options, owner, synth);
+    m_descriptor->construct(world, m_descriptor, options, static_cast<Reference*>(owner), synth);
 }
 
 void SynthDef::destroy(const Methcla_World* world, Methcla_Synth* synth) const
