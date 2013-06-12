@@ -162,28 +162,28 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     //           << options->frames << "\n";
 }
 
-static inline Methcla_FileError read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
+static inline Methcla_Error read_all(Methcla_SoundFile* file, float* buffer, size_t channels, size_t inNumFrames, size_t* outNumFrames, bool loop)
 {
     size_t numFramesToRead = inNumFrames;
     size_t numFramesRead = 0;
 
     for (;;) {
         size_t numFrames;
-        Methcla_FileError err =
+        Methcla_Error err =
             methcla_soundfile_read_float(file, buffer + channels * numFramesRead, numFramesToRead, &numFrames);
-        if (err != kMethcla_FileNoError) return err;
+        if (err != kMethcla_NoError) return err;
         numFramesToRead -= numFrames;
         numFramesRead += numFrames;
         if (!loop || numFramesToRead == 0)
             break;
         // If looping, seek back to the beginning
         err = methcla_soundfile_seek(file, 0);
-        if (err != kMethcla_FileNoError) return err;
+        if (err != kMethcla_NoError) return err;
     }
 
     *outNumFrames = numFramesRead;
 
-    return kMethcla_FileNoError;
+    return kMethcla_NoError;
 }
 
 static inline void finish(State* state)
@@ -217,14 +217,14 @@ static inline void fill_buffer(State* self, bool loop)
             >= transferFrames );
 
     size_t numFrames;
-    Methcla_FileError err = read_all(
+    Methcla_Error err = read_all(
         self->file,
         self->buffer + self->channels * writePos,
         self->channels,
         transferFrames,
         &numFrames,
         loop);
-    if (err != kMethcla_FileNoError) {
+    if (err != kMethcla_NoError) {
         finish(self);
         return;
     }
@@ -269,14 +269,14 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
 
     Methcla_SoundFileInfo info;
 
-    Methcla_FileError err = methcla_host_soundfile_open(
+    Methcla_Error err = methcla_host_soundfile_open(
         host,
         self->path,
         kMethcla_Read,
         &self->state.file,
         &info);
 
-    if (err == kMethcla_FileNoError) {
+    if (err == kMethcla_NoError) {
         self->state.channels = info.channels;
         self->state.frames = self->state.frames <= 0 ? info.frames : std::min<int64_t>(self->state.frames, info.frames);
         const size_t transferFrames = bytesToFrames(self->state.channels, kDiskTransferSize);
@@ -290,9 +290,9 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 init_buffer_cleanup(self);
             } else {
                 size_t numFrames = 0;
-                Methcla_FileError err = methcla_soundfile_read_float(
+                Methcla_Error err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.bufferFrames, &numFrames);
-                if (err == kMethcla_FileNoError && numFrames == self->state.bufferFrames) {
+                if (err == kMethcla_NoError && numFrames == self->state.bufferFrames) {
                     // After having read the whole file, we can close it right away.
                     methcla_soundfile_close(self->state.file);
                     self->state.file = nullptr;
@@ -310,9 +310,9 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 init_buffer_cleanup(self);
             } else {
                 size_t numFrames = 0;
-                Methcla_FileError err = methcla_soundfile_read_float(
+                Methcla_Error err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.transferFrames, &numFrames);
-                if (err == kMethcla_FileNoError) {
+                if (err == kMethcla_NoError) {
                     assert( numFrames == self->state.transferFrames );
                     self->state.writePos.store(numFrames == self->state.bufferFrames ? 0 : numFrames, std::memory_order_release);
                     self->state.state.store(kIdle, std::memory_order_release);

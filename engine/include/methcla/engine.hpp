@@ -384,7 +384,7 @@ namespace Methcla
             }
             bundle.closeBundle();
             const Methcla_OSCPacket packet = { .data = bundle.data(), .size = bundle.size() };
-            check(nullptr, methcla_engine_new(handlePacket, this, &packet, &m_engine));
+            check(methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
         ~Engine()
         {
@@ -403,12 +403,12 @@ namespace Methcla
 
         void start()
         {
-            check(m_engine, methcla_engine_start(m_engine));
+            check(methcla_engine_start(m_engine));
         }
 
         void stop()
         {
-            check(m_engine, methcla_engine_stop(m_engine));
+            check(methcla_engine_stop(m_engine));
         }
 
         SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
@@ -531,16 +531,17 @@ namespace Methcla
         }
 
     private:
-        static void check(const Methcla_Engine* engine, Methcla_Error err)
+        static void check(Methcla_Error err)
         {
             if (err != kMethcla_NoError) {
-                const char* msg = methcla_engine_error_message(engine, err);
-                if (err == kMethcla_InvalidArgument)
+                const char* msg = methcla_error_message(err);
+                if (err == kMethcla_ArgumentError) {
                     throw std::invalid_argument(msg);
-                else if (err == kMethcla_BadAlloc)
+                } else if (err == kMethcla_MemoryError) {
                     throw std::bad_alloc();
-                else
+                } else {
                     throw std::runtime_error(msg);
+                }
             }
         }
 

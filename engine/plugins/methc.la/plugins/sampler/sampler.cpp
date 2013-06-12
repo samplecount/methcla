@@ -107,9 +107,10 @@ static void load_sound_file(const Methcla_Host* host, void* data)
     Methcla_SoundFile* file = nullptr;
     Methcla_SoundFileInfo info;
     memset(&info, 0, sizeof(info));
-    Methcla_FileError err = methcla_host_soundfile_open(host, msg->path, kMethcla_Read, &file, &info);
 
-    if (err == kMethcla_FileNoError) {
+    Methcla_Error err = methcla_host_soundfile_open(host, msg->path, kMethcla_Read, &file, &info);
+
+    if (err == kMethcla_NoError) {
         msg->numFrames = msg->numFrames < 0 ? info.frames : std::min<int64_t>(msg->numFrames, info.frames);
         msg->numChannels = info.channels;
         msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));

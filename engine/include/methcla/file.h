@@ -18,21 +18,13 @@
 #define METHCLA_FILE_H_INCLUDED
 
 #include <methcla/common.h>
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-typedef enum
-{
-    kMethcla_FileNoError,
-    kMethcla_FileUnspecifiedError,
-    kMethcla_FileInvalidArgument
-} Methcla_FileError;
-
-// Sound file interface
 
 typedef enum
 {
@@ -53,10 +45,10 @@ typedef struct Methcla_SoundFile Methcla_SoundFile;
 struct Methcla_SoundFile
 {
     void* handle;
-    Methcla_FileError (*close)(const Methcla_SoundFile* file);
-    Methcla_FileError (*seek)(const Methcla_SoundFile* file, int64_t numFrames);
-    Methcla_FileError (*tell)(const Methcla_SoundFile* file, int64_t* numFrames);
-    Methcla_FileError (*read_float)(const Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
+    Methcla_Error (*close)(const Methcla_SoundFile* file);
+    Methcla_Error (*seek)(const Methcla_SoundFile* file, int64_t numFrames);
+    Methcla_Error (*tell)(const Methcla_SoundFile* file, int64_t* numFrames);
+    Methcla_Error (*read_float)(const Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames);
 };
 
 typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
@@ -64,44 +56,44 @@ typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
 struct Methcla_SoundFileAPI
 {
     void* handle;
-    const char* (*error_message)(const Methcla_SoundFileAPI* api, Methcla_FileError error);
-    Methcla_FileError (*open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+    Methcla_Error (*open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+    const Methcla_SystemError* (*last_system_error)(const Methcla_SoundFileAPI* api);
 };
 
-static inline const char* methcla_soundfile_error_message(const Methcla_SoundFileAPI* api, Methcla_FileError error)
+static inline const Methcla_SystemError* methcla_soundfile_last_system_error(const Methcla_SoundFileAPI* api)
 {
-    if ((api == NULL) || (api->error_message == NULL))
-        return "Invalid argument";
-    return api->error_message(api, error);
+    if (api && api->last_system_error)
+        return api->last_system_error(api);
+    return NULL;
 }
 
-static inline Methcla_FileError methcla_soundfile_close(Methcla_SoundFile* file)
+static inline Methcla_Error methcla_soundfile_close(Methcla_SoundFile* file)
 {
     if ((file == NULL) || (file->close == NULL))
-        return kMethcla_FileInvalidArgument;
+        return kMethcla_ArgumentError;
     return file->close(file);
 }
 
-static inline Methcla_FileError methcla_soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
+static inline Methcla_Error methcla_soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
 {
     if ((file == NULL) || (file->seek == NULL))
-        return kMethcla_FileInvalidArgument;
+        return kMethcla_ArgumentError;
     return file->seek(file, numFrames);
 }
 
-static inline Methcla_FileError methcla_soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
+static inline Methcla_Error methcla_soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
 {
     if ((file == NULL) || (file->tell == NULL) ||
         (numFrames == NULL))
-        return kMethcla_FileInvalidArgument;
+        return kMethcla_ArgumentError;
     return file->tell(file, numFrames);
 }
 
-static inline Methcla_FileError methcla_soundfile_read_float(Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames)
+static inline Methcla_Error methcla_soundfile_read_float(Methcla_SoundFile* file, float* buffer, size_t numFrames, size_t* outNumFrames)
 {
     if ((file == NULL) || (file->read_float == NULL) ||
         (buffer == NULL) || (outNumFrames == NULL))
-        return kMethcla_FileInvalidArgument;
+        return kMethcla_ArgumentError;
     return file->read_float(file, buffer, numFrames, outNumFrames);
 }
 

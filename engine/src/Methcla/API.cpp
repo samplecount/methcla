@@ -25,9 +25,6 @@
 #include <stdexcept>
 #include <string>
 
-static const char* kNoErrorMsg = "no error";
-static const char* kBadAllocMsg = "memory allocation failure";
-
 struct Methcla_Engine
 {
     struct PacketHandler
@@ -42,7 +39,6 @@ struct Methcla_Engine
     };
 
     Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions) noexcept
-        : m_errorMessage(kNoErrorMsg)
     {
         // Options options(inOptions);
         OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
@@ -85,24 +81,21 @@ struct Methcla_Engine
     }
 
     Methcla::Audio::Engine*        m_engine;
-    // Methcla_Error                  m_error;
-    const char*                    m_errorMessage;
-    std::string                    m_errorBuffer;
 };
 
 METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
 {
     // cout << "Methcla_Engine_new" << endl;
     if (handler == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (options == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (engine == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     try {
         *engine = new Methcla_Engine(handler, handler_data, options);
     } catch (std::bad_alloc) {
-        return kMethcla_BadAlloc;
+        return kMethcla_MemoryError;
     } catch (...) {
         return kMethcla_UnspecifiedError;
     }
@@ -118,41 +111,24 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
     } catch(...) { }
 }
 
-// Methcla_Error methcla_engine_error(const Methcla_Engine* engine)
-// {
-//     return engine == nullptr ? kMethcla_BadAlloc : engine->m_error;
-// }
-
-METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine, Methcla_Error error)
+METHCLA_EXPORT const char* methcla_error_message(Methcla_Error error)
 {
-    if (engine == nullptr)
-        return kBadAllocMsg;
-    return error == kMethcla_NoError
-             ? kNoErrorMsg
-             : engine->m_errorMessage;
+    return "methcla_error_message not implemented yet.";
 }
 
 #define METHCLA_ENGINE_TRY \
-    if (engine != nullptr) { \
-        try
+    try
 
 #define METHCLA_ENGINE_CATCH \
     catch (std::exception& e) { \
-        try { \
-            engine->m_errorBuffer = e.what(); \
-            engine->m_errorMessage = engine->m_errorBuffer.c_str(); \
-            return kMethcla_UnspecifiedError; \
-        } catch (std::bad_alloc) { \
-            engine->m_errorMessage = kBadAllocMsg; \
-            return kMethcla_BadAlloc; \
-        } \
-    } }
+        return kMethcla_UnspecifiedError; \
+    }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
 {
     // cout << "Methcla_Engine_start" << endl;
     if (engine == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
         engine->m_engine->start();
     } METHCLA_ENGINE_CATCH;
@@ -163,7 +139,7 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
 {
     // cout << "Methcla_Engine_stop" << endl;
     if (engine == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
         engine->m_engine->stop();
     } METHCLA_ENGINE_CATCH;
@@ -173,11 +149,11 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size)
 {
     if (engine == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (packet == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (size == 0)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
         engine->m_engine->env().send(packet, size);
     } METHCLA_ENGINE_CATCH;
@@ -187,11 +163,11 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const v
 METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api)
 {
     if (engine == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (mimeType == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     if (api == nullptr)
-        return kMethcla_InvalidArgument;
+        return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
         engine->m_engine->env().registerSoundFileAPI(mimeType, api);
     } METHCLA_ENGINE_CATCH;

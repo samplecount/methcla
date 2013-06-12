@@ -203,14 +203,14 @@ static inline void methcla_host_register_synthdef(const Methcla_Host* host, cons
     host->register_synthdef(host, synthDef);
 }
 
-static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
+static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     assert(host && host->get_soundfile_api);
     assert(path);
     assert(file);
     assert(info);
     const Methcla_SoundFileAPI* api = host->get_soundfile_api(host, "audio/*");
-    return api == NULL ? kMethcla_FileUnspecifiedError
+    return api == NULL ? kMethcla_UnsupportedFileTypeError
                        : api->open(api, path, mode, file, info);
 }
 

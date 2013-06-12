@@ -1,6 +1,7 @@
 #include "Methcla/Plugin/Loader.hpp"
 
 #include <dlfcn.h>
+#include <stdexcept>
 
 using namespace Methcla::Plugin;
 

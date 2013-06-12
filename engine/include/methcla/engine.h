@@ -26,21 +26,6 @@
 extern "C" {
 #endif
 
-typedef struct
-{
-    const void* data;
-    size_t      size;
-} Methcla_OSCPacket;
-
-typedef enum
-{
-    kMethcla_NoError,
-    kMethcla_UnspecifiedError,
-    kMethcla_InvalidArgument,
-    kMethcla_BadAlloc,
-    kMethcla_Overflow
-} Methcla_Error;
-
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;
 
@@ -68,9 +53,6 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine);
 
 //* Return the last error code.
 // METHCLA_EXPORT Methcla_Error methcla_engine_error(const Methcla_Engine* engine);
-
-//* Return the error message associated with the last error.
-METHCLA_EXPORT const char* methcla_engine_error_message(const Methcla_Engine* engine, Methcla_Error error);
 
 //* Start the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine);
