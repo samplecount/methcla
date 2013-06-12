@@ -105,7 +105,7 @@ cBuildFlags_MacOSX target developer =
   $ osxDefaultCBuildFlags target developer
 
 iosMinVersion :: String
-iosMinVersion = "50000" -- Required for C++11
+iosMinVersion = "5.0" -- Required for C++11
 --iosMinVersion = "40200"
 
 cToolChain_IOS :: DeveloperPath -> CToolChain
@@ -120,7 +120,7 @@ cToolChain_IOS_gcc developer =
 
 cBuildFlags_IOS :: CTarget -> DeveloperPath -> CBuildFlags
 cBuildFlags_IOS target developer =
-    append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+    append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
   $ osxDefaultCBuildFlags target developer
 
 cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
@@ -133,7 +133,7 @@ cToolChain_IOS_Simulator_gcc developer =
 
 cBuildFlags_IOS_Simulator :: CTarget -> DeveloperPath -> CBuildFlags
 cBuildFlags_IOS_Simulator target developer =
-    append defines [("__IPHONE_OS_VERSION_MIN_REQUIRED", Just iosMinVersion)]
+    append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
   $ osxDefaultCBuildFlags target developer
 
 universalBinary :: [FilePath] -> FilePath -> Rules FilePath
