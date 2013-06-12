@@ -553,8 +553,6 @@ template <typename T> struct CallbackData
     void* arg;
 };
 
-extern "C" {
-
 static void perform_worldCommand(Environment* env, CommandData* data)
 {
     CallbackData<Methcla_WorldPerformFunction>* self = (CallbackData<Methcla_WorldPerformFunction>*)data;
@@ -586,8 +584,6 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
     callbackData->arg = data;
     env->sendToWorker(perform_hostCommand, callbackData);
 }
-
-} // extern "C"
 
 #include "Methcla/Audio/IO/DummyDriver.hpp"
 

@@ -41,7 +41,7 @@ namespace Methcla { namespace Audio
 
     typedef void CommandData;
 
-    extern "C" typedef void (*PerformFunc)(Environment* env, void* data);
+    typedef void (*PerformFunc)(Environment* env, void* data);
 
     class Group;
 
