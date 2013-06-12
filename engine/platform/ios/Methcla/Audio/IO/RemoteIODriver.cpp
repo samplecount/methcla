@@ -16,6 +16,7 @@
 #include "Methcla/Memory.hpp"
 
 #include <AudioToolbox/AudioToolbox.h>
+#include <cassert>
 
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
@@ -338,10 +339,9 @@ OSStatus RemoteIODriver::InputCallback(
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inRefCon);
 
     AudioBufferList bufferList;
+    memset(&bufferList, 0, sizeof(bufferList));
     bufferList.mNumberBuffers = 1;
     bufferList.mBuffers[0].mData = nullptr;
-
-    AudioBufferList* ioData = &bufferList;
 
     // Pull data from input bus
     OSStatus err = AudioUnitRender(
@@ -350,17 +350,16 @@ OSStatus RemoteIODriver::InputCallback(
       , inTimeStamp
       , inBusNumber
       , inNumberFrames
-      , ioData);
+      , &bufferList);
     if (err != noErr) return err;
 
     const UInt32 numInputs = self->m_numInputs;
     sample_t** inputBuffers = self->m_inputBuffers;
 
-    for (size_t bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++) {
-        AudioBuffer& buf = ioData->mBuffers[bufCount];
-        BOOST_ASSERT( buf.mNumberChannels == numInputs );
+    for (UInt32 bufCount = 0; bufCount < bufferList.mNumberBuffers; bufCount++) {
+        assert( bufferList.mBuffers[bufCount].mNumberChannels == numInputs );
 
-        AudioSampleType* pcm = static_cast<AudioSampleType*>(buf.mData);
+        const AudioSampleType* pcm = static_cast<AudioSampleType*>(bufferList.mBuffers[bufCount].mData);
 
         // Deinterleave and convert input
         for (UInt32 curChan = 0; curChan < numInputs; curChan++) {
@@ -368,7 +367,7 @@ OSStatus RemoteIODriver::InputCallback(
                 inputBuffers[curChan][curFrame] = pcm[curFrame * numInputs + curChan] / 32768.f;
             }
         }
-//    }
+   }
 
     return noErr;
 }
