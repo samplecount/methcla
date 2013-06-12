@@ -23,7 +23,7 @@ using namespace Methcla::Memory;
 #if METHCLA_NO_RT_MEMORY
 RTMemoryManager::RTMemoryManager(size_t)
     : m_memory(nullptr)
-    , m_pool(nullptr
+    , m_pool(nullptr)
 { }
 #else
 RTMemoryManager::RTMemoryManager(size_t poolSize)
