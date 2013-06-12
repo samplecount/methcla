@@ -173,7 +173,7 @@ configurations = [
     ( Release,
         append compilerFlags [
           (Nothing, ["-Os", "-gdwarf-2"])
-          (Nothing, ["-fvisibility=hidden"])
+        , (Nothing, ["-fvisibility=hidden"])
         ]
       . append defines [("NDEBUG", Nothing)]
     )
