@@ -19,6 +19,8 @@
 
 #include <methcla/common.h>
 #include <methcla/file.h>
+
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -70,36 +72,46 @@ struct Methcla_World
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
 {
+    assert(world && world->samplerate);
     return world->samplerate(world);
 }
 
 static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
 {
+    assert(world && world->alloc);
     return world->alloc(world, size);
 }
 
 static inline void* methcla_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
 {
+    assert(world && world->alloc_aligned);
     return world->alloc_aligned(world, alignment, size);
 }
 
 static inline void methcla_world_free(const Methcla_World* world, void* ptr)
 {
+    assert(world && world->free);
     world->free(world, ptr);
 }
 
 static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
+    assert(world && world->perform_command);
+    assert(perform);
     world->perform_command(world, perform, data);
 }
 
 static inline void methcla_world_resource_retain(const Methcla_World* world, Methcla_Resource* resource)
 {
+    assert(world && world->resource_retain);
+    assert(resource);
     world->resource_retain(world, resource);
 }
 
 static inline void methcla_world_resource_release(const Methcla_World* world, Methcla_Resource* resource)
 {
+    assert(world && world->resource_release);
+    assert(resource);
     world->resource_release(world, resource);
 }
 
@@ -186,17 +198,17 @@ struct Methcla_Host
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
+    assert(host && host->register_synthdef);
+    assert(synthDef);
     host->register_synthdef(host, synthDef);
 }
 
 static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
-    if ((host == NULL) ||
-        (host->get_soundfile_api == NULL) ||
-        (path == NULL) || (*path == '\0') ||
-        (file == NULL) ||
-        (info == NULL))
-        return kMethcla_FileInvalidArgument;
+    assert(host && host->get_soundfile_api);
+    assert(path);
+    assert(file);
+    assert(info);
     const Methcla_SoundFileAPI* api = host->get_soundfile_api(host, "audio/*");
     return api == NULL ? kMethcla_FileUnspecifiedError
                        : api->open(api, path, mode, file, info);
@@ -204,6 +216,7 @@ static inline Methcla_FileError methcla_host_soundfile_open(const Methcla_Host* 
 
 static inline void methcla_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
+    assert(host && host->perform_command);
     host->perform_command(host, perform, data);
 }
 
