@@ -99,7 +99,7 @@ namespace Methcla
         void free(T id)
         {
             T i = id - m_offset;
-            if ((i >= 0) && (i < m_bits.size())) {
+            if ((i >= 0) && (i < (T)m_bits.size())) {
                 m_bits[i] = false;
             } else {
                 throw std::runtime_error("Invalid id");
