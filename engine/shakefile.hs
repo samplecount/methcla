@@ -63,7 +63,7 @@ engineBuildFlags =
          -- Boost
       ++ [ boostDir ]
          -- oscpp
-      ++ [ "external_libraries/oscpp/include" ]
+      ++ [ externalLibrary "oscpp/include" ]
          -- TLSF
       ++ [ tlsfDir ] )
 
@@ -89,6 +89,12 @@ sharedBuildFlags = append libraries ["c++", "m"]
 -- | Build flags for building with clang.
 clangBuildFlags :: String -> CBuildFlags -> CBuildFlags
 clangBuildFlags libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
+
+pluginBuildFlags :: CBuildFlags -> CBuildFlags
+pluginBuildFlags =
+    append userIncludes [ "plugins" ]
+  . append systemIncludes [ "include", externalLibrary "oscpp/include" ]
+  . append compilerFlags [(Nothing, ["-O3"])]
 
 pluginSources :: [FilePath]
 pluginSources = [
@@ -137,13 +143,12 @@ methclaLib platformSources =
             , "src/Methcla/Utility/Semaphore.cpp"
             ]
             -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
-            -- plugins
-            ++ pluginSources
           -- platform dependent
         , platformSources
       -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
       --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
+      , sourceFlags pluginBuildFlags [ sourceFiles_ pluginSources ]
       ]
 
 plugins :: Platform -> [Library]
