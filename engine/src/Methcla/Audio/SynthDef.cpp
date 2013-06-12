@@ -25,41 +25,7 @@ using namespace std;
 
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     : m_descriptor(synthDef)
-    // , m_numAudioInputs(0)
-    // , m_numAudioOutputs(0)
-    // , m_numControlInputs(0)
-    // , m_numControlOutputs(0)
 {
-    // Methcla_Port port;
-    // std::memset(&port, 0, sizeof(port));
-    // for (size_t i=0; m_descriptor->port(m_descriptor, nullptr, i, &port); i++) {
-    //     switch (port.type) {
-    //         case kMethcla_AudioPort:
-    //             switch (port.direction) {
-    //                 case kMethcla_Input:
-    //                     m_ports.push_back(Port(port, m_numAudioInputs));
-    //                     m_numAudioInputs++;
-    //                     break;
-    //                 case kMethcla_Output:
-    //                     m_ports.push_back(Port(port, m_numAudioOutputs));
-    //                     m_numAudioOutputs++;
-    //                     break;
-    //             }
-    //             break;
-    //         case kMethcla_ControlPort:
-    //             switch (port.direction) {
-    //                 case kMethcla_Input:
-    //                     m_ports.push_back(Port(port, m_numControlInputs));
-    //                     m_numControlInputs++;
-    //                     break;
-    //                 case kMethcla_Output:
-    //                     m_ports.push_back(Port(port, m_numControlOutputs));
-    //                     m_numControlOutputs++;
-    //                     break;
-    //             }
-    //     }
-    // }
-
     // Validate descriptor fields (some are optional)
     if (m_descriptor->uri == nullptr || m_descriptor->uri[0] == '\0')
         throw std::invalid_argument("SynthDef: Missing URI");
@@ -74,12 +40,10 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
 
     m_options = m_descriptor->options_size > 0 ? new char[m_descriptor->options_size] : nullptr;
 
+#if DEBUG
     std::cerr << "SynthDef " << uri() << " loaded (" << m_descriptor << "):" << std::endl
               << "    instance size: " << instanceSize() << std::endl;
-              // << "    control inputs: " << numControlInputs() << std::endl
-              // << "    control outputs: " << numControlOutputs() << std::endl
-              // << "    audio inputs: " << numAudioInputs() << std::endl
-              // << "    audio outputs: " << numAudioOutputs() << std::endl;
+#endif
 }
 
 SynthDef::~SynthDef()
