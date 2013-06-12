@@ -75,7 +75,6 @@ commonBuildFlags = append compilerFlags [
   , (Nothing, ["-Wall", "-Wextra"])
   , (Just Cpp, ["-fvisibility-inlines-hidden"])
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
-  , (Nothing, ["-fstack-protector", "-Wstack-protector"])
   ]
 
 -- | Build flags for static library
@@ -172,13 +171,16 @@ configurations :: [Configuration Config CBuildFlags]
 configurations = [
     ( Release,
         append compilerFlags [
-          (Nothing, ["-Os", "-gdwarf-2", "-fvisibility=hidden"])
-        , (Nothing, ["-Wno-unused-parameter"])
+          (Nothing, ["-Os", "-gdwarf-2"])
+          (Nothing, ["-fvisibility=hidden"])
         ]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
-        append compilerFlags [(Nothing, ["-O0", "-gdwarf-2"])]
+        append compilerFlags [
+            (Nothing, ["-O0", "-gdwarf-2"])
+          , (Nothing, ["-fstack-protector", "-Wstack-protector"])
+          ]
       . append defines [("DEBUG", Just "1")]
     )
   ]
