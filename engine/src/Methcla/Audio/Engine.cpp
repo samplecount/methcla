@@ -68,41 +68,63 @@ extern "C" {
 
 static void methcla_api_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
+    assert(host && host->handle);
+    assert(synthDef);
     return static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
 }
 
 static const Methcla_SoundFileAPI* methcla_api_host_get_soundfile_api(const Methcla_Host* host, const char* mimeType)
 {
+    assert(host && host->handle);
+    assert(mimeType);
     return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
 }
 
 static double methcla_api_world_samplerate(const Methcla_World* world)
 {
+    assert(world && world->handle);
     return static_cast<Environment*>(world->handle)->sampleRate();
 }
 
 static void* methcla_api_world_alloc(const Methcla_World* world, size_t size)
 {
-    return static_cast<Environment*>(world->handle)->rtMem().alloc(size);
+    assert(world && world->handle);
+    try {
+        return static_cast<Environment*>(world->handle)->rtMem().alloc(size);
+    } catch (std::invalid_argument) {
+    } catch (std::bad_alloc) {
+    }
+    return nullptr;
 }
 
 static void* methcla_api_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
 {
-    return static_cast<Environment*>(world->handle)->rtMem().allocAligned(alignment, size);
+    assert(world && world->handle);
+    try {
+        return static_cast<Environment*>(world->handle)->rtMem().allocAligned(alignment, size);
+    } catch (std::invalid_argument) {
+    } catch (std::bad_alloc) {
+    }
+    return nullptr;
 }
 
 static void methcla_api_world_free(const Methcla_World* world, void* ptr)
 {
+    assert(world && world->handle);
     return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
 }
 
 static void methcla_api_world_resource_retain(const Methcla_World*, Methcla_Resource* resource)
 {
+    assert(world && world->handle);
+    assert(resource);
     static_cast<Reference*>(resource)->retain();
 }
 
 static void methcla_api_world_resource_release(const Methcla_World*, Methcla_Resource* resource)
 {
+    assert(world && world->handle);
+    assert(resource);
     static_cast<Reference*>(resource)->release();
 }
 
