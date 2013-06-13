@@ -29,10 +29,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/optional.hpp>
-#include <boost/serialization/strong_typedef.hpp>
-#include <boost/utility.hpp>
-
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
 #include <oscpp/print.hpp>
@@ -65,8 +61,69 @@ namespace Methcla
     }
 #endif
 
-    BOOST_STRONG_TYPEDEF(int32_t, SynthId);
-    BOOST_STRONG_TYPEDEF(int32_t, AudioBusId);
+    namespace detail
+    {
+        template <class D, typename T> class Id
+        {
+        public:
+            explicit Id(T id)
+                : m_id(id)
+            { }
+            Id(const D& other)
+                : m_id(static_cast<T>(other))
+            { }
+
+            T value() const
+            {
+                return m_id;
+            }
+
+            operator T () const
+            {
+                return m_id;
+            }
+
+            bool operator==(const D& other) const
+            {
+                return value() == other.value();
+            }
+
+            bool operator!=(const D& other) const
+            {
+                return value() != other.value();
+            }
+
+        private:
+            T m_id;
+        };
+    };
+
+    class SynthId : public detail::Id<SynthId,int32_t>
+    {
+    public:
+        SynthId(int32_t id)
+            : Id<SynthId,int32_t>(id)
+        { }
+        SynthId()
+            : SynthId(-1)
+        { }
+
+        operator bool ()
+        {
+            return value() != -1;
+        }
+    };
+
+    class AudioBusId : public detail::Id<AudioBusId,int32_t>
+    {
+    public:
+        AudioBusId(int32_t id)
+            : Id<AudioBusId,int32_t>(id)
+        { }
+        AudioBusId()
+            : AudioBusId(0)
+        { }
+    };
 
     template <typename T> class ResourceIdAllocator
     {
@@ -112,9 +169,12 @@ namespace Methcla
         size_t            m_pos;
     };
 
-    class PacketPool : public boost::noncopyable
+    class PacketPool
     {
     public:
+        PacketPool(const PacketPool&) = delete;
+        PacketPool& operator=(const PacketPool&) = delete;
+
         PacketPool(size_t packetSize)
             : m_packetSize(packetSize)
         { }
@@ -186,11 +246,13 @@ namespace Methcla
 #if 0
     namespace detail
     {
-        struct Result : boost::noncopyable
+        struct Result
         {
             Result()
                 : m_cond(false)
             { }
+            Result(const Result&) = delete;
+            Result& operator=(const Result&) = delete;
 
             inline void notify()
             {
@@ -602,7 +664,9 @@ namespace Methcla
         void registerResponse(Methcla_RequestId requestId, std::function<void (Methcla_RequestId, const void*, size_t)> callback)
         {
             std::lock_guard<std::mutex> lock(m_callbacksMutex);
-            BOOST_ASSERT_MSG( m_callbacks.find(requestId) == m_callbacks.end(), "Duplicate request id" );
+            if (m_callbacks.find(requestId) != m_callbacks.end()) {
+                throw std::logic_error("Duplicate request id");
+            }
             m_callbacks[requestId] = callback;
         }
 
