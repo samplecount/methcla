@@ -106,9 +106,9 @@ pluginSources = [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaLib :: SourceTree CBuildFlags -> Library
+methclaLib :: SourceTree CBuildFlags -> (String, SourceTree CBuildFlags)
 methclaLib platformSources =
-    Library "methcla" $ sourceFlags commonBuildFlags [
+    ("methcla", sourceFlags commonBuildFlags [
         sourceFlags boostBuildFlags [ sourceFiles_ $
           under (boostDir </> "libs") [
             --   "date_time/src/gregorian/date_generators.cpp"
@@ -149,12 +149,12 @@ methclaLib platformSources =
       --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
       , sourceFlags pluginBuildFlags [ sourceFiles_ pluginSources ]
-      ]
+      ])
 
-plugins :: Platform -> [Library]
-plugins platform = [
-    Library "sine" $ sourceFlags engineBuildFlags [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
-  ]
+-- plugins :: Platform -> [Library]
+-- plugins platform = [
+--     Library "sine" $ sourceFlags engineBuildFlags [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
+--   ]
 
 -- ====================================================================
 -- Configurations
@@ -242,7 +242,7 @@ mkRules options = do
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
                                    $ cBuildFlags_IOS cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags
+                    lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
                             (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
@@ -256,7 +256,7 @@ mkRules options = do
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
                                    $ cBuildFlags_IOS_Simulator cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags
+                    lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
                             (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
@@ -282,7 +282,7 @@ mkRules options = do
                                    . append compilerFlags [ (Nothing, ["-fpic"])
                                                           , (Just Cpp, ["-frtti", "-fexceptions"]) ]
                                    $ Android.buildFlags target
-                    lib <- staticLibrary env target toolChain buildFlags
+                    lib <- uncurry (staticLibrary env target toolChain buildFlags)
                             (methclaLib (sourceFiles_ [
                               "platform/android/opensl_io.c",
                               "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
@@ -304,7 +304,7 @@ mkRules options = do
                            . clangBuildFlags "libc++"
                            . sharedBuildFlags
                            $ cBuildFlags_MacOSX cTarget developer
-            return $ sharedLibrary env cTarget toolChain buildFlags
+            return $ uncurry (sharedLibrary env cTarget toolChain buildFlags)
                         (methclaLib (sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]))
                         >>= platformAlias platform
       , do -- tags

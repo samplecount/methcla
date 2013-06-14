@@ -332,60 +332,60 @@ applySourceTree = go
         go a (Node (f, fs) ns) = let a' = f a
                                  in flatten a' fs ++ concatMap (go a') ns
 
-data Library = Library {
-    libName :: String
-  , libSources :: SourceTree CBuildFlags
-  }
-
-libBuildDir :: Env -> CTarget -> FilePath -> FilePath
-libBuildDir env target libFileName = buildDir env target </> map tr (libFileName)
+mkBuildDir :: Env -> CTarget -> FilePath -> FilePath
+mkBuildDir env target fileName = buildDir env target </> map tr (fileName)
     where tr '.' = '_'
           tr x   = x
 
-libBuildPath :: Env -> CTarget -> FilePath -> FilePath
-libBuildPath env target libFileName = buildDir env target </> libFileName
+mkBuildPath :: Env -> CTarget -> FilePath -> FilePath
+mkBuildPath env target fileName = buildDir env target </> fileName
 
-cLibrary :: ObjectRule -> Linker -> (Library -> FilePath)
+cLibrary :: ObjectRule -> Linker -> FilePath
          -> Env -> CTarget -> CToolChain -> CBuildFlags
-         -> Library
+         -> SourceTree CBuildFlags
          -> Rules FilePath
-cLibrary object link libFileName env target toolChain buildFlags lib = do
-    let libFile = libFileName lib
-        libPath = libBuildPath env target libFile
-        libDir  = libBuildDir env target libFile
-    objects <- forM (buildFlags `applySourceTree` libSources lib) $ \(buildFlags', (src, deps)) -> do
-        let obj = combine libDir {- . makeRelative srcDir -} $ src <.> "o"
+cLibrary object link fileName env target toolChain buildFlags sources = do
+    let resultPath = mkBuildPath env target fileName
+        buildDir   = mkBuildDir env target fileName
+    objects <- forM (buildFlags `applySourceTree` sources) $ \(buildFlags', (src, deps)) -> do
+        let obj = combine buildDir {- . makeRelative srcDir -} $ src <.> "o"
         object target toolChain buildFlags' src deps obj
         return obj
-    libPath ?=> link target toolChain buildFlags objects
-    return libPath
+    resultPath ?=> link target toolChain buildFlags objects
+    return resultPath
 
 -- | Rule for building a static library.
-staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
-staticLibrary env target toolChain =
+staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+staticLibrary env target toolChain buildFlags name sources =
     cLibrary
         staticObject
         (toolChain ^. archiver)
-        ((toolChain ^. archiveFileName) . libName)
-        env target toolChain
+        ((toolChain ^. archiveFileName) name)
+        env target toolChain buildFlags sources
 
 -- | Rule for building a shared library.
-sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
-sharedLibrary env target toolChain =
+sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+sharedLibrary env target toolChain buildFlags name sources =
     cLibrary
         sharedObject
-        ((toolChain ^. linker) linkResult)
-        ((toolChain ^. linkResultFileName) linkResult . libName)
-        env target toolChain
-    where linkResult = SharedLibrary
+        ((toolChain ^. linker) SharedLibrary)
+        ((toolChain ^. linkResultFileName) SharedLibrary name)
+        env target toolChain buildFlags sources
 
 -- | Rule for building a dynamic library.
-dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> Library -> Rules FilePath
-dynamicLibrary env target toolChain =
+dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+dynamicLibrary env target toolChain buildFlags name sources =
     cLibrary
         sharedObject
-        ((toolChain ^. linker) linkResult)
-        ((toolChain ^. linkResultFileName) linkResult . libName)
-        env target toolChain
-    where linkResult = DynamicLibrary
+        ((toolChain ^. linker) DynamicLibrary)
+        ((toolChain ^. linkResultFileName) DynamicLibrary name)
+        env target toolChain buildFlags sources
 
+-- | Rule for building an executable.
+-- staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+-- staticLibrary env target toolChain buildFlags name sources =
+--     cLibrary
+--         staticObject
+--         (toolChain ^. archiver)
+--         ((toolChain ^. archiveFileName) . libName)
+--         env target toolChain
