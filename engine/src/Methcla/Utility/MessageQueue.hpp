@@ -239,9 +239,15 @@ template <typename Command> class Worker : boost::noncopyable
 {
 public:
     Worker(size_t queueSize)
-        : m_toWorker(queueSize, [this](){ this->signalWorker(); })
+        : m_queueSize(queueSize)
+        , m_toWorker(queueSize, [this](){ this->signalWorker(); })
         , m_fromWorker(queueSize)
     { }
+
+    size_t maxCapacity() const
+    {
+        return m_queueSize - 1;
+    }
 
     void sendToWorker(const Command& cmd)
     {
@@ -270,6 +276,7 @@ protected:
     virtual void signalWorker() { }
 
 private:
+    size_t              m_queueSize;
     ToWorker<Command>   m_toWorker;
     FromWorker<Command> m_fromWorker;
 };
