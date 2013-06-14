@@ -70,27 +70,22 @@ namespace Methcla
                 : m_id(id)
             { }
             Id(const D& other)
-                : m_id(static_cast<T>(other))
+                : m_id(other.m_id)
             { }
 
-            T value() const
-            {
-                return m_id;
-            }
-
-            operator T () const
+            T id() const
             {
                 return m_id;
             }
 
             bool operator==(const D& other) const
             {
-                return value() == other.value();
+                return m_id == other.m_id;
             }
 
             bool operator!=(const D& other) const
             {
-                return value() != other.value();
+                return m_id != other.m_id;
             }
 
         private:
@@ -107,11 +102,6 @@ namespace Methcla
         SynthId()
             : SynthId(-1)
         { }
-
-        operator bool ()
-        {
-            return value() != -1;
-        }
     };
 
     class AudioBusId : public detail::Id<AudioBusId,int32_t>
@@ -540,9 +530,9 @@ namespace Methcla
             request.packet()
                 .openMessage(address, numArgs)
                     // .int32(requestId)
-                    .int32(synth)
+                    .int32(synth.id())
                     .int32(index)
-                    .int32(bus)
+                    .int32(bus.id())
                 .closeMessage();
 
             dumpRequest(std::cerr, request.packet());
@@ -564,7 +554,7 @@ namespace Methcla
             request.packet()
                 .openMessage(address, numArgs)
                     // .int32(requestId)
-                    .int32(synth)
+                    .int32(synth.id())
                     .int32(index)
                     .float32(value)
                 .closeMessage();
@@ -584,12 +574,12 @@ namespace Methcla
             request.packet()
                 .openMessage(address, numArgs)
                     // .int32(requestId)
-                    .int32(synth)
+                    .int32(synth.id())
                 .closeMessage();
             // execRequest(requestId, request);
             dumpRequest(std::cerr, request.packet());
             send(request);
-            m_nodeIds.free(synth);
+            m_nodeIds.free(synth.id());
         }
 
     private:
