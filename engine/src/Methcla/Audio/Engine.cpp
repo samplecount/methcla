@@ -115,14 +115,12 @@ static void methcla_api_world_free(const Methcla_World* world, void* ptr)
 
 static void methcla_api_world_resource_retain(const Methcla_World*, Methcla_Resource* resource)
 {
-    assert(world && world->handle);
     assert(resource);
     static_cast<Reference*>(resource)->retain();
 }
 
 static void methcla_api_world_resource_release(const Methcla_World*, Methcla_Resource* resource)
 {
-    assert(world && world->handle);
     assert(resource);
     static_cast<Reference*>(resource)->release();
 }
