@@ -22,7 +22,7 @@ import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
-import           Shakefile.C.OSX as OSX
+import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           Shakefile.Lens
@@ -231,38 +231,38 @@ mkRules options = do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
       , do -- iphone
             let iOS_SDK = Version [6,1] []
-            developer <- liftIO getDeveloperPath
+            developer <- liftIO OSX.getDeveloperPath
             return $ do
                 iphoneosLib <- do
-                    let platform = iPhoneOS iOS_SDK
+                    let platform = OSX.iPhoneOS iOS_SDK
                         cTarget = OSX.target (Arm Armv7) platform
-                        toolChain = applyEnv $ cToolChain_IOS developer
+                        toolChain = applyEnv $ OSX.cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
                                    . append userIncludes ["platform/ios"]
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
-                                   $ cBuildFlags_IOS cTarget developer
+                                   $ OSX.cBuildFlags_IOS cTarget developer
                     lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
                             (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
                 iphonesimulatorLib <- do
-                    let platform = iPhoneSimulator iOS_SDK
+                    let platform = OSX.iPhoneSimulator iOS_SDK
                         cTarget = OSX.target (X86 I386) platform
-                        toolChain = applyEnv $ cToolChain_IOS_Simulator developer
+                        toolChain = applyEnv $ OSX.cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags = applyConfiguration config configurations
                                    . append userIncludes ["platform/ios"]
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
-                                   $ cBuildFlags_IOS_Simulator cTarget developer
+                                   $ OSX.cBuildFlags_IOS_Simulator cTarget developer
                     lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
                             (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
                     platformAlias platform lib
                     return lib
                 let universalTarget = "iphone-universal"
-                universalLib <- universalBinary
+                universalLib <- OSX.universalBinary
                                     [iphoneosLib, iphonesimulatorLib]
                                     (shakeBuildDir
                                       </> map toLower (show config)
@@ -292,19 +292,19 @@ mkRules options = do
                     targetAlias target installPath
                 phony "android" (need ["android-armv5", "android-armv7"])
       , do -- macosx
-            developer <- liftIO getDeveloperPath
-            sdkVersion <- liftIO getSystemVersion
+            developer <- liftIO OSX.getDeveloperPath
+            sdkVersion <- liftIO OSX.getSystemVersion
             jackBuildFlags <- liftIO $ pkgConfig "jack"
-            let platform = macOSX sdkVersion
+            let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ cToolChain_MacOSX developer
+                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
                            . append userIncludes ["platform/jack"]
                            . jackBuildFlags
                            . clangBuildFlags "libc++"
                            . sharedBuildFlags
-                           $ cBuildFlags_MacOSX cTarget developer
+                           $ OSX.cBuildFlags_MacOSX cTarget developer
             return $ uncurry (sharedLibrary env cTarget toolChain buildFlags)
                         (methclaLib (sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]))
                         >>= platformAlias platform
