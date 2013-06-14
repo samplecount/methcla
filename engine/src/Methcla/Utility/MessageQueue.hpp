@@ -22,9 +22,12 @@
 
 #include <boost/atomic.hpp>
 // #include <boost/lockfree/queue.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <boost/lockfree/spsc_queue.hpp>
 #include <boost/thread.hpp>
 #include <boost/utility.hpp>
+#pragma GCC diagnostic pop
 
 #include "Methcla/Utility/Semaphore.hpp"
 
