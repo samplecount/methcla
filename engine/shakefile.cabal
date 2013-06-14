@@ -25,6 +25,7 @@ Executable shakefile
     Shakefile.C.PkgConfig
     Shakefile.Configuration
     Shakefile.Lens
+    Shakefile.SourceTree
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5

@@ -66,13 +66,6 @@ module Shakefile.C (
   , defaultArchiver
   , Linker
   , defaultLinker
-  , SourceTree
-  , sourceTree
-  , sourceTree_
-  , sourceFlags
-  , sourceFiles
-  , sourceFiles_
-
   , staticLibrary
   , sharedLibrary
   , dynamicLibrary
@@ -82,12 +75,12 @@ import           Control.Applicative ((<$>))
 import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad
 import           Data.Char (toLower)
-import           Data.Tree (Tree(Node))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
 import           Data.Version
 import           Shakefile.Lens (append)
+import           Shakefile.SourceTree (SourceTree, applySourceTree)
 import           System.Environment (getEnvironment)
 
 {-import Debug.Trace-}
@@ -363,32 +356,6 @@ staticObject target toolChain buildFlags input deps output = do
 
 sharedObject :: ObjectRule
 sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, ["-fPIC"])]
-
--- | A tree with a transformation and a list of files and their dependencies at each node.
-type SourceTree a = Tree (a -> a, [(FilePath, [FilePath])])
-
-sourceTree :: (a -> a) -> [(FilePath, [FilePath])] -> [SourceTree a] -> SourceTree a
-sourceTree f fs = Node (f, fs)
-
-sourceTree_ :: (a -> a) -> [(FilePath, [FilePath])] -> SourceTree a
-sourceTree_ f fs = sourceTree f fs []
-
-sourceFlags :: (a -> a) -> [SourceTree a] -> SourceTree a
-sourceFlags f = sourceTree f []
-
-sourceFiles :: [(FilePath, [FilePath])] -> SourceTree a
-sourceFiles fs = sourceTree id fs []
-
-sourceFiles_ :: [FilePath] -> SourceTree a
-sourceFiles_ = sourceFiles . map (flip (,) [])
-
-applySourceTree :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
-applySourceTree = go
-    where
-        flatten a = map ((,)a)
-        go a (Node (f, fs) []) = flatten (f a) fs
-        go a (Node (f, fs) ns) = let a' = f a
-                                 in flatten a' fs ++ concatMap (go a') ns
 
 mkBuildDir :: Env -> CTarget -> FilePath -> FilePath
 mkBuildDir env target fileName = buildDir env target </> map tr (fileName)

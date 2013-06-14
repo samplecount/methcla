@@ -26,6 +26,7 @@ import           Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           Shakefile.Lens
+import           Shakefile.SourceTree
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
 import           System.FilePath.Find
