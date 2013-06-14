@@ -118,7 +118,7 @@ methclaSources platformSources =
             -- , "date_time/src/gregorian/gregorian_types.cpp"
             -- , "date_time/src/posix_time/posix_time_types.cpp"
             -- , "exception/src/clone_current_exception_non_intrusive.cpp"
-            "system/src/error_code.cpp"
+            -- "system/src/error_code.cpp"
             ]
         ]
         -- TLSF

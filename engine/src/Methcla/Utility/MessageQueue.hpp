@@ -16,18 +16,16 @@
 #define METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED
 
 #include <array>
-// #include <atomic>
+#include <atomic>
 #include <list>
+#include <mutex>
 #include <thread>
 
-#include <boost/atomic.hpp>
-// #include <boost/lockfree/queue.hpp>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <boost/lockfree/spsc_queue.hpp>
-#include <boost/thread.hpp>
-#include <boost/utility.hpp>
 #pragma GCC diagnostic pop
+#include <boost/noncopyable.hpp>
 
 #include "Methcla/Utility/Semaphore.hpp"
 
@@ -69,7 +67,7 @@ public:
 #if METHCLA_WORKER_USE_PTHREAD
         pthread_mutex_lock(&m_mutex);
 #else
-        boost::lock_guard<boost::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 #endif
 #endif
         m_list.push_back(a);
@@ -88,7 +86,7 @@ public:
 #if METHCLA_WORKER_USE_PTHREAD
         pthread_mutex_lock(&m_mutex);
 #else
-        boost::lock_guard<boost::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 #endif
 #endif
         if (m_list.empty())
@@ -109,7 +107,7 @@ private:
 #if METHCLA_WORKER_USE_PTHREAD
     pthread_mutex_t m_mutex;
 #else
-    boost::mutex   m_mutex;
+    std::mutex   m_mutex;
 #endif
 #endif
     std::list<T> m_list;
@@ -124,7 +122,7 @@ template <typename T, size_t queueSize> class MessageQueue : boost::noncopyable
 public:
     inline void send(const T& msg)
     {
-        boost::lock_guard<boost::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         bool success = m_queue.push(msg);
         if (!success) throw std::runtime_error("Message queue overflow");
     }
@@ -137,7 +135,7 @@ public:
 private:
     typedef boost::lockfree::spsc_queue<T,boost::lockfree::capacity<queueSize>> Queue;
     Queue      m_queue;
-    boost::mutex m_mutex;
+    std::mutex m_mutex;
 };
 
 template <class Command> class Transport : boost::noncopyable
@@ -199,7 +197,7 @@ public:
     bool dequeue(Command& cmd)
     {
 #if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
-        boost::lock_guard<boost::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 #endif
         return this->m_queue.pop(cmd);
     }
@@ -207,7 +205,7 @@ public:
 private:
     std::function<void()> m_signal;
 #if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
-    boost::mutex          m_mutex;
+    std::mutex          m_mutex;
 #endif
 };
 
@@ -221,7 +219,7 @@ public:
     virtual void send(const Command& cmd) override
     {
 #if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
-        boost::lock_guard<boost::mutex> lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 #endif
         this->sendCommand(cmd);
     }
@@ -233,7 +231,7 @@ public:
 
 private:
 #if !METHCLA_WORKER_USE_LIST && !METHCLA_WORKER_AUDIO_THREAD
-    boost::mutex m_mutex;
+    std::mutex m_mutex;
 #endif
 };
 
@@ -291,7 +289,7 @@ public:
     ~WorkerThread()
     {
 #if !METHCLA_WORKER_AUDIO_THREAD
-        m_continue.store(false, boost::memory_order_relaxed);
+        m_continue.store(false, std::memory_order_relaxed);
         // m_continue = false;
         m_sem.post();
         join();
@@ -330,7 +328,7 @@ private:
     {
         for (;;) {
             m_sem.wait();
-            bool cont = m_continue.load(boost::memory_order_relaxed);
+            bool cont = m_continue.load(std::memory_order_relaxed);
             // bool cont = m_continue;
             if (cont) {
                 this->work();
@@ -356,7 +354,7 @@ private:
 private:
     Semaphore           m_sem;
     // bool m_continue;
-    boost::atomic<bool> m_continue;
+    std::atomic<bool> m_continue;
     // std::vector<std::thread>    m_threads;
 #if METHCLA_WORKER_USE_PTHREAD
     pthread_t m_thread;
