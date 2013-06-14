@@ -107,9 +107,9 @@ pluginSources = [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaLib :: SourceTree CBuildFlags -> (String, SourceTree CBuildFlags)
-methclaLib platformSources =
-    ("methcla", sourceFlags commonBuildFlags [
+methclaSources :: SourceTree CBuildFlags -> SourceTree CBuildFlags
+methclaSources platformSources =
+    sourceFlags commonBuildFlags [
         sourceFlags boostBuildFlags [ sourceFiles_ $
           under (boostDir </> "libs") [
             --   "date_time/src/gregorian/date_generators.cpp"
@@ -150,7 +150,10 @@ methclaLib platformSources =
       --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
       , sourceFlags pluginBuildFlags [ sourceFiles_ pluginSources ]
-      ])
+      ]
+
+methcla :: String
+methcla = "methcla"
 
 -- plugins :: Platform -> [Library]
 -- plugins platform = [
@@ -243,8 +246,9 @@ mkRules options = do
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
                                    $ OSX.cBuildFlags_IOS cTarget developer
-                    lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
-                            (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
+                    lib <- staticLibrary env cTarget toolChain buildFlags
+                            methcla (methclaSources $
+                                        sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
                     platformAlias platform lib
                     return lib
                 iphonesimulatorLib <- do
@@ -257,8 +261,9 @@ mkRules options = do
                                    . clangBuildFlags "libc++"
                                    . staticBuildFlags
                                    $ OSX.cBuildFlags_IOS_Simulator cTarget developer
-                    lib <- uncurry (staticLibrary env cTarget toolChain buildFlags)
-                            (methclaLib (sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"]))
+                    lib <- staticLibrary env cTarget toolChain buildFlags
+                            methcla (methclaSources $
+                                        sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
                     platformAlias platform lib
                     return lib
                 let universalTarget = "iphone-universal"
@@ -283,10 +288,11 @@ mkRules options = do
                                    . append compilerFlags [ (Nothing, ["-fpic"])
                                                           , (Just Cpp, ["-frtti", "-fexceptions"]) ]
                                    $ Android.buildFlags target
-                    lib <- uncurry (staticLibrary env target toolChain buildFlags)
-                            (methclaLib (sourceFiles_ [
-                              "platform/android/opensl_io.c",
-                              "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]))
+                    lib <- staticLibrary env target toolChain buildFlags
+                            methcla (methclaSources $
+                                        sourceFiles_ [
+                                          "platform/android/opensl_io.c",
+                                          "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
                     let installPath = "libs/android" </> Android.abiString arch </> takeFileName lib
                     installPath ?=> \_ -> copyFile' lib installPath
                     targetAlias target installPath
@@ -305,11 +311,29 @@ mkRules options = do
                            . clangBuildFlags "libc++"
                            . sharedBuildFlags
                            $ OSX.cBuildFlags_MacOSX cTarget developer
-            return $ uncurry (sharedLibrary env cTarget toolChain buildFlags)
-                        (methclaLib (sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]))
+            return $ sharedLibrary env cTarget toolChain buildFlags
+                        methcla (methclaSources $
+                                    sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
                         >>= platformAlias platform
+      , do -- tests
+            developer <- liftIO OSX.getDeveloperPath
+            sdkVersion <- liftIO OSX.getSystemVersion
+            let platform = OSX.macOSX sdkVersion
+                cTarget = OSX.target (X86 X86_64) platform
+                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
+                env = mkEnv cTarget
+                buildFlags = applyConfiguration config configurations
+                           . append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
+                           . clangBuildFlags "libc++"
+                           . sharedBuildFlags
+                           $ OSX.cBuildFlags_MacOSX cTarget developer
+            return $ do
+                result <- executable env cTarget toolChain buildFlags
+                            "methcla-tests"
+                            (methclaSources $ sourceFiles_ ["tests/methcla_tests.cpp"])
+                phony "methcla-tests" $ need [result]
       , do -- tags
-            let and a b = do { as <- a; bs <- b; return $! as ++ bs }
+            let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
                 files clause dir = find always clause dir
                 sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
                 tagFile = "tags"
@@ -318,10 +342,10 @@ mkRules options = do
                 tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
                     fs <- liftIO $ find
                               (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
-                        `and` sources "include"
-                        `and` sources "platform"
-                        `and` sources "plugins"
-                        `and` sources "src"
+                        `and_` sources "include"
+                        `and_` sources "platform"
+                        `and_` sources "plugins"
+                        `and_` sources "src"
                     need fs
                     writeFileLines tagFiles fs
                     system' "ctags" $

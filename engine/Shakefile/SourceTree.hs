@@ -14,6 +14,7 @@
 
 module Shakefile.SourceTree (
     SourceTree
+  , noSources
   , sourceTree
   , sourceTree_
   , sourceFlags
@@ -26,6 +27,9 @@ import Data.Tree (Tree(Node))
 
 -- | A tree with a transformation and a list of files and their dependencies at each node.
 type SourceTree a = Tree (a -> a, [(FilePath, [FilePath])])
+
+noSources :: SourceTree a
+noSources = Node (id, []) []
 
 sourceTree :: (a -> a) -> [(FilePath, [FilePath])] -> [SourceTree a] -> SourceTree a
 sourceTree f fs = Node (f, fs)

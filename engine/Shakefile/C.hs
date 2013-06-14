@@ -66,6 +66,7 @@ module Shakefile.C (
   , defaultArchiver
   , Linker
   , defaultLinker
+  , executable
   , staticLibrary
   , sharedLibrary
   , dynamicLibrary
@@ -358,18 +359,18 @@ sharedObject :: ObjectRule
 sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, ["-fPIC"])]
 
 mkBuildDir :: Env -> CTarget -> FilePath -> FilePath
-mkBuildDir env target fileName = buildDir env target </> map tr (fileName)
+mkBuildDir env target fileName = buildDir env target </> map tr (fileName) ++ "_obj"
     where tr '.' = '_'
           tr x   = x
 
 mkBuildPath :: Env -> CTarget -> FilePath -> FilePath
 mkBuildPath env target fileName = buildDir env target </> fileName
 
-cLibrary :: ObjectRule -> Linker -> FilePath
-         -> Env -> CTarget -> CToolChain -> CBuildFlags
-         -> SourceTree CBuildFlags
-         -> Rules FilePath
-cLibrary object link fileName env target toolChain buildFlags sources = do
+buildProduct :: ObjectRule -> Linker -> FilePath
+             -> Env -> CTarget -> CToolChain -> CBuildFlags
+             -> SourceTree CBuildFlags
+             -> Rules FilePath
+buildProduct object link fileName env target toolChain buildFlags sources = do
     let resultPath = mkBuildPath env target fileName
         buildDir   = mkBuildDir env target fileName
     objects <- forM (buildFlags `applySourceTree` sources) $ \(buildFlags', (src, deps)) -> do
@@ -379,10 +380,19 @@ cLibrary object link fileName env target toolChain buildFlags sources = do
     resultPath ?=> link target toolChain buildFlags objects
     return resultPath
 
+-- | Rule for building an executable.
+executable :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+executable env target toolChain buildFlags name sources =
+    buildProduct
+        staticObject
+        ((toolChain ^. linker) Executable)
+        ((toolChain ^. linkResultFileName) Executable name)
+        env target toolChain buildFlags sources
+
 -- | Rule for building a static library.
 staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
 staticLibrary env target toolChain buildFlags name sources =
-    cLibrary
+    buildProduct
         staticObject
         (toolChain ^. archiver)
         ((toolChain ^. archiveFileName) name)
@@ -391,7 +401,7 @@ staticLibrary env target toolChain buildFlags name sources =
 -- | Rule for building a shared library.
 sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
 sharedLibrary env target toolChain buildFlags name sources =
-    cLibrary
+    buildProduct
         sharedObject
         ((toolChain ^. linker) SharedLibrary)
         ((toolChain ^. linkResultFileName) SharedLibrary name)
@@ -400,17 +410,8 @@ sharedLibrary env target toolChain buildFlags name sources =
 -- | Rule for building a dynamic library.
 dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
 dynamicLibrary env target toolChain buildFlags name sources =
-    cLibrary
+    buildProduct
         sharedObject
         ((toolChain ^. linker) DynamicLibrary)
         ((toolChain ^. linkResultFileName) DynamicLibrary name)
         env target toolChain buildFlags sources
-
--- | Rule for building an executable.
--- staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
--- staticLibrary env target toolChain buildFlags name sources =
---     cLibrary
---         staticObject
---         (toolChain ^. archiver)
---         ((toolChain ^. archiveFileName) . libName)
---         env target toolChain
