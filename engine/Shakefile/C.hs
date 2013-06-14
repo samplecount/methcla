@@ -344,7 +344,7 @@ staticObject :: ObjectRule
 staticObject target toolChain buildFlags input deps output = do
     let depFile = output <.> "d"
     dependencyFile target toolChain buildFlags input depFile
-    output ?=> \_ ->  do
+    output ?=> \_ -> do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
         system' (tool compilerCmd toolChain)
