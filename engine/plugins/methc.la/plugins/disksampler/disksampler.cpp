@@ -347,9 +347,9 @@ construct( const Methcla_World* world
 
     new (&self->state) State(options->frames);
 
-    // Need to retain a reference to the outer Synth, otherwise the self pointer might dangle if the synth is freed while the
-    // async command is still being executed. This can be solved differently at the cost of allocating the State struct on the
-    // realtime memory heap. Maybe cleaner and the API would keep smaller.
+    // Need to retain a reference to the outer Synth, otherwise the self pointer
+    // might dangle if the synth is freed while the async command is still being
+    // executed.
     self->handle = handle;
     methcla_world_resource_retain(world, self->handle);
     methcla_world_perform_command(world, command_init_buffer, self);
