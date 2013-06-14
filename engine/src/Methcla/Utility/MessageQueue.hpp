@@ -19,6 +19,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -185,33 +186,19 @@ public:
         : Worker<Command>(queueSize)
         , m_continue(true)
     {
-        start(numThreads);
+        for (size_t i=0; i < std::max((size_t)1, numThreads); i++) {
+            m_threads.emplace_back([this](){ this->process(); });
+        }
     }
 
     ~WorkerThread()
     {
         m_continue.store(false, std::memory_order_relaxed);
         m_sem.post();
-        join();
+        for (auto& t : m_threads) { t.join(); }
     }
 
 private:
-    typedef std::thread thread;
-
-    void start(size_t /*numThreads*/)
-    {
-        // for (size_t i=0; i < std::max<size_t>(1, numThreads); i++) {
-        //     m_threads.emplace_back([this](){ this->process(); });
-        // }
-        m_thread = thread([this](){ this->process(); });
-    }
-
-    void join()
-    {
-        // for (auto& t : m_threads) { t.join(); }
-        m_thread.join();
-    }
-
     void process()
     {
         for (;;) {
@@ -231,10 +218,9 @@ private:
     }
 
 private:
-    Semaphore         m_sem;
-    std::atomic<bool> m_continue;
-    // std::vector<std::thread>    m_threads;
-    thread m_thread;
+    Semaphore                   m_sem;
+    std::atomic<bool>           m_continue;
+    std::vector<std::thread>    m_threads;
 };
 
 } }
