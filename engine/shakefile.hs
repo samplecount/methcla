@@ -319,11 +319,12 @@ mkRules options = do
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
             let platform = OSX.macOSX sdkVersion
-                cTarget = OSX.target (X86 X86_64) platform
+                cTarget = OSX.target (X86 I386) platform
                 toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags = applyConfiguration config configurations
                            . append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
+                           . append systemIncludes [externalLibrary "catch/single_include"]
                            . clangBuildFlags "libc++"
                            . sharedBuildFlags
                            $ OSX.cBuildFlags_MacOSX cTarget developer
