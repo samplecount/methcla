@@ -15,10 +15,71 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Shakefile.C where
+module Shakefile.C (
+    under
+  , mapFlag
+  , concatMapFlag
+  , (?=>)
+  , Env
+  , defaultEnv
+  , buildPrefix
+  , Platform(..)
+  , platformString
+  , Arch(..)
+  , archShortString
+  , archString
+  , ArmVersion(..)
+  , X86Version(..)
+  , CTarget
+  , mkCTarget
+  , targetArch
+  , targetVendor
+  , targetOS
+  , targetPlatform
+  , targetString
+  , CLanguage(..)
+  , LinkResult(..)
+  , CBuildFlags
+  , defaultCBuildFlags
+  , systemIncludes
+  , userIncludes
+  , defines
+  , preprocessorFlags
+  , compilerFlags
+  , libraryPath
+  , libraries
+  , linkerFlags
+  , archiverFlags
+  , CToolChain
+  , defaultCToolChain
+  , toolChainFromEnvironment
+  , prefix
+  , compilerCmd
+  , archiverCmd
+  , archiver
+  , archiveFileName
+  , linkerCmd
+  , linker
+  , linkResultFileName
+  , tool
+  , Archiver
+  , defaultArchiver
+  , Linker
+  , defaultLinker
+  , SourceTree
+  , sourceTree
+  , sourceTree_
+  , sourceFlags
+  , sourceFiles
+  , sourceFiles_
+
+  , staticLibrary
+  , sharedLibrary
+  , dynamicLibrary
+) where
 
 import           Control.Applicative ((<$>))
-import           Control.Lens hiding (Action, (<.>))
+import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad
 import           Data.Char (toLower)
 import           Data.Tree (Tree(Node))
@@ -254,9 +315,6 @@ compilerFlagsFor lang = concat
     where f _ (Nothing, x) = Just x
           f l (Just l', x) | l == l' = Just x
                            | otherwise = Nothing
-
-type CBuildEnv = (CToolChain, CBuildFlags)
-
 
 sed :: String -> FilePath -> FilePath -> Shake.Action ()
 sed command input output = do
