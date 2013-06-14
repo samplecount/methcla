@@ -332,7 +332,9 @@ mkRules options = do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"
                             (methclaSources $ sourceFiles_ ["tests/methcla_tests.cpp"])
-                phony "methcla-tests" $ need [result]
+                phony "methcla-tests" $ do
+                    need [result]
+                    system' result []
       , do -- tags
             let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
                 files clause dir = find always clause dir
