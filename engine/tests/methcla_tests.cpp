@@ -32,7 +32,7 @@ TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
 
     const size_t queueSize = 1024;
 
-    Methcla::Utility::Worker<Command> worker(queueSize);
+    Methcla::Utility::Worker<Command> worker(queueSize, false);
 
     for (size_t i=0; i < worker.maxCapacity(); i++) {
         worker.sendToWorker(Command());

@@ -58,8 +58,9 @@ private:
 template <class Command> class Transport : boost::noncopyable
 {
 public:
-    Transport(size_t queueSize)
+    Transport(size_t queueSize, bool needsLock)
         : m_queue(queueSize)
+        , m_needsLock(needsLock)
     { }
     virtual ~Transport()
     { }
@@ -77,23 +78,41 @@ public:
     }
 
 protected:
+    typedef boost::lockfree::spsc_queue<Command> Queue;
+
+    Queue& queue()
+    {
+        return m_queue;
+    }
+
+    bool needsLock() const
+    {
+        return m_needsLock;
+    }
+
+    std::mutex& mutex()
+    {
+        return m_mutex;
+    }
+
     void sendCommand(const Command& cmd)
     {
         bool success = m_queue.push(cmd);
         if (!success) throw std::runtime_error("Channel overflow");
     }
 
-protected:
-    typedef boost::lockfree::spsc_queue<Command> Queue;
+private:
     // typedef boost::lockfree::queue<Command,boost::lockfree::capacity<queueSize>> Queue;
-    Queue m_queue;
+    Queue       m_queue;
+    bool        m_needsLock;
+    std::mutex  m_mutex;
 };
 
 template <class Command> class ToWorker : public Transport<Command>
 {
 public:
-    ToWorker(size_t queueSize, std::function<void()> signal)
-        : Transport<Command>(queueSize)
+    ToWorker(size_t queueSize, bool needsLock, std::function<void()> signal)
+        : Transport<Command>(queueSize, needsLock)
         , m_signal(signal)
     { }
 
@@ -105,44 +124,48 @@ public:
 
     bool dequeue(Command& cmd)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return this->m_queue.pop(cmd);
+        if (this->needsLock()) {
+            std::lock_guard<std::mutex> lock(this->mutex());
+            return this->queue().pop(cmd);
+        } else {
+            return this->queue().pop(cmd);
+        }
     }
 
 private:
     std::function<void()> m_signal;
-    std::mutex            m_mutex;
 };
 
 template <class Command> class FromWorker : public Transport<Command>
 {
 public:
-    FromWorker(size_t queueSize)
-        : Transport<Command>(queueSize)
+    FromWorker(size_t queueSize, bool needsLock)
+        : Transport<Command>(queueSize, needsLock)
     { }
 
     virtual void send(const Command& cmd) override
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        this->sendCommand(cmd);
+        if (this->needsLock()) {
+            std::lock_guard<std::mutex> lock(this->mutex());
+            this->sendCommand(cmd);
+        } else {
+            this->sendCommand(cmd);
+        }
     }
 
     bool dequeue(Command& cmd) override
     {
-        return this->m_queue.pop(cmd);
+        return this->queue().pop(cmd);
     }
-
-private:
-    std::mutex m_mutex;
 };
 
 template <typename Command> class Worker : boost::noncopyable
 {
 public:
-    Worker(size_t queueSize)
+    Worker(size_t queueSize, bool needsLock)
         : m_queueSize(queueSize)
-        , m_toWorker(queueSize, [this](){ this->signalWorker(); })
-        , m_fromWorker(queueSize)
+        , m_toWorker(queueSize, needsLock, [this](){ this->signalWorker(); })
+        , m_fromWorker(queueSize, needsLock)
     { }
 
     size_t maxCapacity() const
@@ -183,7 +206,7 @@ template <typename Command> class WorkerThread : public Worker<Command>
 {
 public:
     WorkerThread(size_t queueSize, size_t numThreads=1)
-        : Worker<Command>(queueSize)
+        : Worker<Command>(queueSize, numThreads > 1)
         , m_continue(true)
     {
         for (size_t i=0; i < std::max((size_t)1, numThreads); i++) {
