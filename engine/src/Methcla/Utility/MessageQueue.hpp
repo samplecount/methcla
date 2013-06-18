@@ -225,7 +225,11 @@ public:
     ~WorkerThread()
     {
         m_continue.store(false, std::memory_order_relaxed);
-        m_sem.post();
+        // Signal *all* threads
+        for (size_t i=0; i < m_threads.size(); i++) {
+            m_sem.post();
+        }
+        // Wait for threads to exit
         for (auto& t : m_threads) { t.join(); }
     }
 
