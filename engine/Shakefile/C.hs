@@ -212,6 +212,8 @@ data CBuildFlags = CBuildFlags {
   , _libraryPath :: [FilePath]
   , _libraries :: [String]
   , _linkerFlags :: [String]
+  -- This is needed for linking against local libraries built by shake (the linker `needs' its inputs).
+  -- A better name maybe?
   , _staticLibraries :: [FilePath]
   , _archiverFlags :: [String]
   } deriving (Show)
