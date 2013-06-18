@@ -69,7 +69,15 @@ public:
 
     virtual bool dequeue(Command& cmd) = 0;
 
-    void drain()
+    void performOne()
+    {
+        Command cmd;
+        if (dequeue(cmd)) {
+            cmd.perform();
+        }
+    }
+
+    void performAll()
     {
         Command cmd;
         while (dequeue(cmd)) {
@@ -185,13 +193,13 @@ public:
 
     void perform()
     {
-        m_fromWorker.drain();
+        m_fromWorker.performAll();
     }
 
 protected:
     void work()
     {
-        m_toWorker.drain();
+        m_toWorker.performOne();
     }
 
     virtual void signalWorker() { }
