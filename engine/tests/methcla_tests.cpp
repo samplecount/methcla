@@ -12,23 +12,94 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-private-field"
-#define CATCH_CONFIG_MAIN
-#include <catch.hpp>
-#pragma GCC diagnostic pop
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
+# include <catch.hpp>
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#endif
 
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
 #include <atomic>
+#include <chrono>
+#include <mutex>
+#include <thread>
 
-TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
+namespace test_Methcla_Utility_Worker
 {
     struct Command
     {
         void perform() { }
     };
+};
+
+namespace Methcla { namespace Test {
+
+class Log
+{
+public:
+    Log()
+        : m_lock(s_mutex)
+    { }
+
+    template <typename T> Log& operator<<(const T& x)
+    {
+#if DEBUG
+        std::cerr << x;
+#endif
+        return *this;
+    }
+
+private:
+    std::lock_guard<std::mutex> m_lock;
+    static std::mutex s_mutex;
+};
+
+std::mutex Log::s_mutex;
+} }
+
+TEST_CASE("Methcla/Utility/Semaphore/constructor", "Test constructor.")
+{
+    for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
+        Methcla::Utility::Semaphore sem(n);
+        size_t count(0);
+
+        for (size_t i=0; i < n; i++) {
+            sem.wait();
+            count++;
+        }
+
+        REQUIRE(count == n);
+    }
+}
+
+TEST_CASE("Methcla/Utility/Semaphore/post", "Test post/wait.")
+{
+    for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
+        Methcla::Utility::Semaphore sem;
+        std::atomic<size_t> count(0);
+
+        std::thread thread([&](){
+            for (size_t i=0; i < n; i++) {
+                count++;
+                sem.post();
+            }
+        });
+        for (size_t i=0; i < n; i++) {
+            sem.wait();
+        }
+        REQUIRE(count.load() == n);
+        thread.join();
+    }
+}
+
+TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
+{
+    using test_Methcla_Utility_Worker::Command;
 
     const size_t queueSize = 1024;
 
@@ -41,23 +112,33 @@ TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
     REQUIRE_THROWS(worker.sendToWorker(Command()));
 }
 
-TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a worker thread are executed.")
+namespace test_Methcla_Utility_WorkerThread
 {
     struct Command
     {
         void perform()
         {
+            // std::this_thread::sleep_for(std::chrono::seconds(1));
             (*m_count)++;
             m_sem->post();
+            Methcla::Test::Log() << "POST " << m_id << "\n";
         }
 
+        size_t m_id;
         std::atomic<size_t>* m_count;
         Methcla::Utility::Semaphore* m_sem;
     };
+};
 
-    const size_t queueSize = 1024;
+TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a worker thread are executed.")
+{
+    using test_Methcla_Utility_WorkerThread::Command;
+
+    const size_t queueSize = 16;
 
     for (size_t threadCount=1; threadCount <= 4; threadCount++) {
+        Methcla::Test::Log() << "threads " << threadCount << "\n";
+
         Methcla::Utility::WorkerThread<Command> worker(queueSize, threadCount);
 
         std::atomic<size_t> count(0);
@@ -65,6 +146,7 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
 
         for (size_t i=0; i < worker.maxCapacity(); i++) {
             Command cmd;
+            cmd.m_id = i;
             cmd.m_count = &count;
             cmd.m_sem = &sem;
             worker.sendToWorker(cmd);
@@ -72,7 +154,16 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
 
         for (size_t i=0; i < worker.maxCapacity(); i++) {
             sem.wait();
+            Methcla::Test::Log() << "WAIT " << i << " " << count.load() << "\n";
         }
+
         REQUIRE(count.load() == worker.maxCapacity());
     }
 }
+
+#if !defined(__ANDROID__)
+int main(int argc, char* const argv[])
+{
+    return Catch::Main(argc, argv);
+}
+#endif // defined(__ANDROID__)

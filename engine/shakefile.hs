@@ -14,6 +14,7 @@
 
 {-# LANGUAGE TemplateHaskell #-}
 
+import           Control.Arrow ((>>>))
 import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad (forM_)
 import           Data.Char (toLower)
@@ -29,6 +30,7 @@ import           Shakefile.Lens
 import           Shakefile.SourceTree
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
+import           System.Environment (lookupEnv)
 import           System.FilePath.Find
 
 {-import Debug.Trace-}
@@ -219,6 +221,30 @@ optionDescrs = [ Option "c" ["config"]
                    (ReqArg (fmap (set buildConfig) . parseConfig) "CONFIG")
                    "Build configuration (debug, release)." ]
 
+enable :: Bool -> String -> String -> String
+enable on flag name = flag ++ (if on then "" else "no-") ++ name
+
+pic :: CBuildFlags -> CBuildFlags
+pic = append compilerFlags [(Nothing, ["-fpic"])]
+
+rtti :: Bool -> CBuildFlags -> CBuildFlags
+rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
+
+exceptions :: Bool -> CBuildFlags -> CBuildFlags
+exceptions on = append compilerFlags [(Just Cpp, [enable on "-f" "exceptions"])]
+
+withTarget :: Monad m => (Arch -> CTarget) -> [Arch] -> (CTarget -> m ()) -> m ()
+withTarget mkTarget archs f = mapM_ (f . mkTarget) archs
+
+mapTarget :: Monad m => (Arch -> CTarget) -> [Arch] -> (CTarget -> m a) -> m [a]
+mapTarget mkTarget archs f = mapM (f . mkTarget) archs
+
+androidTargetPlatform :: Platform
+androidTargetPlatform = Android.platform 9
+
+androidToolChainPath :: FilePath
+androidToolChainPath = "tools/android-toolchain-arm-linux-androideabi-4.7-9"
+
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
     let config = options ^. buildConfig
@@ -275,28 +301,53 @@ mkRules options = do
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
+            Just ndk <- lookupEnv "ANDROID_NDK"
             return $ do
-                forM_ [Arm Armv5, Arm Armv7] $ \arch -> do
-                    let platform = Android.platform 9
-                        target = Android.target arch platform
-                        toolChainPath = "tools/android-toolchain-arm-linux-androideabi-4.7-9"
-                        toolChain = applyEnv $ Android.standaloneToolChain toolChainPath target
-                        env = mkEnv target
-                        buildFlags = applyConfiguration config configurations
-                                   . append userIncludes ["platform/android"]
-                                   . staticBuildFlags
-                                   . append compilerFlags [ (Nothing, ["-fpic"])
-                                                          , (Just Cpp, ["-frtti", "-fexceptions"]) ]
-                                   $ Android.buildFlags target
-                    lib <- staticLibrary env target toolChain buildFlags
+                libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5 {-, Arm Armv7-}] $ \target -> do
+                    let abi = Android.abiString (target ^. targetArch)
+                        toolChain = applyEnv $ Android.standaloneToolChain androidToolChainPath target
+                        buildFlags =   applyConfiguration config configurations
+                                   >>> append userIncludes ["platform/android"]
+                                   >>> staticBuildFlags
+                                   >>> pic
+                                   >>> rtti True
+                                   >>> exceptions True
+                                   $   Android.buildFlags target
+                    libmethcla <- staticLibrary (mkEnv target) target toolChain buildFlags
                             methcla (methclaSources $
                                         sourceFiles_ [
                                           "platform/android/opensl_io.c",
                                           "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
-                    let installPath = "libs/android" </> Android.abiString arch </> takeFileName lib
-                    installPath ?=> \_ -> copyFile' lib installPath
+                    let android_native_app_glue =
+                            sourceFlags (append systemIncludes [ndk </> "sources/android/native_app_glue"])
+                                [ sourceFiles_ [ndk </> "sources/android/native_app_glue/android_native_app_glue.c"] ]
+                        gnustl_static =
+                            append staticLibraries [
+                                ndk </> "sources/cxx-stl/gnu-libstdc++/4.7/libs" </> abi </> "libgnustl_static.a"]
+                        testBuildFlags =
+                                       commonBuildFlags
+                                   >>> engineBuildFlags
+                                   >>> append systemIncludes [externalLibrary "catch/single_include"]
+                                   >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
+                                   >>> append staticLibraries [libmethcla]
+                                   >>> gnustl_static
+                                   >>> append libraries ["android", "log", "OpenSLES"]
+                                   $   buildFlags
+                    libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain testBuildFlags
+                                  "methcla-tests"
+                                  (merge android_native_app_glue
+                                         (sourceFiles_ [ "tests/methcla_tests.cpp"
+                                                       , "tests/android/main.cpp" ]))
+
+                    let installPath = "libs/android" </> abi </> takeFileName libmethcla
+                    installPath ?=> \_ -> copyFile' libmethcla installPath
                     targetAlias target installPath
-                phony "android" (need ["android-armv5", "android-armv7"])
+
+                    let testInstallPath = "tests/android/libs" </> Android.abiString (target ^. targetArch) </> takeFileName libmethcla_tests
+                    testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
+                    return (installPath, testInstallPath)
+                phony "android" $ need $ map fst libs
+                phony "android-tests" $ need $ map snd libs
       , do -- macosx
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
@@ -315,7 +366,7 @@ mkRules options = do
                         methcla (methclaSources $
                                     sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
                         >>= platformAlias platform
-      , do -- tests
+      , do -- tests (macosx)
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
             let platform = OSX.macOSX sdkVersion
@@ -332,7 +383,7 @@ mkRules options = do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"
                             (methclaSources $ sourceFiles_ ["tests/methcla_tests.cpp"])
-                phony "methcla-tests" $ do
+                phony "macosx-tests" $ do
                     need [result]
                     system' result []
       , do -- tags

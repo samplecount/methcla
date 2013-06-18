@@ -49,6 +49,7 @@ module Shakefile.C (
   , libraryPath
   , libraries
   , linkerFlags
+  , staticLibraries
   , archiverFlags
   , CToolChain
   , defaultCToolChain
@@ -83,6 +84,7 @@ import           Data.Version
 import           Shakefile.Lens (append)
 import           Shakefile.SourceTree (SourceTree, applySourceTree)
 import           System.Environment (getEnvironment)
+import           System.FilePath (makeRelative, takeFileName)
 
 {-import Debug.Trace-}
 
@@ -210,6 +212,7 @@ data CBuildFlags = CBuildFlags {
   , _libraryPath :: [FilePath]
   , _libraries :: [String]
   , _linkerFlags :: [String]
+  , _staticLibraries :: [FilePath]
   , _archiverFlags :: [String]
   } deriving (Show)
 
@@ -245,13 +248,15 @@ defaultArchiveFileName = ("lib"++) . (<.> "a")
 
 defaultLinker :: Linker
 defaultLinker target toolChain buildFlags inputs output = do
-    need inputs
+    let staticLibs = buildFlags ^. staticLibraries
+    need $ inputs ++ staticLibs
     system' (tool linkerCmd toolChain)
-          $  buildFlags ^. linkerFlags
+          $  inputs
+          ++ buildFlags ^. linkerFlags
+          ++ staticLibs
           ++ concatMapFlag "-L" (buildFlags ^. libraryPath)
           ++ concatMapFlag "-l" (buildFlags ^. libraries)
           ++ ["-o", output]
-          ++ inputs
 
 defaultLinkResultFileName :: LinkResult -> String -> FilePath
 defaultLinkResultFileName Executable = id
@@ -295,6 +300,7 @@ defaultCBuildFlags =
       , _libraryPath = []
       , _libraries = []
       , _linkerFlags = []
+      , _staticLibraries = []
       , _archiverFlags = []
       }
 
@@ -356,15 +362,15 @@ staticObject target toolChain buildFlags input deps output = do
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain . append compilerFlags [(Nothing, ["-fPIC"])]
+sharedObject target toolChain = staticObject target toolChain -- Disable for now: . append compilerFlags [(Nothing, ["-fPIC"])]
 
-mkBuildDir :: Env -> CTarget -> FilePath -> FilePath
-mkBuildDir env target fileName = buildDir env target </> map tr (fileName) ++ "_obj"
+mkObjectsDir :: Env -> CTarget -> FilePath -> FilePath
+mkObjectsDir env target path = buildDir env target </> map tr (makeRelative "/" path) ++ "_obj"
     where tr '.' = '_'
           tr x   = x
 
 mkBuildPath :: Env -> CTarget -> FilePath -> FilePath
-mkBuildPath env target fileName = buildDir env target </> fileName
+mkBuildPath env target path = buildDir env target </> makeRelative "/" path
 
 buildProduct :: ObjectRule -> Linker -> FilePath
              -> Env -> CTarget -> CToolChain -> CBuildFlags
@@ -372,9 +378,9 @@ buildProduct :: ObjectRule -> Linker -> FilePath
              -> Rules FilePath
 buildProduct object link fileName env target toolChain buildFlags sources = do
     let resultPath = mkBuildPath env target fileName
-        buildDir   = mkBuildDir env target fileName
+        objectsDir = mkObjectsDir env target fileName
     objects <- forM (buildFlags `applySourceTree` sources) $ \(buildFlags', (src, deps)) -> do
-        let obj = combine buildDir {- . makeRelative srcDir -} $ src <.> "o"
+        let obj = objectsDir </> makeRelative "/" (src <.> "o")
         object target toolChain buildFlags' src deps obj
         return obj
     resultPath ?=> link target toolChain buildFlags objects

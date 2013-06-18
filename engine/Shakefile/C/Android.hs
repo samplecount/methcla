@@ -43,14 +43,17 @@ androidArchString (Arm Armv7) = "armv7-a"
 androidArchString arch = archString arch
 
 archCompilerFlags :: Arch -> [(Maybe CLanguage, [String])]
-archCompilerFlags (Arm Armv5) = [(Nothing, ["-mfloat-abi=soft"])]
-archCompilerFlags (Arm Armv6) = [(Nothing, ["-mfloat-abi=soft"])]
+archCompilerFlags (Arm Armv5) = [(Nothing, ["-msoft-float"])]
+archCompilerFlags (Arm Armv6) = [(Nothing, ["-msoft-float"])]
 archCompilerFlags (Arm Armv7) = [(Nothing, ["-mfloat-abi=softfp", "-mfpu=neon"])]
 archCompilerFlags _ = []
 
 archLinkerFlags :: Arch -> [String]
-archLinkerFlags (Arm Armv7) = ["-Wl,--fix-cortex-a8"]
-archLinkerFlags _ = []
+archLinkerFlags arch =
+    case arch of
+        Arm Armv7 -> common ++ ["-Wl,--fix-cortex-a8"]
+        _         -> common
+    where common = ["-Wl,--no-undefined", "-Wl,-z,noexecstack", "-Wl,-z,relro", "-Wl,-z,now"]
 
 buildFlags :: CTarget -> CBuildFlags
 buildFlags target =
