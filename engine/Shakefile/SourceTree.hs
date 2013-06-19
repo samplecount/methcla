@@ -20,6 +20,7 @@ module Shakefile.SourceTree (
   , sourceFlags
   , sourceFiles
   , sourceFiles_
+  , list
   , merge
   , applySourceTree
 ) where
@@ -46,6 +47,9 @@ sourceFiles fs = sourceTree id fs []
 
 sourceFiles_ :: [FilePath] -> SourceTree a
 sourceFiles_ = sourceFiles . map (flip (,) [])
+
+list :: [SourceTree a] -> SourceTree a
+list = sourceTree id []
 
 merge :: SourceTree a -> SourceTree a -> SourceTree a
 merge (Node (f, xs) s) (Node (g, ys) t) = Node (g . f, xs ++ ys) (s ++ t)

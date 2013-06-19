@@ -27,6 +27,7 @@ import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           Shakefile.Lens
 import           Shakefile.SourceTree
+import qualified Shakefile.SourceTree as SourceTree
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
 import           System.Environment (lookupEnv)
@@ -46,11 +47,27 @@ externalLibrary = combine externalLibraries
 boostDir :: FilePath
 boostDir = externalLibrary "boost"
 
-boostBuildFlags :: CBuildFlags -> CBuildFlags
-boostBuildFlags = append systemIncludes [ boostDir ]
+-- boostBuildFlags :: CBuildFlags -> CBuildFlags
+-- boostBuildFlags = append systemIncludes [ boostDir ]
 
 tlsfDir :: FilePath
 tlsfDir = externalLibrary "tlsf"
+
+-- | Build flags common to all targets
+commonBuildFlags :: CBuildFlags -> CBuildFlags
+commonBuildFlags = append compilerFlags [
+    (Just C, ["-std=c11"])
+  , (Just Cpp, ["-std=c++11"])
+  , (Nothing, ["-Wall", "-Wextra"])
+  , (Just Cpp, ["-fvisibility-inlines-hidden"])
+  , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
+  ]
+
+apiIncludes :: CBuildFlags -> CBuildFlags
+apiIncludes = append systemIncludes [
+    "include"
+  , "external_libraries/oscpp/include"
+  , "plugins" ]
 
 engineBuildFlags :: CBuildFlags -> CBuildFlags
 engineBuildFlags =
@@ -68,16 +85,6 @@ engineBuildFlags =
       ++ [ externalLibrary "oscpp/include" ]
          -- TLSF
       ++ [ tlsfDir ] )
-
--- | Build flags common to all targets
-commonBuildFlags :: CBuildFlags -> CBuildFlags
-commonBuildFlags = append compilerFlags [
-    (Just C, ["-std=c11"])
-  , (Just Cpp, ["-std=c++11"])
-  , (Nothing, ["-Wall", "-Wextra"])
-  , (Just Cpp, ["-fvisibility-inlines-hidden"])
-  , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
-  ]
 
 pluginBuildFlags :: CBuildFlags -> CBuildFlags
 pluginBuildFlags =
@@ -98,20 +105,20 @@ pluginSources = [
 
 methclaSources :: SourceTree CBuildFlags -> SourceTree CBuildFlags
 methclaSources platformSources =
-    sourceFlags commonBuildFlags [
-        sourceFlags boostBuildFlags [ sourceFiles_ $
-          under (boostDir </> "libs") [
-            --   "date_time/src/gregorian/date_generators.cpp"
-            -- , "date_time/src/gregorian/greg_month.cpp"
-            -- , "date_time/src/gregorian/greg_weekday.cpp"
-            -- , "date_time/src/gregorian/gregorian_types.cpp"
-            -- , "date_time/src/posix_time/posix_time_types.cpp"
-            -- , "exception/src/clone_current_exception_non_intrusive.cpp"
-            -- "system/src/error_code.cpp"
-            ]
-        ]
+    SourceTree.list [
+        -- sourceFlags boostBuildFlags [ sourceFiles_ $
+        --   under (boostDir </> "libs") [
+        --     --   "date_time/src/gregorian/date_generators.cpp"
+        --     -- , "date_time/src/gregorian/greg_month.cpp"
+        --     -- , "date_time/src/gregorian/greg_weekday.cpp"
+        --     -- , "date_time/src/gregorian/gregorian_types.cpp"
+        --     -- , "date_time/src/posix_time/posix_time_types.cpp"
+        --     -- , "exception/src/clone_current_exception_non_intrusive.cpp"
+        --     -- "system/src/error_code.cpp"
+        --     ]
+        -- ]
         -- TLSF
-      , sourceFiles_ [ tlsfDir </> "tlsf.c" ]
+        sourceFiles_ [ tlsfDir </> "tlsf.c" ]
         -- engine
       , sourceFlags engineBuildFlags [
           -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
@@ -259,6 +266,7 @@ mkRules options = do
                         toolChain = applyEnv $ OSX.cToolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
+                                   >>> commonBuildFlags
                                    >>> append userIncludes ["platform/ios"]
                                    >>> stdlib "libc++"
                                    $   OSX.cBuildFlags_IOS cTarget developer
@@ -273,6 +281,7 @@ mkRules options = do
                         toolChain = applyEnv $ OSX.cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
+                                   >>> commonBuildFlags
                                    >>> append userIncludes ["platform/ios"]
                                    >>> stdlib "libc++"
                                    $   OSX.cBuildFlags_IOS_Simulator cTarget developer
@@ -296,6 +305,7 @@ mkRules options = do
                     let abi = Android.abiString (target ^. targetArch)
                         toolChain = applyEnv $ Android.toolChain ndk Android.GCC_4_7 target
                         buildFlags =   applyConfiguration config configurations
+                                   >>> commonBuildFlags
                                    >>> append userIncludes ["platform/android"]
                                    >>> Android.gnustl Static ndk target
                                    >>> rtti True
@@ -308,8 +318,7 @@ mkRules options = do
                                           "platform/android/opensl_io.c",
                                           "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
                     let testBuildFlags =
-                                       commonBuildFlags
-                                   >>> engineBuildFlags
+                                       engineBuildFlags
                                    >>> append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
                                    >>> append staticLibraries [libmethcla]
@@ -330,7 +339,41 @@ mkRules options = do
                     return (installPath, testInstallPath)
                 phony "android" $ need $ map fst libs
                 phony "android-tests" $ need $ map snd libs
-      , do -- macosx
+      , do -- macosx-icecast
+            developer <- liftIO OSX.getDeveloperPath
+            sdkVersion <- liftIO OSX.getSystemVersion
+            libshout <- liftIO $ pkgConfig "shout"
+            let platform = OSX.macOSX sdkVersion
+                cTarget = OSX.target (X86 X86_64) platform
+                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
+                env = mkEnv cTarget
+                liblame = append systemIncludes ["/usr/local/include"]
+                        . append libraryPath ["/usr/local/lib"]
+                        . append libraries ["mp3lame"]
+                buildFlags =   applyConfiguration config configurations
+                           >>> commonBuildFlags
+                           >>> append userIncludes ["platform/icecast"]
+                           >>> libshout
+                           >>> liblame
+                           >>> stdlib "libc++"
+                           >>> append libraries ["c++"]
+                           $   OSX.cBuildFlags_MacOSX cTarget developer
+            return $ do
+                lib <- staticLibrary env cTarget toolChain buildFlags
+                            "methcla-icecast"
+                          $ methclaSources
+                          $ sourceFiles_ ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
+                example <- executable env cTarget toolChain
+                            (  apiIncludes
+                             . append userIncludes ["examples/thADDeus/src"]
+                             . append staticLibraries [lib]
+                             $ buildFlags)
+                            "methcla-icecast-example"
+                            (sourceFiles_ [ "examples/icecast/main.cpp"
+                                          , "examples/thADDeus/src/synth.cpp" ])
+                phony "macosx-icecast" $ need [lib]
+                phony "macosx-icecast-example" $ need [example]
+      , do -- macosx-jack
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
             jackBuildFlags <- liftIO $ pkgConfig "jack"
@@ -339,6 +382,7 @@ mkRules options = do
                 toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags =   applyConfiguration config configurations
+                           >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
                            >>> stdlib "libc++"
@@ -346,7 +390,7 @@ mkRules options = do
                            $   OSX.cBuildFlags_MacOSX cTarget developer
             return $ do
                 result <- sharedLibrary env cTarget toolChain buildFlags
-                            methcla (methclaSources $
+                            "methcla-jack" (methclaSources $
                                     sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
                 phony "macosx-jack" $ need [result]
       , do -- tests (macosx)
@@ -357,6 +401,7 @@ mkRules options = do
                 toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags =   applyConfiguration config configurations
+                           >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> stdlib "libc++"
