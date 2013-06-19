@@ -589,6 +589,8 @@ namespace Methcla
                 const char* msg = methcla_error_message(err);
                 if (err == kMethcla_ArgumentError) {
                     throw std::invalid_argument(msg);
+                } else if (err == kMethcla_LogicError) {
+                    throw std::logic_error(msg);
                 } else if (err == kMethcla_MemoryError) {
                     throw std::bad_alloc();
                 } else {
@@ -627,7 +629,7 @@ namespace Methcla
 
         void send(const void* packet, size_t size)
         {
-            methcla_engine_send(m_engine, packet, size);
+            check(methcla_engine_send(m_engine, packet, size));
         }
 
         void send(const OSCPP::Client::Packet& packet)
