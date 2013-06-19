@@ -85,6 +85,22 @@ struct Methcla_Engine
     Methcla::Audio::Engine* m_engine;
 };
 
+#define METHCLA_ENGINE_TRY \
+    try
+
+#define METHCLA_ENGINE_CATCH \
+    catch (Methcla::Error& e) { \
+        return e.errorCode(); \
+    } catch (std::bad_alloc) { \
+        return kMethcla_MemoryError; \
+    } catch (std::invalid_argument) { \
+        return kMethcla_ArgumentError; \
+    } catch (std::logic_error) { \
+        return kMethcla_LogicError; \
+    } catch (...) { \
+        return kMethcla_UnspecifiedError; \
+    }
+
 METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
 {
     // cout << "Methcla_Engine_new" << endl;
@@ -94,15 +110,9 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, v
         return kMethcla_ArgumentError;
     if (engine == nullptr)
         return kMethcla_ArgumentError;
-    try {
+    METHCLA_ENGINE_TRY {
         *engine = new Methcla_Engine(handler, handler_data, options);
-    } catch (Methcla::Error& e) {
-        return e.errorCode();
-    } catch (std::bad_alloc) {
-        return kMethcla_MemoryError;
-    } catch (...) {
-        return kMethcla_UnspecifiedError;
-    }
+    } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
 
@@ -119,14 +129,6 @@ METHCLA_EXPORT const char* methcla_error_message(Methcla_Error /* error */)
 {
     return "methcla_error_message not implemented yet.";
 }
-
-#define METHCLA_ENGINE_TRY \
-    try
-
-#define METHCLA_ENGINE_CATCH \
-    catch (std::exception& e) { \
-        return kMethcla_UnspecifiedError; \
-    }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
 {
