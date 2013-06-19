@@ -22,15 +22,6 @@ Group* Group::construct(Environment& env, NodeId nodeId, Group* target, Node::Ad
     return new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction);
 }
 
-void Group::free()
-{
-    if (isRootNode()) {
-        throw std::runtime_error("Cannot free root node");
-    } else {
-        Node::free();
-    }
-}
-
 void Group::doProcess(size_t numFrames)
 {
     for (Node& node : m_children) { node.process(numFrames); }

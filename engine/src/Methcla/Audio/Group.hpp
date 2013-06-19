@@ -26,7 +26,6 @@ protected:
         : Node(env, nodeId, target, addAction)
     { }
 
-    virtual void free() override;
     virtual void doProcess(size_t numFrames) override;
 
 public:
