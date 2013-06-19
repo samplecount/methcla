@@ -79,18 +79,6 @@ commonBuildFlags = append compilerFlags [
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
   ]
 
--- | Build flags for static library
-staticBuildFlags :: CBuildFlags -> CBuildFlags
-staticBuildFlags = id
-
--- | Build flags for shared library
-sharedBuildFlags :: CBuildFlags -> CBuildFlags
-sharedBuildFlags = append libraries ["c++", "m"]
-
--- | Build flags for building with clang.
-clangBuildFlags :: String -> CBuildFlags -> CBuildFlags
-clangBuildFlags libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
-
 pluginBuildFlags :: CBuildFlags -> CBuildFlags
 pluginBuildFlags =
     append userIncludes [ "plugins" ]
@@ -223,6 +211,10 @@ optionDescrs = [ Option "c" ["config"]
 enable :: Bool -> String -> String -> String
 enable on flag name = flag ++ (if on then "" else "no-") ++ name
 
+-- | Build with specific C++ standard library (clang).
+stdlib :: String -> CBuildFlags -> CBuildFlags
+stdlib libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
+
 rtti :: Bool -> CBuildFlags -> CBuildFlags
 rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
 
@@ -266,11 +258,10 @@ mkRules options = do
                         cTarget = OSX.target (Arm Armv7) platform
                         toolChain = applyEnv $ OSX.cToolChain_IOS developer
                         env = mkEnv cTarget
-                        buildFlags = applyConfiguration config configurations
-                                   . append userIncludes ["platform/ios"]
-                                   . clangBuildFlags "libc++"
-                                   . staticBuildFlags
-                                   $ OSX.cBuildFlags_IOS cTarget developer
+                        buildFlags =   applyConfiguration config configurations
+                                   >>> append userIncludes ["platform/ios"]
+                                   >>> stdlib "libc++"
+                                   $   OSX.cBuildFlags_IOS cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
                                         sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
@@ -281,11 +272,10 @@ mkRules options = do
                         cTarget = OSX.target (X86 I386) platform
                         toolChain = applyEnv $ OSX.cToolChain_IOS_Simulator developer
                         env = mkEnv cTarget
-                        buildFlags = applyConfiguration config configurations
-                                   . append userIncludes ["platform/ios"]
-                                   . clangBuildFlags "libc++"
-                                   . staticBuildFlags
-                                   $ OSX.cBuildFlags_IOS_Simulator cTarget developer
+                        buildFlags =   applyConfiguration config configurations
+                                   >>> append userIncludes ["platform/ios"]
+                                   >>> stdlib "libc++"
+                                   $   OSX.cBuildFlags_IOS_Simulator cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
                                         sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
@@ -307,7 +297,6 @@ mkRules options = do
                         toolChain = applyEnv $ Android.toolChain ndk Android.GCC_4_7 target
                         buildFlags =   applyConfiguration config configurations
                                    >>> append userIncludes ["platform/android"]
-                                   >>> staticBuildFlags
                                    >>> Android.gnustl Static ndk target
                                    >>> rtti True
                                    >>> exceptions True
@@ -349,16 +338,17 @@ mkRules options = do
                 cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
-                buildFlags = applyConfiguration config configurations
-                           . append userIncludes ["platform/jack"]
-                           . jackBuildFlags
-                           . clangBuildFlags "libc++"
-                           . sharedBuildFlags
-                           $ OSX.cBuildFlags_MacOSX cTarget developer
-            return $ sharedLibrary env cTarget toolChain buildFlags
-                        methcla (methclaSources $
+                buildFlags =   applyConfiguration config configurations
+                           >>> append userIncludes ["platform/jack"]
+                           >>> jackBuildFlags
+                           >>> stdlib "libc++"
+                           >>> append libraries ["c++", "m"]
+                           $   OSX.cBuildFlags_MacOSX cTarget developer
+            return $ do
+                result <- sharedLibrary env cTarget toolChain buildFlags
+                            methcla (methclaSources $
                                     sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
-                        >>= platformAlias platform
+                phony "macosx-jack" $ need [result]
       , do -- tests (macosx)
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
@@ -366,12 +356,12 @@ mkRules options = do
                 cTarget = OSX.target (X86 I386) platform
                 toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
                 env = mkEnv cTarget
-                buildFlags = applyConfiguration config configurations
-                           . append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
-                           . append systemIncludes [externalLibrary "catch/single_include"]
-                           . clangBuildFlags "libc++"
-                           . sharedBuildFlags
-                           $ OSX.cBuildFlags_MacOSX cTarget developer
+                buildFlags =   applyConfiguration config configurations
+                           >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
+                           >>> append systemIncludes [externalLibrary "catch/single_include"]
+                           >>> stdlib "libc++"
+                           >>> append libraries ["c++", "m"]
+                           $   OSX.cBuildFlags_MacOSX cTarget developer
             return $ do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"
