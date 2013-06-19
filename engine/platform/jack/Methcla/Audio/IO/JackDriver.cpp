@@ -26,10 +26,7 @@ using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 using namespace std;
 
-struct tag_jack_status_t { };
-typedef boost::error_info<tag_jack_status_t,jack_status_t> OSStatusInfo;
-
-JackDriver::JackDriver() throw (IO::Exception)
+JackDriver::JackDriver()
     : m_sampleRate(0)
     , m_bufferSize(0)
 {
