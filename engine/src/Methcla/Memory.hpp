@@ -25,10 +25,9 @@ class Alignment
 {
 public:
     Alignment(size_t alignment)
-        : m_alignment(alignment)
+        : m_alignment(std::max(alignment, sizeof(void*)))
     {
         BOOST_ASSERT_MSG( (m_alignment & (m_alignment - 1)) == 0, "Alignment must be a power of two" );
-        BOOST_ASSERT_MSG( m_alignment >= sizeof(nullptr), "Alignment must be >= sizeof(nullptr)" );
     }
     Alignment(const Alignment&) = default;
 
