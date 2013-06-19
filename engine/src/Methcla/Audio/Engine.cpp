@@ -52,10 +52,11 @@ public:
 
     EnvironmentImpl(size_t realtimeMemorySize)
         : m_rtMem(realtimeMemorySize)
+        , m_requests(kQueueSize)
         , m_worker(kQueueSize, 2)
     { }
 
-    typedef Utility::MessageQueue<Environment::Request,kQueueSize> MessageQueue;
+    typedef Utility::MessageQueue<Environment::Request> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
 
     Memory::RTMemoryManager m_rtMem;

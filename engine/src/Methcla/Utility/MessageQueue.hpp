@@ -34,9 +34,16 @@ namespace Methcla { namespace Utility {
 //* MWSR queue for sending commands to the engine.
 // Request payload lifetime: from request until response callback.
 // Caller is responsible for freeing request payload after the response callback has been called.
-template <typename T, size_t queueSize> class MessageQueue : boost::noncopyable
+template <typename T> class MessageQueue
 {
 public:
+    MessageQueue(size_t queueSize)
+        : m_queue(queueSize)
+    { }
+
+    MessageQueue(const MessageQueue<T>& other) = delete;
+    MessageQueue<T>& operator=(const MessageQueue<T>& other) = delete;
+
     inline void send(const T& msg)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -50,7 +57,7 @@ public:
     }
 
 private:
-    typedef boost::lockfree::spsc_queue<T,boost::lockfree::capacity<queueSize>> Queue;
+    typedef boost::lockfree::spsc_queue<T> Queue;
     Queue      m_queue;
     std::mutex m_mutex;
 };
