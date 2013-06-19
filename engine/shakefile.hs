@@ -224,14 +224,17 @@ optionDescrs = [ Option "c" ["config"]
 enable :: Bool -> String -> String -> String
 enable on flag name = flag ++ (if on then "" else "no-") ++ name
 
-pic :: CBuildFlags -> CBuildFlags
-pic = append compilerFlags [(Nothing, ["-fpic"])]
-
 rtti :: Bool -> CBuildFlags -> CBuildFlags
 rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
 
 exceptions :: Bool -> CBuildFlags -> CBuildFlags
 exceptions on = append compilerFlags [(Just Cpp, [enable on "-f" "exceptions"])]
+
+execStack :: Bool -> CBuildFlags -> CBuildFlags
+execStack on =
+    append compilerFlags [(Nothing, ["-Wa,--" ++ no ++ "execstack"])]
+  . append linkerFlags ["-Wl,-z," ++ no ++ "execstack"]
+  where no = if on then "" else "no"
 
 withTarget :: Monad m => (Arch -> CTarget) -> [Arch] -> (CTarget -> m ()) -> m ()
 withTarget mkTarget archs f = mapM_ (f . mkTarget) archs
@@ -241,9 +244,6 @@ mapTarget mkTarget archs f = mapM (f . mkTarget) archs
 
 androidTargetPlatform :: Platform
 androidTargetPlatform = Android.platform 9
-
-androidToolChainPath :: FilePath
-androidToolChainPath = "tools/android-toolchain-arm-linux-androideabi-4.7-9"
 
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
@@ -303,39 +303,33 @@ mkRules options = do
       , do -- android
             Just ndk <- lookupEnv "ANDROID_NDK"
             return $ do
-                libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5 {-, Arm Armv7-}] $ \target -> do
+                libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
                     let abi = Android.abiString (target ^. targetArch)
-                        toolChain = applyEnv $ Android.standaloneToolChain androidToolChainPath target
+                        toolChain = applyEnv $ Android.toolChain ndk Android.GCC_4_7 target
                         buildFlags =   applyConfiguration config configurations
                                    >>> append userIncludes ["platform/android"]
                                    >>> staticBuildFlags
-                                   >>> pic
+                                   >>> Android.gnustl Static ndk target
                                    >>> rtti True
                                    >>> exceptions True
-                                   $   Android.buildFlags target
+                                   >>> execStack False
+                                   $   Android.buildFlags ndk target
                     libmethcla <- staticLibrary (mkEnv target) target toolChain buildFlags
                             methcla (methclaSources $
                                         sourceFiles_ [
                                           "platform/android/opensl_io.c",
                                           "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
-                    let android_native_app_glue =
-                            sourceFlags (append systemIncludes [ndk </> "sources/android/native_app_glue"])
-                                [ sourceFiles_ [ndk </> "sources/android/native_app_glue/android_native_app_glue.c"] ]
-                        gnustl_static =
-                            append staticLibraries [
-                                ndk </> "sources/cxx-stl/gnu-libstdc++/4.7/libs" </> abi </> "libgnustl_static.a"]
-                        testBuildFlags =
+                    let testBuildFlags =
                                        commonBuildFlags
                                    >>> engineBuildFlags
                                    >>> append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
                                    >>> append staticLibraries [libmethcla]
-                                   >>> gnustl_static
                                    >>> append libraries ["android", "log", "OpenSLES"]
                                    $   buildFlags
                     libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain testBuildFlags
                                   "methcla-tests"
-                                  (merge android_native_app_glue
+                                  (merge (Android.native_app_glue ndk)
                                          (sourceFiles_ [ "tests/methcla_tests.cpp"
                                                        , "tests/android/main.cpp" ]))
 

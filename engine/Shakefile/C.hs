@@ -38,6 +38,7 @@ module Shakefile.C (
   , targetPlatform
   , targetString
   , CLanguage(..)
+  , Linkage(..)
   , LinkResult(..)
   , CBuildFlags
   , defaultCBuildFlags
@@ -185,6 +186,8 @@ buildDir env _ = env ^. buildPrefix
 
 data CLanguage = C | Cpp | ObjC | ObjCpp
                  deriving (Enum, Eq, Show)
+
+data Linkage = Static | Shared deriving (Enum, Eq, Show)
 
 data LinkResult = Executable
                 | SharedLibrary
