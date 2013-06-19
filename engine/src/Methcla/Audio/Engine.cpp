@@ -219,7 +219,7 @@ Memory::RTMemoryManager& Environment::rtMem()
 
 void Environment::send(const void* packet, size_t size)
 {
-    char* myPacket = Memory::allocAlignedOf<char>(OSCPP::kAlignment, size);
+    char* myPacket = Memory::allocOf<char>(size);
     memcpy(myPacket, packet, size);
     Request req;
     req.packet = myPacket;
