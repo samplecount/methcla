@@ -16,7 +16,6 @@
 
 import           Control.Arrow ((>>>))
 import           Control.Lens hiding (Action, (<.>), under)
-import           Control.Monad (forM_)
 import           Data.Char (toLower)
 import           Data.Version (Version(..))
 import           Development.Shake as Shake

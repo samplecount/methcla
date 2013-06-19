@@ -10,17 +10,12 @@ module Shakefile.C.Android (
   , native_app_glue
 ) where
 
-import           Control.Applicative ((<$>))
 import           Control.Lens hiding ((<.>))
-import           Development.Shake as Shake
 import           Development.Shake.FilePath
-import           Data.List (intercalate)
-import           Data.List.Split (splitOn)
 import           Data.Version (Version(..))
 import           Shakefile.C
 import           Shakefile.SourceTree (SourceTree, sourceFlags, sourceFiles_)
-import           Shakefile.Lens (append, prepend)
-import           System.Process (readProcess)
+import           Shakefile.Lens (append)
 import qualified System.Info as System
 
 platform :: Int -> Platform
