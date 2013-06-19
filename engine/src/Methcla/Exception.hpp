@@ -31,6 +31,9 @@ public:
     Error(Methcla_Error code)
         : m_code(code)
     {}
+    Error(const Error& other)
+        : m_code(other.m_code)
+    { }
 
     Methcla_Error errorCode() const noexcept
     {
@@ -41,6 +44,9 @@ public:
     {
         return methcla_error_message(m_code);
     }
+
+    static Error unspecified() { return Error(kMethcla_UnspecifiedError); }
+    static Error memory() { return Error(kMethcla_MemoryError); }
 
 private:
     Methcla_Error m_code;
