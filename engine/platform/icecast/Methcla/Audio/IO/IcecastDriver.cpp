@@ -34,16 +34,16 @@ static const size_t kMinLameBufferSize = 7200;
 class detail::IcecastDriverImpl
 {
 public:
-    typedef std::unique_ptr<shout_t,std::function<void(shout_t*)>> ShoutPtr;
     typedef std::unique_ptr<lame_global_flags,std::function<int(lame_global_flags*)>> LamePtr;
+    typedef std::unique_ptr<shout_t,std::function<void(shout_t*)>> ShoutPtr;
 
     IcecastDriverImpl(const IcecastDriver::Options& options, IcecastDriver* driver)
         : m_driver(driver)
         , m_sampleRate(options.sampleRate)
         , m_bufferSize(options.bufferSize)
         , m_outputBuffers(Driver::makeBuffers(kNumOutputs, m_bufferSize))
-        , m_shout(ShoutPtr(shout_new(), shout_free))
         , m_lame(LamePtr(lame_init(), lame_close))
+        , m_shout(ShoutPtr(shout_new(), shout_free))
     {
         initEncoder(m_lame.get(), options);
         initConnection(m_shout.get(), options);
@@ -130,18 +130,19 @@ private:
     }
 
 private:
-    void initConnection(shout_t* self, const IcecastDriver::Options& options)
+    void check(lame_global_flags*, int code)
     {
-        check(self, shout_set_host(self, options.host.c_str()));
-        check(self, shout_set_port(self, options.port));
-        check(self, shout_set_user(self, options.user.c_str()));
-        check(self, shout_set_password(self, options.password.c_str()));
-        check(self, shout_set_protocol(self, SHOUT_PROTOCOL_HTTP));
-        check(self, shout_set_format(self, SHOUT_FORMAT_MP3));
-        if (!options.mount.empty())
-            check(self, shout_set_mount(self, options.mount.c_str()));
-        if (!options.name.empty()) {
-            check(self, shout_set_name(self, options.name.c_str()));
+        if (code < 0) {
+            switch (code) {
+                case LAME_NOMEM:
+                    throw Error::memory();
+                case LAME_GENERICERROR:
+                case LAME_BADBITRATE:
+                case LAME_BADSAMPFREQ:
+                case LAME_INTERNALERROR:
+                default:
+                    throw Error::unspecified();
+            }
         }
     }
 
@@ -172,19 +173,18 @@ private:
         }
     }
 
-    void check(lame_global_flags*, int code)
+    void initConnection(shout_t* self, const IcecastDriver::Options& options)
     {
-        if (code < 0) {
-            switch (code) {
-                case LAME_NOMEM:
-                    throw Error::memory();
-                case LAME_GENERICERROR:
-                case LAME_BADBITRATE:
-                case LAME_BADSAMPFREQ:
-                case LAME_INTERNALERROR:
-                default:
-                    throw Error::unspecified();
-            }
+        check(self, shout_set_host(self, options.host.c_str()));
+        check(self, shout_set_port(self, options.port));
+        check(self, shout_set_user(self, options.user.c_str()));
+        check(self, shout_set_password(self, options.password.c_str()));
+        check(self, shout_set_protocol(self, SHOUT_PROTOCOL_HTTP));
+        check(self, shout_set_format(self, SHOUT_FORMAT_MP3));
+        if (!options.mount.empty())
+            check(self, shout_set_mount(self, options.mount.c_str()));
+        if (!options.name.empty()) {
+            check(self, shout_set_name(self, options.name.c_str()));
         }
     }
 
@@ -192,8 +192,8 @@ private:
     double              m_sampleRate;
     size_t              m_bufferSize;
     sample_t**          m_outputBuffers;
-    ShoutPtr            m_shout;
     LamePtr             m_lame;
+    ShoutPtr            m_shout;
     std::thread         m_thread;
     std::atomic<bool>   m_continue;
 };
