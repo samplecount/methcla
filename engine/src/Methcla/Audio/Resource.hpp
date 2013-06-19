@@ -47,12 +47,12 @@ namespace Methcla { namespace Audio
         Reference(const Reference&) = delete;
         Reference& operator=(const Reference&) = delete;
 
-        inline void retain() noexcept
+        inline void retain()
         {
             m_refs++;
         }
 
-        inline void release() noexcept
+        inline void release()
         {
             m_refs--;
             assert(m_refs >= 0);
