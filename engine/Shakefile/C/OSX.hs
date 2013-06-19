@@ -12,7 +12,7 @@ import           Shakefile.Lens (append, prepend)
 import           System.Process (readProcess)
 
 osxArchiver :: Archiver
-osxArchiver _ toolChain buildFlags inputs output = do
+osxArchiver toolChain buildFlags inputs output = do
     need inputs
     system' (tool archiverCmd toolChain)
           $  buildFlags ^. archiverFlags
@@ -24,12 +24,11 @@ archFlags :: CTarget -> [String]
 archFlags target = ["-arch", (archString $ target ^. targetArch)]
 
 osxLinker :: LinkResult -> Linker
-osxLinker link target toolChain =
+osxLinker link toolChain =
     case link of
-        Executable     -> defaultLinker target toolChain . arch
-        SharedLibrary  -> defaultLinker target toolChain . arch . prepend linkerFlags ["-dynamiclib"]
-        DynamicLibrary -> defaultLinker target toolChain . arch . prepend linkerFlags ["-bundle"]
-    where arch = prepend linkerFlags (archFlags target)
+        Executable     -> defaultLinker toolChain
+        SharedLibrary  -> defaultLinker toolChain . prepend linkerFlags ["-dynamiclib"]
+        DynamicLibrary -> defaultLinker toolChain . prepend linkerFlags ["-bundle"]
 
 newtype DeveloperPath = DeveloperPath { developerPath :: FilePath }
 

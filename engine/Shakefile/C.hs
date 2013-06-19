@@ -223,7 +223,7 @@ data CBuildFlags = CBuildFlags {
 
 makeLenses ''CBuildFlags
 
-type Linker = CTarget -> CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Shake.Action ()
+type Linker = CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Shake.Action ()
 type Archiver = Linker
 
 data CToolChain = CToolChain {
@@ -241,7 +241,7 @@ data CToolChain = CToolChain {
 makeLenses ''CToolChain
 
 defaultArchiver :: Archiver
-defaultArchiver target toolChain buildFlags inputs output = do
+defaultArchiver toolChain buildFlags inputs output = do
     need inputs
     system' (tool archiverCmd toolChain)
         $ buildFlags ^. archiverFlags
@@ -252,7 +252,7 @@ defaultArchiveFileName :: String -> FilePath
 defaultArchiveFileName = ("lib"++) . (<.> "a")
 
 defaultLinker :: Linker
-defaultLinker target toolChain buildFlags inputs output = do
+defaultLinker toolChain buildFlags inputs output = do
     let staticLibs = buildFlags ^. staticLibraries
     need $ inputs ++ staticLibs
     system' (tool linkerCmd toolChain)
@@ -277,10 +277,10 @@ defaultCToolChain =
       , _archiver = defaultArchiver
       , _archiveFileName = defaultArchiveFileName
       , _linkerCmd = "gcc"
-      , _linker = \link target toolChain ->
+      , _linker = \link toolChain ->
             case link of
-                Executable -> defaultLinker target toolChain
-                _          -> defaultLinker target toolChain . append linkerFlags ["-shared"]
+                Executable -> defaultLinker toolChain
+                _          -> defaultLinker toolChain . append linkerFlags ["-shared"]
       , _linkResultFileName = defaultLinkResultFileName
       }
 
@@ -334,8 +334,8 @@ sourceTransform f cmd input = do
     want [output]
     return output
 
-dependencyFile :: CTarget -> CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
-dependencyFile target toolChain buildFlags input output = do
+dependencyFile :: CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
+dependencyFile toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
         system' (tool compilerCmd toolChain)
@@ -349,12 +349,12 @@ dependencyFile target toolChain buildFlags input output = do
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
-type ObjectRule = CTarget -> CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
+type ObjectRule = CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
 
 staticObject :: ObjectRule
-staticObject target toolChain buildFlags input deps output = do
+staticObject toolChain buildFlags input deps output = do
     let depFile = output <.> "d"
-    dependencyFile target toolChain buildFlags input depFile
+    dependencyFile toolChain buildFlags input depFile
     output ?=> \_ -> do
         deps' <- parseDependencies <$> readFile' depFile
         need $ [input] ++ deps ++ deps'
@@ -367,7 +367,7 @@ staticObject target toolChain buildFlags input deps output = do
                 ++ ["-c", "-o", output, input]
 
 sharedObject :: ObjectRule
-sharedObject target toolChain = staticObject target toolChain -- Disable for now: . append compilerFlags [(Nothing, ["-fPIC"])]
+sharedObject toolChain = staticObject toolChain -- Disable for now: . append compilerFlags [(Nothing, ["-fPIC"])]
 
 mkObjectsDir :: Env -> CTarget -> FilePath -> FilePath
 mkObjectsDir env target path = buildDir env target </> map tr (makeRelative "/" path) ++ "_obj"
@@ -386,9 +386,9 @@ buildProduct object link fileName env target toolChain buildFlags sources = do
         objectsDir = mkObjectsDir env target fileName
     objects <- forM (buildFlags `applySourceTree` sources) $ \(buildFlags', (src, deps)) -> do
         let obj = objectsDir </> makeRelative "/" (src <.> "o")
-        object target toolChain buildFlags' src deps obj
+        object toolChain buildFlags' src deps obj
         return obj
-    resultPath ?=> link target toolChain buildFlags objects
+    resultPath ?=> link toolChain buildFlags objects
     return resultPath
 
 -- | Rule for building an executable.
