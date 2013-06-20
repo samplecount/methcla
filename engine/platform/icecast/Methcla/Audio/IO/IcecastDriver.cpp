@@ -116,7 +116,7 @@ private:
                     lameBuffer.get(),
                     static_cast<int>(lameBufferSize)
                 );
-            std::cout << n << '\n';
+            // std::cout << n << '\n';
             if (n < 0) check(m_lame.get(), n);
             BOOST_ASSERT_MSG( n > 0, "lame_encode_buffer_ieee_float returned 0" );            
 
