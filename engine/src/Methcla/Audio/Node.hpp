@@ -63,7 +63,6 @@ namespace Methcla { namespace Audio {
 
     protected:
         Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
-        virtual ~Node();
 
         //* Free a node.
         virtual void free() override;

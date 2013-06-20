@@ -37,13 +37,6 @@ Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
     }
 }
 
-Node::~Node()
-{
-#if !defined(NDEBUG)
-    std::cout << "~Node " << id() << "\n";
-#endif
-}
-
 void Node::process(size_t numFrames)
 {
     doProcess(numFrames);
