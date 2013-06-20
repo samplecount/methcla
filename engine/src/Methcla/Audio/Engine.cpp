@@ -86,6 +86,12 @@ static double methcla_api_world_samplerate(const Methcla_World* world)
     return static_cast<Environment*>(world->handle)->sampleRate();
 }
 
+static size_t methcla_api_world_block_size(const Methcla_World* world)
+{
+    assert(world && world->handle);
+    return static_cast<Environment*>(world->handle)->blockSize();
+}
+
 static void* methcla_api_world_alloc(const Methcla_World* world, size_t size)
 {
     assert(world && world->handle);
@@ -184,6 +190,7 @@ Environment::Environment(PacketHandler handler, const Options& options)
     m_world = {
         this,
         methcla_api_world_samplerate,
+        methcla_api_world_block_size,
         methcla_api_world_alloc,
         methcla_api_world_alloc_aligned,
         methcla_api_world_free,

@@ -57,6 +57,9 @@ struct Methcla_World
     //* Return engine sample rate.
     double (*samplerate)(const Methcla_World*);
 
+    //* Return maximum audio block size.
+    size_t (*block_size)(const Methcla_World* world);
+
     // Realtime memory allocation
     void* (*alloc)(const struct Methcla_World* world, size_t size);;
     void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
@@ -74,6 +77,12 @@ static inline double methcla_world_samplerate(const Methcla_World* world)
 {
     assert(world && world->samplerate);
     return world->samplerate(world);
+}
+
+static inline size_t methcla_world_block_size(const Methcla_World* world)
+{
+    assert(world && world->block_size);
+    return world->block_size(world);
 }
 
 static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
