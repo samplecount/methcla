@@ -15,8 +15,6 @@
 #include "synth.hpp"
 
 #include <methc.la/plugins/sine/sine.h>
-#include <methc.la/plugins/sampler/sampler.h>
-#include <methc.la/plugins/disksampler/disksampler.h>
 
 #include <cassert>
 
