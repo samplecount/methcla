@@ -53,13 +53,13 @@ enum StateVar
 
 struct State
 {
-   State(size_t inFrames)
+   State(size_t inFrames, size_t inBufferFrames)
        : state(kInitializing)
        , file(nullptr)
        , channels(0)
        , frames(inFrames)
        , transferFrames(0)
-       , bufferFrames(0)
+       , bufferFrames(inBufferFrames)
        , buffer(nullptr)
        , readPos(0)
        , writePos(0)
@@ -279,7 +279,11 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
     if (err == kMethcla_NoError) {
         self->state.channels = info.channels;
         self->state.frames = self->state.frames <= 0 ? info.frames : std::min<int64_t>(self->state.frames, info.frames);
-        const size_t transferFrames = bytesToFrames(self->state.channels, kDiskTransferSize);
+        // If kDiskTransferSize is smaller than audio block size, use audio block size.
+        const size_t transferFrames = std::max(
+            bytesToFrames(self->state.channels, kDiskTransferSize),
+            // bufferFrames is audio block size initially
+            self->state.bufferFrames);
         if (self->state.frames <= transferFrames) {
             // If the file's number of frames is less than transferFrames,
             // read it once and play back directly from memory.
@@ -293,7 +297,7 @@ static void command_init_buffer(const Methcla_Host* host, void* data)
                 Methcla_Error err = methcla_soundfile_read_float(
                     self->state.file, self->state.buffer, self->state.bufferFrames, &numFrames);
                 if (err == kMethcla_NoError && numFrames == self->state.bufferFrames) {
-                    // After having read the whole file, we can close it right away.
+                    // After having read the whole file close it right away.
                     methcla_soundfile_close(self->state.file);
                     self->state.file = nullptr;
                     self->state.state.store(kMemoryPlayback, std::memory_order_release);
@@ -345,7 +349,7 @@ construct( const Methcla_World* world
 
     self->loop = options->loop;
 
-    new (&self->state) State(options->frames);
+    new (&self->state) State(options->frames, methcla_world_block_size(world));
 
     // Need to retain a reference to the outer Synth, otherwise the self pointer
     // might dangle if the synth is freed while the async command is still being
