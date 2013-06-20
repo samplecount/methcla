@@ -18,14 +18,14 @@ module Shakefile.C.PkgConfig (
 
 import Control.Applicative ((<$>))
 import Data.List (isSuffixOf)
-import Shakefile.C (CBuildFlags, compilerFlags, linkerFlags)
+import Shakefile.C (BuildFlags, compilerFlags, linkerFlags)
 import Shakefile.Lens (append)
 import System.Process (readProcess)
 
 -- ====================================================================
 -- PkgConfig
 
-pkgConfig :: String -> IO (CBuildFlags -> CBuildFlags)
+pkgConfig :: String -> IO (BuildFlags -> BuildFlags)
 pkgConfig pkg = do
     cflags <- parseFlags <$> readProcess "pkg-config" ["--cflags", pkg] ""
     lflags <- parseFlags <$> readProcess "pkg-config" ["--libs", pkg] ""

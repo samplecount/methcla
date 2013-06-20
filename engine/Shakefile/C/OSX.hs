@@ -20,7 +20,7 @@ osxArchiver toolChain buildFlags inputs output = do
           ++ ["-o", output]
           ++ inputs
 
-archFlags :: CTarget -> [String]
+archFlags :: Target -> [String]
 archFlags target = ["-arch", (archString $ target ^. targetArch)]
 
 osxLinker :: LinkResult -> Linker
@@ -51,8 +51,8 @@ iPhoneOS = Platform "iPhoneOS"
 iPhoneSimulator :: Version -> Platform
 iPhoneSimulator = Platform "iPhoneSimulator"
 
-target :: Arch -> Platform -> CTarget
-target arch = mkCTarget arch "apple" "darwin10"
+target :: Arch -> Platform -> Target
+target arch = mkTarget arch "apple" "darwin10"
 
 platformSDKPath :: DeveloperPath -> Platform -> FilePath
 platformSDKPath developer platform =
@@ -73,7 +73,7 @@ osxLinkResultFileName Executable = id
 osxLinkResultFileName SharedLibrary = ("lib"++) . (<.> "dylib")
 osxLinkResultFileName DynamicLibrary =            (<.> "dylib")
 
-cToolChain_MacOSX :: DeveloperPath -> CToolChain
+cToolChain_MacOSX :: DeveloperPath -> ToolChain
 cToolChain_MacOSX developer =
     prefix .~ Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
   $ compilerCmd .~ "clang"
@@ -82,58 +82,58 @@ cToolChain_MacOSX developer =
   $ linkerCmd .~ "clang++"
   $ linker .~ osxLinker
   $ linkResultFileName .~ osxLinkResultFileName 
-  $ defaultCToolChain
+  $ defaultToolChain
 
-cToolChain_MacOSX_gcc :: DeveloperPath -> CToolChain
+cToolChain_MacOSX_gcc :: DeveloperPath -> ToolChain
 cToolChain_MacOSX_gcc developer =
     compilerCmd .~ "gcc"
   $ linkerCmd .~ "g++"
   $ cToolChain_MacOSX developer
 
-osxDefaultCBuildFlags :: CTarget -> DeveloperPath -> CBuildFlags
-osxDefaultCBuildFlags target developer =
+osxDefaultBuildFlags :: Target -> DeveloperPath -> BuildFlags
+osxDefaultBuildFlags target developer =
     append preprocessorFlags [ "-isysroot", sysRoot ]
   . append compilerFlags [(Nothing, archFlags target)]
   . append linkerFlags (archFlags target ++ [ "-isysroot", sysRoot ])
-  $ defaultCBuildFlags
+  $ defaultBuildFlags
   where sysRoot = platformSDKPath developer (target ^. targetPlatform)
 
-cBuildFlags_MacOSX :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_MacOSX :: Target -> DeveloperPath -> BuildFlags
 cBuildFlags_MacOSX target developer =
     append compilerFlags [(Nothing, ["-mmacosx-version-min=" ++ showVersion (platformVersion (target ^. targetPlatform))])]
-  $ osxDefaultCBuildFlags target developer
+  $ osxDefaultBuildFlags target developer
 
 iosMinVersion :: String
 iosMinVersion = "5.0" -- Required for C++11
 --iosMinVersion = "40200"
 
-cToolChain_IOS :: DeveloperPath -> CToolChain
+cToolChain_IOS :: DeveloperPath -> ToolChain
 cToolChain_IOS = cToolChain_MacOSX
 
-cToolChain_IOS_gcc :: DeveloperPath -> CToolChain
+cToolChain_IOS_gcc :: DeveloperPath -> ToolChain
 cToolChain_IOS_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneOS.platform/Developer/usr")
   $ compilerCmd .~ "llvm-gcc"
   $ linkerCmd .~ "llvm-g++"
   $ cToolChain_IOS developer
 
-cBuildFlags_IOS :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_IOS :: Target -> DeveloperPath -> BuildFlags
 cBuildFlags_IOS target developer =
     append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
-  $ osxDefaultCBuildFlags target developer
+  $ osxDefaultBuildFlags target developer
 
-cToolChain_IOS_Simulator :: DeveloperPath -> CToolChain
+cToolChain_IOS_Simulator :: DeveloperPath -> ToolChain
 cToolChain_IOS_Simulator = cToolChain_MacOSX
 
-cToolChain_IOS_Simulator_gcc :: DeveloperPath -> CToolChain
+cToolChain_IOS_Simulator_gcc :: DeveloperPath -> ToolChain
 cToolChain_IOS_Simulator_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneSimulator.platform/Developer/usr")
   $ cToolChain_IOS_gcc developer
 
-cBuildFlags_IOS_Simulator :: CTarget -> DeveloperPath -> CBuildFlags
+cBuildFlags_IOS_Simulator :: Target -> DeveloperPath -> BuildFlags
 cBuildFlags_IOS_Simulator target developer =
     append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
-  $ osxDefaultCBuildFlags target developer
+  $ osxDefaultBuildFlags target developer
 
 universalBinary :: [FilePath] -> FilePath -> Rules FilePath
 universalBinary inputs output = do

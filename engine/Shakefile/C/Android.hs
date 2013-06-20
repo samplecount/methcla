@@ -35,7 +35,7 @@ data ToolChainVariant =
 -- toolChainVariantString GCC_4_7 = "4.7"
 -- toolChainVariantString LLVM_3_1 = "llvm"
 
-toolChainPrefix :: CTarget -> String
+toolChainPrefix :: Target -> String
 toolChainPrefix target =
     case target ^. targetArch of
         X86 _ -> "x86-"
@@ -47,29 +47,29 @@ osPrefix = System.os ++ "-" ++ cpu
                     "i386" -> "x86"
                     arch   -> arch
 
-target :: Arch -> Platform -> CTarget
-target arch = mkCTarget arch "linux" "androideabi"
+target :: Arch -> Platform -> Target
+target arch = mkTarget arch "linux" "androideabi"
 
-standaloneToolChain :: FilePath -> CTarget -> CToolChain
+standaloneToolChain :: FilePath -> Target -> ToolChain
 standaloneToolChain path target =
     prefix .~ Just path
   $ compilerCmd .~ mkTool "gcc"
   $ archiverCmd .~ mkTool "ar"
   $ linkerCmd .~ mkTool "g++"
-  $ defaultCToolChain
+  $ defaultToolChain
   where mkTool x = targetString target ++ "-" ++ x
 
-toolChain :: FilePath -> ToolChainVariant -> CTarget -> CToolChain
+toolChain :: FilePath -> ToolChainVariant -> Target -> ToolChain
 toolChain ndk GCC_4_7 target =
     prefix .~ Just (ndk </> "toolchains" </> tcPrefix ++ "4.7" </> "prebuilt" </> osPrefix)
   $ compilerCmd .~ mkTool "gcc"
   $ archiverCmd .~ mkTool "ar"
   $ linkerCmd .~ mkTool "g++"
-  $ defaultCToolChain
+  $ defaultToolChain
   where tcPrefix = toolChainPrefix target
         mkTool x = tcPrefix ++ x
 
-androidPlatformPrefix :: CTarget -> FilePath
+androidPlatformPrefix :: Target -> FilePath
 androidPlatformPrefix target =
     platformName (target ^. targetPlatform)
      ++ "-"
@@ -82,7 +82,7 @@ androidArchString (Arm Armv6) = "armv5te"
 androidArchString (Arm Armv7) = "armv7-a"
 androidArchString arch = archString arch
 
-archCompilerFlags :: Arch -> [(Maybe CLanguage, [String])]
+archCompilerFlags :: Arch -> [(Maybe Language, [String])]
 archCompilerFlags (Arm Armv7) = [(Nothing, ["-mfloat-abi=softfp", "-mfpu=neon" {- vfpv3-d16 -}])]
 archCompilerFlags (Arm _)     = [(Nothing, ["-mtune=xscale", "-msoft-float"])]
 archCompilerFlags _ = []
@@ -94,7 +94,7 @@ archLinkerFlags arch =
         _         -> common
     where common = ["-Wl,--no-undefined", "-Wl,-z,relro", "-Wl,-z,now"]
 
-buildFlags :: FilePath -> CTarget -> CBuildFlags
+buildFlags :: FilePath -> Target -> BuildFlags
 buildFlags ndk target =
     append compilerFlags ([(Nothing, [sysroot, march])] ++ archCompilerFlags arch)
   . append compilerFlags ([(Nothing, [
@@ -106,7 +106,7 @@ buildFlags ndk target =
   . append linkerFlags ([sysroot, march] ++ archLinkerFlags arch)
   . append linkerFlags ["-no-canonical-prefixes"]
   . append archiverFlags ["-rs"]
-  $ defaultCBuildFlags
+  $ defaultBuildFlags
   where
     arch = target ^. targetArch
     sysroot = "--sysroot=" ++ ndk </> "platforms" </> androidPlatformPrefix target
@@ -118,11 +118,11 @@ abiString (Arm Armv6) = "armeabi"
 abiString (Arm Armv7) = "armeabi-v7a"
 abiString (X86 _)     = "x86"
 
-native_app_glue :: FilePath -> SourceTree CBuildFlags
+native_app_glue :: FilePath -> SourceTree BuildFlags
 native_app_glue ndk = sourceFlags (append systemIncludes [ndk </> "sources/android/native_app_glue"])
                         [ sourceFiles_ [ndk </> "sources/android/native_app_glue/android_native_app_glue.c"] ]
 
-gnustl :: Linkage -> FilePath -> CTarget -> CBuildFlags -> CBuildFlags
+gnustl :: Linkage -> FilePath -> Target -> BuildFlags -> BuildFlags
 gnustl linkage ndk target =
     append systemIncludes [stlPath </> "include", stlPath </> "libs" </> abi </> "include"]
   . append libraryPath [stlPath </> "libs" </> abi]

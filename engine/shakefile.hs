@@ -47,14 +47,14 @@ externalLibrary = combine externalLibraries
 boostDir :: FilePath
 boostDir = externalLibrary "boost"
 
--- boostBuildFlags :: CBuildFlags -> CBuildFlags
+-- boostBuildFlags :: BuildFlags -> BuildFlags
 -- boostBuildFlags = append systemIncludes [ boostDir ]
 
 tlsfDir :: FilePath
 tlsfDir = externalLibrary "tlsf"
 
 -- | Build flags common to all targets
-commonBuildFlags :: CBuildFlags -> CBuildFlags
+commonBuildFlags :: BuildFlags -> BuildFlags
 commonBuildFlags = append compilerFlags [
     (Just C, ["-std=c11"])
   , (Just Cpp, ["-std=c++11"])
@@ -63,13 +63,13 @@ commonBuildFlags = append compilerFlags [
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
   ]
 
-apiIncludes :: CBuildFlags -> CBuildFlags
+apiIncludes :: BuildFlags -> BuildFlags
 apiIncludes = append systemIncludes [
     "include"
   , "external_libraries/oscpp/include"
   , "plugins" ]
 
-engineBuildFlags :: CBuildFlags -> CBuildFlags
+engineBuildFlags :: BuildFlags -> BuildFlags
 engineBuildFlags =
     append userIncludes
       ( -- Library headers
@@ -86,7 +86,7 @@ engineBuildFlags =
          -- TLSF
       ++ [ tlsfDir ] )
 
-pluginBuildFlags :: CBuildFlags -> CBuildFlags
+pluginBuildFlags :: BuildFlags -> BuildFlags
 pluginBuildFlags =
     append userIncludes [ "plugins" ]
   . append systemIncludes [ "include", externalLibrary "oscpp/include" ]
@@ -98,12 +98,12 @@ pluginSources = [
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
   , "plugins/methc.la/plugins/sine/sine.c" ]
 
--- vectorBuildFlags :: CBuildFlags -> CBuildFlags
+-- vectorBuildFlags :: BuildFlags -> BuildFlags
 -- vectorBuildFlags = append compilerFlags [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaSources :: SourceTree CBuildFlags -> SourceTree CBuildFlags
+methclaSources :: SourceTree BuildFlags -> SourceTree BuildFlags
 methclaSources platformSources =
     SourceTree.list [
         -- sourceFlags boostBuildFlags [ sourceFiles_ $
@@ -168,7 +168,7 @@ parseConfig x =
         "release" -> Right Release
         _ -> Left $ "Invalid configuration `" ++ x ++ "'"
 
-configurations :: [Configuration Config CBuildFlags]
+configurations :: [Configuration Config BuildFlags]
 configurations = [
     ( Release,
         append compilerFlags [
@@ -192,7 +192,7 @@ configurations = [
 shakeBuildDir :: String
 shakeBuildDir = "build"
 
-mkBuildPrefix :: CTarget -> Config -> FilePath
+mkBuildPrefix :: Target -> Config -> FilePath
 mkBuildPrefix cTarget config =
       shakeBuildDir
   </> map toLower (show config)
@@ -219,25 +219,25 @@ enable :: Bool -> String -> String -> String
 enable on flag name = flag ++ (if on then "" else "no-") ++ name
 
 -- | Build with specific C++ standard library (clang).
-stdlib :: String -> CBuildFlags -> CBuildFlags
+stdlib :: String -> BuildFlags -> BuildFlags
 stdlib libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
 
-rtti :: Bool -> CBuildFlags -> CBuildFlags
+rtti :: Bool -> BuildFlags -> BuildFlags
 rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
 
-exceptions :: Bool -> CBuildFlags -> CBuildFlags
+exceptions :: Bool -> BuildFlags -> BuildFlags
 exceptions on = append compilerFlags [(Just Cpp, [enable on "-f" "exceptions"])]
 
-execStack :: Bool -> CBuildFlags -> CBuildFlags
+execStack :: Bool -> BuildFlags -> BuildFlags
 execStack on =
     append compilerFlags [(Nothing, ["-Wa,--" ++ no ++ "execstack"])]
   . append linkerFlags ["-Wl,-z," ++ no ++ "execstack"]
   where no = if on then "" else "no"
 
-withTarget :: Monad m => (Arch -> CTarget) -> [Arch] -> (CTarget -> m ()) -> m ()
+withTarget :: Monad m => (Arch -> Target) -> [Arch] -> (Target -> m ()) -> m ()
 withTarget mkTarget archs f = mapM_ (f . mkTarget) archs
 
-mapTarget :: Monad m => (Arch -> CTarget) -> [Arch] -> (CTarget -> m a) -> m [a]
+mapTarget :: Monad m => (Arch -> Target) -> [Arch] -> (Target -> m a) -> m [a]
 mapTarget mkTarget archs f = mapM (f . mkTarget) archs
 
 androidTargetPlatform :: Platform

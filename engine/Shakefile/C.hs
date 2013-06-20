@@ -30,18 +30,18 @@ module Shakefile.C (
   , archString
   , ArmVersion(..)
   , X86Version(..)
-  , CTarget
-  , mkCTarget
+  , Target
+  , mkTarget
   , targetArch
   , targetVendor
   , targetOS
   , targetPlatform
   , targetString
-  , CLanguage(..)
+  , Language(..)
   , Linkage(..)
   , LinkResult(..)
-  , CBuildFlags
-  , defaultCBuildFlags
+  , BuildFlags
+  , defaultBuildFlags
   , systemIncludes
   , userIncludes
   , defines
@@ -52,8 +52,8 @@ module Shakefile.C (
   , linkerFlags
   , staticLibraries
   , archiverFlags
-  , CToolChain
-  , defaultCToolChain
+  , ToolChain
+  , defaultToolChain
   , toolChainFromEnvironment
   , prefix
   , compilerCmd
@@ -158,25 +158,25 @@ archString arch =
     Arm Armv7 -> "armv7"
     Arm Armv7s -> "armv7s"
 
-data CTarget = CTarget {
+data Target = Target {
     _targetArch :: Arch
   , _targetVendor :: String
   , _targetOS :: String
   , _targetPlatform :: Platform
   } deriving (Show)
 
-makeLenses ''CTarget
+makeLenses ''Target
 
-mkCTarget :: Arch -> String -> String -> Platform -> CTarget
-mkCTarget = CTarget
+mkTarget :: Arch -> String -> String -> Platform -> Target
+mkTarget = Target
 
-targetString :: CTarget -> String
+targetString :: Target -> String
 targetString target =
      archShortString (target ^. targetArch)
   ++ "-" ++ (target ^. targetVendor)
   ++ "-" ++ (target ^. targetOS)
 
-buildDir :: Env -> CTarget -> FilePath
+buildDir :: Env -> Target -> FilePath
 {-buildDir env target =-}
       {-(env ^. buildPrefix)-}
   {-</> map toLower (env ^. buildConfiguration)-}
@@ -184,7 +184,7 @@ buildDir :: Env -> CTarget -> FilePath
   {-</> (target ^. targetArch)-}
 buildDir env _ = env ^. buildPrefix
 
-data CLanguage = C | Cpp | ObjC | ObjCpp
+data Language = C | Cpp | ObjC | ObjCpp
                  deriving (Enum, Eq, Show)
 
 data Linkage = Static | Shared deriving (Enum, Eq, Show)
@@ -194,8 +194,8 @@ data LinkResult = Executable
                 | DynamicLibrary
                 deriving (Enum, Eq, Show)
 
-defaultCLanguageMap :: [(String, CLanguage)]
-defaultCLanguageMap = concatMap f [
+defaultLanguageMap :: [(String, Language)]
+defaultLanguageMap = concatMap f [
     (C, [".c"])
   , (Cpp, [".cc", ".CC", ".cpp", ".CPP", ".C", ".cxx", ".CXX"])
   , (ObjC, [".m"])
@@ -203,15 +203,15 @@ defaultCLanguageMap = concatMap f [
   ]
   where f (lang, exts) = map (\ext -> (ext, lang)) exts
 
-languageOf :: FilePath -> Maybe CLanguage
-languageOf = flip lookup defaultCLanguageMap . takeExtension
+languageOf :: FilePath -> Maybe Language
+languageOf = flip lookup defaultLanguageMap . takeExtension
 
-data CBuildFlags = CBuildFlags {
+data BuildFlags = BuildFlags {
     _systemIncludes :: [FilePath]
   , _userIncludes :: [FilePath]
   , _defines :: [(String, Maybe String)]
   , _preprocessorFlags :: [String]
-  , _compilerFlags :: [(Maybe CLanguage, [String])]
+  , _compilerFlags :: [(Maybe Language, [String])]
   , _libraryPath :: [FilePath]
   , _libraries :: [String]
   , _linkerFlags :: [String]
@@ -221,12 +221,12 @@ data CBuildFlags = CBuildFlags {
   , _archiverFlags :: [String]
   } deriving (Show)
 
-makeLenses ''CBuildFlags
+makeLenses ''BuildFlags
 
-type Linker = CToolChain -> CBuildFlags -> [FilePath] -> FilePath -> Shake.Action ()
+type Linker = ToolChain -> BuildFlags -> [FilePath] -> FilePath -> Shake.Action ()
 type Archiver = Linker
 
-data CToolChain = CToolChain {
+data ToolChain = ToolChain {
     _prefix :: Maybe FilePath
   , _compilerCmd :: String
   , _archiverCmd :: String
@@ -238,7 +238,7 @@ data CToolChain = CToolChain {
   , _linkResultFileName :: LinkResult -> String -> FilePath
   }
 
-makeLenses ''CToolChain
+makeLenses ''ToolChain
 
 defaultArchiver :: Archiver
 defaultArchiver toolChain buildFlags inputs output = do
@@ -268,9 +268,9 @@ defaultLinkResultFileName Executable = id
 defaultLinkResultFileName SharedLibrary = ("lib"++) . (<.> "so")
 defaultLinkResultFileName DynamicLibrary =            (<.> "so")
 
-defaultCToolChain :: CToolChain
-defaultCToolChain =
-    CToolChain {
+defaultToolChain :: ToolChain
+defaultToolChain =
+    ToolChain {
         _prefix = Nothing
       , _compilerCmd = "gcc"
       , _archiverCmd = "ar"
@@ -284,19 +284,19 @@ defaultCToolChain =
       , _linkResultFileName = defaultLinkResultFileName
       }
 
-tool :: (Getter CToolChain String) -> CToolChain -> FilePath
+tool :: (Getter ToolChain String) -> ToolChain -> FilePath
 tool f toolChain = maybe cmd (flip combine ("bin" </> cmd))
                          (toolChain ^. prefix)
     where cmd = toolChain ^. f
 
-toolChainFromEnvironment :: IO (CToolChain -> CToolChain)
+toolChainFromEnvironment :: IO (ToolChain -> ToolChain)
 toolChainFromEnvironment = do
   env <- getEnvironment
   return $ maybe id (\cc -> set compilerCmd cc) (lookup "CC" env)
 
-defaultCBuildFlags :: CBuildFlags
-defaultCBuildFlags =
-    CBuildFlags {
+defaultBuildFlags :: BuildFlags
+defaultBuildFlags =
+    BuildFlags {
         _systemIncludes = []
       , _userIncludes = []
       , _defines = []
@@ -309,10 +309,10 @@ defaultCBuildFlags =
       , _archiverFlags = []
       }
 
-defineFlags :: CBuildFlags -> [String]
+defineFlags :: BuildFlags -> [String]
 defineFlags = concatMapFlag "-D" . map (\(a, b) -> maybe a (\b' -> a++"="++b') b) . flip (^.) defines
 
-compilerFlagsFor :: Maybe CLanguage -> CBuildFlags -> [String]
+compilerFlagsFor :: Maybe Language -> BuildFlags -> [String]
 compilerFlagsFor lang = concat
                       . maybe (map snd . filter (isNothing.fst))
                               (mapMaybe . f) lang
@@ -334,7 +334,7 @@ sourceTransform f cmd input = do
     want [output]
     return output
 
-dependencyFile :: CToolChain -> CBuildFlags -> FilePath -> FilePath -> Rules ()
+dependencyFile :: ToolChain -> BuildFlags -> FilePath -> FilePath -> Rules ()
 dependencyFile toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
@@ -349,7 +349,7 @@ dependencyFile toolChain buildFlags input output = do
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
-type ObjectRule = CToolChain -> CBuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
+type ObjectRule = ToolChain -> BuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
 
 staticObject :: ObjectRule
 staticObject toolChain buildFlags input deps output = do
@@ -369,17 +369,17 @@ staticObject toolChain buildFlags input deps output = do
 sharedObject :: ObjectRule
 sharedObject toolChain = staticObject toolChain -- Disable for now: . append compilerFlags [(Nothing, ["-fPIC"])]
 
-mkObjectsDir :: Env -> CTarget -> FilePath -> FilePath
+mkObjectsDir :: Env -> Target -> FilePath -> FilePath
 mkObjectsDir env target path = buildDir env target </> map tr (makeRelative "/" path) ++ "_obj"
     where tr '.' = '_'
           tr x   = x
 
-mkBuildPath :: Env -> CTarget -> FilePath -> FilePath
+mkBuildPath :: Env -> Target -> FilePath -> FilePath
 mkBuildPath env target path = buildDir env target </> makeRelative "/" path
 
 buildProduct :: ObjectRule -> Linker -> FilePath
-             -> Env -> CTarget -> CToolChain -> CBuildFlags
-             -> SourceTree CBuildFlags
+             -> Env -> Target -> ToolChain -> BuildFlags
+             -> SourceTree BuildFlags
              -> Rules FilePath
 buildProduct object link fileName env target toolChain buildFlags sources = do
     let resultPath = mkBuildPath env target fileName
@@ -392,7 +392,7 @@ buildProduct object link fileName env target toolChain buildFlags sources = do
     return resultPath
 
 -- | Rule for building an executable.
-executable :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+executable :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
 executable env target toolChain buildFlags name sources =
     buildProduct
         staticObject
@@ -401,7 +401,7 @@ executable env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a static library.
-staticLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+staticLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
 staticLibrary env target toolChain buildFlags name sources =
     buildProduct
         staticObject
@@ -410,7 +410,7 @@ staticLibrary env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a shared library.
-sharedLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+sharedLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
 sharedLibrary env target toolChain buildFlags name sources =
     buildProduct
         sharedObject
@@ -419,7 +419,7 @@ sharedLibrary env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a dynamic library.
-dynamicLibrary :: Env -> CTarget -> CToolChain -> CBuildFlags -> String -> SourceTree CBuildFlags -> Rules FilePath
+dynamicLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
 dynamicLibrary env target toolChain buildFlags name sources =
     buildProduct
         sharedObject
