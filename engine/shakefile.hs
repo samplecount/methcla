@@ -257,13 +257,13 @@ mkRules options = do
                 iphoneosLib <- do
                     let platform = OSX.iPhoneOS iOS_SDK
                         cTarget = OSX.target (Arm Armv7) platform
-                        toolChain = applyEnv $ OSX.cToolChain_IOS developer
+                        toolChain = applyEnv $ OSX.toolChain_IOS developer
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/ios"]
                                    >>> stdlib "libc++"
-                                   $   OSX.cBuildFlags_IOS cTarget developer
+                                   $   OSX.buildFlags_IOS cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
                                         SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
@@ -272,13 +272,13 @@ mkRules options = do
                 iphonesimulatorLib <- do
                     let platform = OSX.iPhoneSimulator iOS_SDK
                         cTarget = OSX.target (X86 I386) platform
-                        toolChain = applyEnv $ OSX.cToolChain_IOS_Simulator developer
+                        toolChain = applyEnv $ OSX.toolChain_IOS_Simulator developer
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/ios"]
                                    >>> stdlib "libc++"
-                                   $   OSX.cBuildFlags_IOS_Simulator cTarget developer
+                                   $   OSX.buildFlags_IOS_Simulator cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
                                         SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
@@ -340,7 +340,7 @@ mkRules options = do
             libshout <- liftIO $ pkgConfig "shout"
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
+                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
                 env = mkEnv cTarget
                 liblame = append systemIncludes ["/usr/local/include"]
                         . append libraryPath ["/usr/local/lib"]
@@ -352,7 +352,7 @@ mkRules options = do
                            >>> liblame
                            >>> stdlib "libc++"
                            >>> append libraries ["c++"]
-                           $   OSX.cBuildFlags_MacOSX cTarget developer
+                           $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
                 lib <- staticLibrary env cTarget toolChain buildFlags
                             "methcla-icecast"
@@ -374,7 +374,7 @@ mkRules options = do
             jackBuildFlags <- liftIO $ pkgConfig "jack"
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
+                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
@@ -382,7 +382,7 @@ mkRules options = do
                            >>> jackBuildFlags
                            >>> stdlib "libc++"
                            >>> append libraries ["c++", "m"]
-                           $   OSX.cBuildFlags_MacOSX cTarget developer
+                           $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
                 result <- sharedLibrary env cTarget toolChain buildFlags
                             "methcla-jack" (methclaSources $
@@ -393,7 +393,7 @@ mkRules options = do
             sdkVersion <- liftIO OSX.getSystemVersion
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 I386) platform
-                toolChain = applyEnv $ OSX.cToolChain_MacOSX developer
+                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
@@ -401,7 +401,7 @@ mkRules options = do
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> stdlib "libc++"
                            >>> append libraries ["c++", "m"]
-                           $   OSX.cBuildFlags_MacOSX cTarget developer
+                           $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"

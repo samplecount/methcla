@@ -1,4 +1,21 @@
-module Shakefile.C.OSX where
+module Shakefile.C.OSX (
+    getDeveloperPath
+  , getSystemVersion
+  , macOSX
+  , iPhoneOS
+  , iPhoneSimulator
+  , target
+  , toolChain_MacOSX
+  , toolChain_MacOSX_gcc
+  , buildFlags_MacOSX
+  , toolChain_IOS
+  , toolChain_IOS_gcc
+  , buildFlags_IOS
+  , toolChain_IOS_Simulator
+  , toolChain_IOS_Simulator_gcc
+  , buildFlags_IOS_Simulator
+  , universalBinary
+) where
 
 import           Control.Applicative ((<$>))
 import           Control.Lens hiding ((<.>))
@@ -73,8 +90,8 @@ osxLinkResultFileName Executable = id
 osxLinkResultFileName SharedLibrary = ("lib"++) . (<.> "dylib")
 osxLinkResultFileName DynamicLibrary =            (<.> "dylib")
 
-cToolChain_MacOSX :: DeveloperPath -> ToolChain
-cToolChain_MacOSX developer =
+toolChain_MacOSX :: DeveloperPath -> ToolChain
+toolChain_MacOSX developer =
     prefix .~ Just (developerPath developer </> "Toolchains/XcodeDefault.xctoolchain/usr")
   $ compilerCmd .~ "clang"
   $ archiverCmd .~ "libtool"
@@ -84,11 +101,11 @@ cToolChain_MacOSX developer =
   $ linkResultFileName .~ osxLinkResultFileName 
   $ defaultToolChain
 
-cToolChain_MacOSX_gcc :: DeveloperPath -> ToolChain
-cToolChain_MacOSX_gcc developer =
+toolChain_MacOSX_gcc :: DeveloperPath -> ToolChain
+toolChain_MacOSX_gcc developer =
     compilerCmd .~ "gcc"
   $ linkerCmd .~ "g++"
-  $ cToolChain_MacOSX developer
+  $ toolChain_MacOSX developer
 
 osxDefaultBuildFlags :: Target -> DeveloperPath -> BuildFlags
 osxDefaultBuildFlags target developer =
@@ -98,8 +115,8 @@ osxDefaultBuildFlags target developer =
   $ defaultBuildFlags
   where sysRoot = platformSDKPath developer (target ^. targetPlatform)
 
-cBuildFlags_MacOSX :: Target -> DeveloperPath -> BuildFlags
-cBuildFlags_MacOSX target developer =
+buildFlags_MacOSX :: Target -> DeveloperPath -> BuildFlags
+buildFlags_MacOSX target developer =
     append compilerFlags [(Nothing, ["-mmacosx-version-min=" ++ showVersion (platformVersion (target ^. targetPlatform))])]
   $ osxDefaultBuildFlags target developer
 
@@ -107,31 +124,31 @@ iosMinVersion :: String
 iosMinVersion = "5.0" -- Required for C++11
 --iosMinVersion = "40200"
 
-cToolChain_IOS :: DeveloperPath -> ToolChain
-cToolChain_IOS = cToolChain_MacOSX
+toolChain_IOS :: DeveloperPath -> ToolChain
+toolChain_IOS = toolChain_MacOSX
 
-cToolChain_IOS_gcc :: DeveloperPath -> ToolChain
-cToolChain_IOS_gcc developer =
+toolChain_IOS_gcc :: DeveloperPath -> ToolChain
+toolChain_IOS_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneOS.platform/Developer/usr")
   $ compilerCmd .~ "llvm-gcc"
   $ linkerCmd .~ "llvm-g++"
-  $ cToolChain_IOS developer
+  $ toolChain_IOS developer
 
-cBuildFlags_IOS :: Target -> DeveloperPath -> BuildFlags
-cBuildFlags_IOS target developer =
+buildFlags_IOS :: Target -> DeveloperPath -> BuildFlags
+buildFlags_IOS target developer =
     append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
   $ osxDefaultBuildFlags target developer
 
-cToolChain_IOS_Simulator :: DeveloperPath -> ToolChain
-cToolChain_IOS_Simulator = cToolChain_MacOSX
+toolChain_IOS_Simulator :: DeveloperPath -> ToolChain
+toolChain_IOS_Simulator = toolChain_MacOSX
 
-cToolChain_IOS_Simulator_gcc :: DeveloperPath -> ToolChain
-cToolChain_IOS_Simulator_gcc developer =
+toolChain_IOS_Simulator_gcc :: DeveloperPath -> ToolChain
+toolChain_IOS_Simulator_gcc developer =
     prefix .~ Just (developerPath developer </> "Platforms/iPhoneSimulator.platform/Developer/usr")
-  $ cToolChain_IOS_gcc developer
+  $ toolChain_IOS_gcc developer
 
-cBuildFlags_IOS_Simulator :: Target -> DeveloperPath -> BuildFlags
-cBuildFlags_IOS_Simulator target developer =
+buildFlags_IOS_Simulator :: Target -> DeveloperPath -> BuildFlags
+buildFlags_IOS_Simulator target developer =
     append compilerFlags [(Nothing, ["-miphoneos-version-min=" ++ iosMinVersion])]
   $ osxDefaultBuildFlags target developer
 
