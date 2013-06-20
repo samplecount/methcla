@@ -15,6 +15,7 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
+#include <algorithm>
 #include <boost/assert.hpp>
 #include <cstddef>
 #include <cstdint>
