@@ -193,13 +193,6 @@ configurations = [
 shakeBuildDir :: String
 shakeBuildDir = "build"
 
-mkBuildPrefix :: Target -> Config -> FilePath
-mkBuildPrefix cTarget config =
-      shakeBuildDir
-  </> map toLower (show config)
-  </> (platformString $ cTarget ^. targetPlatform)
-  </> (archString $ cTarget ^. targetArch)
-
 data Options = Options {
     _buildConfig :: Config
   } deriving (Show)
@@ -247,8 +240,8 @@ androidTargetPlatform = Android.platform 9
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
     let config = options ^. buildConfig
-        mkEnv cTarget = set buildPrefix
-                            (mkBuildPrefix cTarget config)
+        mkEnv target = set buildPrefix
+                            (defaultBuildPrefix target (show config))
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))

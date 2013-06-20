@@ -23,6 +23,7 @@ module Shakefile.C (
   , Env
   , defaultEnv
   , buildPrefix
+  , defaultBuildPrefix
   , Platform(..)
   , platformString
   , Arch(..)
@@ -115,6 +116,13 @@ makeLenses ''Env
 defaultEnv :: Env
 defaultEnv = Env "."
 
+defaultBuildPrefix :: Target -> String -> FilePath
+defaultBuildPrefix target config =
+      "build"
+  </> map toLower config
+  </> (platformString $ _targetPlatform target)
+  </> (archString $ _targetArch target)
+
 data Platform = Platform {
     platformName :: String
   , platformVersion :: Version
@@ -175,14 +183,6 @@ targetString target =
      archShortString (target ^. targetArch)
   ++ "-" ++ (target ^. targetVendor)
   ++ "-" ++ (target ^. targetOS)
-
-buildDir :: Env -> Target -> FilePath
-{-buildDir env target =-}
-      {-(env ^. buildPrefix)-}
-  {-</> map toLower (env ^. buildConfiguration)-}
-  {-</> (targetString (target ^. buildTarget))-}
-  {-</> (target ^. targetArch)-}
-buildDir env _ = env ^. buildPrefix
 
 data Language = C | Cpp | ObjC | ObjCpp
                  deriving (Enum, Eq, Show)
@@ -370,12 +370,12 @@ sharedObject :: ObjectRule
 sharedObject toolChain = staticObject toolChain -- Disable for now: . append compilerFlags [(Nothing, ["-fPIC"])]
 
 mkObjectsDir :: Env -> Target -> FilePath -> FilePath
-mkObjectsDir env target path = buildDir env target </> map tr (makeRelative "/" path) ++ "_obj"
+mkObjectsDir env target path = (env ^. buildPrefix) </> map tr (makeRelative "/" path) ++ "_obj"
     where tr '.' = '_'
           tr x   = x
 
 mkBuildPath :: Env -> Target -> FilePath -> FilePath
-mkBuildPath env target path = buildDir env target </> makeRelative "/" path
+mkBuildPath env target path = (env ^. buildPrefix) </> makeRelative "/" path
 
 buildProduct :: ObjectRule -> Linker -> FilePath
              -> Env -> Target -> ToolChain -> BuildFlags
