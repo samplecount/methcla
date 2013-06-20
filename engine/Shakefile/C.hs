@@ -83,9 +83,9 @@ import           Development.Shake.FilePath
 import           Data.Maybe
 import           Data.Version
 import           Shakefile.Lens (append)
-import           Shakefile.SourceTree (SourceTree, applySourceTree)
+import           Shakefile.SourceTree (SourceTree)
+import qualified Shakefile.SourceTree as SourceTree
 import           System.Environment (getEnvironment)
-import           System.FilePath (makeRelative, takeFileName)
 
 {-import Debug.Trace-}
 
@@ -384,7 +384,7 @@ buildProduct :: ObjectRule -> Linker -> FilePath
 buildProduct object link fileName env target toolChain buildFlags sources = do
     let resultPath = mkBuildPath env target fileName
         objectsDir = mkObjectsDir env target fileName
-    objects <- forM (buildFlags `applySourceTree` sources) $ \(buildFlags', (src, deps)) -> do
+    objects <- forM (SourceTree.apply buildFlags sources) $ \(buildFlags', (src, deps)) -> do
         let obj = objectsDir </> makeRelative "/" (src <.> "o")
         object toolChain buildFlags' src deps obj
         return obj

@@ -26,7 +26,7 @@ import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
 import           Shakefile.Lens
-import           Shakefile.SourceTree
+import           Shakefile.SourceTree (SourceTree)
 import qualified Shakefile.SourceTree as SourceTree
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
@@ -106,7 +106,7 @@ pluginSources = [
 methclaSources :: SourceTree BuildFlags -> SourceTree BuildFlags
 methclaSources platformSources =
     SourceTree.list [
-        -- sourceFlags boostBuildFlags [ sourceFiles_ $
+        -- sourceFlags boostBuildFlags [ SourceTree.files $
         --   under (boostDir </> "libs") [
         --     --   "date_time/src/gregorian/date_generators.cpp"
         --     -- , "date_time/src/gregorian/greg_month.cpp"
@@ -118,34 +118,35 @@ methclaSources platformSources =
         --     ]
         -- ]
         -- TLSF
-        sourceFiles_ [ tlsfDir </> "tlsf.c" ]
+        SourceTree.files [ tlsfDir </> "tlsf.c" ]
         -- engine
-      , sourceFlags engineBuildFlags [
-          -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
-          --   [ sourceFiles_ [ "src/Methcla/Audio/Engine.cpp" ] ],
-          sourceFiles_ $
-            [ "src/Methcla/API.cpp"
-            , "src/Methcla/Audio/AudioBus.cpp"
-            , "src/Methcla/Audio/Engine.cpp"
-            , "src/Methcla/Audio/Group.cpp"
-            , "src/Methcla/Audio/IO/Driver.cpp"
-            , "src/Methcla/Audio/IO/DummyDriver.cpp"
-            , "src/Methcla/Audio/Node.cpp"
-            -- , "src/Methcla/Audio/Resource.cpp"
-            , "src/Methcla/Audio/Synth.cpp"
-            , "src/Methcla/Audio/SynthDef.cpp"
-            , "src/Methcla/Memory/Manager.cpp"
-            , "src/Methcla/Memory.cpp"
-            , "src/Methcla/Plugin/Loader.cpp"
-            , "src/Methcla/Utility/Semaphore.cpp"
-            ]
-            -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
-          -- platform dependent
-        , platformSources
-      -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
-      --     under "src" [ "Methcla/Audio/DSP.c" ]
+      , SourceTree.flags engineBuildFlags $
+          SourceTree.list [
+              -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
+              --   [ SourceTree.files [ "src/Methcla/Audio/Engine.cpp" ] ],
+              SourceTree.files
+                [ "src/Methcla/API.cpp"
+                , "src/Methcla/Audio/AudioBus.cpp"
+                , "src/Methcla/Audio/Engine.cpp"
+                , "src/Methcla/Audio/Group.cpp"
+                , "src/Methcla/Audio/IO/Driver.cpp"
+                , "src/Methcla/Audio/IO/DummyDriver.cpp"
+                , "src/Methcla/Audio/Node.cpp"
+                -- , "src/Methcla/Audio/Resource.cpp"
+                , "src/Methcla/Audio/Synth.cpp"
+                , "src/Methcla/Audio/SynthDef.cpp"
+                , "src/Methcla/Memory/Manager.cpp"
+                , "src/Methcla/Memory.cpp"
+                , "src/Methcla/Plugin/Loader.cpp"
+                , "src/Methcla/Utility/Semaphore.cpp"
+                ]
+                -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
+              -- platform dependent
+            , platformSources
+          -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
+          --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
-      , sourceFlags pluginBuildFlags [ sourceFiles_ pluginSources ]
+      , SourceTree.flags pluginBuildFlags $ SourceTree.files pluginSources
       ]
 
 methcla :: String
@@ -153,7 +154,7 @@ methcla = "methcla"
 
 -- plugins :: Platform -> [Library]
 -- plugins platform = [
---     Library "sine" $ sourceFlags engineBuildFlags [ sourceFiles_ [ "plugins/methc.la/plugins/sine/sine.c" ] ]
+--     Library "sine" $ sourceFlags engineBuildFlags [ SourceTree.files [ "plugins/methc.la/plugins/sine/sine.c" ] ]
 --   ]
 
 -- ====================================================================
@@ -272,7 +273,7 @@ mkRules options = do
                                    $   OSX.cBuildFlags_IOS cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
-                                        sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
+                                        SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
                     platformAlias platform lib
                     return lib
                 iphonesimulatorLib <- do
@@ -287,7 +288,7 @@ mkRules options = do
                                    $   OSX.cBuildFlags_IOS_Simulator cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags
                             methcla (methclaSources $
-                                        sourceFiles_ ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
+                                        SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
                     platformAlias platform lib
                     return lib
                 let universalTarget = "iphone-universal"
@@ -314,7 +315,7 @@ mkRules options = do
                                    $   Android.buildFlags ndk target
                     libmethcla <- staticLibrary (mkEnv target) target toolChain buildFlags
                             methcla (methclaSources $
-                                        sourceFiles_ [
+                                        SourceTree.files [
                                           "platform/android/opensl_io.c",
                                           "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
                     let testBuildFlags =
@@ -326,9 +327,10 @@ mkRules options = do
                                    $   buildFlags
                     libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain testBuildFlags
                                   "methcla-tests"
-                                  (merge (Android.native_app_glue ndk)
-                                         (sourceFiles_ [ "tests/methcla_tests.cpp"
-                                                       , "tests/android/main.cpp" ]))
+                                  -- TODO: Build static library for native_app_glue to link against.
+                                  (SourceTree.append (Android.native_app_glue ndk)
+                                                     (SourceTree.files [ "tests/methcla_tests.cpp"
+                                                                       , "tests/android/main.cpp" ]))
 
                     let installPath = "libs/android" </> abi </> takeFileName libmethcla
                     installPath ?=> \_ -> copyFile' libmethcla installPath
@@ -362,15 +364,15 @@ mkRules options = do
                 lib <- staticLibrary env cTarget toolChain buildFlags
                             "methcla-icecast"
                           $ methclaSources
-                          $ sourceFiles_ ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
+                          $ SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
                 example <- executable env cTarget toolChain
                             (  apiIncludes
                              . append userIncludes ["examples/thADDeus/src"]
                              . append staticLibraries [lib]
                              $ buildFlags)
                             "methcla-icecast-example"
-                            (sourceFiles_ [ "examples/icecast/main.cpp"
-                                          , "examples/thADDeus/src/synth.cpp" ])
+                            (SourceTree.files [ "examples/icecast/main.cpp"
+                                              , "examples/thADDeus/src/synth.cpp" ])
                 phony "macosx-icecast" $ need [lib]
                 phony "macosx-icecast-example" $ need [example]
       , do -- macosx-jack
@@ -391,7 +393,7 @@ mkRules options = do
             return $ do
                 result <- sharedLibrary env cTarget toolChain buildFlags
                             "methcla-jack" (methclaSources $
-                                    sourceFiles_ ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
+                                    SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
                 phony "macosx-jack" $ need [result]
       , do -- tests (macosx)
             developer <- liftIO OSX.getDeveloperPath
@@ -410,7 +412,7 @@ mkRules options = do
             return $ do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"
-                            (methclaSources $ sourceFiles_ ["tests/methcla_tests.cpp"])
+                            (methclaSources $ SourceTree.files ["tests/methcla_tests.cpp"])
                 phony "macosx-tests" $ do
                     need [result]
                     system' result []

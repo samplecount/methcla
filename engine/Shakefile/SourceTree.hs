@@ -14,15 +14,14 @@
 
 module Shakefile.SourceTree (
     SourceTree
-  , noSources
-  , sourceTree
-  , sourceTree_
-  , sourceFlags
-  , sourceFiles
-  , sourceFiles_
+  , node
+  , empty
+  , flags
+  , filesWithDeps
+  , files
   , list
-  , merge
-  , applySourceTree
+  , append
+  , apply
 ) where
 
 import Data.Tree (Tree(Node))
@@ -30,32 +29,29 @@ import Data.Tree (Tree(Node))
 -- | A tree with a transformation and a list of files and their dependencies at each node.
 type SourceTree a = Tree (a -> a, [(FilePath, [FilePath])])
 
-noSources :: SourceTree a
-noSources = Node (id, []) []
+node :: (a -> a) -> [(FilePath, [FilePath])] -> [SourceTree a] -> SourceTree a
+node f fs = Node (f, fs)
 
-sourceTree :: (a -> a) -> [(FilePath, [FilePath])] -> [SourceTree a] -> SourceTree a
-sourceTree f fs = Node (f, fs)
+empty :: SourceTree a
+empty = node id [] []
 
-sourceTree_ :: (a -> a) -> [(FilePath, [FilePath])] -> SourceTree a
-sourceTree_ f fs = sourceTree f fs []
+flags :: (a -> a) -> SourceTree a -> SourceTree a
+flags f t = node f [] [t]
 
-sourceFlags :: (a -> a) -> [SourceTree a] -> SourceTree a
-sourceFlags f = sourceTree f []
+filesWithDeps :: [(FilePath, [FilePath])] -> SourceTree a
+filesWithDeps fs = node id fs []
 
-sourceFiles :: [(FilePath, [FilePath])] -> SourceTree a
-sourceFiles fs = sourceTree id fs []
-
-sourceFiles_ :: [FilePath] -> SourceTree a
-sourceFiles_ = sourceFiles . map (flip (,) [])
+files :: [FilePath] -> SourceTree a
+files = filesWithDeps . map (flip (,) [])
 
 list :: [SourceTree a] -> SourceTree a
-list = sourceTree id []
+list = node id []
 
-merge :: SourceTree a -> SourceTree a -> SourceTree a
-merge (Node (f, xs) s) (Node (g, ys) t) = Node (g . f, xs ++ ys) (s ++ t)
+append :: SourceTree a -> SourceTree a -> SourceTree a
+append (Node x ts) t = Node x (ts ++ [t])
 
-applySourceTree :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
-applySourceTree = go
+apply :: a -> SourceTree a -> [(a, (FilePath, [FilePath]))]
+apply = go
     where
         flatten a = map ((,)a)
         go a (Node (f, fs) []) = flatten (f a) fs

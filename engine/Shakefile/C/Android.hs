@@ -14,7 +14,8 @@ import           Control.Lens hiding ((<.>))
 import           Development.Shake.FilePath
 import           Data.Version (Version(..))
 import           Shakefile.C
-import           Shakefile.SourceTree (SourceTree, sourceFlags, sourceFiles_)
+import           Shakefile.SourceTree (SourceTree)
+import qualified Shakefile.SourceTree as SourceTree
 import           Shakefile.Lens (append)
 import qualified System.Info as System
 
@@ -119,8 +120,8 @@ abiString (Arm Armv7) = "armeabi-v7a"
 abiString (X86 _)     = "x86"
 
 native_app_glue :: FilePath -> SourceTree BuildFlags
-native_app_glue ndk = sourceFlags (append systemIncludes [ndk </> "sources/android/native_app_glue"])
-                        [ sourceFiles_ [ndk </> "sources/android/native_app_glue/android_native_app_glue.c"] ]
+native_app_glue ndk = SourceTree.flags (append systemIncludes [ndk </> "sources/android/native_app_glue"])
+                        (SourceTree.files [ndk </> "sources/android/native_app_glue/android_native_app_glue.c"])
 
 gnustl :: Linkage -> FilePath -> Target -> BuildFlags -> BuildFlags
 gnustl linkage ndk target =
