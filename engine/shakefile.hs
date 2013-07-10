@@ -293,7 +293,7 @@ mkRules options = do
                                       </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
-            Just ndk <- lookupEnv "ANDROID_NDK"
+            ndk <- maybe "." id `fmap` lookupEnv "ANDROID_NDK"
             return $ do
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
                     let abi = Android.abiString (target ^. targetArch)
