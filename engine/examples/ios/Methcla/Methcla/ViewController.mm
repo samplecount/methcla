@@ -458,7 +458,7 @@ struct SynthParams
         Methcla::SynthId synth = engine->synth(METHCLA_PLUGINS_SINE_URI, { ps.freq });
         engine->mapOutput(synth, 0, Methcla::AudioBusId(1));
 //        std::cout << "Synth " << synth << " started: freq=" << ps.freq << " amp=" << ps.amp << std::endl;
-        [synths setObject:[NSNumber numberWithLong:(long)synth]
+        [synths setObject:[NSNumber numberWithLong:(long)synth.id()]
                 forKey:[NSValue valueWithPointer:(const void*)touch]];
     }
 }
