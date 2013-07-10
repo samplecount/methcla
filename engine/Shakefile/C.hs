@@ -79,7 +79,8 @@ import           Control.Applicative ((<$>))
 import           Control.Lens hiding (Action, (<.>), under)
 import           Control.Monad
 import           Data.Char (toLower)
-import           Development.Shake as Shake
+import           Development.Shake ((?>), need, readFile', system', systemOutput, want, writeFile')
+import qualified Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Data.Maybe
 import           Data.Version
@@ -104,7 +105,7 @@ concatMapFlag :: String -> [String] -> [String]
 concatMapFlag f = map (f++)
 
 -- Shake utils
-(?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Rules ()
+(?=>) :: FilePath -> (FilePath -> Shake.Action ()) -> Shake.Rules ()
 f ?=> a = (equalFilePath f) ?> a
 
 data Env = Env {
@@ -327,14 +328,14 @@ sed command input output = do
     (stdout, _) <- systemOutput "sed" ["-e", command, input]
     writeFile' output stdout
 
-sourceTransform :: (FilePath -> FilePath) -> String -> FilePath -> Rules FilePath
+sourceTransform :: (FilePath -> FilePath) -> String -> FilePath -> Shake.Rules FilePath
 sourceTransform f cmd input = do
     let output = f input
     output ?=> sed cmd input
     want [output]
     return output
 
-dependencyFile :: ToolChain -> BuildFlags -> FilePath -> FilePath -> Rules ()
+dependencyFile :: ToolChain -> BuildFlags -> FilePath -> FilePath -> Shake.Rules ()
 dependencyFile toolChain buildFlags input output = do
     output ?=> \_ -> do
         need [input]
@@ -349,7 +350,7 @@ dependencyFile toolChain buildFlags input output = do
 parseDependencies :: String -> [FilePath]
 parseDependencies = drop 2 . words . filter (/= '\\')
 
-type ObjectRule = ToolChain -> BuildFlags -> FilePath -> [FilePath] -> FilePath -> Rules ()
+type ObjectRule = ToolChain -> BuildFlags -> FilePath -> [FilePath] -> FilePath -> Shake.Rules ()
 
 staticObject :: ObjectRule
 staticObject toolChain buildFlags input deps output = do
@@ -380,7 +381,7 @@ mkBuildPath env target path = (env ^. buildPrefix) </> makeRelative "/" path
 buildProduct :: ObjectRule -> Linker -> FilePath
              -> Env -> Target -> ToolChain -> BuildFlags
              -> SourceTree BuildFlags
-             -> Rules FilePath
+             -> Shake.Rules FilePath
 buildProduct object link fileName env target toolChain buildFlags sources = do
     let resultPath = mkBuildPath env target fileName
         objectsDir = mkObjectsDir env target fileName
@@ -392,7 +393,7 @@ buildProduct object link fileName env target toolChain buildFlags sources = do
     return resultPath
 
 -- | Rule for building an executable.
-executable :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
+executable :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Shake.Rules FilePath
 executable env target toolChain buildFlags name sources =
     buildProduct
         staticObject
@@ -401,7 +402,7 @@ executable env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a static library.
-staticLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
+staticLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Shake.Rules FilePath
 staticLibrary env target toolChain buildFlags name sources =
     buildProduct
         staticObject
@@ -410,7 +411,7 @@ staticLibrary env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a shared library.
-sharedLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
+sharedLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Shake.Rules FilePath
 sharedLibrary env target toolChain buildFlags name sources =
     buildProduct
         sharedObject
@@ -419,7 +420,7 @@ sharedLibrary env target toolChain buildFlags name sources =
         env target toolChain buildFlags sources
 
 -- | Rule for building a dynamic library.
-dynamicLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Rules FilePath
+dynamicLibrary :: Env -> Target -> ToolChain -> BuildFlags -> String -> SourceTree BuildFlags -> Shake.Rules FilePath
 dynamicLibrary env target toolChain buildFlags name sources =
     buildProduct
         sharedObject
