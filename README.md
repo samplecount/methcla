@@ -12,13 +12,11 @@ In the `engine` subdirectory execute
 
 initially and each time the build files change.
 
-Then, to build a specific target:
+Note that for the examples bundled with methcla there's no need to call *shake* directly, that's taken care of by the respective platform specific build systems.
+
+To build a specific target:
 
     ./shake TARGET
-
-To get a list of possible targets
-
-    ./shake
 
 To clean everything
 
@@ -26,8 +24,16 @@ To clean everything
 
 Use the `-j` flag for parallel builds:
 
-    ./shake -j4 ios
+    ./shake -j4 iphoneos
+
+The `-c` flag allows to select a build configuration (*debug* is the default):
+
+    ./shake -c release iphoneos
+
+Display the list of commandline options:
+
+    ./shake -h
 
 ## Examples
 
-is an example XCode project that builds the engine for iOS devices and plays back a simple sine synth.
+`examples/ios/Methcla/Methcla.xcodeproj` is an example XCode project that builds the engine for iOS devices and provides a simple multitouch sine synthesizer.
