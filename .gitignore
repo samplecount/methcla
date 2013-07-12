@@ -13,7 +13,6 @@ tmtags
 build/
 cabal-dev/
 dist/
-engine/external_libraries/install/
 .shake.database
 .shake.journal
 xcuserdata/
