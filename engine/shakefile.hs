@@ -96,7 +96,9 @@ pluginSources :: [FilePath]
 pluginSources = [
     "plugins/methc.la/plugins/disksampler/disksampler.cpp"
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
-  , "plugins/methc.la/plugins/sine/sine.c" ]
+  , "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
+  , "plugins/methc.la/plugins/sine/sine.c"
+  ]
 
 -- vectorBuildFlags :: BuildFlags -> BuildFlags
 -- vectorBuildFlags = append compilerFlags [
