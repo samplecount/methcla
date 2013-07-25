@@ -47,6 +47,12 @@ namespace Methcla { namespace Audio
         Reference(const Reference&) = delete;
         Reference& operator=(const Reference&) = delete;
 
+        inline size_t numReferences() const
+        {
+            assert(m_refs >= 0);
+            return m_refs;
+        }
+
         inline void retain()
         {
             m_refs++;
@@ -58,6 +64,7 @@ namespace Methcla { namespace Audio
             assert(m_refs >= 0);
             if (m_refs == 0)
                 this->free();
+
         }
 
     protected:

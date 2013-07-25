@@ -19,13 +19,20 @@
 // #include "Methcla/Audio/DSP.h"
 #include "Methcla/Audio/Engine.hpp"
 
-#include <boost/utility.hpp>
 #include <cstdint>
 #include <methcla/plugin.h>
 #include <oscpp/server.hpp>
 #include <thread>
 
 namespace Methcla { namespace Audio {
+
+enum BusMappingFlags
+{
+    kBusMappingNoFlags
+  , kBusMappingExternal = 0x01
+  , kBusMappingFeedback = 0x02
+  , kBusMappingReplace  = 0x04
+};
 
 enum InputConnectionType
 {
@@ -41,88 +48,80 @@ enum OutputConnectionType
 
 class Synth;
 
-template <typename BusId, typename ConnectionType>
-class Connection : public boost::noncopyable
+template <typename Bus>
+class Connection
 {
+    Methcla_PortCount   m_index;
+    BusMappingFlags     m_flags;
+    Bus*                m_bus;
+
 public:
-    Connection(Methcla_PortCount index, ConnectionType type)
+    Connection(Methcla_PortCount index)
         : m_index(index)
-        , m_busId(0)
+        , m_flags(kBusMappingNoFlags)
+        , m_bus(nullptr)
+    {}
+
+    Methcla_PortCount index() const
     {
-        m_flags.connected = false;
-        m_flags.type = type;
+        return m_index;
     }
 
-    Methcla_PortCount index() const { return m_index; }
-    bool isConnected() const { return m_flags.connected; }
-    BusId busId() const { return m_busId; }
-    ConnectionType type() const { return (ConnectionType)m_flags.type; }
-
-    bool connect(const BusId& busId, ConnectionType type)
+    bool connect(Bus* bus, BusMappingFlags flags)
     {
         bool changed = false;
-        if (!m_flags.connected || (busId != m_busId)) {
-            m_flags.connected = true;
-            m_busId = busId;
+        if (bus != m_bus) {
+            m_bus = bus;
             changed = true;
         }
-        m_flags.type = type;
+        m_flags = flags;
         return changed;
     }
 
-private:
-    struct Flags
-    {
-        bool connected : 1;
-        int type       : 4;
-    };
-
-    Flags               m_flags;
-    Methcla_PortCount   m_index;
-    BusId               m_busId;
+protected:
+    BusMappingFlags flags() const { return m_flags; }
+    Bus* bus() { return m_bus; }
 };
 
-class AudioInputConnection : public Connection<AudioBusId,InputConnectionType>
+class AudioInputConnection : public Connection<AudioBus>
 {
 public:
     AudioInputConnection(Methcla_PortCount index)
-        : Connection<AudioBusId,InputConnectionType>(index, kIn)
+        : Connection<AudioBus>(index)
     { }
 
-    void read(Environment& env, size_t numFrames, sample_t* dst)
+    void read(const Environment& env, size_t numFrames, sample_t* dst)
     {
-        if (isConnected()) {
-            AudioBus* bus = env.audioBus(busId());
-
-            if (bus != nullptr) {
-                // std::lock_guard<AudioBus::Lock> lock(bus->lock());
-                if ((type() == kInFeedback) || (bus->epoch() == env.epoch())) {
-                    memcpy(dst, bus->data(), numFrames * sizeof(sample_t));
-                } else {
-                    memset(dst, 0, numFrames * sizeof(sample_t));
-                }
+        if (bus() != nullptr) {
+            // std::lock_guard<AudioBus::Lock> lock(bus->lock());
+            if (   (flags() & kBusMappingExternal)
+                || (flags() & kBusMappingFeedback)
+                || (bus()->epoch() == env.epoch())) {
+                memcpy(dst, bus()->data(), numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
+        } else {
+            memset(dst, 0, numFrames * sizeof(sample_t));
         }
     }
 };
 
-class AudioOutputConnection : public Connection<AudioBusId,OutputConnectionType>
+class AudioOutputConnection : public Connection<AudioBus>
 {
 public:
     AudioOutputConnection(Methcla_PortCount index)
-        : Connection<AudioBusId,OutputConnectionType>(index, kOut)
+        : Connection<AudioBus>(index)
         , m_offset(0)
         , m_buffer(0)
     { }
 
-    bool connect(const AudioBusId& busId, const OutputConnectionType& type, size_t offset, sample_t* buffer)
+    bool connect(AudioBus* bus, BusMappingFlags flags, size_t offset, sample_t* buffer)
     {
         BOOST_ASSERT((m_offset == 0) && (m_buffer == 0));
         m_offset = offset;
         m_buffer = buffer;
-        return Connection<AudioBusId,OutputConnectionType>::connect(busId, type);
+        return Connection<AudioBus>::connect(bus, flags);
     }
 
     void release(Environment& env)
@@ -134,26 +133,23 @@ public:
         }
     }
 
-    void write(Environment& env, size_t numFrames, const sample_t* src)
+    void write(const Environment& env, size_t numFrames, const sample_t* src)
     {
-        if (isConnected()) {
-            AudioBus* bus = env.audioBus(busId());
-
-            if (bus != nullptr) {
-                const Epoch epoch = env.epoch();
-                // std::lock_guard<AudioBus::Lock> lock(bus->lock());
-                if ((type() != kReplaceOut) && (bus->epoch() == epoch)) {
-                    // Accumulate
-                    sample_t* dst = bus->data();
-                    // accumulate(dst, src, numFrames);
-                    for (size_t i=0; i < numFrames; i++) {
-                        dst[i] += src[i];
-                    }
-                } else {
-                    // Copy
-                    memcpy(bus->data(), src, numFrames * sizeof(sample_t));
-                    bus->setEpoch(epoch);
+        if (bus() != nullptr) {
+            const Epoch epoch = env.epoch();
+            // std::lock_guard<AudioBus::Lock> lock(bus->lock());
+            if (   ((flags() & kBusMappingReplace) == 0)
+                && (bus()->epoch() == epoch)) {
+                // Accumulate
+                sample_t* dst = bus()->data();
+                // accumulate(dst, src, numFrames);
+                for (size_t i=0; i < numFrames; i++) {
+                    dst[i] += src[i];
                 }
+            } else {
+                // Copy
+                std::copy(src, src + numFrames, bus()->data());
+                bus()->setEpoch(env.epoch());
             }
         }
     }
@@ -199,13 +195,13 @@ public:
     Methcla_PortCount numAudioInputs() const { return m_numAudioInputs; }
 
     //* Map input to bus.
-    void mapInput(Methcla_PortCount input, const AudioBusId& busId, InputConnectionType type);
+    void mapInput(Methcla_PortCount input, const AudioBusId& busId, BusMappingFlags flags);
 
     //* Return number of audio outputs.
     Methcla_PortCount numAudioOutputs() const { return m_numAudioOutputs; }
 
     //* Map output to bus.
-    void mapOutput(Methcla_PortCount output, const AudioBusId& busId, OutputConnectionType type);
+    void mapOutput(Methcla_PortCount output, const AudioBusId& busId, BusMappingFlags flags);
 
     Methcla_PortCount numControlInputs() const { return m_numControlInputs; }
     Methcla_PortCount numControlOutputs() const { return m_numControlOutputs; }

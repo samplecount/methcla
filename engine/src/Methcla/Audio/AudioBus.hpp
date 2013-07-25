@@ -16,7 +16,6 @@
 #define METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
-#include "Methcla/Audio/Resource.hpp"
 
 #include <boost/serialization/strong_typedef.hpp>
 
@@ -24,11 +23,9 @@ namespace Methcla { namespace Audio {
 
 BOOST_STRONG_TYPEDEF(uint32_t, AudioBusId);
 
-class AudioBus : public Resource<AudioBusId>
+class AudioBus
 {
 public:
-    typedef AudioBusId Id;
-
     // class Lock
     // {
     // public:
@@ -44,18 +41,34 @@ public:
     // typedef boost::intrusive_ptr<AudioBus> Handle;
 
 public:
-    AudioBus(Environment& env, const AudioBusId& id, size_t numFrames, sample_t* data, const Epoch& epoch);
+    AudioBus(sample_t* data, Epoch epoch);
     virtual ~AudioBus();
+
+    AudioBus(const AudioBus&) = delete;
+    AudioBus& operator=(const AudioBus&) = delete;
 
     // Lock& lock() { return m_lock; }
 
-    const Epoch& epoch() const { return m_epoch; }
-    void setEpoch(const Epoch& epoch) { m_epoch = epoch; }
+    const Epoch& epoch() const
+    {
+        return m_epoch;
+    }
 
-    sample_t* data() { return m_data; }
+    void setEpoch(const Epoch& epoch)
+    {
+        m_epoch = epoch;
+    }
+
+    sample_t* data()
+    {
+        return m_data;
+    }
 
 protected:
-    void setData(sample_t* data) { m_data = data; }
+    void setData(sample_t* data)
+    {
+        m_data = data;
+    }
 
 private:
     // Lock        m_lock;
@@ -66,14 +79,17 @@ private:
 class ExternalAudioBus : public AudioBus
 {
 public:
-    ExternalAudioBus(Environment& env, const AudioBusId& id, size_t numFrames, const Epoch& epoch);
-    void setData(sample_t* data) { AudioBus::setData(data); }
+    ExternalAudioBus(Epoch epoch);
+    void setData(sample_t* data)
+    {
+        AudioBus::setData(data);
+    }
 };
 
 class InternalAudioBus : public AudioBus
 {
 public:
-    InternalAudioBus(Environment& env, const AudioBusId& id, size_t numFrames, const Epoch& epoch);
+    InternalAudioBus(size_t numFrames, Epoch epoch);
     virtual ~InternalAudioBus();
 };
 

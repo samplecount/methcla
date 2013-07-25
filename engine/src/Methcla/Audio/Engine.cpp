@@ -51,7 +51,8 @@ public:
     static const size_t kQueueSize = 8192;
 
     EnvironmentImpl(size_t realtimeMemorySize)
-        : m_rtMem(realtimeMemorySize)
+        : m_epoch(0)
+        , m_rtMem(realtimeMemorySize)
         , m_requests(kQueueSize)
         , m_worker(kQueueSize, 2)
     { }
@@ -59,9 +60,14 @@ public:
     typedef Utility::MessageQueue<Environment::Request> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
 
-    Memory::RTMemoryManager m_rtMem;
-    MessageQueue            m_requests;
-    Worker                  m_worker;
+    std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
+    std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioOutputs;
+    std::vector<std::shared_ptr<AudioBus>>          m_internalAudioBuses;
+    Epoch                                           m_epoch;
+
+    Memory::RTMemoryManager         m_rtMem;
+    MessageQueue                    m_requests;
+    Worker                          m_worker;
 };
 
 extern "C" {
@@ -141,10 +147,7 @@ Environment::Environment(PacketHandler handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_listener(handler)
-    , m_audioBuses    (options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
-    , m_freeAudioBuses(options.numHardwareInputChannels+options.numHardwareOutputChannels+options.maxNumAudioBuses)
     , m_nodes(options.maxNumNodes)
-    , m_epoch(0)
 {
     m_impl = new EnvironmentImpl(options.realtimeMemorySize);
 
@@ -153,29 +156,27 @@ Environment::Environment(PacketHandler handler, const Options& options)
 
     const Epoch prevEpoch = epoch() - 1;
 
-    m_audioInputChannels.reserve(options.numHardwareInputChannels);
-    for (uint32_t i=0; i < options.numHardwareInputChannels; i++) {
-        ExternalAudioBus* bus = new ExternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
-        m_audioBuses.insert(bus->id(), bus);
-        m_audioInputChannels.push_back(bus);
+    m_impl->m_externalAudioInputs.reserve(options.numHardwareInputChannels);
+    for (size_t i=0; i < options.numHardwareInputChannels; i++)
+    {
+        m_impl->m_externalAudioInputs.push_back(
+            std::make_shared<ExternalAudioBus>(prevEpoch)
+        );
     }
 
-    m_audioOutputChannels.reserve(options.numHardwareOutputChannels);
-    for (uint32_t i=options.numHardwareInputChannels;
-         i < options.numHardwareInputChannels+options.numHardwareOutputChannels;
-         i++)
+    m_impl->m_externalAudioOutputs.reserve(options.numHardwareOutputChannels);
+    for (size_t i=0; i < options.numHardwareOutputChannels; i++)
     {
-        ExternalAudioBus* bus = new ExternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
-        m_audioBuses.insert(bus->id(), bus);
-        m_audioOutputChannels.push_back(bus);
+        m_impl->m_externalAudioOutputs.push_back(
+            std::make_shared<ExternalAudioBus>(prevEpoch)
+        );
     }
 
-    for (uint32_t i=options.numHardwareInputChannels+options.numHardwareOutputChannels;
-         i < m_freeAudioBuses.size();
-         i++)
+    for (size_t i=0; i < options.maxNumAudioBuses; i++)
     {
-        AudioBus* bus = new InternalAudioBus(*this, AudioBusId(i), blockSize(), prevEpoch);
-        m_freeAudioBuses.insert(bus->id(), bus);
+        m_impl->m_internalAudioBuses.push_back(
+            std::make_shared<InternalAudioBus>(blockSize(), prevEpoch)
+        );
     }
 
     // Initialize Methcla_Host interface
@@ -204,24 +205,39 @@ Environment::~Environment()
 {
 }
 
-AudioBus* Environment::audioBus(const AudioBusId& id)
+AudioBus* Environment::audioBus(AudioBusId id)
 {
-    return m_audioBuses.lookup(id).get();
+    return m_impl->m_internalAudioBuses.at(id).get();
 }
 
-AudioBus& Environment::externalAudioOutput(size_t index)
+size_t Environment::numExternalAudioOutputs() const
 {
-    return *m_audioOutputChannels[index];
+    return m_impl->m_externalAudioOutputs.size();
 }
 
-AudioBus& Environment::externalAudioInput(size_t index)
+size_t Environment::numExternalAudioInputs() const
 {
-    return *m_audioInputChannels[index];
+    return m_impl->m_externalAudioInputs.size();
+}
+
+AudioBus* Environment::externalAudioOutput(AudioBusId id)
+{
+    return m_impl->m_externalAudioOutputs.at(id).get();
+}
+
+AudioBus* Environment::externalAudioInput(AudioBusId id)
+{
+    return m_impl->m_externalAudioInputs.at(id).get();
 }
 
 Memory::RTMemoryManager& Environment::rtMem()
 {
     return m_impl->m_rtMem;
+}
+
+Epoch Environment::epoch() const
+{
+    return m_impl->m_epoch;
 }
 
 void Environment::send(const void* packet, size_t size)
@@ -262,29 +278,29 @@ void Environment::process(size_t numFrames, const sample_t* const* inputs, sampl
     // Process non-realtime commands
     m_impl->m_worker.perform();
 
-    const size_t numInputs = m_audioInputChannels.size();
-    const size_t numOutputs = m_audioOutputChannels.size();
+    const size_t numExternalInputs = numExternalAudioInputs();
+    const size_t numExternalOutputs = numExternalAudioOutputs();
 
     // Connect input and output buses
-    for (size_t i=0; i < numInputs; i++) {
-        m_audioInputChannels[i]->setData(const_cast<sample_t*>(inputs[i]));
-        m_audioInputChannels[i]->setEpoch(epoch());
+    for (size_t i=0; i < numExternalInputs; i++) {
+        m_impl->m_externalAudioInputs[i]->setData(const_cast<sample_t*>(inputs[i]));
+        m_impl->m_externalAudioInputs[i]->setEpoch(epoch());
     }
-    for (size_t i=0; i < numOutputs; i++) {
-        m_audioOutputChannels[i]->setData(outputs[i]);
+    for (size_t i=0; i < numExternalOutputs; i++) {
+        m_impl->m_externalAudioOutputs[i]->setData(outputs[i]);
     }
 
     // Run DSP graph
     m_rootNode->process(numFrames);
 
     // Zero outputs that haven't been written to
-    for (size_t i=0; i < numOutputs; i++) {
-        if (m_audioOutputChannels[i]->epoch() != epoch()) {
+    for (size_t i=0; i < numExternalOutputs; i++) {
+        if (m_impl->m_externalAudioOutputs[i]->epoch() != epoch()) {
             memset(outputs[i], 0, numFrames * sizeof(sample_t));
         }
     }
 
-    m_epoch++;
+    m_impl->m_epoch++;
 }
 
 static void perform_nrt_free(Environment*, CommandData* data)
@@ -422,7 +438,23 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
     // Methcla_RequestId requestId = args.int32();
 
     try {
-        if (msg == "/s_new") {
+        if (false) {
+        } else if (msg == "/group/new") {
+            NodeId nodeId = NodeId(args.int32());
+            NodeId targetId = NodeId(args.int32());
+            int32_t addAction = args.int32();
+
+            Node* targetNode = m_nodes.lookup(targetId).get();
+            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
+                                                       : dynamic_cast<Synth*>(targetNode)->parent();
+            Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
+            nodes().insert(group->id(), group);
+
+            // int32_t* data = rtMem().allocOf<int32_t>(2);
+            // data[0] = requestId;
+            // data[1] = group->id();
+            // sendToWorker(Command(this, perform_response_nodeId, data));
+        } else if (msg == "/synth/new") {
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
@@ -454,22 +486,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             // data[0] = requestId;
             // data[1] = synth->id();
             // sendToWorker(Command(this, perform_response_nodeId, data));
-        } else if (msg == "/g_new") {
-            NodeId nodeId = NodeId(args.int32());
-            NodeId targetId = NodeId(args.int32());
-            int32_t addAction = args.int32();
-
-            Node* targetNode = m_nodes.lookup(targetId).get();
-            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
-                                                       : dynamic_cast<Synth*>(targetNode)->parent();
-            Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
-            nodes().insert(group->id(), group);
-
-            // int32_t* data = rtMem().allocOf<int32_t>(2);
-            // data[0] = requestId;
-            // data[1] = group->id();
-            // sendToWorker(Command(this, perform_response_nodeId, data));
-        } else if (msg == "/n_free") {
+        } else if (msg == "/node/free") {
             NodeId nodeId = NodeId(args.int32());
 
             // Check node id validity
@@ -486,7 +503,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             // int32_t* data = rtMem().allocOf<int32_t>(1);
             // data[0] = requestId;
             // sendToWorker(Command(this, perform_response_ack, data));
-        } else if (msg == "/n_set") {
+        } else if (msg == "/node/set") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             float value = args.float32();
@@ -501,10 +518,27 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             // int32_t* data = rtMem().allocOf<int32_t>(1);
             // data[0] = requestId;
             // sendToWorker(Command(this, perform_response_ack, data));
+        } else if (msg == "/synth/map/input") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            AudioBusId busId = AudioBusId(args.int32());
+            BusMappingFlags flags = BusMappingFlags(args.int32());
+
+            Node* node = m_nodes.lookup(nodeId).get();
+            // Could traverse all synths in a group
+            if (!node->isSynth())
+                throw std::runtime_error("Node is not a synth");
+
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
+                throw std::runtime_error("Synth input index out of range");
+
+            synth->mapInput(index, busId, flags);
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             AudioBusId busId = AudioBusId(args.int32());
+            BusMappingFlags flags = BusMappingFlags(args.int32());
 
             Node* node = m_nodes.lookup(nodeId).get();
             // Could traverse all synths in a group
@@ -515,7 +549,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
                 throw std::runtime_error("Synth output index out of range");
 
-            synth->mapOutput(index, busId, kOut);
+            synth->mapOutput(index, busId, flags);
 
             // Could reply with previous bus mapping
             // int32_t* data = rtMem().allocOf<int32_t>(1);
