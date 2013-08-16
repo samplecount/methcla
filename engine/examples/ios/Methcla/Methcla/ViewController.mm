@@ -455,8 +455,9 @@ struct SynthParams
 
     for (UITouch* touch in touches) {
         SynthParams ps = [self synthParamsForTouch:touch];
-        Methcla::SynthId synth = engine->synth(METHCLA_PLUGINS_SINE_URI, { ps.freq });
-        engine->mapOutput(synth, 0, Methcla::AudioBusId(1));
+        Methcla::SynthId synth = engine->synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { ps.freq });
+        engine->mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
+        engine->mapOutput(synth, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
 //        std::cout << "Synth " << synth << " started: freq=" << ps.freq << " amp=" << ps.amp << std::endl;
         [synths setObject:[NSNumber numberWithLong:(long)synth.id()]
                 forKey:[NSValue valueWithPointer:(const void*)touch]];

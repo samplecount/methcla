@@ -18,9 +18,8 @@
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
-AudioBus::AudioBus(Environment& env, const AudioBusId& id, size_t /*numFrames*/, sample_t* data, const Epoch& epoch)
-    : Resource(env, id)
-    , m_epoch(epoch)
+AudioBus::AudioBus(sample_t* data, Epoch epoch)
+    : m_epoch(epoch)
     , m_data(data)
 {
 }
@@ -29,16 +28,13 @@ AudioBus::~AudioBus()
 {
 }
 
-ExternalAudioBus::ExternalAudioBus(Environment& env, const AudioBusId& id, size_t numFrames, const Epoch& epoch)
-    : AudioBus(env, id, numFrames, 0, epoch)
+ExternalAudioBus::ExternalAudioBus(Epoch epoch)
+    : AudioBus(nullptr, epoch)
 {
 }
 
-InternalAudioBus::InternalAudioBus(Environment& env, const AudioBusId& id, size_t numFrames, const Epoch& epoch)
-    : AudioBus( env
-              , id
-              , numFrames
-              , allocAlignedOf<sample_t>(kSIMDAlignment, numFrames)
+InternalAudioBus::InternalAudioBus(size_t numFrames, Epoch epoch)
+    : AudioBus( allocAlignedOf<sample_t>(kSIMDAlignment, numFrames)
               , epoch )
 {
 }

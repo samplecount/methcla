@@ -93,14 +93,38 @@ namespace Methcla
         };
     };
 
-    class SynthId : public detail::Id<SynthId,int32_t>
+    class NodeId : public detail::Id<NodeId,int32_t>
+    {
+    public:
+        NodeId(int32_t id)
+            : Id<NodeId,int32_t>(id)
+        { }
+        NodeId()
+            : NodeId(-1)
+        { }
+    };
+
+    class GroupId : public NodeId
+    {
+    public:
+        // Inheriting constructors not supported by clang 3.2
+        // using NodeId::NodeId;
+        GroupId(int32_t id)
+            : NodeId(id)
+        { }
+        GroupId()
+            : NodeId()
+        { }
+    };
+
+    class SynthId : public NodeId
     {
     public:
         SynthId(int32_t id)
-            : Id<SynthId,int32_t>(id)
+            : NodeId(id)
         { }
         SynthId()
-            : SynthId(-1)
+            : NodeId()
         { }
     };
 
@@ -113,6 +137,12 @@ namespace Methcla
         AudioBusId()
             : AudioBusId(0)
         { }
+    };
+
+    enum BusMappingFlags
+    {
+        kBusMappingInternal = 0x0,
+        kBusMappingExternal = 0x1
     };
 
     template <typename T> class ResourceIdAllocator
@@ -463,16 +493,43 @@ namespace Methcla
             check(methcla_engine_stop(m_engine));
         }
 
-        SynthId synth(const char* synthDef, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        GroupId root() const
         {
-            const char address[] = "/s_new";
+            return GroupId(0);
+        }
+
+        GroupId group(GroupId parent)
+        {
+            const char address[] = "/group/new";
+            const size_t numArgs = 3;
+
+            const int32_t nodeId = m_nodeIds.alloc();
+
+            Packet request(m_packets);
+            request.packet()
+                .openMessage(address, numArgs)
+                .int32(nodeId)
+                .int32(parent.id())
+                .int32(0) // add action
+                .closeMessage();
+
+            dumpRequest(std::cerr, request.packet());
+
+            send(request);
+
+            return GroupId(nodeId);
+        }
+
+        SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        {
+            const char address[] = "/synth/new";
             const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
-            const size_t packetSize = OSCPP::Size::message(address, numTags)
-                                         + OSCPP::Size::string(256)
-                                         + OSCPP::Size::int32()
-                                         + 2 * OSCPP::Size::int32()
-                                         + controls.size() * OSCPP::Size::float32()
-                                         + 256; // margin for options. better: pool allocator with fixed size packets.
+            // const size_t packetSize = OSCPP::Size::message(address, numTags)
+            //                              + OSCPP::Size::string(256)
+            //                              + OSCPP::Size::int32()
+            //                              + 2 * OSCPP::Size::int32()
+            //                              + controls.size() * OSCPP::Size::float32()
+            //                              + 256; // margin for options. better: pool allocator with fixed size packets.
 
             const int32_t nodeId = m_nodeIds.alloc();
             // const Methcla_RequestId requestId = getRequestId();
@@ -482,7 +539,7 @@ namespace Methcla
                 .openMessage(address, numTags)
                 .string(synthDef)
                 .int32(nodeId)
-                .int32(0)
+                .int32(parent.id())
                 .int32(0)
                 .putArray(controls.begin(), controls.end());
 
@@ -517,12 +574,10 @@ namespace Methcla
             return SynthId(nodeId);
         }
 
-        void mapOutput(const SynthId& synth, size_t index, AudioBusId bus)
+        void mapInput(const SynthId& synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
         {
-            const char address[] = "/synth/map/output";
-            const size_t numArgs = 3;
-            const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                                        + numArgs * OSCPP::Size::int32();
+            const char address[] = "/synth/map/input";
+            const size_t numArgs = 4;
 
             // Methcla_RequestId requestId = getRequestId();
 
@@ -533,6 +588,7 @@ namespace Methcla
                     .int32(synth.id())
                     .int32(index)
                     .int32(bus.id())
+                    .int32(flags)
                 .closeMessage();
 
             dumpRequest(std::cerr, request.packet());
@@ -540,13 +596,12 @@ namespace Methcla
             send(request);
         }
 
-        void set(const SynthId& synth, size_t index, double value)
+        void mapOutput(const SynthId& synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
         {
-            const char address[] = "/n_set";
-            const size_t numArgs = 3;
-            const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                                        + 2 * OSCPP::Size::int32()
-                                        + OSCPP::Size::float32();
+            const char address[] = "/synth/map/output";
+            const size_t numArgs = 4;
+            // const size_t packetSize = OSCPP::Size::message(address, numArgs)
+            //                             + numArgs * OSCPP::Size::int32();
 
             // Methcla_RequestId requestId = getRequestId();
 
@@ -556,6 +611,31 @@ namespace Methcla
                     // .int32(requestId)
                     .int32(synth.id())
                     .int32(index)
+                    .int32(bus.id())
+                    .int32(flags)
+                .closeMessage();
+
+            dumpRequest(std::cerr, request.packet());
+            // execRequest(requestId, request);
+            send(request);
+        }
+
+        void set(const NodeId& node, size_t index, double value)
+        {
+            const char address[] = "/node/set";
+            const size_t numArgs = 3;
+            // const size_t packetSize = OSCPP::Size::message(address, numArgs)
+            //                             + 2 * OSCPP::Size::int32()
+            //                             + OSCPP::Size::float32();
+
+            // Methcla_RequestId requestId = getRequestId();
+
+            Packet request(m_packets);
+            request.packet()
+                .openMessage(address, numArgs)
+                    // .int32(requestId)
+                    .int32(node.id())
+                    .int32(index)
                     .float32(value)
                 .closeMessage();
 
@@ -564,22 +644,22 @@ namespace Methcla
             send(request);
         }
 
-        void freeNode(const SynthId& synth)
+        void freeNode(const NodeId& node)
         {
-            const char address[] = "/n_free";
+            const char address[] = "/node/free";
             const size_t numArgs = 1;
-            const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
+            // const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
             // const Methcla_RequestId requestId = getRequestId();
             Packet request(m_packets);
             request.packet()
                 .openMessage(address, numArgs)
                     // .int32(requestId)
-                    .int32(synth.id())
+                    .int32(node.id())
                 .closeMessage();
             // execRequest(requestId, request);
             dumpRequest(std::cerr, request.packet());
             send(request);
-            m_nodeIds.free(synth.id());
+            m_nodeIds.free(node.id());
         }
 
     private:
