@@ -386,7 +386,7 @@ mkRules options = do
                            >>> append libraries ["c++", "m"]
                            $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
-                result <- sharedLibrary env cTarget toolChain buildFlags
+                result <- staticLibrary env cTarget toolChain buildFlags
                             "methcla-jack" (methclaSources $
                                     SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
                 phony "macosx-jack" $ need [result]
