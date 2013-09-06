@@ -24,6 +24,8 @@
 # pragma clang diagnostic pop
 #endif
 
+#include <methcla/engine.hpp>
+
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
