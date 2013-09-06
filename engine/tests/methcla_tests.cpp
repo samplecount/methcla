@@ -16,7 +16,10 @@
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
-# include <catch.hpp>
+
+#define CATCH_CONFIG_RUNNER
+#include <catch.hpp>
+
 #if defined(__clang__)
 # pragma clang diagnostic pop
 #endif
@@ -164,6 +167,6 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
 #if !defined(__ANDROID__)
 int main(int argc, char* const argv[])
 {
-    return Catch::Main(argc, argv);
+    return Catch::Session().run(argc, argv);
 }
 #endif // defined(__ANDROID__)
