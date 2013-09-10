@@ -22,22 +22,12 @@ namespace Methcla { namespace Audio { namespace IO
     class DummyDriver : public Driver
     {
     public:
-        struct Options
-        {
-            Options()
-                : sampleRate(44100)
-                , numInputs(0)
-                , numOutputs(2)
-                , bufferSize(512)
-            { }
+        const double kDefaultSampleRate = 44100;
+        const size_t kDefaultNumInputs = 2;
+        const size_t kDefaultNumOutputs = 2;
+        const size_t kDefaultBufferSize = 512;
 
-            size_t sampleRate;
-            size_t numInputs;
-            size_t numOutputs;
-            size_t bufferSize;
-        };
-
-        DummyDriver(const Options& options=Options());
+        DummyDriver(Options options);
         virtual ~DummyDriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }

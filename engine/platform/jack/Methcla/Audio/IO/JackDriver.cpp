@@ -150,7 +150,7 @@ void JackDriver::stop()
     jack_deactivate(m_jackClient);
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver()
+Driver* Methcla::Audio::IO::Options()
 {
     return new JackDriver();
 }

@@ -24,7 +24,7 @@ namespace Methcla { namespace Audio { namespace IO
     class RemoteIODriver : public Driver
     {
     public:
-        RemoteIODriver();
+        RemoteIODriver(Options options);
         virtual ~RemoteIODriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }

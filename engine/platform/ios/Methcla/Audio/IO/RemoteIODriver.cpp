@@ -110,9 +110,10 @@ static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRa
     desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
 }
 
-RemoteIODriver::RemoteIODriver()
-    : m_numInputs(2)
-    , m_numOutputs(2)
+RemoteIODriver::RemoteIODriver(Options options)
+    : Driver(options)
+    , m_numInputs(options.numInputs >= 0 ? options.numInputs : 2)
+    , m_numOutputs(options.numOutputs >= 0 ? options.numOutputs : 2)
     , m_inputBuffers(nullptr)
     , m_outputBuffers(nullptr)
 {
@@ -146,15 +147,27 @@ RemoteIODriver::RemoteIODriver()
       , "couldn't get hw sample rate");
     m_sampleRate = hwSampleRate;
 
-    Float32 hwBufferSize;
-    outSize = sizeof(hwBufferSize);
+    // Configure hardware buffer size
+    Float32 hwBufferDuration;
+
+    if (options.bufferSize >= 0) {
+        hwBufferDuration = (double)options.bufferSize / m_sampleRate;
+        METHCLA_THROW_IF_ERROR(
+            AudioSessionSetProperty(
+                kAudioSessionProperty_PreferredHardwareIOBufferDuration
+              , sizeof(hwBufferDuration)
+              , &hwBufferDuration)
+          , "couldn't set preferred hardware I/O buffer duration");
+    }
+
+    outSize = sizeof(hwBufferDuration);
     METHCLA_THROW_IF_ERROR(
         AudioSessionGetProperty(
             kAudioSessionProperty_CurrentHardwareIOBufferDuration
           , &outSize
-          , &hwBufferSize)
-      , "couldn't set i/o buffer duration");
-    
+          , &hwBufferDuration)
+      , "couldn't get hardware I/O buffer duration");
+
     // Check whether input is available
     UInt32 inputAvailable;
     outSize = sizeof(inputAvailable);
@@ -238,7 +251,7 @@ RemoteIODriver::RemoteIODriver()
     }
 
     // This needs to be set before initializing the AudioUnit?
-    m_bufferSize = (size_t)(m_sampleRate * hwBufferSize + .5);
+    m_bufferSize = (size_t)(m_sampleRate * hwBufferDuration + .5);
     UInt32 maxFPS = m_bufferSize;
     METHCLA_THROW_IF_ERROR(
         AudioUnitSetProperty(
@@ -475,7 +488,7 @@ OSStatus RemoteIODriver::RenderCallback(
     return noErr;
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver()
+Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
 {
-    return new RemoteIODriver();
+    return new RemoteIODriver(options);
 }

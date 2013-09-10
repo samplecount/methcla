@@ -44,7 +44,12 @@ typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId requ
 typedef struct Methcla_Engine Methcla_Engine;
 
 //* Create a new engine with the given packet handling closure and options.
-METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine);
+METHCLA_EXPORT Methcla_Error methcla_engine_new(
+    Methcla_PacketHandler handler,
+    void* handler_data,
+    const Methcla_OSCPacket* options,
+    Methcla_Engine** engine
+    );
 
 //* Free the resources associated with engine.
 //

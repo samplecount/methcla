@@ -197,7 +197,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PacketHandler handler);
+        Engine(PacketHandler handler, IO::Driver::Options driverOptions);
         virtual ~Engine();
 
         Environment& env()

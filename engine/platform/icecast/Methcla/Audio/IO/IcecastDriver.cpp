@@ -253,7 +253,7 @@ void IcecastDriver::stop()
     m_impl->stop();
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver()
+Driver* Methcla::Audio::IO::Options()
 {
     IcecastDriver::Options options;
     options.password = "h3aRh3aR";

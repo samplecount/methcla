@@ -49,6 +49,8 @@ struct Methcla_Engine
         std::list<Methcla_LibraryFunction> libs;
         // std::string pluginPath = ".";
 
+        Methcla::Audio::IO::Driver::Options driverOptions;
+
         if (packet.isBundle()) {
             auto packets = OSCPP::Server::Bundle(packet).packets();
             while (!packets.atEnd()) {
@@ -66,12 +68,16 @@ struct Methcla_Engine
                     // else if (option == "/engine/option/plugin-path") {
                     //     pluginPath = option.args().string();
                     // }
+                    else if (option == "/engine/option/driver/buffer-size") {
+                        driverOptions.bufferSize = option.args().int32();
+                    }
                 }
             }
         }
 
         m_engine = new Methcla::Audio::Engine(
-            PacketHandler { handler, handlerData }
+            PacketHandler { handler, handlerData },
+            driverOptions
         );
 
         m_engine->loadPlugins(libs);

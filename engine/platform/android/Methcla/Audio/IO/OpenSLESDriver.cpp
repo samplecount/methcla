@@ -116,7 +116,7 @@ void OpenSLESDriver::processCallback(
     }
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver()
+Driver* Methcla::Audio::IO::Options()
 {
     return new OpenSLESDriver();
 }

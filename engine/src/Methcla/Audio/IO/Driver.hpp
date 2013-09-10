@@ -23,9 +23,18 @@ namespace Methcla { namespace Audio { namespace IO {
 class Driver
 {
 public:
+    struct Options
+    {
+        double sampleRate = -1.;
+        int numInputs = -1;
+        int numOutputs = -1;
+        int bufferSize = -1;
+        int blockSize = -1;
+    };
+
     typedef void (*ProcessCallback)(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
-    Driver();
+    Driver(Options options);
     virtual ~Driver();
 
     void setProcessCallback(ProcessCallback callback, void* data);
@@ -34,6 +43,8 @@ public:
     virtual size_t numInputs() const = 0;
     virtual size_t numOutputs() const = 0;
     virtual size_t bufferSize() const = 0;
+
+    size_t blockSize() const;
 
     virtual void start() = 0;
     virtual void stop() = 0;
@@ -47,10 +58,11 @@ protected:
 private:
     ProcessCallback m_processCallback;
     void*           m_processData;
+    size_t          m_blockSize;
 };
 
 //* Instantiate the default driver for the current platform.
-Driver* defaultPlatformDriver();
+Driver* defaultPlatformDriver(Driver::Options options);
 
 } } }
 
