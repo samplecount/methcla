@@ -25,7 +25,7 @@ namespace Methcla { namespace Audio { namespace IO
     class JackDriver : public Driver
     {
     public:
-        JackDriver();
+        JackDriver(Options options);
         virtual ~JackDriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }

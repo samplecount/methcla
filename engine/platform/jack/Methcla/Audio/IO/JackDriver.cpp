@@ -26,8 +26,9 @@ using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 using namespace std;
 
-JackDriver::JackDriver()
-    : m_sampleRate(0)
+JackDriver::JackDriver(Options options)
+    : Driver(options)
+    , m_sampleRate(0)
     , m_bufferSize(0)
 {
     jack_status_t status;
@@ -150,7 +151,7 @@ void JackDriver::stop()
     jack_deactivate(m_jackClient);
 }
 
-Driver* Methcla::Audio::IO::Options()
+Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
 {
-    return new JackDriver();
+    return new JackDriver(options);
 }
