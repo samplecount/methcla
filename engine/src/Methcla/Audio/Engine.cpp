@@ -659,6 +659,12 @@ Engine::Engine(PacketHandler handler, IO::Driver::Options driverOptions)
 #endif
     m_driver->setProcessCallback(processCallback, this);
 
+    std::cout << "Starting methcla engine" << std::endl
+              << "  sampleRate = " << m_driver->sampleRate() << std::endl
+              << "  numInputs = "  << m_driver->numInputs() << std::endl
+              << "  numOutputs = " << m_driver->numOutputs() << std::endl
+              << "  bufferSize = " << m_driver->bufferSize() << std::endl;
+
     Environment::Options options;
     options.sampleRate = m_driver->sampleRate();
     options.blockSize = m_driver->bufferSize();
