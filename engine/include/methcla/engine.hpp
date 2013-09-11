@@ -495,7 +495,7 @@ namespace Methcla
             }
             bundle.closeBundle();
             const Methcla_OSCPacket packet = { .data = bundle.data(), .size = bundle.size() };
-            check(methcla_engine_new(handlePacket, this, &packet, &m_engine));
+            checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
         ~Engine()
         {
@@ -514,12 +514,12 @@ namespace Methcla
 
         void start()
         {
-            check(methcla_engine_start(m_engine));
+            checkReturnCode(methcla_engine_start(m_engine));
         }
 
         void stop()
         {
-            check(methcla_engine_stop(m_engine));
+            checkReturnCode(methcla_engine_stop(m_engine));
         }
 
         GroupId root() const
@@ -692,7 +692,7 @@ namespace Methcla
         }
 
     private:
-        static void check(Methcla_Error err)
+        static void checkReturnCode(Methcla_Error err)
         {
             if (err != kMethcla_NoError) {
                 const char* msg = methcla_error_message(err);
@@ -738,7 +738,7 @@ namespace Methcla
 
         void send(const void* packet, size_t size)
         {
-            check(methcla_engine_send(m_engine, packet, size));
+            checkReturnCode(methcla_engine_send(m_engine, packet, size));
         }
 
         void send(const OSCPP::Client::Packet& packet)
