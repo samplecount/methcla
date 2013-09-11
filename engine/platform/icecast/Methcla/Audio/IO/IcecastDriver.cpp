@@ -18,6 +18,7 @@
 
 #include <boost/assert.hpp>
 #include <chrono>
+#include <iostream>
 #include <lame/lame.h>
 #include <memory>
 #include <shout/shout.h>
@@ -37,16 +38,16 @@ public:
     typedef std::unique_ptr<lame_global_flags,std::function<int(lame_global_flags*)>> LamePtr;
     typedef std::unique_ptr<shout_t,std::function<void(shout_t*)>> ShoutPtr;
 
-    IcecastDriverImpl(const IcecastDriver::Options& options, IcecastDriver* driver)
+    IcecastDriverImpl(Driver::Options driverOptions, IcecastDriver::IcecastOptions icecastOptions, IcecastDriver* driver)
         : m_driver(driver)
-        , m_sampleRate(options.sampleRate)
-        , m_bufferSize(options.bufferSize)
+        , m_sampleRate(driverOptions.sampleRate)
+        , m_bufferSize(driverOptions.bufferSize)
         , m_outputBuffers(Driver::makeBuffers(kNumOutputs, m_bufferSize))
         , m_lame(LamePtr(lame_init(), lame_close))
         , m_shout(ShoutPtr(shout_new(), shout_free))
     {
-        initEncoder(m_lame.get(), options);
-        initConnection(m_shout.get(), options);
+        initEncoder(m_lame.get(), driverOptions);
+        initConnection(m_shout.get(), icecastOptions);
         connect();
     }
 
@@ -146,7 +147,7 @@ private:
         }
     }
 
-    void initEncoder(lame_global_flags* self, const IcecastDriver::Options& options)
+    void initEncoder(lame_global_flags* self, Driver::Options options)
     {
         // TODO: Verify sample rate validity
         check(self, lame_set_in_samplerate(self, (int)options.sampleRate));
@@ -173,7 +174,7 @@ private:
         }
     }
 
-    void initConnection(shout_t* self, const IcecastDriver::Options& options)
+    void initConnection(shout_t* self, IcecastDriver::IcecastOptions options)
     {
         check(self, shout_set_host(self, options.host.c_str()));
         check(self, shout_set_port(self, options.port));
@@ -211,10 +212,11 @@ public:
     }
 };
 
-IcecastDriver::IcecastDriver(const Options& options)
+IcecastDriver::IcecastDriver(Driver::Options driverOptions, IcecastOptions icecastOptions)
+    : Driver(driverOptions)
 {
     static ShoutLibrary libshout;
-    m_impl = new detail::IcecastDriverImpl(options, this);
+    m_impl = new detail::IcecastDriverImpl(driverOptions, icecastOptions, this);
 }
 
 IcecastDriver::~IcecastDriver()
@@ -253,11 +255,11 @@ void IcecastDriver::stop()
     m_impl->stop();
 }
 
-Driver* Methcla::Audio::IO::Options()
+Driver* Methcla::Audio::IO::defaultPlatformDriver(Methcla::Audio::IO::Driver::Options driverOptions)
 {
-    IcecastDriver::Options options;
+    IcecastDriver::IcecastOptions options;
     options.password = "h3aRh3aR";
     options.mount = "wuppy";
     options.name = options.mount;
-    return new IcecastDriver(options);
+    return new IcecastDriver(driverOptions, options);
 }

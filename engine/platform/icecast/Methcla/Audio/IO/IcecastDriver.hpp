@@ -30,7 +30,7 @@ namespace Methcla { namespace Audio { namespace IO {
     class IcecastDriver : public Driver
     {
     public:
-        struct Options
+        struct IcecastOptions
         {
             std::string host = "localhost";
             int port = 8000;
@@ -38,11 +38,9 @@ namespace Methcla { namespace Audio { namespace IO {
             std::string password;
             std::string mount;
             std::string name;
-            double sampleRate = 44100.;
-            size_t bufferSize = 16384;
         };
 
-        IcecastDriver(const Options& options=Options());
+        IcecastDriver(Driver::Options driverOptions, IcecastOptions icecastOptions=IcecastOptions());
         ~IcecastDriver();
 
         virtual double sampleRate() const override;
