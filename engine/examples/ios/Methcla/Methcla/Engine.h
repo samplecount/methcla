@@ -26,8 +26,8 @@ Methcla::Engine* makeEngine()
 //    NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
 
     Methcla::Engine* engine = new Methcla::Engine({
-        Methcla::Option::pluginLibrary(methcla_plugins_sine),
-        Methcla::Option::driverBufferSize(256)
+        Methcla::Option::driverBufferSize(256),
+        Methcla::Option::pluginLibrary(methcla_plugins_sine)
         });
     engine->start();
 
