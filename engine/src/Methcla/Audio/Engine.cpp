@@ -743,12 +743,12 @@ Engine::~Engine()
 
 void Engine::start()
 {
-    m_driver->start();
+    driver()->start();
 }
 
 void Engine::stop()
 {
-    m_driver->stop();
+    driver()->stop();
 }
 
 void Engine::loadPlugins(const std::list<Methcla_LibraryFunction>& funcs)

@@ -194,6 +194,15 @@ namespace Methcla { namespace Audio
         Engine(PacketHandler handler, IO::Driver::Options driverOptions);
         virtual ~Engine();
 
+        IO::Driver* driver()
+        {
+            return m_driver;
+        }
+        const IO::Driver* driver() const
+        {
+            return m_driver;
+        }
+
         Environment& env()
         {
             return *m_env;
