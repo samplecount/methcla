@@ -26,6 +26,72 @@ using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
+// OSC request with reference counting.
+class Request
+{
+    struct Data
+    {
+        size_t  m_refs;
+        void*   m_packet;
+    };
+
+public:
+    Request()
+        : m_env(nullptr)
+        , m_data(nullptr)
+        , m_size(0)
+    {
+    }
+
+    Request(Environment* env, const void* packet, size_t size)
+        : m_env(env)
+        , m_size(size)
+    {
+        // Allocate memory for packet and data block
+        char* mem = Memory::allocOf<char>(sizeof(Data) + size);
+        memcpy(mem + sizeof(Data), packet, size);
+        m_data = reinterpret_cast<Data*>(mem);
+        m_data->m_refs = 1;
+        m_data->m_packet = mem + sizeof(Data);
+    }
+
+    void retain()
+    {
+        if (m_data != nullptr)
+            m_data->m_refs++;
+    }
+
+    void release()
+    {
+        if (m_data != nullptr) {
+            m_data->m_refs--;
+            if (m_data->m_refs == 0)
+                m_env->sendToWorker(perform_free_data, m_data);
+        }
+    }
+
+    void* packet()
+    {
+        return m_data == nullptr ? nullptr : m_data->m_packet;
+    }
+
+    size_t size() const
+    {
+        return m_size;
+    }
+
+private:
+    static void perform_free_data(Environment*, CommandData* data)
+    {
+        Methcla::Memory::free(data);
+    }
+
+private:
+    Environment* m_env;
+    Data*        m_data;
+    size_t       m_size;
+};
+
 struct Command
 {
     void perform()
@@ -57,7 +123,7 @@ public:
         , m_worker(kQueueSize, 2)
     { }
 
-    typedef Utility::MessageQueue<Environment::Request> MessageQueue;
+    typedef Utility::MessageQueue<Request> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
 
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
@@ -242,12 +308,7 @@ Epoch Environment::epoch() const
 
 void Environment::send(const void* packet, size_t size)
 {
-    char* myPacket = Memory::allocOf<char>(size);
-    memcpy(myPacket, packet, size);
-    Request req;
-    req.packet = myPacket;
-    req.size = size;
-    m_impl->m_requests.send(req);
+    m_impl->m_requests.send(Request(this, packet, size));
 }
 
 void Environment::sendToWorker(PerformFunc f, void* data)
@@ -414,7 +475,7 @@ void Environment::processRequests()
     Request msg;
     while (m_impl->m_requests.next(msg)) {
         try {
-            OSCPP::Server::Packet packet(msg.packet, msg.size);
+            OSCPP::Server::Packet packet(msg.packet(), msg.size());
             if (packet.isBundle()) {
                 processBundle(packet);
             } else {
@@ -423,8 +484,8 @@ void Environment::processRequests()
         } catch (std::exception& e) {
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
-        // Free packet in NRT thread
-        sendToWorker(perform_nrt_free, msg.packet);
+        // Release request (will free packet data in NRT thread)
+        msg.release();
     }
 }
 

@@ -141,12 +141,6 @@ namespace Methcla { namespace Audio
         void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
     private:
-        struct Request
-        {
-            void* packet;
-            size_t size;
-        };
-
         static void perform_response_ack(Environment*, CommandData*);
         static void perform_response_nodeId(Environment*, CommandData*);
         static void perform_response_error(Environment*, CommandData*);
