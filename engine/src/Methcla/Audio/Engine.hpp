@@ -57,7 +57,7 @@ namespace Methcla { namespace Audio
             Options()
                 : realtimeMemorySize(1024*1024)
                 , maxNumNodes(1024)
-                , maxNumAudioBuses(128)
+                , maxNumAudioBuses(1024)
                 , maxNumControlBuses(4096)
                 , sampleRate(44100)
                 , blockSize(64)
