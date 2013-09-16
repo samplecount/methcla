@@ -148,8 +148,10 @@ namespace Methcla { namespace Audio
         static void perform_response_query_external_outputs(Environment*, CommandData*);
 
         void processRequests();
-        void processMessage(const OSCPP::Server::Message& message);
-        void processBundle(const OSCPP::Server::Bundle& bundle);
+        bool processBundle(const OSCPP::Server::Bundle& bundle);
+        void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time currentTime);
+        bool processMessage(const OSCPP::Server::Message& message);
+        void processMessage(const OSCPP::Server::Message& message, Methcla_Time scheduleTime, Methcla_Time currentTime);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)

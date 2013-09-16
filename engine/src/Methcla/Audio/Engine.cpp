@@ -18,6 +18,7 @@
 #include "Methcla/Exception.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
+#include <boost/heap/priority_queue.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <oscpp/print.hpp>
@@ -105,6 +106,79 @@ struct Command
     void*        m_data;
 };
 
+class ScheduleItem
+{
+public:
+    ScheduleItem(Methcla_Time time, const Request& request)
+        : m_time(time)
+        , m_request(request)
+    {
+        m_request.retain();
+    }
+    ~ScheduleItem()
+    {
+        m_request.release();
+    }
+
+    Methcla_Time time() const
+    {
+        return m_time;
+    }
+
+    const Request& request() const
+    {
+        return m_request;
+    }
+
+    bool operator==(const ScheduleItem& other) const
+    {
+        return time() == other.time();
+    }
+
+    bool operator<(const ScheduleItem& other) const
+    {
+        return time() > other.time();
+    }
+
+private:
+    Methcla_Time    m_time;
+    Request         m_request;
+};
+
+class Scheduler
+{
+    typedef boost::heap::priority_queue<
+        ScheduleItem,
+        boost::heap::stable<true>,
+        boost::heap::stability_counter_type<uint64_t>
+        > PriorityQueue;
+
+    // We need constant time size and reserve in order to avoid memory allocations from the audio thread.
+    static_assert(PriorityQueue::has_reserve, "priority queue does not implement reserve()");
+    static_assert(PriorityQueue::constant_time_size, "priority queue implementation has non-constant time size()");
+    // We want a stable priority queue
+    static_assert(PriorityQueue::is_stable, "priority queue implementation is not stable");
+
+    size_t        m_maxSize;
+    PriorityQueue m_queue;
+
+public:
+    Scheduler(size_t maxSize)
+        : m_maxSize(maxSize)
+    {
+        m_queue.reserve(m_maxSize);
+    }
+
+    void push(Methcla_Time time, const Request& request)
+    {
+        if (m_queue.size() < m_maxSize) {
+            m_queue.push(ScheduleItem(time, request));
+        } else {
+            throw std::runtime_error("Scheduler queue overflow");
+        }
+    }
+};
+
 class Methcla::Audio::EnvironmentImpl
 {
 public:
@@ -121,6 +195,7 @@ public:
         , m_rtMem(realtimeMemorySize)
         , m_requests(kQueueSize)
         , m_worker(kQueueSize, 2)
+        , m_scheduler(kQueueSize)
     { }
 
     typedef Utility::MessageQueue<Request> MessageQueue;
@@ -134,6 +209,7 @@ public:
     Memory::RTMemoryManager         m_rtMem;
     MessageQueue                    m_requests;
     Worker                          m_worker;
+    Scheduler                       m_scheduler;
 };
 
 extern "C" {
@@ -472,24 +548,63 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 
 void Environment::processRequests()
 {
-    Request msg;
-    while (m_impl->m_requests.next(msg)) {
+    Request request;
+    while (m_impl->m_requests.next(request)) {
         try {
-            OSCPP::Server::Packet packet(msg.packet(), msg.size());
+            OSCPP::Server::Packet packet(request.packet(), request.size());
             if (packet.isBundle()) {
-                processBundle(packet);
+                OSCPP::Server::Bundle bundle(packet);
+                bool needsScheduling = processBundle(bundle);
+                if (!needsScheduling) {
+                    request.release();
+                } else if (bundle.time() == 1) {
+                    processBundle(packet, bundle.time());
+                    request.release();
+                } else {
+                    m_impl->m_scheduler.push(bundle.time(), request);
+                }
             } else {
                 processMessage(packet);
+                processMessage(packet, 1, 1);
+                request.release();
             }
         } catch (std::exception& e) {
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
-        // Release request (will free packet data in NRT thread)
-        msg.release();
     }
 }
 
-void Environment::processMessage(const OSCPP::Server::Message& msg)
+bool Environment::processBundle(const OSCPP::Server::Bundle& bundle)
+{
+    auto packets = bundle.packets();
+    bool needsScheduling = false;
+    while (!packets.atEnd()) {
+        auto p = packets.next();
+        if (p.isBundle()) {
+            needsScheduling = processBundle(p) || needsScheduling;
+        } else {
+            needsScheduling = processMessage(p) || needsScheduling;
+            processMessage(p, 1, 1);
+        }
+    }
+    return needsScheduling;
+}
+
+void Environment::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time currentTime)
+{
+    auto packets = bundle.packets();
+    while (!packets.atEnd()) {
+        auto p = packets.next();
+        if (p.isBundle()) {
+            // NOTE: Nested bundles are flattened
+            processBundle(p, currentTime);
+        } else {
+            processMessage(p, bundle.time(), currentTime);
+        }
+    }
+}
+
+bool Environment::processMessage(const OSCPP::Server::Message& msg)
 {
 #if 0
     std::cerr << "Request (recv): " << msg << std::endl;
@@ -499,8 +614,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
     // Methcla_RequestId requestId = args.int32();
 
     try {
-        if (false) {
-        } else if (msg == "/group/new") {
+        if (msg == "/group/new") {
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
             int32_t addAction = args.int32();
@@ -511,10 +625,8 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
             Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
             nodes().insert(group->id(), group);
 
-            // int32_t* data = rtMem().allocOf<int32_t>(2);
-            // data[0] = requestId;
-            // data[1] = group->id();
-            // sendToWorker(Command(this, perform_response_nodeId, data));
+            // No scheduling needed.
+            return false;
         } else if (msg == "/synth/new") {
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
@@ -543,79 +655,8 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
                 synthArgs);
             nodes().insert(synth->id(), synth);
 
-            // int32_t* data = rtMem().allocOf<int32_t>(2);
-            // data[0] = requestId;
-            // data[1] = synth->id();
-            // sendToWorker(Command(this, perform_response_nodeId, data));
-        } else if (msg == "/node/free") {
-            NodeId nodeId = NodeId(args.int32());
-
-            // Check node id validity
-            if (!nodes().contains(nodeId)) {
-                throw Error(kMethcla_NodeIdError);
-            } else if (nodeId == rootNode()->id()) {
-                throw Error(kMethcla_NodeIdError);
-            }
-
-            // Drop reference from node map
-            m_nodes.remove(nodeId);
-
-            // Send reply
-            // int32_t* data = rtMem().allocOf<int32_t>(1);
-            // data[0] = requestId;
-            // sendToWorker(Command(this, perform_response_ack, data));
-        } else if (msg == "/node/set") {
-            NodeId nodeId = NodeId(args.int32());
-            int32_t index = args.int32();
-            float value = args.float32();
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (!node->isSynth())
-                throw Error(kMethcla_NodeTypeError);
-            Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
-                throw std::runtime_error("Control input index out of range");
-            }
-            synth->controlInput(index) = value;
-            // int32_t* data = rtMem().allocOf<int32_t>(1);
-            // data[0] = requestId;
-            // sendToWorker(Command(this, perform_response_ack, data));
-        } else if (msg == "/synth/map/input") {
-            NodeId nodeId = NodeId(args.int32());
-            int32_t index = args.int32();
-            AudioBusId busId = AudioBusId(args.int32());
-            BusMappingFlags flags = BusMappingFlags(args.int32());
-
-            Node* node = m_nodes.lookup(nodeId).get();
-            // Could traverse all synths in a group
-            if (!node->isSynth())
-                throw std::runtime_error("Node is not a synth");
-
-            Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
-                throw std::runtime_error("Synth input index out of range");
-
-            synth->mapInput(index, busId, flags);
-        } else if (msg == "/synth/map/output") {
-            NodeId nodeId = NodeId(args.int32());
-            int32_t index = args.int32();
-            AudioBusId busId = AudioBusId(args.int32());
-            BusMappingFlags flags = BusMappingFlags(args.int32());
-
-            Node* node = m_nodes.lookup(nodeId).get();
-            // Could traverse all synths in a group
-            if (!node->isSynth())
-                throw std::runtime_error("Node is not a synth");
-
-            Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
-                throw std::runtime_error("Synth output index out of range");
-
-            synth->mapOutput(index, busId, flags);
-
-            // Could reply with previous bus mapping
-            // int32_t* data = rtMem().allocOf<int32_t>(1);
-            // data[0] = requestId;
-            // sendToWorker(Command(this, perform_response_ack, data));
+            // Scheduling needed.
+            return true;
         } else if (msg == "/query/external_inputs") {
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
@@ -629,19 +670,90 @@ void Environment::processMessage(const OSCPP::Server::Message& msg)
     } catch (std::exception& e) {
         replyError(kMethcla_Notification, e.what());
     }
+
+    return false;
 }
 
-void Environment::processBundle(const OSCPP::Server::Bundle& bundle)
+void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
-    // throw std::runtime_error("Bundle support not implemented yet");
-    auto packets = bundle.packets();
-    while (!packets.atEnd()) {
-        auto p = packets.next();
-        if (p.isBundle()) {
-            processBundle(p);
-        } else {
-            processMessage(p);
+#if 0
+    std::cerr << "Request (recv): " << msg << std::endl;
+#endif
+
+    auto args = msg.args();
+    // Methcla_RequestId requestId = args.int32();
+
+    try {
+        if (msg == "/synth/new") {
+            args.drop(); // plugin name
+            NodeId nodeId = NodeId(args.int32());
+            Node* node = m_nodes.lookup(nodeId).get();
+            if (!node->isSynth())
+                throw Error(kMethcla_NodeTypeError);
+            Synth* synth = dynamic_cast<Synth*>(node);
+            // TODO: Compute sample buffer offset
+            const float sampleOffset = 0.f;
+            synth->activate(sampleOffset);
+        } else if (msg == "/node/free") {
+            NodeId nodeId = NodeId(args.int32());
+
+            // Check node id validity
+            if (!nodes().contains(nodeId)) {
+                throw Error(kMethcla_NodeIdError);
+            } else if (nodeId == rootNode()->id()) {
+                throw Error(kMethcla_NodeIdError);
+            }
+
+            // Drop reference from node map
+            m_nodes.remove(nodeId);
+        } else if (msg == "/node/set") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            float value = args.float32();
+            Node* node = m_nodes.lookup(nodeId).get();
+            if (!node->isSynth())
+                throw Error(kMethcla_NodeTypeError);
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
+                throw std::runtime_error("Control input index out of range");
+            }
+            synth->controlInput(index) = value;
+        } else if (msg == "/synth/map/input") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            AudioBusId busId = AudioBusId(args.int32());
+            BusMappingFlags flags = BusMappingFlags(args.int32());
+
+            Node* node = m_nodes.lookup(nodeId).get();
+            if (!node->isSynth())
+                throw Error(kMethcla_NodeTypeError);
+
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
+                throw std::runtime_error("Synth input index out of range");
+
+            synth->mapInput(index, busId, flags);
+        } else if (msg == "/synth/map/output") {
+            NodeId nodeId = NodeId(args.int32());
+            int32_t index = args.int32();
+            AudioBusId busId = AudioBusId(args.int32());
+            BusMappingFlags flags = BusMappingFlags(args.int32());
+
+            Node* node = m_nodes.lookup(nodeId).get();
+            if (!node->isSynth())
+                throw Error(kMethcla_NodeTypeError);
+
+            Synth* synth = dynamic_cast<Synth*>(node);
+            if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
+                throw std::runtime_error("Synth output index out of range");
+
+            synth->mapOutput(index, busId, flags);
         }
+    } catch (Exception& e) {
+        // TODO: Reply with error code
+        replyError(kMethcla_Notification, e.what());
+    } catch (std::exception& e) {
+        replyError(kMethcla_Notification, e.what());
     }
 }
 

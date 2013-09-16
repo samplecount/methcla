@@ -90,14 +90,14 @@ public:
         : Connection<AudioBus>(index)
     { }
 
-    void read(const Environment& env, size_t numFrames, sample_t* dst)
+    void read(const Environment& env, size_t numFrames, sample_t* dst, size_t offset=0)
     {
         if (bus() != nullptr) {
             // std::lock_guard<AudioBus::Lock> lock(bus->lock());
             if (   (flags() & kBusMappingExternal)
                 || (flags() & kBusMappingFeedback)
                 || (bus()->epoch() == env.epoch())) {
-                memcpy(dst, bus()->data(), numFrames * sizeof(sample_t));
+                memcpy(dst, bus()->data() + offset, numFrames * sizeof(sample_t));
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
@@ -112,51 +112,38 @@ class AudioOutputConnection : public Connection<AudioBus>
 public:
     AudioOutputConnection(Methcla_PortCount index)
         : Connection<AudioBus>(index)
-        , m_offset(0)
-        , m_buffer(0)
     { }
 
-    bool connect(AudioBus* bus, BusMappingFlags flags, size_t offset, sample_t* buffer)
-    {
-        BOOST_ASSERT((m_offset == 0) && (m_buffer == 0));
-        m_offset = offset;
-        m_buffer = buffer;
-        return Connection<AudioBus>::connect(bus, flags);
-    }
-
-    void release(Environment& env)
-    {
-        if (m_buffer != 0) {
-            env.rtMem().free(m_buffer);
-            m_offset = 0;
-            m_buffer = 0;
-        }
-    }
-
-    void write(const Environment& env, size_t numFrames, const sample_t* src)
+    void write(const Environment& env, size_t numFrames, const sample_t* src, size_t offset=0)
     {
         if (bus() != nullptr) {
-            const Epoch epoch = env.epoch();
-            // std::lock_guard<AudioBus::Lock> lock(bus->lock());
             if (   ((flags() & kBusMappingReplace) == 0)
-                && (bus()->epoch() == epoch)) {
+                && (bus()->epoch() == env.epoch()))
+            {
                 // Accumulate
-                sample_t* dst = bus()->data();
+                sample_t* dst = bus()->data() + offset;
                 // accumulate(dst, src, numFrames);
                 for (size_t i=0; i < numFrames; i++) {
                     dst[i] += src[i];
                 }
             } else {
                 // Copy
-                std::copy(src, src + numFrames, bus()->data());
+                std::copy(src, src + numFrames, bus()->data() + offset);
                 bus()->setEpoch(env.epoch());
             }
         }
     }
 
-private:
-    size_t      m_offset;
-    sample_t*   m_buffer;
+    void zero(const Environment& env, size_t numFrames, size_t offset=0)
+    {
+        if (bus() != nullptr) {
+            if (   ((flags() & kBusMappingReplace) != 0)
+                && (bus()->epoch() == env.epoch() /* Otherwise bus will be zero'd anyway */))
+            {
+                memset(bus()->data() + offset, 0, numFrames * sizeof(sample_t));
+            }
+        }
+    }
 };
 
 class Synth : public Node
@@ -224,25 +211,40 @@ public:
         return m_controlBuffers[numControlInputs() + index];
     }
 
+    //* Activate synth.
+    void activate(float sampleOffset=0.f);
+
     /// Sample offset for sample accurate synth scheduling.
-    size_t sampleOffset() const { return 0; }
+    float sampleOffset() const
+    {
+        return m_sampleOffset;
+    }
 
 private:
-    // struct Flags
-    // {
+    enum State
+    {
+        kStateInactive,
+        kStateActive,
+        kStateActivating
+    };
+
+    struct Flags
+    {
+        unsigned int state : 2;
     //     bool audioInputConnectionsChanged       : 1;
     //     bool audioOutputConnectionsChanged      : 1;
     //     // bool controlInputConnectionsChanged     : 1;
     //     // bool controlOutputConnectionsChanged    : 1;
     //     // bool hasTriggerInput                    : 1;
-    // };
+    };
 
     const SynthDef&         m_synthDef;
     const Methcla_PortCount m_numControlInputs;
     const Methcla_PortCount m_numControlOutputs;
     const Methcla_PortCount m_numAudioInputs;
     const Methcla_PortCount m_numAudioOutputs;
-    // Flags                   m_flags;
+    Flags                   m_flags;
+    float                   m_sampleOffset;
     Methcla_Synth*          m_synth;
     AudioInputConnection*   m_audioInputConnections;
     AudioOutputConnection*  m_audioOutputConnections;

@@ -450,7 +450,7 @@ OSStatus RemoteIODriver::InputCallback(
 OSStatus RemoteIODriver::RenderCallback(
     void*                       inRefCon, 
     AudioUnitRenderActionFlags* /* ioActionFlags */,
-    const AudioTimeStamp*       /* inTimeStamp */,
+    const AudioTimeStamp*       inTimeStamp,
     UInt32                      /* inBusNumber */,
     UInt32                      inNumberFrames, 
     AudioBufferList*            ioData)
@@ -486,6 +486,11 @@ OSStatus RemoteIODriver::RenderCallback(
     }
 
     return noErr;
+}
+
+Methcla_Time RemoteIODriver::currentTime() const
+{
+    return 0.;
 }
 
 Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)

@@ -20,7 +20,7 @@
 
 namespace Methcla { namespace Audio { namespace IO {
 
-class Driver
+class Driver : public Methcla::Audio::TimeInterface
 {
 public:
     struct Options
@@ -45,6 +45,8 @@ public:
     virtual size_t bufferSize() const = 0;
 
     size_t blockSize() const;
+
+    virtual Methcla_Time currentTime() const override;
 
     virtual void start() = 0;
     virtual void stop() = 0;

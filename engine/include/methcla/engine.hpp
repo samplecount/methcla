@@ -584,21 +584,46 @@ namespace Methcla
 
             send(request);
 
-            // Result<SynthId> result;
-            // 
-            // withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
-            //     OSCPP::Server::Packet response(buffer, size);
-            //     if (checkResponse(response, result)) {
-            //         auto args = ((OSCPP::Server::Message)response).args();
-            //         int32_t requestId_ = args.int32();
-            //         BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
-            //         int32_t nodeId = args.int32();
-            //         // std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
-            //         result.set(SynthId(nodeId));
-            //     }
-            // });
-            // 
-            // return result.get();
+            return SynthId(nodeId);
+        }
+
+        SynthId synth(const char* synthDef, GroupId parent, Methcla_Time time, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        {
+            const char address[] = "/synth/new";
+            const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
+            // const size_t packetSize = OSCPP::Size::message(address, numTags)
+            //                              + OSCPP::Size::string(256)
+            //                              + OSCPP::Size::int32()
+            //                              + 2 * OSCPP::Size::int32()
+            //                              + controls.size() * OSCPP::Size::float32()
+            //                              + 256; // margin for options. better: pool allocator with fixed size packets.
+
+            const int32_t nodeId = m_nodeIds.alloc();
+            // const Methcla_RequestId requestId = getRequestId();
+
+            Packet request(m_packets);
+
+            request.packet().openBundle(methcla_time_to_uint64(time));
+
+                request.packet()
+                    .openMessage(address, numTags)
+                    .string(synthDef)
+                    .int32(nodeId)
+                    .int32(parent.id())
+                    .int32(0)
+                    .putArray(controls.begin(), controls.end());
+                    request.packet().openArray();
+                        for (const auto& x : options) {
+                            x.put(request.packet());
+                        }
+                    request.packet().closeArray();
+                request.packet().closeMessage();
+
+            request.packet().closeBundle();
+
+            dumpRequest(std::cerr, request.packet());
+
+            send(request);
 
             return SynthId(nodeId);
         }

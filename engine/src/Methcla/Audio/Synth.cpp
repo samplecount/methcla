@@ -45,6 +45,7 @@ Synth::Synth( Environment& env
     , m_numControlOutputs(numControlOutputs)
     , m_numAudioInputs(numAudioInputs)
     , m_numAudioOutputs(numAudioOutputs)
+    , m_sampleOffset(0.f)
     , m_synth(synth)
     , m_audioInputConnections(audioInputConnections)
     , m_audioOutputConnections(audioOutputConnections)
@@ -54,7 +55,8 @@ Synth::Synth( Environment& env
     const size_t blockSize = env.blockSize();
 
     // Initialize flags
-    // memset(&m_flags, 0, sizeof(m_flags));
+    memset(&m_flags, 0, sizeof(m_flags));
+    m_flags.state = kStateInactive;
 
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
@@ -250,9 +252,6 @@ void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, BusMappin
                             ? env().externalAudioInput(busId)
                             : env().audioBus(busId);
         conn->connect(bus, flags);
-        // if () {
-        //     m_flags.audioInputConnectionsChanged = true;
-        // }
     }
 }
 
@@ -260,22 +259,24 @@ void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, BusMappi
 {
     AudioOutputConnection* const begin = m_audioOutputConnections;
     AudioOutputConnection* const end = begin + numAudioOutputs();
-    const size_t offset = sampleOffset();
-    sample_t* buffer = offset > 0 ? env().rtMem().allocAlignedOf<sample_t>(kBufferAlignment, offset) : 0;
 
     AudioOutputConnection* conn =
         std::find_if(begin, end, IfIndex<AudioOutputConnection>(index));
 
     if (conn != end) {
-        conn->release(env());
         AudioBus* bus = flags & kBusMappingExternal
                             ? env().externalAudioOutput(busId)
                             : env().audioBus(busId);
-        conn->connect(bus, flags, offset, buffer);
-        // if () {
-        //     m_flags.audioOutputConnectionsChanged = true;
-        // }
+        conn->connect(bus, flags);
     }
+}
+
+void Synth::activate(float sampleOffset)
+{
+    BOOST_ASSERT( m_flags.state == kStateInactive );
+    m_sampleOffset = sampleOffset;
+    m_synthDef.activate(env().asWorld(), m_synth);
+    m_flags.state = kStateActivating;
 }
 
 void Synth::doProcess(size_t numFrames)
@@ -299,20 +300,21 @@ void Synth::doProcess(size_t numFrames)
     const size_t blockSize = env.blockSize();
 
     sample_t* const inputBuffers = m_audioBuffers;
-    // TODO: Iterate only over connected connections (by tracking number of connections).
-    for (size_t i=0; i < numAudioInputs(); i++) {
-        AudioInputConnection& x = m_audioInputConnections[i];
-        x.read(env, numFrames, inputBuffers + x.index() * blockSize);
-    }
-
-    m_synthDef.process(env.asWorld(), m_synth, numFrames);
-
     sample_t* const outputBuffers = m_audioBuffers + numAudioInputs() * blockSize;
-    for (size_t i=0; i < numAudioOutputs(); i++) {
-        AudioOutputConnection& x = m_audioOutputConnections[i];
-        x.write(env, numFrames, outputBuffers + x.index() * blockSize);
-    }
 
+    if (m_flags.state == kStateActive) {
+        // TODO: Iterate only over connected connections (by tracking number of connections).
+        for (size_t i=0; i < numAudioInputs(); i++) {
+            AudioInputConnection& x = m_audioInputConnections[i];
+            x.read(env, numFrames, inputBuffers + x.index() * blockSize);
+        }
+
+        m_synthDef.process(env.asWorld(), m_synth, numFrames);
+
+        for (size_t i=0; i < numAudioOutputs(); i++) {
+            AudioOutputConnection& x = m_audioOutputConnections[i];
+            x.write(env, numFrames, outputBuffers + x.index() * blockSize);
+        }
     // Reset triggers
 //    if (m_flags.test(kHasTriggerInput)) {
 //        for (size_t i=0; i < numControlInputs(); i++) {
@@ -321,4 +323,23 @@ void Synth::doProcess(size_t numFrames)
 //            }
 //        }
 //    }
+    } else if (m_flags.state == kStateActivating) {
+        const size_t sampleOffset = static_cast<size_t>(m_sampleOffset);
+        BOOST_ASSERT( sampleOffset < numFrames );
+
+        for (size_t i=0; i < numAudioInputs(); i++) {
+            AudioInputConnection& x = m_audioInputConnections[i];
+            x.read(env, numFrames - sampleOffset, inputBuffers + x.index() * blockSize, sampleOffset);
+        }
+
+        m_synthDef.process(env.asWorld(), m_synth, numFrames - sampleOffset);
+
+        for (size_t i=0; i < numAudioOutputs(); i++) {
+            AudioOutputConnection& x = m_audioOutputConnections[i];
+            x.zero(env, sampleOffset);
+            x.write(env, numFrames - sampleOffset, outputBuffers + x.index() * blockSize, sampleOffset);
+        }
+
+        m_flags.state = kStateActive;
+    }
 }
