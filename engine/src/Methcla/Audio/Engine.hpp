@@ -80,7 +80,7 @@ namespace Methcla { namespace Audio
 
         Group* rootNode() { return m_rootNode; }
 
-        size_t sampleRate() const { return m_sampleRate; }
+        double sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
 
         //* Return number of external audio outputs.
@@ -138,7 +138,12 @@ namespace Methcla { namespace Audio
             return m_nodes;
         }
 
-        void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
+        void process(
+            Methcla_Time currentTime,
+            size_t numFrames,
+            const sample_t* const* inputs,
+            sample_t* const* outputs
+            );
 
     private:
         static void perform_response_ack(Environment*, CommandData*);
@@ -147,11 +152,12 @@ namespace Methcla { namespace Audio
         static void perform_response_query_external_inputs(Environment*, CommandData*);
         static void perform_response_query_external_outputs(Environment*, CommandData*);
 
-        void processRequests();
+        void processRequests(Methcla_Time currentTime);
+        void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
         bool processBundle(const OSCPP::Server::Bundle& bundle);
-        void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time currentTime);
+        void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
         bool processMessage(const OSCPP::Server::Message& message);
-        void processMessage(const OSCPP::Server::Message& message, Methcla_Time scheduleTime, Methcla_Time currentTime);
+        void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)
@@ -179,7 +185,7 @@ namespace Methcla { namespace Audio
 
     private:
         EnvironmentImpl*                        m_impl;
-        const size_t                            m_sampleRate;
+        const double                            m_sampleRate;
         const size_t                            m_blockSize;
         SynthDefMap                             m_synthDefs;
         PacketHandler                           m_listener;
@@ -220,7 +226,13 @@ namespace Methcla { namespace Audio
         void stop();
 
     private:
-        static void processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
+        static void processCallback(
+            void* data,
+            Methcla_Time currentTime,
+            size_t numFrames,
+            const sample_t* const* inputs,
+            sample_t* const* outputs
+            );
 
     private:
         PluginManager   m_plugins;

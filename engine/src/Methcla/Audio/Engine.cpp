@@ -56,19 +56,27 @@ public:
         m_data->m_packet = mem + sizeof(Data);
     }
 
-    void retain()
+    Request(const Request& other)
+        : Request()
     {
-        if (m_data != nullptr)
-            m_data->m_refs++;
+        *this = other;
     }
 
-    void release()
+    Request& operator=(const Request& other)
     {
-        if (m_data != nullptr) {
-            m_data->m_refs--;
-            if (m_data->m_refs == 0)
-                m_env->sendToWorker(perform_free_data, m_data);
+        if (this != &other) {
+            release();
+            m_env = other.m_env;
+            m_data = other.m_data;
+            m_size = other.m_size;
+            retain();
         }
+        return *this;
+    }
+
+    ~Request()
+    {
+        release();
     }
 
     void* packet()
@@ -82,9 +90,28 @@ public:
     }
 
 private:
+    void retain()
+    {
+        if (m_data != nullptr)
+            m_data->m_refs++;
+    }
+
     static void perform_free_data(Environment*, CommandData* data)
     {
         Methcla::Memory::free(data);
+    }
+
+    void release()
+    {
+        if (m_data != nullptr) {
+            m_data->m_refs--;
+            if (m_data->m_refs == 0) {
+                m_env->sendToWorker(perform_free_data, m_data);
+                m_env = nullptr;
+                m_data = nullptr;
+                m_size = 0;
+            }
+        }
     }
 
 private:
@@ -112,13 +139,7 @@ public:
     ScheduleItem(Methcla_Time time, const Request& request)
         : m_time(time)
         , m_request(request)
-    {
-        m_request.retain();
-    }
-    ~ScheduleItem()
-    {
-        m_request.release();
-    }
+    { }
 
     Methcla_Time time() const
     {
@@ -176,6 +197,29 @@ public:
         } else {
             throw std::runtime_error("Scheduler queue overflow");
         }
+    }
+
+    bool isEmpty() const
+    {
+        return m_queue.empty();
+    }
+
+    Methcla_Time time() const
+    {
+        assert(!isEmpty());
+        return m_queue.top().time();
+    }
+
+    Request top() const
+    {
+        assert(!isEmpty());
+        return m_queue.top().request();
+    }
+
+    void pop()
+    {
+        assert(!isEmpty());
+        m_queue.pop();
     }
 };
 
@@ -405,12 +449,15 @@ void Environment::sendFromWorker(PerformFunc f, void* data)
     m_impl->m_worker.sendFromWorker(cmd);
 }
 
-void Environment::process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
+void Environment::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
 
     // Process external requests
-    processRequests();
+    processRequests(currentTime);
+    // Process scheduled requests
+    processScheduler(currentTime, currentTime + numFrames / sampleRate());
+    // std::cout << "Environment::process " << currentTime << std::endl;
 
     // Process non-realtime commands
     m_impl->m_worker.perform();
@@ -546,7 +593,7 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
     sendToWorker(perform_response_error, data);
 }
 
-void Environment::processRequests()
+void Environment::processRequests(Methcla_Time currentTime)
 {
     Request request;
     while (m_impl->m_requests.next(request)) {
@@ -554,22 +601,38 @@ void Environment::processRequests()
             OSCPP::Server::Packet packet(request.packet(), request.size());
             if (packet.isBundle()) {
                 OSCPP::Server::Bundle bundle(packet);
-                bool needsScheduling = processBundle(bundle);
-                if (!needsScheduling) {
-                    request.release();
-                } else if (bundle.time() == 1) {
-                    processBundle(packet, bundle.time());
-                    request.release();
-                } else {
-                    m_impl->m_scheduler.push(bundle.time(), request);
+                if (processBundle(bundle)) {
+                    if (bundle.time() == 1) {
+                        processBundle(packet, currentTime, currentTime);
+                    } else {
+                        m_impl->m_scheduler.push(methcla_time_from_uint64(bundle.time()), request);
+                    }
                 }
             } else {
-                processMessage(packet);
-                processMessage(packet, 1, 1);
-                request.release();
+                if (processMessage(packet))
+                    processMessage(packet, currentTime, currentTime);
             }
         } catch (std::exception& e) {
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
+        }
+    }
+}
+
+void Environment::processScheduler(Methcla_Time currentTime, Methcla_Time nextTime)
+{
+    while (!m_impl->m_scheduler.isEmpty()) {
+        Methcla_Time scheduleTime = m_impl->m_scheduler.time();
+        if (scheduleTime <= nextTime) {
+            Request request(m_impl->m_scheduler.top());
+            OSCPP::Server::Packet packet(request.packet(), request.size());
+            if (packet.isBundle()) {
+                processBundle(packet, scheduleTime, currentTime);
+            } else {
+                processMessage(packet, scheduleTime, currentTime);
+            }
+            m_impl->m_scheduler.pop();
+        } else {
+            break;
         }
     }
 }
@@ -580,26 +643,21 @@ bool Environment::processBundle(const OSCPP::Server::Bundle& bundle)
     bool needsScheduling = false;
     while (!packets.atEnd()) {
         auto p = packets.next();
-        if (p.isBundle()) {
-            needsScheduling = processBundle(p) || needsScheduling;
-        } else {
-            needsScheduling = processMessage(p) || needsScheduling;
-            processMessage(p, 1, 1);
-        }
+        needsScheduling |= p.isBundle() ? processBundle(p) : processMessage(p);
     }
     return needsScheduling;
 }
 
-void Environment::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time currentTime)
+void Environment::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     auto packets = bundle.packets();
     while (!packets.atEnd()) {
         auto p = packets.next();
         if (p.isBundle()) {
             // NOTE: Nested bundles are flattened
-            processBundle(p, currentTime);
+            processBundle(p, scheduleTime, currentTime);
         } else {
-            processMessage(p, bundle.time(), currentTime);
+            processMessage(p, scheduleTime, currentTime);
         }
     }
 }
@@ -617,7 +675,7 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
         if (msg == "/group/new") {
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
-            int32_t addAction = args.int32();
+            args.drop(); // int32_t addAction = args.int32();
 
             Node* targetNode = m_nodes.lookup(targetId).get();
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
@@ -631,7 +689,7 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
-            int32_t addAction = args.int32();
+            args.drop(); // int32_t addAction = args.int32();
 
             const std::shared_ptr<SynthDef> def = synthDef(defName);
 
@@ -671,7 +729,7 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
         replyError(kMethcla_Notification, e.what());
     }
 
-    return false;
+    return true;
 }
 
 void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
@@ -691,8 +749,8 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             if (!node->isSynth())
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
-            // TODO: Compute sample buffer offset
-            const float sampleOffset = 0.f;
+            // TODO: Use sample rate estimate from driver
+            const float sampleOffset = (scheduleTime - currentTime) * sampleRate();
             synth->activate(sampleOffset);
         } else if (msg == "/node/free") {
             NodeId nodeId = NodeId(args.int32());
@@ -868,7 +926,12 @@ void Engine::loadPlugins(const std::list<Methcla_LibraryFunction>& funcs)
     m_plugins.loadPlugins(m_env->asHost(), funcs);
 }
 
-void Engine::processCallback(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
+void Engine::processCallback(
+    void* data,
+    Methcla_Time currentTime,
+    size_t numFrames,
+    const sample_t* const* inputs,
+    sample_t* const* outputs)
 {
-    static_cast<Engine*>(data)->m_env->process(numFrames, inputs, outputs);
+    static_cast<Engine*>(data)->m_env->process(currentTime, numFrames, inputs, outputs);
 }

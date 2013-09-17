@@ -69,13 +69,13 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine);
 typedef double Methcla_Time;
 
 //* Encode a Methcla_Time value as a 64 bit unsigned integer.
-uint64_t methcla_time_to_uint64(Methcla_Time time);
+METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time);
 
 //* Decode a Methcla_Time value from a 64 bit unsigned integer.
-Methcla_Time methcla_time_from_uint64(uint64_t time);
+METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time);
 
 //* Get the current time.
-Methcla_Time methcla_engine_current_time(const Methcla_Engine* engine);
+METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* engine);
 
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
