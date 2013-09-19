@@ -17,15 +17,8 @@ Version: 0.1.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
 Executable shakefile
+  Hs-Source-Dirs: ., external_libraries/stir
   Main-Is: shakefile.hs
-  Other-Modules:
-    Shakefile.C
-    Shakefile.C.Android
-    Shakefile.C.OSX
-    Shakefile.C.PkgConfig
-    Shakefile.Configuration
-    Shakefile.Lens
-    Shakefile.SourceTree
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5

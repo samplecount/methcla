@@ -9,3 +9,8 @@
 [submodule "engine/external_libraries/catch"]
 	path = engine/external_libraries/catch
 	url = https://github.com/philsquared/Catch.git
+[submodule "engine/external_libraries/stir"]
+	path = engine/external_libraries/stir
+	url = https://github.com/samplecount/stir.git
+        branch = master
+        ignore = untracked

@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ -f "$HOME/.profile" ]; then
+    . "$HOME/.profile"
+fi
+
+if [ -f "$HOME/.bash_login" ]; then
+    . "$HOME/.bash_login"
+fi
+
 case $ACTION in
     clean)
         TARGET=clean ;;
@@ -19,7 +27,7 @@ case $ACTION in
         TARGET="$PLATFORM_NAME"
 esac
 
-./shake -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET || exit $?
+./stir -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET || exit $?
 
 # Touch this to force relinking against libmethcla.a in Xcode
 touch platform/xcode/methcla_init.c
