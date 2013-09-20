@@ -19,6 +19,7 @@
 #include <methcla/common.h>
 
 #include <AudioToolbox/AudioToolbox.h>
+#include "CAHostTimeBase.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -450,11 +451,13 @@ OSStatus RemoteIODriver::InputCallback(
 OSStatus RemoteIODriver::RenderCallback(
     void*                       inRefCon, 
     AudioUnitRenderActionFlags* /* ioActionFlags */,
-    const AudioTimeStamp*       /* inTimeStamp */,
+    const AudioTimeStamp*       inTimeStamp,
     UInt32                      /* inBusNumber */,
     UInt32                      inNumberFrames, 
     AudioBufferList*            ioData)
 {
+    assert( inTimeStamp->mFlags & kAudioTimeStampHostTimeValid );
+
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inRefCon);
 
     const sample_t* const* inputBuffers = self->m_inputBuffers;
@@ -467,7 +470,12 @@ OSStatus RemoteIODriver::RenderCallback(
         AudioSampleType* pcm = static_cast<AudioSampleType*>(ioData->mBuffers[bufCount].mData);
 
         // Run DSP graph
-        self->process(inNumberFrames, inputBuffers, outputBuffers);
+        self->process(
+            inTimeStamp->mHostTime * CAHostTimeBase::GetInverseFrequency(),
+            inNumberFrames,
+            inputBuffers,
+            outputBuffers
+            );
 
         // Convert and interleave output
         for (UInt32 curChan = 0; curChan < numOutputs; curChan++) {
@@ -486,6 +494,11 @@ OSStatus RemoteIODriver::RenderCallback(
     }
 
     return noErr;
+}
+
+Methcla_Time RemoteIODriver::currentTime() const
+{
+    return CAHostTimeBase::GetTheCurrentTime() * CAHostTimeBase::GetInverseFrequency();
 }
 
 Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)

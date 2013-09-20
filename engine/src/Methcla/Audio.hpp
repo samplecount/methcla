@@ -17,11 +17,17 @@
 
 #include <cstdint>
 #include <methcla/common.h>
+#include <methcla/engine.h>
 
 namespace Methcla { namespace Audio
 {
     typedef uint32_t Epoch;
     typedef Methcla_AudioSample sample_t;
+
+    class TimeInterface
+    {
+        virtual Methcla_Time currentTime() const = 0;
+    };
 } }
 
 #endif // METHCLA_AUDIO_HPP_INCLUDED

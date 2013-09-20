@@ -25,10 +25,15 @@ void Driver::setProcessCallback(ProcessCallback callback, void* data)
     m_processData = data;
 }
 
-void Driver::process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
+void Driver::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     if (m_processCallback != nullptr)
-        m_processCallback(m_processData, numFrames, inputs, outputs);
+        m_processCallback(m_processData, currentTime, numFrames, inputs, outputs);
+}
+
+Methcla_Time Driver::currentTime() const
+{
+    return 0.;
 }
 
 sample_t** Driver::makeBuffers(size_t numChannels, size_t numFrames)

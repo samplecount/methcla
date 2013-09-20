@@ -158,6 +158,29 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
     return kMethcla_NoError;
 }
 
+METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time)
+{
+    static_assert(sizeof(uint64_t) == sizeof(Methcla_Time), "sizeof(uint64_t) != sizeof(Methcla_Time)");
+    uint64_t result;
+    std::memcpy(&result, &time, sizeof(result));
+    return result;
+}
+
+METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time)
+{
+    static_assert(sizeof(uint64_t) == sizeof(Methcla_Time), "sizeof(uint64_t) != sizeof(Methcla_Time)");
+    double result;
+    std::memcpy(&result, &time, sizeof(result));
+    return result;
+}
+
+METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* engine)
+{
+    if (engine == nullptr)
+        return kMethcla_ArgumentError;
+    return engine->m_engine->driver()->currentTime();
+}
+
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size)
 {
     if (engine == nullptr)

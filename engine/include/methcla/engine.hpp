@@ -522,10 +522,76 @@ namespace Methcla
             checkReturnCode(methcla_engine_stop(m_engine));
         }
 
+        Methcla_Time currentTime() const
+        {
+            return methcla_engine_current_time(m_engine);
+        }
+
         GroupId root() const
         {
             return GroupId(0);
         }
+
+        friend class Request;
+
+        class Request
+        {
+            Engine& m_engine;
+            Packet  m_request;
+
+        public:
+            Request(Engine& engine, Methcla_Time time)
+                : m_engine(engine)
+                , m_request(m_engine.packets())
+            {
+                m_request.packet().openBundle(methcla_time_to_uint64(time));
+            }
+            Request(Engine* engine, Methcla_Time time)
+                : Request(*engine, time)
+            { }
+
+            //* Finalize request and send resulting bundle to the engine.
+            void send()
+            {
+                m_request.packet().closeBundle();
+                m_engine.send(m_request);
+            }
+
+            SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+            {
+                const char address[] = "/synth/new";
+                const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
+
+                const int32_t nodeId = m_engine.m_nodeIds.alloc();
+
+                m_request.packet()
+                    .openMessage(address, numTags)
+                    .string(synthDef)
+                    .int32(nodeId)
+                    .int32(parent.id())
+                    .int32(0)
+                    .putArray(controls.begin(), controls.end());
+                    m_request.packet().openArray();
+                        for (const auto& x : options) {
+                            x.put(m_request.packet());
+                        }
+                    m_request.packet().closeArray();
+                m_request.packet().closeMessage();
+
+                return SynthId(nodeId);
+            }
+
+            void free(const NodeId& node)
+            {
+                const char address[] = "/node/free";
+                const size_t numArgs = 1;
+                m_request.packet()
+                    .openMessage(address, numArgs)
+                        .int32(node.id())
+                    .closeMessage();
+                m_engine.m_nodeIds.free(node.id());
+            }
+        };
 
         GroupId group(GroupId parent)
         {
@@ -583,22 +649,6 @@ namespace Methcla
             dumpRequest(std::cerr, request.packet());
 
             send(request);
-
-            // Result<SynthId> result;
-            // 
-            // withRequest(requestId, request, [&result](Methcla_RequestId requestId, const void* buffer, size_t size){
-            //     OSCPP::Server::Packet response(buffer, size);
-            //     if (checkResponse(response, result)) {
-            //         auto args = ((OSCPP::Server::Message)response).args();
-            //         int32_t requestId_ = args.int32();
-            //         BOOST_ASSERT_MSG( requestId_ == requestId, "Request id mismatch");
-            //         int32_t nodeId = args.int32();
-            //         // std::cerr << "synth: " << requestId << " " << nodeId << std::endl;
-            //         result.set(SynthId(nodeId));
-            //     }
-            // });
-            // 
-            // return result.get();
 
             return SynthId(nodeId);
         }
@@ -689,6 +739,11 @@ namespace Methcla
             dumpRequest(std::cerr, request.packet());
             send(request);
             m_nodeIds.free(node.id());
+        }
+
+        PacketPool& packets()
+        {
+            return m_packets;
         }
 
     private:

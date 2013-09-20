@@ -136,7 +136,8 @@ int JackDriver::processCallback(jack_nframes_t nframes, void* arg)
     // }
 
     // Run DSP graph
-    self->process(nframes, self->m_inputBuffers, self->m_outputBuffers);
+    const Methcla_Time currentTime = 0.;
+    self->process(currentTime, nframes, self->m_inputBuffers, self->m_outputBuffers);
 
     return 0;
 }

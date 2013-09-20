@@ -75,7 +75,7 @@ engineBuildFlags =
       ( -- Library headers
         [ "src" ]
         -- External libs and plugins
-     ++ [ "external_libraries", "plugins" ] )
+     ++ [ externalLibraries, "plugins" ] )
   . append systemIncludes
        ( -- API headers
          [ "include" ]
@@ -254,6 +254,13 @@ mkRules options = do
             return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
       , do -- iphone
             let iOS_SDK = Version [6,1] []
+                iosBuildFlags =
+                        append userIncludes [ "platform/ios"
+                                            , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
+                    >>> stdlib "libc++"
+                iosSources = methclaSources $
+                                 SourceTree.files [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
+                                                  , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
             developer <- liftIO OSX.getDeveloperPath
             return $ do
                 iphoneosLib <- do
@@ -263,12 +270,9 @@ mkRules options = do
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
-                                   >>> append userIncludes ["platform/ios"]
-                                   >>> stdlib "libc++"
+                                   >>> iosBuildFlags
                                    $   OSX.buildFlags_IOS cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags
-                            methcla (methclaSources $
-                                        SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
+                    lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
                     platformAlias platform lib
                     return lib
                 iphonesimulatorLib <- do
@@ -278,12 +282,9 @@ mkRules options = do
                         env = mkEnv cTarget
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
-                                   >>> append userIncludes ["platform/ios"]
-                                   >>> stdlib "libc++"
+                                   >>> iosBuildFlags
                                    $   OSX.buildFlags_IOS_Simulator cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags
-                            methcla (methclaSources $
-                                        SourceTree.files ["platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"])
+                    lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
                     platformAlias platform lib
                     return lib
                 let universalTarget = "iphone-universal"

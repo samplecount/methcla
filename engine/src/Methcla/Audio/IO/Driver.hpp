@@ -20,7 +20,7 @@
 
 namespace Methcla { namespace Audio { namespace IO {
 
-class Driver
+class Driver : public Methcla::Audio::TimeInterface
 {
 public:
     struct Options
@@ -32,7 +32,13 @@ public:
         int blockSize = -1;
     };
 
-    typedef void (*ProcessCallback)(void* data, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
+    typedef void (*ProcessCallback)(
+        void* data,
+        Methcla_Time currentTime,
+        size_t numFrames,
+        const sample_t* const* inputs,
+        sample_t* const* outputs
+        );
 
     Driver(Options options);
     virtual ~Driver();
@@ -46,6 +52,8 @@ public:
 
     size_t blockSize() const;
 
+    virtual Methcla_Time currentTime() const override;
+
     virtual void start() = 0;
     virtual void stop() = 0;
 
@@ -53,7 +61,7 @@ public:
     static void freeBuffers(size_t numChannels, sample_t** buffers);
 
 protected:
-    void process(size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
+    void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
 private:
     ProcessCallback m_processCallback;
