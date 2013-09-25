@@ -678,6 +678,8 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
             args.drop(); // int32_t addAction = args.int32();
 
             Node* targetNode = m_nodes.lookup(targetId).get();
+            if (targetNode == nullptr)
+                throw Error(kMethcla_NodeIdError);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
@@ -701,6 +703,8 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
             auto synthArgs = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
 
             Node* targetNode = m_nodes.lookup(targetId).get();
+            if (targetNode == nullptr)
+                throw Error(kMethcla_NodeIdError);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Synth* synth = Synth::construct(
@@ -746,7 +750,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             args.drop(); // plugin name
             NodeId nodeId = NodeId(args.int32());
             Node* node = m_nodes.lookup(nodeId).get();
-            if (!node->isSynth())
+            if (node == nullptr)
+                throw Error(kMethcla_NodeIdError);
+            else if (!node->isSynth())
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             // TODO: Use sample rate estimate from driver
@@ -769,7 +775,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             int32_t index = args.int32();
             float value = args.float32();
             Node* node = m_nodes.lookup(nodeId).get();
-            if (!node->isSynth())
+            if (node == nullptr)
+                throw Error(kMethcla_NodeIdError);
+            else if (!node->isSynth())
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
@@ -783,7 +791,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             BusMappingFlags flags = BusMappingFlags(args.int32());
 
             Node* node = m_nodes.lookup(nodeId).get();
-            if (!node->isSynth())
+            if (node == nullptr)
+                throw Error(kMethcla_NodeIdError);
+            else if (!node->isSynth())
                 throw Error(kMethcla_NodeTypeError);
 
             Synth* synth = dynamic_cast<Synth*>(node);
@@ -798,7 +808,9 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             BusMappingFlags flags = BusMappingFlags(args.int32());
 
             Node* node = m_nodes.lookup(nodeId).get();
-            if (!node->isSynth())
+            if (node == nullptr)
+                throw Error(kMethcla_NodeIdError);
+            else if (!node->isSynth())
                 throw Error(kMethcla_NodeTypeError);
 
             Synth* synth = dynamic_cast<Synth*>(node);
