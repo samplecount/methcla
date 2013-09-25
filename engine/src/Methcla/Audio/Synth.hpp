@@ -26,14 +26,6 @@
 
 namespace Methcla { namespace Audio {
 
-enum BusMappingFlags
-{
-    kBusMappingNoFlags
-  , kBusMappingExternal = 0x01
-  , kBusMappingFeedback = 0x02
-  , kBusMappingReplace  = 0x04
-};
-
 enum InputConnectionType
 {
     kIn
@@ -51,14 +43,14 @@ class Synth;
 template <typename Bus>
 class Connection
 {
-    Methcla_PortCount   m_index;
-    BusMappingFlags     m_flags;
-    Bus*                m_bus;
+    Methcla_PortCount       m_index;
+    Methcla_BusMappingFlags m_flags;
+    Bus*                    m_bus;
 
 public:
     Connection(Methcla_PortCount index)
         : m_index(index)
-        , m_flags(kBusMappingNoFlags)
+        , m_flags(kMethcla_BusMappingInternal)
         , m_bus(nullptr)
     {}
 
@@ -67,7 +59,7 @@ public:
         return m_index;
     }
 
-    bool connect(Bus* bus, BusMappingFlags flags)
+    bool connect(Bus* bus, Methcla_BusMappingFlags flags)
     {
         bool changed = false;
         if (bus != m_bus) {
@@ -79,7 +71,7 @@ public:
     }
 
 protected:
-    BusMappingFlags flags() const { return m_flags; }
+    Methcla_BusMappingFlags flags() const { return m_flags; }
     Bus* bus() { return m_bus; }
 };
 
@@ -94,8 +86,8 @@ public:
     {
         if (bus() != nullptr) {
             // std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if (   (flags() & kBusMappingExternal)
-                || (flags() & kBusMappingFeedback)
+            if (   (flags() & kMethcla_BusMappingExternal)
+                || (flags() & kMethcla_BusMappingFeedback)
                 || (bus()->epoch() == env.epoch())) {
                 memcpy(dst, bus()->data() + offset, numFrames * sizeof(sample_t));
             } else {
@@ -117,7 +109,7 @@ public:
     void write(const Environment& env, size_t numFrames, const sample_t* src, size_t offset=0)
     {
         if (bus() != nullptr) {
-            if (   ((flags() & kBusMappingReplace) == 0)
+            if (   ((flags() & kMethcla_BusMappingReplace) == 0)
                 && (bus()->epoch() == env.epoch()))
             {
                 // Accumulate
@@ -137,7 +129,7 @@ public:
     void zero(const Environment& env, size_t numFrames, size_t offset=0)
     {
         if (bus() != nullptr) {
-            if (   ((flags() & kBusMappingReplace) != 0)
+            if (   ((flags() & kMethcla_BusMappingReplace) != 0)
                 && (bus()->epoch() == env.epoch() /* Otherwise bus will be zero'd anyway */))
             {
                 memset(bus()->data() + offset, 0, numFrames * sizeof(sample_t));
@@ -182,13 +174,13 @@ public:
     Methcla_PortCount numAudioInputs() const { return m_numAudioInputs; }
 
     //* Map input to bus.
-    void mapInput(Methcla_PortCount input, const AudioBusId& busId, BusMappingFlags flags);
+    void mapInput(Methcla_PortCount input, const AudioBusId& busId, Methcla_BusMappingFlags flags);
 
     //* Return number of audio outputs.
     Methcla_PortCount numAudioOutputs() const { return m_numAudioOutputs; }
 
     //* Map output to bus.
-    void mapOutput(Methcla_PortCount output, const AudioBusId& busId, BusMappingFlags flags);
+    void mapOutput(Methcla_PortCount output, const AudioBusId& busId, Methcla_BusMappingFlags flags);
 
     Methcla_PortCount numControlInputs() const { return m_numControlInputs; }
     Methcla_PortCount numControlOutputs() const { return m_numControlOutputs; }

@@ -239,7 +239,7 @@ struct ByBusId
     }
 };
 
-void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, BusMappingFlags flags)
+void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, Methcla_BusMappingFlags flags)
 {
     AudioInputConnection* const begin = m_audioInputConnections;
     AudioInputConnection* const end = begin + numAudioInputs();
@@ -248,14 +248,14 @@ void Synth::mapInput(Methcla_PortCount index, const AudioBusId& busId, BusMappin
         std::find_if(begin, end, IfIndex<AudioInputConnection>(index));
 
     if (conn != end) {
-        AudioBus* bus = flags & kBusMappingExternal
+        AudioBus* bus = flags & kMethcla_BusMappingExternal
                             ? env().externalAudioInput(busId)
                             : env().audioBus(busId);
         conn->connect(bus, flags);
     }
 }
 
-void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, BusMappingFlags flags)
+void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, Methcla_BusMappingFlags flags)
 {
     AudioOutputConnection* const begin = m_audioOutputConnections;
     AudioOutputConnection* const end = begin + numAudioOutputs();
@@ -264,7 +264,7 @@ void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, BusMappi
         std::find_if(begin, end, IfIndex<AudioOutputConnection>(index));
 
     if (conn != end) {
-        AudioBus* bus = flags & kBusMappingExternal
+        AudioBus* bus = flags & kMethcla_BusMappingExternal
                             ? env().externalAudioOutput(busId)
                             : env().audioBus(busId);
         conn->connect(bus, flags);

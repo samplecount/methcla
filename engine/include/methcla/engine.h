@@ -82,6 +82,14 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const v
 
 METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
 
+enum Methcla_BusMappingFlags
+{
+    kMethcla_BusMappingInternal = 0x00
+  , kMethcla_BusMappingExternal = 0x01
+  , kMethcla_BusMappingFeedback = 0x02
+  , kMethcla_BusMappingReplace  = 0x04
+};
+
 #if defined(__cplusplus)
 }
 #endif

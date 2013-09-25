@@ -142,8 +142,10 @@ namespace Methcla
 
     enum BusMappingFlags
     {
-        kBusMappingInternal = 0x0,
-        kBusMappingExternal = 0x1
+        kBusMappingInternal = kMethcla_BusMappingInternal,
+        kBusMappingExternal = kMethcla_BusMappingExternal,
+        kBusMappingFeedback = kMethcla_BusMappingFeedback,
+        kBusMappingReplace  = kMethcla_BusMappingReplace
     };
 
     template <typename T> class ResourceIdAllocator

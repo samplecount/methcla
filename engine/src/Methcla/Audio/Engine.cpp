@@ -788,7 +788,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             AudioBusId busId = AudioBusId(args.int32());
-            BusMappingFlags flags = BusMappingFlags(args.int32());
+            Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
@@ -805,7 +805,7 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             AudioBusId busId = AudioBusId(args.int32());
-            BusMappingFlags flags = BusMappingFlags(args.int32());
+            Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
