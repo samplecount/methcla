@@ -250,10 +250,11 @@ public:
     std::vector<std::shared_ptr<AudioBus>>          m_internalAudioBuses;
     Epoch                                           m_epoch;
 
-    Memory::RTMemoryManager         m_rtMem;
-    MessageQueue                    m_requests;
-    Worker                          m_worker;
-    Scheduler                       m_scheduler;
+    PluginManager               m_plugins;
+    Memory::RTMemoryManager     m_rtMem;
+    MessageQueue                m_requests;
+    Worker                      m_worker;
+    Scheduler                   m_scheduler;
 };
 
 extern "C" {
@@ -385,6 +386,9 @@ Environment::Environment(PacketHandler handler, const Options& options)
         methcla_api_world_resource_retain,
         methcla_api_world_resource_release
     };
+
+    // Load plugins
+    m_impl->m_plugins.loadPlugins(asHost(), options.pluginLibraries);
 }
 
 Environment::~Environment()
@@ -893,7 +897,7 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 # include "Methcla/Audio/IO/DummyDriver.hpp"
 #endif
 
-Engine::Engine(PacketHandler handler, IO::Driver::Options driverOptions)
+Engine::Engine(PacketHandler handler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
 {
 #if defined(METHCLA_USE_DUMMY_DRIVER)
     m_driver = new IO::DummyDriver(driverOptions);
@@ -908,7 +912,7 @@ Engine::Engine(PacketHandler handler, IO::Driver::Options driverOptions)
               << "  numOutputs = " << m_driver->numOutputs() << std::endl
               << "  bufferSize = " << m_driver->bufferSize() << std::endl;
 
-    Environment::Options options;
+    Environment::Options options(engineOptions);
     options.sampleRate = m_driver->sampleRate();
     options.blockSize = m_driver->bufferSize();
     options.numHardwareInputChannels = m_driver->numInputs();
@@ -931,11 +935,6 @@ void Engine::start()
 void Engine::stop()
 {
     driver()->stop();
-}
-
-void Engine::loadPlugins(const std::list<Methcla_LibraryFunction>& funcs)
-{
-    m_plugins.loadPlugins(m_env->asHost(), funcs);
 }
 
 void Engine::processCallback(

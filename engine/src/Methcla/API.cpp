@@ -45,10 +45,7 @@ struct Methcla_Engine
         // Options options(inOptions);
         OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
 
-        // TODO: Put this somewhere else
-        std::list<Methcla_LibraryFunction> libs;
-        // std::string pluginPath = ".";
-
+        Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
 
         if (packet.isBundle()) {
@@ -62,12 +59,9 @@ struct Methcla_Engine
                         if (x.size() == sizeof(Methcla_LibraryFunction)) {
                             Methcla_LibraryFunction f;
                             memcpy(&f, x.data(), x.size());
-                            libs.push_back(f);
+                            engineOptions.pluginLibraries.push_back(f);
                         }
                     }
-                    // else if (option == "/engine/option/plugin-path") {
-                    //     pluginPath = option.args().string();
-                    // }
                     else if (option == "/engine/option/driver/buffer-size") {
                         driverOptions.bufferSize = option.args().int32();
                     }
@@ -77,10 +71,9 @@ struct Methcla_Engine
 
         m_engine = new Methcla::Audio::Engine(
             PacketHandler { handler, handlerData },
+            engineOptions,
             driverOptions
         );
-
-        m_engine->loadPlugins(libs);
     }
 
     ~Methcla_Engine()

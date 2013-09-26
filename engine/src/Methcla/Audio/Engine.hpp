@@ -52,25 +52,15 @@ namespace Methcla { namespace Audio
     public:
         struct Options
         {
-            Options()
-                : realtimeMemorySize(1024*1024)
-                , maxNumNodes(1024)
-                , maxNumAudioBuses(1024)
-                , maxNumControlBuses(4096)
-                , sampleRate(44100)
-                , blockSize(64)
-                , numHardwareInputChannels(2)
-                , numHardwareOutputChannels(2)
-            { }
-
-            size_t realtimeMemorySize;
-            size_t maxNumNodes;
-            size_t maxNumAudioBuses;
-            size_t maxNumControlBuses;
-            size_t sampleRate;
-            size_t blockSize;
-            size_t numHardwareInputChannels;
-            size_t numHardwareOutputChannels;
+            size_t realtimeMemorySize = 1024*1024;
+            size_t maxNumNodes = 1024;
+            size_t maxNumAudioBuses = 1024;
+            size_t maxNumControlBuses = 4096;
+            size_t sampleRate = 44100;
+            size_t blockSize = 64;
+            size_t numHardwareInputChannels = 2;
+            size_t numHardwareOutputChannels = 2;
+            std::list<Methcla_LibraryFunction> pluginLibraries;
         };
 
         Environment(PacketHandler handler, const Options& options);
@@ -200,7 +190,7 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PacketHandler handler, IO::Driver::Options driverOptions);
+        Engine(PacketHandler handler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions);
         virtual ~Engine();
 
         IO::Driver* driver()
@@ -221,8 +211,6 @@ namespace Methcla { namespace Audio
             return *m_env;
         }
 
-        void loadPlugins(const std::list<Methcla_LibraryFunction>& funcs);
-
         void start();
         void stop();
 
@@ -236,7 +224,6 @@ namespace Methcla { namespace Audio
             );
 
     private:
-        PluginManager   m_plugins;
         IO::Driver*     m_driver;
         Environment*    m_env;
     };
