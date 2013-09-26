@@ -69,6 +69,12 @@ namespace Methcla { namespace Audio
         Environment(const Environment&) = delete;
         Environment& operator=(const Environment&) = delete;
 
+        //* Convert environment to Methcla_Host.
+        operator const Methcla_Host* () const;
+
+        //* Convert environment to Methcla_World.
+        operator const Methcla_World* () const;
+
         Group* rootNode() { return m_rootNode; }
 
         double sampleRate() const { return m_sampleRate; }
@@ -103,12 +109,6 @@ namespace Methcla { namespace Audio
         //* Sound file API registration
         void registerSoundFileAPI(const char* mimeType, const Methcla_SoundFileAPI* api);
         const Methcla_SoundFileAPI* soundFileAPI(const char* mimeType) const;
-
-        //* Convert environment to Methcla_Host.
-        const Methcla_Host* asHost() const { return &m_host; }
-
-        //* Convert environment to Methcla_World.
-        const Methcla_World* asWorld() const { return &m_world; }
 
         //* Send a command from the realtime thread to the worker thread.
         //

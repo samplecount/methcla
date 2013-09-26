@@ -62,7 +62,7 @@ Synth::Synth( Environment& env
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
 
     // Construct synth
-    synthDef.construct(env.asWorld(), synthOptions, this, m_synth);
+    synthDef.construct(env, synthOptions, this, m_synth);
 
     // Validate alignment
     BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
@@ -133,12 +133,12 @@ Synth::Synth( Environment& env
 
     // Activate synth instance
     // This might be deferred to when the synth is actually started by the scheduler
-    synthDef.activate(env.asWorld(), m_synth);
+    synthDef.activate(env, m_synth);
 }
 
 Synth::~Synth()
 {
-    m_synthDef.destroy(env().asWorld(), m_synth);
+    m_synthDef.destroy(env(), m_synth);
 }
 
 Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
@@ -275,7 +275,7 @@ void Synth::activate(float sampleOffset)
 {
     BOOST_ASSERT( m_flags.state == kStateInactive );
     m_sampleOffset = sampleOffset;
-    m_synthDef.activate(env().asWorld(), m_synth);
+    m_synthDef.activate(env(), m_synth);
     m_flags.state = kStateActivating;
 }
 
@@ -309,7 +309,7 @@ void Synth::doProcess(size_t numFrames)
             x.read(env, numFrames, inputBuffers + x.index() * blockSize);
         }
 
-        m_synthDef.process(env.asWorld(), m_synth, numFrames);
+        m_synthDef.process(env, m_synth, numFrames);
 
         for (size_t i=0; i < numAudioOutputs(); i++) {
             AudioOutputConnection& x = m_audioOutputConnections[i];
@@ -332,7 +332,7 @@ void Synth::doProcess(size_t numFrames)
             x.read(env, numFrames - sampleOffset, inputBuffers + x.index() * blockSize, sampleOffset);
         }
 
-        m_synthDef.process(env.asWorld(), m_synth, numFrames - sampleOffset);
+        m_synthDef.process(env, m_synth, numFrames - sampleOffset);
 
         for (size_t i=0; i < numAudioOutputs(); i++) {
             AudioOutputConnection& x = m_audioOutputConnections[i];

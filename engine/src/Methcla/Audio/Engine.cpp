@@ -388,12 +388,25 @@ Environment::Environment(PacketHandler handler, const Options& options)
     };
 
     // Load plugins
-    m_impl->m_plugins.loadPlugins(asHost(), options.pluginLibraries);
+    m_impl->m_plugins.loadPlugins(*this, options.pluginLibraries);
 }
 
 Environment::~Environment()
 {
 }
+
+//* Convert environment to Methcla_Host.
+Environment::operator const Methcla_Host* () const
+{
+    return &m_host;
+}
+
+//* Convert environment to Methcla_World.
+Environment::operator const Methcla_World* () const
+{
+    return &m_world;
+}
+
 
 AudioBus* Environment::audioBus(AudioBusId id)
 {
@@ -864,7 +877,7 @@ template <typename T> struct CallbackData
 static void perform_worldCommand(Environment* env, CommandData* data)
 {
     CallbackData<Methcla_WorldPerformFunction>* self = (CallbackData<Methcla_WorldPerformFunction>*)data;
-    self->func(env->asWorld(), self->arg);
+    self->func(*env, self->arg);
     env->sendToWorker(perform_nrt_free, self);
 }
 
@@ -880,7 +893,7 @@ static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_W
 static void perform_hostCommand(Environment* env, CommandData* data)
 {
     CallbackData<Methcla_HostPerformFunction>* self = (CallbackData<Methcla_HostPerformFunction>*)data;
-    self->func(env->asHost(), self->arg);
+    self->func(*env, self->arg);
     env->sendFromWorker(perform_rt_free, self);
 }
 
