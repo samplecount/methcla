@@ -30,16 +30,18 @@ using namespace Methcla::Memory;
 // OSC request with reference counting.
 class Request
 {
-    struct Data
-    {
-        size_t  m_refs;
-        void*   m_packet;
-    };
+    typedef size_t RefCount;
+
+    Environment* m_env;
+    RefCount*    m_refs;
+    void*        m_packet;
+    size_t       m_size;
 
 public:
     Request()
         : m_env(nullptr)
-        , m_data(nullptr)
+        , m_refs(nullptr)
+        , m_packet(nullptr)
         , m_size(0)
     {
     }
@@ -49,39 +51,29 @@ public:
         , m_size(size)
     {
         // Allocate memory for packet and data block
-        char* mem = Memory::allocOf<char>(sizeof(Data) + size);
-        memcpy(mem + sizeof(Data), packet, size);
-        m_data = reinterpret_cast<Data*>(mem);
-        m_data->m_refs = 1;
-        m_data->m_packet = mem + sizeof(Data);
+        char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
+        if (mem == nullptr)
+            throw std::bad_alloc();
+
+        m_refs = reinterpret_cast<RefCount*>(mem);
+        *m_refs = 1;
+
+        m_packet = mem + sizeof(RefCount);
+        memcpy(m_packet, packet, size);
     }
 
-    Request(const Request& other)
-        : Request()
-    {
-        *this = other;
-    }
-
-    Request& operator=(const Request& other)
-    {
-        if (this != &other) {
-            release();
-            m_env = other.m_env;
-            m_data = other.m_data;
-            m_size = other.m_size;
-            retain();
-        }
-        return *this;
-    }
+    Request(const Request& other) = delete;
+    Request& operator=(const Request& other) = delete;
 
     ~Request()
     {
-        release();
+        // std::cout << "~Request()\n";
+        Methcla::Memory::free(m_refs);
     }
 
     void* packet()
     {
-        return m_data == nullptr ? nullptr : m_data->m_packet;
+        return m_packet;
     }
 
     size_t size() const
@@ -89,35 +81,27 @@ public:
         return m_size;
     }
 
-private:
     void retain()
     {
-        if (m_data != nullptr)
-            m_data->m_refs++;
-    }
-
-    static void perform_free_data(Environment*, CommandData* data)
-    {
-        Methcla::Memory::free(data);
+        if (m_refs != nullptr)
+            (*m_refs)++;
     }
 
     void release()
     {
-        if (m_data != nullptr) {
-            m_data->m_refs--;
-            if (m_data->m_refs == 0) {
-                m_env->sendToWorker(perform_free_data, m_data);
-                m_env = nullptr;
-                m_data = nullptr;
-                m_size = 0;
-            }
+        if (m_refs != nullptr)
+        {
+            (*m_refs)--;
+            if (*m_refs == 0)
+                m_env->sendToWorker(perform_delete_request, this);
         }
     }
 
 private:
-    Environment* m_env;
-    Data*        m_data;
-    size_t       m_size;
+    static void perform_delete_request(Environment*, CommandData* data)
+    {
+        delete static_cast<Request*>(data);
+    }
 };
 
 struct Command
@@ -133,12 +117,12 @@ struct Command
     void*        m_data;
 };
 
-class ScheduleItem
+template <typename T> class ScheduleItem
 {
 public:
-    ScheduleItem(Methcla_Time time, const Request& request)
+    ScheduleItem(Methcla_Time time, const T& data)
         : m_time(time)
-        , m_request(request)
+        , m_data(data)
     { }
 
     Methcla_Time time() const
@@ -146,9 +130,9 @@ public:
         return m_time;
     }
 
-    const Request& request() const
+    const T& data() const
     {
-        return m_request;
+        return m_data;
     }
 
     bool operator==(const ScheduleItem& other) const
@@ -163,13 +147,13 @@ public:
 
 private:
     Methcla_Time    m_time;
-    Request         m_request;
+    T               m_data;
 };
 
-class Scheduler
+template <typename T> class Scheduler
 {
     typedef boost::heap::priority_queue<
-        ScheduleItem,
+        ScheduleItem<T>,
         boost::heap::stable<true>,
         boost::heap::stability_counter_type<uint64_t>
         > PriorityQueue;
@@ -190,10 +174,10 @@ public:
         m_queue.reserve(m_maxSize);
     }
 
-    void push(Methcla_Time time, const Request& request)
+    void push(Methcla_Time time, const T& data)
     {
         if (m_queue.size() < m_maxSize) {
-            m_queue.push(ScheduleItem(time, request));
+            m_queue.push(ScheduleItem<T>(time, data));
         } else {
             throw std::runtime_error("Scheduler queue overflow");
         }
@@ -210,10 +194,10 @@ public:
         return m_queue.top().time();
     }
 
-    Request top() const
+    const T& top() const
     {
         assert(!isEmpty());
-        return m_queue.top().request();
+        return m_queue.top().data();
     }
 
     void pop()
@@ -242,7 +226,7 @@ public:
         , m_scheduler(kQueueSize)
     { }
 
-    typedef Utility::MessageQueue<Request> MessageQueue;
+    typedef Utility::MessageQueue<Request*> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
 
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
@@ -254,7 +238,7 @@ public:
     Memory::RTMemoryManager     m_rtMem;
     MessageQueue                m_requests;
     Worker                      m_worker;
-    Scheduler                   m_scheduler;
+    Scheduler<Request*>         m_scheduler;
 };
 
 extern "C" {
@@ -445,7 +429,7 @@ Epoch Environment::epoch() const
 
 void Environment::send(const void* packet, size_t size)
 {
-    m_impl->m_requests.send(Request(this, packet, size));
+    m_impl->m_requests.send(new Request(this, packet, size));
 }
 
 void Environment::sendToWorker(PerformFunc f, void* data)
@@ -612,24 +596,35 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 
 void Environment::processRequests(Methcla_Time currentTime)
 {
-    Request request;
-    while (m_impl->m_requests.next(request)) {
-        try {
-            OSCPP::Server::Packet packet(request.packet(), request.size());
-            if (packet.isBundle()) {
+    Request* request;
+    while (m_impl->m_requests.next(request))
+    {
+        try
+        {
+            OSCPP::Server::Packet packet(request->packet(), request->size());
+            if (packet.isBundle())
+            {
                 OSCPP::Server::Bundle bundle(packet);
-                if (processBundle(bundle)) {
-                    if (bundle.time() == 1) {
+                if (processBundle(bundle))
+                {
+                    if (bundle.time() == 1)
+                    {
                         processBundle(packet, currentTime, currentTime);
-                    } else {
+                        request->release();
+                    }
+                    else
+                    {
                         m_impl->m_scheduler.push(methcla_time_from_uint64(bundle.time()), request);
                     }
                 }
             } else {
                 if (processMessage(packet))
                     processMessage(packet, currentTime, currentTime);
+                request->release();
             }
-        } catch (std::exception& e) {
+        }
+        catch (std::exception& e)
+        {
             std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
         }
     }
@@ -637,18 +632,22 @@ void Environment::processRequests(Methcla_Time currentTime)
 
 void Environment::processScheduler(Methcla_Time currentTime, Methcla_Time nextTime)
 {
-    while (!m_impl->m_scheduler.isEmpty()) {
+    while (!m_impl->m_scheduler.isEmpty())
+    {
         Methcla_Time scheduleTime = m_impl->m_scheduler.time();
-        if (scheduleTime <= nextTime) {
-            Request request(m_impl->m_scheduler.top());
-            OSCPP::Server::Packet packet(request.packet(), request.size());
-            if (packet.isBundle()) {
+        if (scheduleTime <= nextTime)
+        {
+            Request* request = m_impl->m_scheduler.top();
+            OSCPP::Server::Packet packet(request->packet(), request->size());
+            if (packet.isBundle())
                 processBundle(packet, scheduleTime, currentTime);
-            } else {
+            else
                 processMessage(packet, scheduleTime, currentTime);
-            }
             m_impl->m_scheduler.pop();
-        } else {
+            request->release();
+        }
+        else
+        {
             break;
         }
     }
