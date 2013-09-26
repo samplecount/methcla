@@ -120,10 +120,6 @@ namespace Methcla { namespace Audio
         // Context: NRT
         void sendFromWorker(PerformFunc f, void* data);
 
-    protected:
-        friend class EnvironmentImpl;
-        friend class Engine;
-
         void process(
             Methcla_Time currentTime,
             size_t numFrames,
@@ -132,6 +128,8 @@ namespace Methcla { namespace Audio
             );
 
     private:
+        friend class EnvironmentImpl;
+
         static void perform_response_ack(Environment*, CommandData*);
         static void perform_response_nodeId(Environment*, CommandData*);
         static void perform_response_error(Environment*, CommandData*);
