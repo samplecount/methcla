@@ -20,6 +20,7 @@ import           Data.Char (toLower)
 import           Data.Version (Version(..))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
+import qualified MethclaPro as Pro
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.OSX as OSX
@@ -145,6 +146,7 @@ methclaSources platformSources =
                 -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
               -- platform dependent
             , platformSources
+            , Pro.engineSources
           -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
           --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
