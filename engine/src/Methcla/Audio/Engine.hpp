@@ -75,7 +75,7 @@ namespace Methcla { namespace Audio
         //* Convert environment to Methcla_World.
         operator const Methcla_World* () const;
 
-        Group* rootNode() { return m_rootNode; }
+        Group* rootNode();
 
         double sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
@@ -124,11 +124,6 @@ namespace Methcla { namespace Audio
         friend class EnvironmentImpl;
         friend class Engine;
 
-        ResourceMap<NodeId,Node>& nodes()
-        {
-            return m_nodes;
-        }
-
         void process(
             Methcla_Time currentTime,
             size_t numFrames,
@@ -142,13 +137,6 @@ namespace Methcla { namespace Audio
         static void perform_response_error(Environment*, CommandData*);
         static void perform_response_query_external_inputs(Environment*, CommandData*);
         static void perform_response_query_external_outputs(Environment*, CommandData*);
-
-        void processRequests(Methcla_Time currentTime);
-        void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
-        bool processBundle(const OSCPP::Server::Bundle& bundle);
-        void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
-        bool processMessage(const OSCPP::Server::Message& message);
-        void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)
@@ -178,13 +166,9 @@ namespace Methcla { namespace Audio
         EnvironmentImpl*                        m_impl;
         const double                            m_sampleRate;
         const size_t                            m_blockSize;
-        SynthDefMap                             m_synthDefs;
         PacketHandler                           m_listener;
-        ResourceMap<NodeId,Node>                m_nodes;
-        Group*                                  m_rootNode;
         Methcla_Host                            m_host;
         Methcla_World                           m_world;
-        std::list<const Methcla_SoundFileAPI*>  m_soundFileAPIs;
     };
 
     class Engine

@@ -218,28 +218,89 @@ public:
 
     static const size_t kQueueSize = 8192;
 
-    EnvironmentImpl(size_t realtimeMemorySize)
-        : m_epoch(0)
-        , m_rtMem(realtimeMemorySize)
-        , m_requests(kQueueSize)
-        , m_worker(kQueueSize, 2)
-        , m_scheduler(kQueueSize)
-    { }
+    Environment*                m_owner;
+
+    PluginManager               m_plugins;
+    Memory::RTMemoryManager     m_rtMem;
 
     typedef Utility::MessageQueue<Request*> MessageQueue;
     typedef Utility::WorkerThread<Command> Worker;
+
+    MessageQueue                m_requests;
+    Worker                      m_worker;
+    Scheduler<Request*>         m_scheduler;
 
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioOutputs;
     std::vector<std::shared_ptr<AudioBus>>          m_internalAudioBuses;
     Epoch                                           m_epoch;
 
-    PluginManager               m_plugins;
-    Memory::RTMemoryManager     m_rtMem;
-    MessageQueue                m_requests;
-    Worker                      m_worker;
-    Scheduler<Request*>         m_scheduler;
+    ResourceMap<NodeId,Node>    m_nodes;
+    Group*                      m_rootNode;
+
+    SynthDefMap                                     m_synthDefs;
+    std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
+
+    EnvironmentImpl(Environment* owner, const Environment::Options& options);
+    // Initialization that has to take place after constructor returns
+    void init(const Environment::Options& options);
+
+    void registerSynthDef(const Methcla_SynthDef* def);
+    const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+
+    void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
+
+    void processRequests(Methcla_Time currentTime);
+    void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
+    bool processBundle(const OSCPP::Server::Bundle& bundle);
+    void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
+    bool processMessage(const OSCPP::Server::Message& message);
+    void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
 };
+
+EnvironmentImpl::EnvironmentImpl(Environment* owner, const Environment::Options& options)
+    : m_owner(owner)
+    , m_rtMem(options.realtimeMemorySize)
+    , m_requests(kQueueSize)
+    , m_worker(kQueueSize, 2)
+    , m_scheduler(kQueueSize)
+    , m_epoch(0)
+    , m_nodes(options.maxNumNodes)
+{
+    const Epoch prevEpoch = m_epoch - 1;
+
+    m_externalAudioInputs.reserve(options.numHardwareInputChannels);
+    for (size_t i=0; i < options.numHardwareInputChannels; i++)
+    {
+        m_externalAudioInputs.push_back(
+            std::make_shared<ExternalAudioBus>(prevEpoch)
+        );
+    }
+
+    m_externalAudioOutputs.reserve(options.numHardwareOutputChannels);
+    for (size_t i=0; i < options.numHardwareOutputChannels; i++)
+    {
+        m_externalAudioOutputs.push_back(
+            std::make_shared<ExternalAudioBus>(prevEpoch)
+        );
+    }
+
+    for (size_t i=0; i < options.maxNumAudioBuses; i++)
+    {
+        m_internalAudioBuses.push_back(
+            std::make_shared<InternalAudioBus>(options.blockSize, prevEpoch)
+        );
+    }
+}
+
+void EnvironmentImpl::init(const Environment::Options& options)
+{
+    // Create root group
+    m_rootNode = Group::construct(*m_owner, NodeId(0), nullptr, Node::kAddToTail);
+    m_nodes.insert(m_rootNode->id(), m_rootNode);
+    // Load plugins
+    m_plugins.loadPlugins(*m_owner, options.pluginLibraries);
+}
 
 extern "C" {
 
@@ -318,38 +379,7 @@ Environment::Environment(PacketHandler handler, const Options& options)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_listener(handler)
-    , m_nodes(options.maxNumNodes)
 {
-    m_impl = new EnvironmentImpl(options.realtimeMemorySize);
-
-    m_rootNode = Group::construct(*this, NodeId(0), nullptr, Node::kAddToTail);
-    m_nodes.insert(m_rootNode->id(), m_rootNode);
-
-    const Epoch prevEpoch = epoch() - 1;
-
-    m_impl->m_externalAudioInputs.reserve(options.numHardwareInputChannels);
-    for (size_t i=0; i < options.numHardwareInputChannels; i++)
-    {
-        m_impl->m_externalAudioInputs.push_back(
-            std::make_shared<ExternalAudioBus>(prevEpoch)
-        );
-    }
-
-    m_impl->m_externalAudioOutputs.reserve(options.numHardwareOutputChannels);
-    for (size_t i=0; i < options.numHardwareOutputChannels; i++)
-    {
-        m_impl->m_externalAudioOutputs.push_back(
-            std::make_shared<ExternalAudioBus>(prevEpoch)
-        );
-    }
-
-    for (size_t i=0; i < options.maxNumAudioBuses; i++)
-    {
-        m_impl->m_internalAudioBuses.push_back(
-            std::make_shared<InternalAudioBus>(blockSize(), prevEpoch)
-        );
-    }
-
     // Initialize Methcla_Host interface
     m_host = {
         this,
@@ -371,8 +401,8 @@ Environment::Environment(PacketHandler handler, const Options& options)
         methcla_api_world_resource_release
     };
 
-    // Load plugins
-    m_impl->m_plugins.loadPlugins(*this, options.pluginLibraries);
+    m_impl = new EnvironmentImpl(this, options);
+    m_impl->init(options);
 }
 
 Environment::~Environment()
@@ -385,12 +415,16 @@ Environment::operator const Methcla_Host* () const
     return &m_host;
 }
 
+Group* Environment::rootNode()
+{
+    return m_impl->m_rootNode;
+}
+
 //* Convert environment to Methcla_World.
 Environment::operator const Methcla_World* () const
 {
     return &m_world;
 }
-
 
 AudioBus* Environment::audioBus(AudioBusId id)
 {
@@ -453,39 +487,7 @@ void Environment::sendFromWorker(PerformFunc f, void* data)
 void Environment::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
-
-    // Process external requests
-    processRequests(currentTime);
-    // Process scheduled requests
-    processScheduler(currentTime, currentTime + numFrames / sampleRate());
-    // std::cout << "Environment::process " << currentTime << std::endl;
-
-    // Process non-realtime commands
-    m_impl->m_worker.perform();
-
-    const size_t numExternalInputs = numExternalAudioInputs();
-    const size_t numExternalOutputs = numExternalAudioOutputs();
-
-    // Connect input and output buses
-    for (size_t i=0; i < numExternalInputs; i++) {
-        m_impl->m_externalAudioInputs[i]->setData(const_cast<sample_t*>(inputs[i]));
-        m_impl->m_externalAudioInputs[i]->setEpoch(epoch());
-    }
-    for (size_t i=0; i < numExternalOutputs; i++) {
-        m_impl->m_externalAudioOutputs[i]->setData(outputs[i]);
-    }
-
-    // Run DSP graph
-    m_rootNode->process(numFrames);
-
-    // Zero outputs that haven't been written to
-    for (size_t i=0; i < numExternalOutputs; i++) {
-        if (m_impl->m_externalAudioOutputs[i]->epoch() != epoch()) {
-            memset(outputs[i], 0, numFrames * sizeof(sample_t));
-        }
-    }
-
-    m_impl->m_epoch++;
+    m_impl->process(currentTime, numFrames, inputs, outputs);
 }
 
 static void perform_nrt_free(Environment*, CommandData* data)
@@ -594,10 +596,51 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
     sendToWorker(perform_response_error, data);
 }
 
-void Environment::processRequests(Methcla_Time currentTime)
+void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
+{
+    // Process external requests
+    processRequests(currentTime);
+    // Process scheduled requests
+    processScheduler(currentTime, currentTime + numFrames / m_owner->sampleRate());
+    // std::cout << "Environment::process " << currentTime << std::endl;
+
+    // Process non-realtime commands
+    m_worker.perform();
+
+    const size_t numExternalInputs = m_externalAudioInputs.size();
+    const size_t numExternalOutputs = m_externalAudioOutputs.size();
+
+    // Connect input and output buses
+    for (size_t i=0; i < numExternalInputs; i++)
+    {
+        m_externalAudioInputs[i]->setData(const_cast<sample_t*>(inputs[i]));
+        m_externalAudioInputs[i]->setEpoch(m_epoch);
+    }
+
+    for (size_t i=0; i < numExternalOutputs; i++)
+    {
+        m_externalAudioOutputs[i]->setData(outputs[i]);
+    }
+
+    // Run DSP graph
+    m_rootNode->process(numFrames);
+
+    // Zero outputs that haven't been written to
+    for (size_t i=0; i < numExternalOutputs; i++)
+    {
+        if (m_externalAudioOutputs[i]->epoch() != m_epoch)
+        {
+            memset(outputs[i], 0, numFrames * sizeof(sample_t));
+        }
+    }
+
+    m_epoch++;
+}
+
+void EnvironmentImpl::processRequests(Methcla_Time currentTime)
 {
     Request* request;
-    while (m_impl->m_requests.next(request))
+    while (m_requests.next(request))
     {
         try
         {
@@ -614,7 +657,7 @@ void Environment::processRequests(Methcla_Time currentTime)
                     }
                     else
                     {
-                        m_impl->m_scheduler.push(methcla_time_from_uint64(bundle.time()), request);
+                        m_scheduler.push(methcla_time_from_uint64(bundle.time()), request);
                     }
                 }
             } else {
@@ -630,20 +673,20 @@ void Environment::processRequests(Methcla_Time currentTime)
     }
 }
 
-void Environment::processScheduler(Methcla_Time currentTime, Methcla_Time nextTime)
+void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time nextTime)
 {
-    while (!m_impl->m_scheduler.isEmpty())
+    while (!m_scheduler.isEmpty())
     {
-        Methcla_Time scheduleTime = m_impl->m_scheduler.time();
+        Methcla_Time scheduleTime = m_scheduler.time();
         if (scheduleTime <= nextTime)
         {
-            Request* request = m_impl->m_scheduler.top();
+            Request* request = m_scheduler.top();
             OSCPP::Server::Packet packet(request->packet(), request->size());
             if (packet.isBundle())
                 processBundle(packet, scheduleTime, currentTime);
             else
                 processMessage(packet, scheduleTime, currentTime);
-            m_impl->m_scheduler.pop();
+            m_scheduler.pop();
             request->release();
         }
         else
@@ -653,7 +696,7 @@ void Environment::processScheduler(Methcla_Time currentTime, Methcla_Time nextTi
     }
 }
 
-bool Environment::processBundle(const OSCPP::Server::Bundle& bundle)
+bool EnvironmentImpl::processBundle(const OSCPP::Server::Bundle& bundle)
 {
     auto packets = bundle.packets();
     bool needsScheduling = false;
@@ -664,7 +707,7 @@ bool Environment::processBundle(const OSCPP::Server::Bundle& bundle)
     return needsScheduling;
 }
 
-void Environment::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
+void EnvironmentImpl::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     auto packets = bundle.packets();
     while (!packets.atEnd()) {
@@ -678,7 +721,7 @@ void Environment::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Tim
     }
 }
 
-bool Environment::processMessage(const OSCPP::Server::Message& msg)
+bool EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg)
 {
 #if 0
     std::cerr << "Request (recv): " << msg << std::endl;
@@ -698,8 +741,8 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
                 throw Error(kMethcla_NodeIdError);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Group* group = Group::construct(*this, nodeId, targetGroup, Node::kAddToTail);
-            nodes().insert(group->id(), group);
+            Group* group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
+            m_nodes.insert(group->id(), group);
 
             // No scheduling needed.
             return false;
@@ -709,7 +752,7 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
             NodeId targetId = NodeId(args.int32());
             args.drop(); // int32_t addAction = args.int32();
 
-            const std::shared_ptr<SynthDef> def = synthDef(defName);
+            const std::shared_ptr<SynthDef> def = m_owner->synthDef(defName);
 
             auto synthControls = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
             // FIXME: Cannot be checked before the synth is instantiated.
@@ -724,14 +767,14 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Synth* synth = Synth::construct(
-                *this,
+                *m_owner,
                 nodeId,
                 targetGroup,
                 Node::kAddToTail,
                 *def,
                 synthControls,
                 synthArgs);
-            nodes().insert(synth->id(), synth);
+            m_nodes.insert(synth->id(), synth);
 
             // Scheduling needed.
             return true;
@@ -744,15 +787,15 @@ bool Environment::processMessage(const OSCPP::Server::Message& msg)
         }
     } catch (Exception& e) {
         // TODO: Reply with error code
-        replyError(kMethcla_Notification, e.what());
+        m_owner->replyError(kMethcla_Notification, e.what());
     } catch (std::exception& e) {
-        replyError(kMethcla_Notification, e.what());
+        m_owner->replyError(kMethcla_Notification, e.what());
     }
 
     return true;
 }
 
-void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
+void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
 #if 0
     std::cerr << "Request (recv): " << msg << std::endl;
@@ -772,15 +815,15 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             // TODO: Use sample rate estimate from driver
-            const float sampleOffset = (scheduleTime - currentTime) * sampleRate();
+            const float sampleOffset = (scheduleTime - currentTime) * m_owner->sampleRate();
             synth->activate(sampleOffset);
         } else if (msg == "/node/free") {
             NodeId nodeId = NodeId(args.int32());
 
             // Check node id validity
-            if (!nodes().contains(nodeId)) {
+            if (!m_nodes.contains(nodeId)) {
                 throw Error(kMethcla_NodeIdError);
-            } else if (nodeId == rootNode()->id()) {
+            } else if (nodeId == m_rootNode->id()) {
                 throw Error(kMethcla_NodeIdError);
             }
 
@@ -837,19 +880,29 @@ void Environment::processMessage(const OSCPP::Server::Message& msg, Methcla_Time
         }
     } catch (Exception& e) {
         // TODO: Reply with error code
-        replyError(kMethcla_Notification, e.what());
+        m_owner->replyError(kMethcla_Notification, e.what());
     } catch (std::exception& e) {
-        replyError(kMethcla_Notification, e.what());
+        m_owner->replyError(kMethcla_Notification, e.what());
     }
 }
 
 void Environment::registerSynthDef(const Methcla_SynthDef* def)
+{
+    m_impl->registerSynthDef(def);
+}
+
+void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 {
     auto synthDef = std::make_shared<SynthDef>(def);
     m_synthDefs[synthDef->uri()] = synthDef;
 }
 
 const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
+{
+    return m_impl->synthDef(uri);
+}
+
+const std::shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) const
 {
     auto it = m_synthDefs.find(uri);
     if (it == m_synthDefs.end())
@@ -859,12 +912,12 @@ const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
 
 void Environment::registerSoundFileAPI(const char* /* mimeType */, const Methcla_SoundFileAPI* api)
 {
-    m_soundFileAPIs.push_back(api);
+    m_impl->m_soundFileAPIs.push_back(api);
 }
 
 const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* /* mimeType */) const
 {
-    return m_soundFileAPIs.empty() ? nullptr : m_soundFileAPIs.front();
+    return m_impl->m_soundFileAPIs.empty() ? nullptr : m_impl->m_soundFileAPIs.front();
 }
 
 template <typename T> struct CallbackData
