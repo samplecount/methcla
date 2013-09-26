@@ -25,8 +25,6 @@
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Memory/Manager.hpp"
 
-#include <boost/utility.hpp>
-
 #include <cstddef>
 #include <functional>
 #include <string>
@@ -49,7 +47,7 @@ namespace Methcla { namespace Audio
 
     class EnvironmentImpl;
 
-    class Environment : public boost::noncopyable
+    class Environment
     {
     public:
         struct Options
@@ -77,6 +75,9 @@ namespace Methcla { namespace Audio
 
         Environment(PacketHandler handler, const Options& options);
         ~Environment();
+
+        Environment(const Environment&) = delete;
+        Environment& operator=(const Environment&) = delete;
 
         Group* rootNode() { return m_rootNode; }
 

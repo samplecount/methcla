@@ -89,6 +89,10 @@ PluginLibrary::~PluginLibrary()
     methcla_library_destroy(m_lib);
 }
 
+PluginManager::PluginManager()
+{
+}
+
 void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs)
 {
     for (auto f : funcs) {

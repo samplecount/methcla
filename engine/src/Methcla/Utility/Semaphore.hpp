@@ -15,17 +15,18 @@
 #ifndef METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED
 #define METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED
 
-#include <boost/utility.hpp>
-
 namespace Methcla { namespace Utility {
 
 namespace detail { struct SemaphoreImpl; }
 
-class Semaphore : boost::noncopyable
+class Semaphore
 {
 public:
     Semaphore(unsigned initial=0);
     ~Semaphore();
+
+    Semaphore(const Semaphore&) = delete;
+    Semaphore& operator=(const Semaphore&) = delete;
 
     void post();
     void wait();

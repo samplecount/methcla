@@ -62,7 +62,7 @@ private:
     std::mutex m_mutex;
 };
 
-template <class Command> class Transport : boost::noncopyable
+template <class Command> class Transport
 {
 public:
     Transport(size_t queueSize, bool needsLock)
@@ -71,6 +71,9 @@ public:
     { }
     virtual ~Transport()
     { }
+
+    Transport(const Transport&) = delete;
+    Transport& operator=(const Transport&) = delete;
 
     virtual void send(const Command& cmd) = 0;
 
@@ -174,7 +177,7 @@ public:
     }
 };
 
-template <typename Command> class Worker : boost::noncopyable
+template <typename Command> class Worker
 {
 public:
     Worker(size_t queueSize, bool needsLock)
@@ -182,6 +185,9 @@ public:
         , m_toWorker(queueSize, needsLock, [this](){ this->signalWorker(); })
         , m_fromWorker(queueSize, needsLock)
     { }
+
+    Worker(const Worker&) = delete;
+    Worker& operator=(const Worker&) = delete;
 
     size_t maxCapacity() const
     {

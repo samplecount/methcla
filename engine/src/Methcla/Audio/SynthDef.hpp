@@ -21,7 +21,6 @@
 #include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
-#include <boost/utility.hpp>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -33,11 +32,14 @@ namespace Methcla { namespace Audio {
 
 class Synth;
 
-class SynthDef : boost::noncopyable
+class SynthDef
 {
 public:
     SynthDef(const Methcla_SynthDef* def);
     ~SynthDef();
+
+    SynthDef(const SynthDef&) = delete;
+    SynthDef& operator=(const SynthDef&) = delete;
 
     inline const char* uri() const { return m_descriptor->uri; }
 
@@ -79,20 +81,28 @@ typedef std::unordered_map<const char*,
         SynthDefMap;
 
 //* Plugin library.
-class PluginLibrary : boost::noncopyable
+class PluginLibrary
 {
 public:
     PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
     ~PluginLibrary();
+
+    PluginLibrary(const PluginLibrary&) = delete;
+    PluginLibrary& operator=(const PluginLibrary&) = delete;
 
 private:
     const Methcla_Library*                      m_lib;
     std::shared_ptr<Methcla::Plugin::Library>   m_plugin;
 };
 
-class PluginManager : boost::noncopyable
+class PluginManager
 {
 public:
+    PluginManager();
+
+    PluginManager(const PluginManager&) = delete;
+    PluginManager& operator=(const PluginManager&) = delete;
+
     //* Load plugins from static functions.
     void loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs);
 
