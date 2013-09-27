@@ -105,19 +105,6 @@ private:
     }
 };
 
-struct Command
-{
-    void perform()
-    {
-        if (m_perform != nullptr)
-            m_perform(m_env, m_data);
-    }
-
-    Environment* m_env;
-    PerformFunc  m_perform;
-    void*        m_data;
-};
-
 template <typename T> class Scheduler
 {
     class Item
@@ -225,10 +212,10 @@ public:
     Memory::RTMemoryManager     m_rtMem;
 
     typedef Utility::MessageQueue<Request*> MessageQueue;
-    typedef Utility::WorkerThread<Command> Worker;
+    typedef Utility::WorkerThread<Environment::Command> Worker;
 
     MessageQueue                m_requests;
-    Worker                      m_worker;
+    Environment::Worker*        m_worker;
 
     struct ScheduledBundle
     {
@@ -254,7 +241,9 @@ public:
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
 
-    EnvironmentImpl(Environment* owner, const Environment::Options& options);
+    EnvironmentImpl(Environment* owner, const Environment::Options& options, Environment::Worker* worker);
+    ~EnvironmentImpl();
+
     // Initialization that has to take place after constructor returns
     void init(const Environment::Options& options);
 
@@ -267,17 +256,34 @@ public:
     void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
     void processBundle(Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
     void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
+
+    void sendToWorker(const Environment::Command& cmd)
+    {
+        m_worker->sendToWorker(cmd);
+    }
+
+    void sendFromWorker(const Environment::Command& cmd)
+    {
+        m_worker->sendFromWorker(cmd);
+    }
 };
 
-EnvironmentImpl::EnvironmentImpl(Environment* owner, const Environment::Options& options)
+EnvironmentImpl::EnvironmentImpl(
+    Environment* owner,
+    const Environment::Options& options,
+    Environment::Worker* worker
+    )
     : m_owner(owner)
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(kQueueSize)
-    , m_worker(kQueueSize, 2)
+    , m_worker(worker)
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_nodes(options.maxNumNodes)
 {
+    if (m_worker == nullptr)
+        m_worker = new Utility::WorkerThread<Environment::Command>(kQueueSize, 2);
+
     const Epoch prevEpoch = m_epoch - 1;
 
     m_externalAudioInputs.reserve(options.numHardwareInputChannels);
@@ -302,6 +308,11 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, const Environment::Options&
             std::make_shared<InternalAudioBus>(options.blockSize, prevEpoch)
         );
     }
+}
+
+EnvironmentImpl::~EnvironmentImpl()
+{
+    delete m_worker;
 }
 
 void EnvironmentImpl::init(const Environment::Options& options)
@@ -386,7 +397,7 @@ static void methcla_api_world_perform_command(const Methcla_World*, Methcla_Host
 
 } // extern "C"
 
-Environment::Environment(PacketHandler handler, const Options& options)
+Environment::Environment(PacketHandler handler, const Options& options, Worker* worker)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_listener(handler)
@@ -412,7 +423,7 @@ Environment::Environment(PacketHandler handler, const Options& options)
         methcla_api_world_resource_release
     };
 
-    m_impl = new EnvironmentImpl(this, options);
+    m_impl = new EnvironmentImpl(this, options, worker);
     m_impl->init(options);
 }
 
@@ -483,7 +494,7 @@ void Environment::sendToWorker(PerformFunc f, void* data)
     cmd.m_env = this;
     cmd.m_perform = f;
     cmd.m_data = data;
-    m_impl->m_worker.sendToWorker(cmd);
+    m_impl->sendToWorker(cmd);
 }
 
 void Environment::sendFromWorker(PerformFunc f, void* data)
@@ -492,7 +503,7 @@ void Environment::sendFromWorker(PerformFunc f, void* data)
     cmd.m_env = this;
     cmd.m_perform = f;
     cmd.m_data = data;
-    m_impl->m_worker.sendFromWorker(cmd);
+    m_impl->sendFromWorker(cmd);
 }
 
 void Environment::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
@@ -616,7 +627,7 @@ void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const 
     // std::cout << "Environment::process " << currentTime << std::endl;
 
     // Process non-realtime commands
-    m_worker.perform();
+    m_worker->perform();
 
     const size_t numExternalInputs = m_externalAudioInputs.size();
     const size_t numExternalOutputs = m_externalAudioOutputs.size();

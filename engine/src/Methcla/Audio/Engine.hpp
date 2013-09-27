@@ -23,6 +23,7 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
+#include "Methcla/Utility/WorkerInterface.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -69,7 +70,22 @@ namespace Methcla { namespace Audio
             std::list<Methcla_LibraryFunction> pluginLibraries;
         };
 
-        Environment(PacketHandler handler, const Options& options);
+        struct Command
+        {
+            void perform()
+            {
+                if (m_perform != nullptr)
+                    m_perform(m_env, m_data);
+            }
+
+            Environment* m_env;
+            PerformFunc  m_perform;
+            void*        m_data;
+        };
+
+        typedef Utility::WorkerInterface<Command> Worker;
+
+        Environment(PacketHandler handler, const Options& options, Worker* worker=nullptr);
         ~Environment();
 
         Environment(const Environment&) = delete;
