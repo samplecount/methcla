@@ -38,9 +38,7 @@ namespace Methcla
 {
     inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
     {
-#if 0
         out << "Request (send): " << packet << std::endl;
-#endif
     }
 
 #if 0
@@ -251,6 +249,9 @@ namespace Methcla
             m_pool.free(m_packet.data());
         }
 
+        Packet(const Packet&) = delete;
+        Packet& operator=(const Packet&) = delete;
+
         const OSCPP::Client::Packet& packet() const
         {
             return m_packet;
@@ -262,8 +263,8 @@ namespace Methcla
         }
 
     private:
-        PacketPool&         m_pool;
-        OSCPP::Client::Packet m_packet;
+        PacketPool&             m_pool;
+        OSCPP::Client::Packet   m_packet;
     };
 
 #if 0
@@ -482,6 +483,8 @@ namespace Methcla
 
     typedef std::vector<std::shared_ptr<Option>> Options;
 
+    static const Methcla_Time immediately = 0.;
+
     class Engine
     {
     public:
@@ -538,209 +541,242 @@ namespace Methcla
 
         class Request
         {
-            Engine& m_engine;
-            Packet  m_request;
+            Engine&                 m_engine;
+            std::shared_ptr<Packet> m_request;
+
+        protected:
+            Engine& engine()
+            {
+                return m_engine;
+            }
+
+            std::shared_ptr<Packet> packet()
+            {
+                return m_request;
+            }
+
+            OSCPP::Client::Packet& oscPacket()
+            {
+                return packet()->packet();
+            }
 
         public:
-            Request(Engine& engine, Methcla_Time time)
+            Request(Engine& engine, std::shared_ptr<Packet> request)
                 : m_engine(engine)
-                , m_request(m_engine.packets())
-            {
-                m_request.packet().openBundle(methcla_time_to_uint64(time));
-            }
-            Request(Engine* engine, Methcla_Time time)
-                : Request(*engine, time)
+                , m_request(request)
+            { }
+            Request(Engine& engine)
+                : Request(engine, std::make_shared<Packet>(engine.packets()))
+            { }
+            Request(Engine* engine)
+                : Request(*engine)
             { }
 
-            //* Finalize request and send resulting bundle to the engine.
-            void send()
+            //* Send request to the engine.
+            virtual void send()
             {
-                m_request.packet().closeBundle();
-                m_engine.send(m_request);
+                m_engine.send(oscPacket());
+            }
+
+            GroupId group(GroupId parent)
+            {
+                const int32_t nodeId = m_engine.m_nodeIds.alloc();
+
+                oscPacket()
+                    .openMessage("/group/new", 3)
+                        .int32(nodeId)
+                        .int32(parent.id())
+                        .int32(0) // add action
+                    .closeMessage();
+
+                return GroupId(nodeId);
             }
 
             SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
             {
-                const char address[] = "/synth/new";
-                const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
-
                 const int32_t nodeId = m_engine.m_nodeIds.alloc();
 
-                m_request.packet()
-                    .openMessage(address, numTags)
-                    .string(synthDef)
-                    .int32(nodeId)
-                    .int32(parent.id())
-                    .int32(0)
-                    .putArray(controls.begin(), controls.end());
-                    m_request.packet().openArray();
-                        for (const auto& x : options) {
-                            x.put(m_request.packet());
-                        }
-                    m_request.packet().closeArray();
-                m_request.packet().closeMessage();
+                oscPacket()
+                    .openMessage("/synth/new", 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size()))
+                        .string(synthDef)
+                        .int32(nodeId)
+                        .int32(parent.id())
+                        .int32(0)
+                        .putArray(controls.begin(), controls.end());
+
+                        oscPacket().openArray();
+                            for (const auto& x : options) {
+                                x.put(oscPacket());
+                            }
+                        oscPacket().closeArray();
+
+                    oscPacket().closeMessage();
 
                 return SynthId(nodeId);
             }
 
-            void free(const NodeId& node)
+            void activate(SynthId synth)
             {
-                const char address[] = "/node/free";
-                const size_t numArgs = 1;
-                m_request.packet()
-                    .openMessage(address, numArgs)
+                oscPacket()
+                    .openMessage("/synth/activate", 1)
+                    .int32(synth.id())
+                    .closeMessage();
+            }
+
+            void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+            {
+                oscPacket()
+                    .openMessage("/synth/map/input", 4)
+                        .int32(synth.id())
+                        .int32(index)
+                        .int32(bus.id())
+                        .int32(flags)
+                    .closeMessage();
+            }
+
+            void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+            {
+                oscPacket()
+                    .openMessage("/synth/map/output", 4)
+                        .int32(synth.id())
+                        .int32(index)
+                        .int32(bus.id())
+                        .int32(flags)
+                    .closeMessage();
+            }
+
+            void set(NodeId node, size_t index, double value)
+            {
+                oscPacket()
+                    .openMessage("/node/set", 3)
                         .int32(node.id())
+                        .int32(index)
+                        .float32(value)
+                    .closeMessage();
+            }
+
+            void free(NodeId node)
+            {
+                oscPacket()
+                    .openMessage("/node/free", 1)
+                    .int32(node.id())
                     .closeMessage();
                 m_engine.m_nodeIds.free(node.id());
             }
         };
 
+        class Bundle : public Request
+        {
+            struct Flags
+            {
+                bool isFinished : 1;
+                bool isInner  : 1;
+            };
+
+            Flags m_flags;
+
+        public:
+            Bundle(Engine& engine, Methcla_Time time=0.)
+                : Request(engine)
+            {
+                m_flags.isFinished = false;
+                m_flags.isInner = false;
+                oscPacket().openBundle(methcla_time_to_uint64(time));
+            }
+            Bundle(Engine* engine, Methcla_Time time=0.)
+                : Bundle(*engine, time)
+            { }
+
+            Bundle(Bundle& other, Methcla_Time time=0.)
+                : Request(other.engine(), other.packet())
+            {
+                m_flags.isFinished = false;
+                m_flags.isInner = true;
+                oscPacket().openBundle(methcla_time_to_uint64(time));
+            }
+
+            void close()
+            {
+                if (!m_flags.isFinished)
+                {
+                    oscPacket().closeBundle();
+                    m_flags.isFinished = true;
+                }
+            }
+
+            void bundle(Methcla_Time time, std::function<void(Bundle&)> func)
+            {
+                Bundle bundle(*this, time);
+                func(bundle);
+                close();
+            }
+
+            //* Finalize request and send resulting bundle to the engine.
+            void send() override
+            {
+                if (m_flags.isInner)
+                    throw std::runtime_error("Cannot send nested bundle");
+                close();
+                Request::send();
+            }
+        };
+
+        void bundle(Methcla_Time time, std::function<void(Bundle&)> func)
+        {
+            Bundle bundle(*this, time);
+            func(bundle);
+            bundle.send();
+        }
+
         GroupId group(GroupId parent)
         {
-            const char address[] = "/group/new";
-            const size_t numArgs = 3;
-
-            const int32_t nodeId = m_nodeIds.alloc();
-
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numArgs)
-                .int32(nodeId)
-                .int32(parent.id())
-                .int32(0) // add action
-                .closeMessage();
-
-            dumpRequest(std::cerr, request.packet());
-
-            send(request);
-
-            return GroupId(nodeId);
+            Request request(this);
+            GroupId result = request.group(parent);
+            request.send();
+            return result;
         }
 
         SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
-            const char address[] = "/synth/new";
-            const size_t numTags = 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size());
-            // const size_t packetSize = OSCPP::Size::message(address, numTags)
-            //                              + OSCPP::Size::string(256)
-            //                              + OSCPP::Size::int32()
-            //                              + 2 * OSCPP::Size::int32()
-            //                              + controls.size() * OSCPP::Size::float32()
-            //                              + 256; // margin for options. better: pool allocator with fixed size packets.
-
-            const int32_t nodeId = m_nodeIds.alloc();
-            // const Methcla_RequestId requestId = getRequestId();
-
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numTags)
-                .string(synthDef)
-                .int32(nodeId)
-                .int32(parent.id())
-                .int32(0)
-                .putArray(controls.begin(), controls.end());
-
-            request.packet().openArray();
-            for (const auto& x : options) {
-                x.put(request.packet());
-            }
-            request.packet().closeArray();
-
-            request.packet().closeMessage();
-
-            dumpRequest(std::cerr, request.packet());
-
-            send(request);
-
-            return SynthId(nodeId);
+            Request request(this);
+            SynthId result = request.synth(synthDef, parent, controls, options);
+            request.send();
+            return result;
         }
 
-        void mapInput(const SynthId& synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+        void activate(SynthId synth)
         {
-            const char address[] = "/synth/map/input";
-            const size_t numArgs = 4;
-
-            // Methcla_RequestId requestId = getRequestId();
-
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numArgs)
-                    // .int32(requestId)
-                    .int32(synth.id())
-                    .int32(index)
-                    .int32(bus.id())
-                    .int32(flags)
-                .closeMessage();
-
-            dumpRequest(std::cerr, request.packet());
-            // execRequest(requestId, request);
-            send(request);
+            Request request(this);
+            request.activate(synth);
+            request.send();
         }
 
-        void mapOutput(const SynthId& synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+        void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
         {
-            const char address[] = "/synth/map/output";
-            const size_t numArgs = 4;
-            // const size_t packetSize = OSCPP::Size::message(address, numArgs)
-            //                             + numArgs * OSCPP::Size::int32();
-
-            // Methcla_RequestId requestId = getRequestId();
-
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numArgs)
-                    // .int32(requestId)
-                    .int32(synth.id())
-                    .int32(index)
-                    .int32(bus.id())
-                    .int32(flags)
-                .closeMessage();
-
-            dumpRequest(std::cerr, request.packet());
-            // execRequest(requestId, request);
-            send(request);
+            Request request(this);
+            request.mapInput(synth, index, bus, flags);
+            request.send();
         }
 
-        void set(const NodeId& node, size_t index, double value)
+        void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
         {
-            const char address[] = "/node/set";
-            const size_t numArgs = 3;
-            // const size_t packetSize = OSCPP::Size::message(address, numArgs)
-            //                             + 2 * OSCPP::Size::int32()
-            //                             + OSCPP::Size::float32();
-
-            // Methcla_RequestId requestId = getRequestId();
-
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numArgs)
-                    // .int32(requestId)
-                    .int32(node.id())
-                    .int32(index)
-                    .float32(value)
-                .closeMessage();
-
-            dumpRequest(std::cerr, request.packet());
-            // execRequest(requestId, request);
-            send(request);
+            Request request(this);
+            request.mapOutput(synth, index, bus, flags);
+            request.send();
         }
 
-        void freeNode(const NodeId& node)
+        void set(NodeId node, size_t index, double value)
         {
-            const char address[] = "/node/free";
-            const size_t numArgs = 1;
-            // const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
-            // const Methcla_RequestId requestId = getRequestId();
-            Packet request(m_packets);
-            request.packet()
-                .openMessage(address, numArgs)
-                    // .int32(requestId)
-                    .int32(node.id())
-                .closeMessage();
-            // execRequest(requestId, request);
-            dumpRequest(std::cerr, request.packet());
-            send(request);
-            m_nodeIds.free(node.id());
+            Request request(this);
+            request.set(node, index, value);
+            request.send();
+        }
+
+        void free(NodeId node)
+        {
+            Request request(this);
+            request.free(node);
+            request.send();
         }
 
         PacketPool& packets()
@@ -800,6 +836,7 @@ namespace Methcla
 
         void send(const OSCPP::Client::Packet& packet)
         {
+            // dumpRequest(std::cout, packet);
             send(packet.data(), packet.size());
         }
 

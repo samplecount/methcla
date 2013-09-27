@@ -273,10 +273,12 @@ void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, Methcla_
 
 void Synth::activate(float sampleOffset)
 {
-    BOOST_ASSERT( m_flags.state == kStateInactive );
-    m_sampleOffset = sampleOffset;
-    m_synthDef.activate(env(), m_synth);
-    m_flags.state = kStateActivating;
+    if (m_flags.state == kStateInactive)
+    {
+        m_sampleOffset = sampleOffset;
+        m_synthDef.activate(env(), m_synth);
+        m_flags.state = kStateActivating;
+    }
 }
 
 void Synth::doProcess(size_t numFrames)

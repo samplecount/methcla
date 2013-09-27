@@ -117,43 +117,43 @@ struct Command
     void*        m_data;
 };
 
-template <typename T> class ScheduleItem
-{
-public:
-    ScheduleItem(Methcla_Time time, const T& data)
-        : m_time(time)
-        , m_data(data)
-    { }
-
-    Methcla_Time time() const
-    {
-        return m_time;
-    }
-
-    const T& data() const
-    {
-        return m_data;
-    }
-
-    bool operator==(const ScheduleItem& other) const
-    {
-        return time() == other.time();
-    }
-
-    bool operator<(const ScheduleItem& other) const
-    {
-        return time() > other.time();
-    }
-
-private:
-    Methcla_Time    m_time;
-    T               m_data;
-};
-
 template <typename T> class Scheduler
 {
+    class Item
+    {
+    public:
+        Item(Methcla_Time time, const T& data)
+            : m_time(time)
+            , m_data(data)
+        { }
+
+        Methcla_Time time() const
+        {
+            return m_time;
+        }
+
+        const T& data() const
+        {
+            return m_data;
+        }
+
+        bool operator==(const Item& other) const
+        {
+            return time() == other.time();
+        }
+
+        bool operator<(const Item& other) const
+        {
+            return time() > other.time();
+        }
+
+    private:
+        Methcla_Time    m_time;
+        T               m_data;
+    };
+
     typedef boost::heap::priority_queue<
-        ScheduleItem<T>,
+        Item,
         boost::heap::stable<true>,
         boost::heap::stability_counter_type<uint64_t>
         > PriorityQueue;
@@ -177,7 +177,7 @@ public:
     void push(Methcla_Time time, const T& data)
     {
         if (m_queue.size() < m_maxSize) {
-            m_queue.push(ScheduleItem<T>(time, data));
+            m_queue.push(Item(time, data));
         } else {
             throw std::runtime_error("Scheduler queue overflow");
         }
@@ -228,7 +228,19 @@ public:
 
     MessageQueue                m_requests;
     Worker                      m_worker;
-    Scheduler<Request*>         m_scheduler;
+
+    struct ScheduledBundle
+    {
+        ScheduledBundle(Request* request, const OSCPP::Server::Bundle& bundle)
+            : m_request(request)
+            , m_bundle(bundle)
+        { }
+
+        Request*              m_request;
+        OSCPP::Server::Bundle m_bundle;
+    };
+
+    Scheduler<ScheduledBundle>  m_scheduler;
 
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
     std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioOutputs;
@@ -252,9 +264,7 @@ public:
 
     void processRequests(Methcla_Time currentTime);
     void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
-    bool processBundle(const OSCPP::Server::Bundle& bundle);
-    void processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
-    bool processMessage(const OSCPP::Server::Message& message);
+    void processBundle(Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
     void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
 };
 
@@ -648,23 +658,22 @@ void EnvironmentImpl::processRequests(Methcla_Time currentTime)
             if (packet.isBundle())
             {
                 OSCPP::Server::Bundle bundle(packet);
-                if (processBundle(bundle))
+                Methcla_Time bundleTime = methcla_time_from_uint64(bundle.time());
+                if (bundleTime == 0.)
                 {
-                    if (bundle.time() == 1)
-                    {
-                        processBundle(packet, currentTime, currentTime);
-                        request->release();
-                    }
-                    else
-                    {
-                        m_scheduler.push(methcla_time_from_uint64(bundle.time()), request);
-                    }
+                    processBundle(request, bundle, currentTime, currentTime);
                 }
-            } else {
-                if (processMessage(packet))
-                    processMessage(packet, currentTime, currentTime);
-                request->release();
+                else
+                {
+                    request->retain();
+                    m_scheduler.push(bundleTime, ScheduledBundle(request, bundle));
+                }
             }
+            else
+            {
+                processMessage(packet, currentTime, currentTime);
+            }
+            request->release();
         }
         catch (std::exception& e)
         {
@@ -680,14 +689,12 @@ void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time ne
         Methcla_Time scheduleTime = m_scheduler.time();
         if (scheduleTime <= nextTime)
         {
-            Request* request = m_scheduler.top();
-            OSCPP::Server::Packet packet(request->packet(), request->size());
-            if (packet.isBundle())
-                processBundle(packet, scheduleTime, currentTime);
-            else
-                processMessage(packet, scheduleTime, currentTime);
+            ScheduledBundle bundle = m_scheduler.top();
+            BOOST_ASSERT_MSG( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime
+                            , "Scheduled bundle timestamp inconsistency" );
+            processBundle(bundle.m_request, bundle.m_bundle, scheduleTime, currentTime);
             m_scheduler.pop();
-            request->release();
+            bundle.m_request->release();
         }
         else
         {
@@ -696,32 +703,34 @@ void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time ne
     }
 }
 
-bool EnvironmentImpl::processBundle(const OSCPP::Server::Bundle& bundle)
+void EnvironmentImpl::processBundle(Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     auto packets = bundle.packets();
-    bool needsScheduling = false;
-    while (!packets.atEnd()) {
-        auto p = packets.next();
-        needsScheduling |= p.isBundle() ? processBundle(p) : processMessage(p);
-    }
-    return needsScheduling;
-}
-
-void EnvironmentImpl::processBundle(const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
-{
-    auto packets = bundle.packets();
-    while (!packets.atEnd()) {
-        auto p = packets.next();
-        if (p.isBundle()) {
-            // NOTE: Nested bundles are flattened
-            processBundle(p, scheduleTime, currentTime);
-        } else {
-            processMessage(p, scheduleTime, currentTime);
+    while (!packets.atEnd())
+    {
+        auto packet = packets.next();
+        if (packet.isBundle())
+        {
+            OSCPP::Server::Bundle innerBundle(packet);
+            Methcla_Time innerBundleTime = methcla_time_from_uint64(innerBundle.time());
+            if (innerBundleTime <= scheduleTime)
+            {
+                processBundle(request, innerBundle, scheduleTime, currentTime);
+            }
+            else
+            {
+                request->retain();
+                m_scheduler.push(innerBundleTime, ScheduledBundle(request, innerBundle));
+            }
+        }
+        else
+        {
+            processMessage(packet, scheduleTime, currentTime);
         }
     }
 }
 
-bool EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg)
+void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
 #if 0
     std::cerr << "Request (recv): " << msg << std::endl;
@@ -743,9 +752,6 @@ bool EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
             Group* group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
             m_nodes.insert(group->id(), group);
-
-            // No scheduling needed.
-            return false;
         } else if (msg == "/synth/new") {
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
@@ -774,39 +780,9 @@ bool EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg)
                 *def,
                 synthControls,
                 synthArgs);
+
             m_nodes.insert(synth->id(), synth);
-
-            // Scheduling needed.
-            return true;
-        } else if (msg == "/query/external_inputs") {
-    // Methcla_RequestId requestId = args.int32();
-            // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
-        } else if (msg == "/query/external_outputs") {
-    // Methcla_RequestId requestId = args.int32();
-            // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
-        }
-    } catch (Exception& e) {
-        // TODO: Reply with error code
-        m_owner->replyError(kMethcla_Notification, e.what());
-    } catch (std::exception& e) {
-        m_owner->replyError(kMethcla_Notification, e.what());
-    }
-
-    return true;
-}
-
-void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
-{
-#if 0
-    std::cerr << "Request (recv): " << msg << std::endl;
-#endif
-
-    auto args = msg.args();
-    // Methcla_RequestId requestId = args.int32();
-
-    try {
-        if (msg == "/synth/new") {
-            args.drop(); // plugin name
+        } else if (msg == "/synth/activate") {
             NodeId nodeId = NodeId(args.int32());
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
@@ -877,6 +853,12 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
                 throw std::runtime_error("Synth output index out of range");
 
             synth->mapOutput(index, busId, flags);
+        } else if (msg == "/query/external_inputs") {
+    // Methcla_RequestId requestId = args.int32();
+            // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
+        } else if (msg == "/query/external_outputs") {
+    // Methcla_RequestId requestId = args.int32();
+            // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
     } catch (Exception& e) {
         // TODO: Reply with error code
