@@ -28,6 +28,7 @@
 #include <boost/noncopyable.hpp>
 
 #include "Methcla/Utility/Semaphore.hpp"
+#include "Methcla/Utility/WorkerInterface.hpp"
 
 namespace Methcla { namespace Utility {
 
@@ -177,7 +178,7 @@ public:
     }
 };
 
-template <typename Command> class Worker
+template <typename Command> class Worker : public WorkerInterface<Command>
 {
 public:
     Worker(size_t queueSize, bool needsLock)
@@ -194,17 +195,17 @@ public:
         return m_queueSize - 1;
     }
 
-    void sendToWorker(const Command& cmd)
+    void sendToWorker(const Command& cmd) override
     {
         m_toWorker.send(cmd);
     }
 
-    void sendFromWorker(const Command& cmd)
+    void sendFromWorker(const Command& cmd) override
     {
         m_fromWorker.send(cmd);
     }
 
-    void perform()
+    void perform() override
     {
         m_fromWorker.performAll();
     }
