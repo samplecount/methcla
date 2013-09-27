@@ -21,6 +21,5 @@
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_sine(const Methcla_Host*, const char*);
 #define METHCLA_PLUGINS_SINE_URI METHCLA_PLUGINS_URI "/sine"
-#define METHCLA_PLUGINS_SINE_LIB { .function = methcla_plugins_sine }
 
 #endif /* METHCLA_PLUGINS_SINE_H_INCLUDED */
