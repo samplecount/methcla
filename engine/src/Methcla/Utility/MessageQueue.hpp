@@ -25,7 +25,6 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #include <boost/lockfree/spsc_queue.hpp>
 #pragma GCC diagnostic pop
-#include <boost/noncopyable.hpp>
 
 #include "Methcla/Utility/Semaphore.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
