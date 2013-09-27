@@ -21,6 +21,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <new>
 #include <oscpp/server.hpp>
@@ -29,17 +30,6 @@
 
 struct Methcla_Engine
 {
-    struct PacketHandler
-    {
-        Methcla_PacketHandler handler;
-        void* data;
-
-        void operator()(Methcla_RequestId requestId, const void* packet, size_t size)
-        {
-            handler(data, requestId, packet, size);
-        }
-    };
-
     Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions)
     {
         // Options options(inOptions);
@@ -69,8 +59,10 @@ struct Methcla_Engine
             }
         }
 
+        using namespace std::placeholders;
+
         m_engine = new Methcla::Audio::Engine(
-            PacketHandler { handler, handlerData },
+            std::bind(handler, handlerData, _1, _2, _3),
             engineOptions,
             driverOptions
         );
