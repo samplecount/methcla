@@ -248,8 +248,8 @@ public:
     std::vector<std::shared_ptr<AudioBus>>          m_internalAudioBuses;
     Epoch                                           m_epoch;
 
-    ResourceMap<NodeId,Node>    m_nodes;
-    Group*                      m_rootNode;
+    ResourceMap<NodeId,Node>                        m_nodes;
+    Group*                                          m_rootNode;
 
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
