@@ -815,7 +815,7 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             // TODO: Use sample rate estimate from driver
-            const float sampleOffset = (scheduleTime - currentTime) * m_owner->sampleRate();
+            const float sampleOffset = std::max(0., (scheduleTime - currentTime) * m_owner->sampleRate());
             synth->activate(sampleOffset);
         } else if (msg == "/node/free") {
             NodeId nodeId = NodeId(args.int32());
