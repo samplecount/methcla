@@ -177,7 +177,7 @@ public:
 
     void push(Methcla_Time time, const T& data)
     {
-        if (m_queue.size() < m_maxSize) {
+        if (m_maxSize == 0 || m_queue.size() < m_maxSize) {
             m_queue.push(Item(time, data));
         } else {
             throw std::runtime_error("Scheduler queue overflow");
@@ -274,7 +274,7 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, const Environment::Options&
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(kQueueSize)
     , m_worker(kQueueSize, 2)
-    , m_scheduler(kQueueSize)
+    , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_nodes(options.maxNumNodes)
 {
