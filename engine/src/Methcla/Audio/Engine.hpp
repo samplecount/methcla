@@ -49,8 +49,15 @@ namespace Methcla { namespace Audio
     class Environment
     {
     public:
+        enum Mode
+        {
+            kRealtimeMode,
+            kNonRealtimeMode
+        };
+
         struct Options
         {
+            Mode mode = kRealtimeMode;
             size_t realtimeMemorySize = 1024*1024;
             size_t maxNumNodes = 1024;
             size_t maxNumAudioBuses = 1024;
