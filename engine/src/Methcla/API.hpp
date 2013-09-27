@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef METHCLA_API_HPP_INCLUDED
+#define METHCLA_API_HPP_INCLUDED
+
 #include <methcla/engine.h>
 #include "Methcla/Audio/Engine.hpp"
 
@@ -22,3 +25,5 @@ namespace Methcla { namespace API {
         Methcla::Audio::IO::Driver::Options* driverOptions
     );
 } }
+
+#endif // METHCLA_API_HPP_INCLUDED
