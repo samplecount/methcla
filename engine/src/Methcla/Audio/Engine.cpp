@@ -16,6 +16,7 @@
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 
 #include <boost/heap/priority_queue.hpp>
