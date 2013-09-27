@@ -15,6 +15,7 @@
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
 
+#include "Methcla/API.hpp"
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
@@ -28,36 +29,49 @@
 #include <stdexcept>
 #include <string>
 
+void Methcla::API::parseOptions(
+    const Methcla_OSCPacket* inOptions,
+    Methcla::Audio::Environment::Options* engineOptions,
+    Methcla::Audio::IO::Driver::Options* driverOptions)
+{
+    OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
+
+    if (packet.isBundle())
+    {
+        auto packets = OSCPP::Server::Bundle(packet).packets();
+        while (!packets.atEnd())
+        {
+            auto optionPacket = packets.next();
+            if (optionPacket.isMessage())
+            {
+                OSCPP::Server::Message option(optionPacket);
+                if (option == "/engine/option/plugin-library")
+                {
+                    OSCPP::Blob x = option.args().blob();
+                    if (x.size() == sizeof(Methcla_LibraryFunction))
+                    {
+                        Methcla_LibraryFunction f;
+                        memcpy(&f, x.data(), x.size());
+                        engineOptions->pluginLibraries.push_back(f);
+                    }
+                }
+                else if (option == "/engine/option/driver/buffer-size")
+                {
+                    driverOptions->bufferSize = option.args().int32();
+                }
+            }
+        }
+    }
+}
+
 struct Methcla_Engine
 {
     Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions)
     {
-        // Options options(inOptions);
-        OSCPP::Server::Packet packet(inOptions->data, inOptions->size);
-
         Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
 
-        if (packet.isBundle()) {
-            auto packets = OSCPP::Server::Bundle(packet).packets();
-            while (!packets.atEnd()) {
-                auto optionPacket = packets.next();
-                if (optionPacket.isMessage()) {
-                    OSCPP::Server::Message option(optionPacket);
-                    if (option == "/engine/option/plugin-library") {
-                        OSCPP::Blob x = option.args().blob();
-                        if (x.size() == sizeof(Methcla_LibraryFunction)) {
-                            Methcla_LibraryFunction f;
-                            memcpy(&f, x.data(), x.size());
-                            engineOptions.pluginLibraries.push_back(f);
-                        }
-                    }
-                    else if (option == "/engine/option/driver/buffer-size") {
-                        driverOptions.bufferSize = option.args().int32();
-                    }
-                }
-            }
-        }
+        Methcla::API::parseOptions(inOptions, &engineOptions, &driverOptions);
 
         using namespace std::placeholders;
 
