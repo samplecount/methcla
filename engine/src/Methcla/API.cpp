@@ -193,17 +193,3 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const v
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
-
-METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api)
-{
-    if (engine == nullptr)
-        return kMethcla_ArgumentError;
-    if (mimeType == nullptr)
-        return kMethcla_ArgumentError;
-    if (api == nullptr)
-        return kMethcla_ArgumentError;
-    METHCLA_ENGINE_TRY {
-        engine->m_engine->env().registerSoundFileAPI(mimeType, api);
-    } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
-}

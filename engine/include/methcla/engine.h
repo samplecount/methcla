@@ -80,8 +80,6 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* en
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
-METHCLA_EXPORT Methcla_Error methcla_engine_register_soundfile_api(Methcla_Engine* engine, const char* mimeType, const Methcla_SoundFileAPI* api);
-
 enum Methcla_BusMappingFlags
 {
     kMethcla_BusMappingInternal = 0x00

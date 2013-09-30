@@ -99,6 +99,7 @@ pluginSources = [
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
   , "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
   , "plugins/methc.la/plugins/sine/sine.c"
+  , "plugins/soundfile_api_dummy.cpp"
   ]
 
 -- vectorBuildFlags :: BuildFlags -> BuildFlags

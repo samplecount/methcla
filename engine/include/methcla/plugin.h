@@ -198,6 +198,9 @@ struct Methcla_Host
     //* Register a synth definition.
     void (*register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
 
+    //* Register sound file API.
+    void (*register_soundfile_api)(const struct Methcla_Host* host, const Methcla_SoundFileAPI* api);
+
     //* Lookup sound file API.
     const Methcla_SoundFileAPI* (*get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
 
@@ -210,6 +213,12 @@ static inline void methcla_host_register_synthdef(const Methcla_Host* host, cons
     assert(host && host->register_synthdef);
     assert(synthDef);
     host->register_synthdef(host, synthDef);
+}
+
+static inline void methcla_host_register_soundfile_api(const Methcla_Host* host, const Methcla_SoundFileAPI* api)
+{
+    assert(host && host->register_soundfile_api && api);
+    host->register_soundfile_api(host, api);
 }
 
 static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)

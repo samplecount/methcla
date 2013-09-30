@@ -330,7 +330,13 @@ static void methcla_api_host_register_synthdef(const Methcla_Host* host, const M
 {
     assert(host && host->handle);
     assert(synthDef);
-    return static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
+    static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
+}
+
+static void methcla_api_host_register_soundfile_api(const Methcla_Host* host, const Methcla_SoundFileAPI* api)
+{
+    assert(host && host->handle && api);
+    static_cast<Environment*>(host->handle)->registerSoundFileAPI("audio/*", api);
 }
 
 static const Methcla_SoundFileAPI* methcla_api_host_get_soundfile_api(const Methcla_Host* host, const char* mimeType)
@@ -406,6 +412,7 @@ Environment::Environment(PacketHandler handler, const Options& options, Worker* 
     m_host = {
         this,
         methcla_api_host_register_synthdef,
+        methcla_api_host_register_soundfile_api,
         methcla_api_host_get_soundfile_api,
         methcla_api_host_perform_command
     };
