@@ -95,9 +95,8 @@ pluginBuildFlags =
 
 pluginSources :: SourceTree BuildFlags
 pluginSources = SourceTree.files [
-    "plugins/methc.la/plugins/disksampler/disksampler.cpp"
+    "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
-  , "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
   , "plugins/methc.la/plugins/sine/sine.c"
   , "plugins/soundfile_api_dummy.cpp"
   ]
