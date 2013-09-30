@@ -175,9 +175,8 @@ static const Methcla_SoundFileAPI kSoundFileAPI = {
     soundfile_last_system_error
 };
 
-static const Methcla_Library kLibrary = { nullptr, nullptr };
-
 METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_dummy(const Methcla_Host* host, const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
+    return nullptr;
 }
