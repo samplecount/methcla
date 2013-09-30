@@ -23,3 +23,6 @@ isPresent = True
 
 engineSources :: SourceTree BuildFlags
 engineSources = SourceTree.empty
+
+pluginSources :: [(String, SourceTree BuildFlags)]
+pluginSources = []

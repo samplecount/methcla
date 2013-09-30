@@ -93,8 +93,8 @@ pluginBuildFlags =
   . append systemIncludes [ "include", externalLibrary "oscpp/include" ]
   . append compilerFlags [(Nothing, ["-O3"])]
 
-pluginSources :: [FilePath]
-pluginSources = [
+pluginSources :: SourceTree BuildFlags
+pluginSources = SourceTree.files [
     "plugins/methc.la/plugins/disksampler/disksampler.cpp"
   , "plugins/methc.la/plugins/sampler/sampler.cpp"
   , "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
@@ -151,7 +151,7 @@ methclaSources platformSources =
           -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
           --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
-      , SourceTree.flags pluginBuildFlags $ SourceTree.files pluginSources
+      , SourceTree.flags pluginBuildFlags $ SourceTree.list $ [pluginSources] ++ map snd Pro.pluginSources
       ]
 
 methcla :: String
