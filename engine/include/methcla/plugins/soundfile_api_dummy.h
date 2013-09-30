@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef METHCLA_SOUNDFILEAPI_DUMMY_HPP_INCLUDED
-#define METHCLA_SOUNDFILEAPI_DUMMY_HPP_INCLUDED
+#ifndef METHCLA_SOUNDFILEAPI_DUMMY_H_INCLUDED
+#define METHCLA_SOUNDFILEAPI_DUMMY_H_INCLUDED
 
 #include <methcla/file.h>
 #include <methcla/plugin.h>
 
 METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_dummy(const Methcla_Host*, const char*);
 
-#endif /* METHCLA_SOUNDFILEAPI_DUMMY_HPP_INCLUDED */
+#endif /* METHCLA_SOUNDFILEAPI_DUMMY_H_INCLUDED */
