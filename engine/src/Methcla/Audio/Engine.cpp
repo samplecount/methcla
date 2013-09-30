@@ -336,14 +336,28 @@ static void methcla_api_host_register_synthdef(const Methcla_Host* host, const M
 static void methcla_api_host_register_soundfile_api(const Methcla_Host* host, const Methcla_SoundFileAPI* api)
 {
     assert(host && host->handle && api);
-    static_cast<Environment*>(host->handle)->registerSoundFileAPI("audio/*", api);
+    static_cast<Environment*>(host->handle)->registerSoundFileAPI(api);
 }
 
-static const Methcla_SoundFileAPI* methcla_api_host_get_soundfile_api(const Methcla_Host* host, const char* mimeType)
+static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     assert(host && host->handle);
-    assert(mimeType);
-    return static_cast<Environment*>(host->handle)->soundFileAPI(mimeType);
+    assert(path);
+    assert(file);
+    assert(info);
+
+    auto& apis = static_cast<Environment*>(host->handle)->soundFileAPIs();
+    Methcla_Error result = kMethcla_UnsupportedFileTypeError;
+
+    // Open sound file with first API that doesn't return an error.
+    for (auto it=apis.begin(); it != apis.end(); it++)
+    {
+        Methcla_Error result = (*it)->open(*it, path, mode, file, info);
+        if (result == kMethcla_NoError)
+            return result;
+    }
+
+    return result;
 }
 
 static double methcla_api_world_samplerate(const Methcla_World* world)
@@ -413,7 +427,7 @@ Environment::Environment(PacketHandler handler, const Options& options, Worker* 
         this,
         methcla_api_host_register_synthdef,
         methcla_api_host_register_soundfile_api,
-        methcla_api_host_get_soundfile_api,
+        methcla_api_host_soundfile_open,
         methcla_api_host_perform_command
     };
 
@@ -911,14 +925,14 @@ const std::shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) cons
     return it->second;
 }
 
-void Environment::registerSoundFileAPI(const char* /* mimeType */, const Methcla_SoundFileAPI* api)
+void Environment::registerSoundFileAPI(const Methcla_SoundFileAPI* api)
 {
-    m_impl->m_soundFileAPIs.push_back(api);
+    m_impl->m_soundFileAPIs.push_front(api);
 }
 
-const Methcla_SoundFileAPI* Environment::soundFileAPI(const char* /* mimeType */) const
+const std::list<const Methcla_SoundFileAPI*>& Environment::soundFileAPIs() const
 {
-    return m_impl->m_soundFileAPIs.empty() ? nullptr : m_impl->m_soundFileAPIs.front();
+    return m_impl->m_soundFileAPIs;
 }
 
 template <typename T> struct CallbackData

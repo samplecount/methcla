@@ -201,8 +201,8 @@ struct Methcla_Host
     //* Register sound file API.
     void (*register_soundfile_api)(const struct Methcla_Host* host, const Methcla_SoundFileAPI* api);
 
-    //* Lookup sound file API.
-    const Methcla_SoundFileAPI* (*get_soundfile_api)(const Methcla_Host* host, const char* mimeType);
+    //* Open sound file.
+    Methcla_Error (*soundfile_open)(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
 
     //* Schedule a command for execution in the realtime context.
     void (*perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
@@ -223,13 +223,11 @@ static inline void methcla_host_register_soundfile_api(const Methcla_Host* host,
 
 static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
-    assert(host && host->get_soundfile_api);
+    assert(host && host->soundfile_open);
     assert(path);
     assert(file);
     assert(info);
-    const Methcla_SoundFileAPI* api = host->get_soundfile_api(host, "audio/*");
-    return api == NULL ? kMethcla_UnsupportedFileTypeError
-                       : api->open(api, path, mode, file, info);
+    return host->soundfile_open(host, path, mode, file, info);
 }
 
 static inline void methcla_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)

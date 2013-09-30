@@ -129,8 +129,10 @@ namespace Methcla { namespace Audio
         const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
 
         //* Sound file API registration
-        void registerSoundFileAPI(const char* mimeType, const Methcla_SoundFileAPI* api);
-        const Methcla_SoundFileAPI* soundFileAPI(const char* mimeType) const;
+        void registerSoundFileAPI(const Methcla_SoundFileAPI* api);
+
+        //* Get list of registered soundfile APIs (most recent ones first).
+        const std::list<const Methcla_SoundFileAPI*>& soundFileAPIs() const;
 
         //* Send a command from the realtime thread to the worker thread.
         //
