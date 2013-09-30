@@ -28,9 +28,8 @@ extern "C" {
 
 typedef enum
 {
-    kMethcla_Read,
-    kMethcla_Write,
-    kMethcla_ReadWrite
+    kMethcla_FileModeRead,
+    kMethcla_FileModeWrite
 } Methcla_FileMode;
 
 typedef struct
