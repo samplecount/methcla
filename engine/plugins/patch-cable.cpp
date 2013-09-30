@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "methc.la/plugins/patch-cable/patch-cable.h"
+#include <methcla/plugins/patch-cable.h>
 
 #include <algorithm>
 #include <cmath>

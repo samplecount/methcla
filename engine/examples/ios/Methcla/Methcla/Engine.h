@@ -16,9 +16,7 @@
 #define MethclaMobile_Engine_h
 
 #include <methcla/engine.hpp>
-#include <methc.la/plugins/sine/sine.h>
-#include <methc.la/plugins/sampler/sampler.h>
-#include <methc.la/plugins/disksampler/disksampler.h>
+#include <methcla/plugins/sine.h>
 
 Methcla::Engine* makeEngine()
 {

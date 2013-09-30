@@ -14,12 +14,12 @@
     limitations under the License.
 */
 
+#include <methcla/plugins/sine.h>
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-#include "methc.la/plugins/sine/sine.h"
 
 typedef enum {
     kSine_freq,

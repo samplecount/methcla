@@ -67,16 +67,15 @@ commonBuildFlags = append compilerFlags [
 apiIncludes :: BuildFlags -> BuildFlags
 apiIncludes = append systemIncludes [
     "include"
-  , "external_libraries/oscpp/include"
-  , "plugins" ]
+  , "external_libraries/oscpp/include" ]
 
 engineBuildFlags :: BuildFlags -> BuildFlags
 engineBuildFlags =
     append userIncludes
       ( -- Library headers
         [ "src" ]
-        -- External libs and plugins
-     ++ [ externalLibraries, "plugins" ] )
+        -- External libraries
+     ++ [ externalLibraries ] )
   . append systemIncludes
        ( -- API headers
          [ "include" ]
@@ -89,15 +88,14 @@ engineBuildFlags =
 
 pluginBuildFlags :: BuildFlags -> BuildFlags
 pluginBuildFlags =
-    append userIncludes [ "plugins" ]
-  . append systemIncludes [ "include", externalLibrary "oscpp/include" ]
+    append systemIncludes [ "include", externalLibrary "oscpp/include" ]
   . append compilerFlags [(Nothing, ["-O3"])]
 
 pluginSources :: SourceTree BuildFlags
 pluginSources = SourceTree.files [
-    "plugins/methc.la/plugins/patch-cable/patch-cable.cpp"
-  , "plugins/methc.la/plugins/sampler/sampler.cpp"
-  , "plugins/methc.la/plugins/sine/sine.c"
+    "plugins/patch-cable.cpp"
+  , "plugins/sampler.cpp"
+  , "plugins/sine.c"
   , "plugins/soundfile_api_dummy.cpp"
   ]
 

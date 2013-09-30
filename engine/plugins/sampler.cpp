@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "methc.la/plugins/sampler/sampler.h"
+#include <methcla/plugins/sampler.h>
 
 #include <iostream>
 #include <oscpp/server.hpp>

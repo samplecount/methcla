@@ -506,7 +506,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
-					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp/include",
 				);
@@ -541,7 +540,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				HEADER_SEARCH_PATHS = (
 					"$(METHCLA_SOURCE)/include",
-					"$(METHCLA_SOURCE)/plugins",
 					"$(METHCLA_SOURCE)/external_libraries/boost",
 					"$(METHCLA_SOURCE)/external_libraries/oscpp/include",
 				);
