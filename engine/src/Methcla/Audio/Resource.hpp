@@ -157,7 +157,7 @@ namespace Methcla { namespace Audio
             m_elems[id] = nullptr;
         }
 
-        Pointer lookup(Id id) noexcept
+        Pointer lookup(Id id)
         {
             if ((id >= Id(0)) && (id < Id(m_elems.size())))
                 return m_elems[id];
