@@ -469,6 +469,11 @@ Environment::operator const Methcla_World* () const
     return &m_world;
 }
 
+size_t Environment::numAudioBuses() const
+{
+    return m_impl->m_internalAudioBuses.size();
+}
+
 AudioBus* Environment::audioBus(AudioBusId id)
 {
     return m_impl->m_internalAudioBuses.at(id).get();

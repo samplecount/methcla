@@ -112,6 +112,9 @@ namespace Methcla { namespace Audio
         //* Return external audio input bus at index.
         AudioBus* externalAudioInput(AudioBusId id);
 
+        //* Return number of audio buses.
+        size_t numAudioBuses() const;
+
         //* Return audio bus with id (needed by Synth).
         AudioBus* audioBus(AudioBusId id);
 
