@@ -636,12 +636,15 @@ void Environment::perform_response_error(Environment* env, CommandData* commandD
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 {
+#if 0
     EnvironmentImpl::ErrorData* data =
         (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
     data->requestId = requestId;
     data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
     strcpy(data->message, msg);
     sendToWorker(perform_response_error, data);
+#endif
+    std::cerr << "ERROR: " << msg << std::endl;
 }
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
