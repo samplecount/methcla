@@ -622,8 +622,8 @@ void Environment::perform_response_error(Environment* env, CommandData* commandD
     const char address[] = "/error";
     const size_t numArgs = 2;
     const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                             + OSCPP::Size::int32()
-                             + OSCPP::Size::string(strlen(data->message));
+                            + OSCPP::Size::int32()
+                            + OSCPP::Size::string(strlen(data->message));
     OSCPP::Client::DynamicPacket packet(packetSize);
     packet
         .openMessage(address, numArgs)
