@@ -130,9 +130,38 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
     } catch(...) { }
 }
 
-METHCLA_EXPORT const char* methcla_error_message(Methcla_Error /* error */)
+METHCLA_EXPORT const char* methcla_error_message(Methcla_Error error)
 {
-    return "methcla_error_message not implemented yet.";
+    switch (error)
+    {
+        case kMethcla_NoError: return "No error";
+
+        /* Generic error codes */
+        case kMethcla_UnspecifiedError: return "Unspecified error";
+        case kMethcla_LogicError: return "Logic error";
+        case kMethcla_ArgumentError: return "Invalid argument";
+        case kMethcla_MemoryError: return "Out of memory";
+        case kMethcla_UnimplementedError: return "Operation not implemented";
+        case kMethcla_SystemError: return "Generic operating system error";
+
+        /* Engine errors */
+        case kMethcla_SynthDefNotFoundError: return "SynthDef not found";
+        case kMethcla_NodeIdError: return "Invalid node id";
+        case kMethcla_NodeTypeError: return "Invalid node type";
+
+        /* File errors */
+        case kMethcla_FileNotFoundError: return "File not found";
+        case kMethcla_FileExistsError: return "File already exists";
+        case kMethcla_PermissionsError: return "Insufficient file permissions";
+        case kMethcla_UnsupportedFileTypeError: return "Unsupported file type";
+        case kMethcla_UnsupportedDataFormatError: return "Unsupported data format";
+        case kMethcla_InvalidFileError: return "Malformed file contents";
+
+        /* Audio driver errors */
+        case kMethcla_DeviceUnavailableError: return "Audio device not available";
+    }
+
+    return "Unknown Methcla_Error code";
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
