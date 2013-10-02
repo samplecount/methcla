@@ -854,7 +854,7 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
                 throw Error(kMethcla_NodeTypeError);
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
-                throw std::runtime_error("Control input index out of range");
+                throw std::runtime_error("/node/set: Control input index out of range");
             }
             synth->controlInput(index) = value;
         } else if (msg == "/synth/map/input") {
