@@ -860,8 +860,12 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
         } else if (msg == "/synth/map/input") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
-            AudioBusId busId = AudioBusId(args.int32());
+            int32_t busId = AudioBusId(args.int32());
             Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
+
+            if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioInputs.size())
+                          || ((size_t)busId > m_internalAudioBuses.size()))
+                throw std::runtime_error("/synth/map/input: Audio input bus index out of range");
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
@@ -871,14 +875,18 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
 
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
-                throw std::runtime_error("Synth input index out of range");
+                throw std::runtime_error("/synth/map/input: Synth input index out of range");
 
-            synth->mapInput(index, busId, flags);
+            synth->mapInput(index, AudioBusId(busId), flags);
         } else if (msg == "/synth/map/output") {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
-            AudioBusId busId = AudioBusId(args.int32());
+            int32_t busId = args.int32();
             Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
+
+            if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioOutputs.size())
+                          || ((size_t)busId > m_internalAudioBuses.size()))
+                throw std::runtime_error("/synth/map/output: Audio output bus index out of range");
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
@@ -888,9 +896,9 @@ void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_
 
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
-                throw std::runtime_error("Synth output index out of range");
+                throw std::runtime_error("/synth/map/output: Synth output index out of range");
 
-            synth->mapOutput(index, busId, flags);
+            synth->mapOutput(index, AudioBusId(busId), flags);
         } else if (msg == "/query/external_inputs") {
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
