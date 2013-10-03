@@ -676,18 +676,18 @@ namespace Methcla
             Flags m_flags;
 
         public:
-            Bundle(Engine& engine, Methcla_Time time=0.)
+            Bundle(Engine& engine, Methcla_Time time=immediately)
                 : Request(engine)
             {
                 m_flags.isFinished = false;
                 m_flags.isInner = false;
                 oscPacket().openBundle(methcla_time_to_uint64(time));
             }
-            Bundle(Engine* engine, Methcla_Time time=0.)
+            Bundle(Engine* engine, Methcla_Time time=immediately)
                 : Bundle(*engine, time)
             { }
 
-            Bundle(Bundle& other, Methcla_Time time=0.)
+            Bundle(Bundle& other, Methcla_Time time=immediately)
                 : Request(other.engine(), other.packet())
             {
                 m_flags.isFinished = false;
