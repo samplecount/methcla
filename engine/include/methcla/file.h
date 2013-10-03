@@ -32,11 +32,34 @@ typedef enum
     kMethcla_FileModeWrite
 } Methcla_FileMode;
 
+typedef enum
+{
+    kMethcla_SoundFileTypeUnknown,
+    kMethcla_SoundFileTypeAIFF,
+    kMethcla_SoundFileTypeWAV,
+    kMethcla_SoundFileTypeFLAC,
+    kMethcla_SoundFileTypeOGG,
+    kMethcla_SoundFileTypeCAF,
+    kMethcla_SoundFileTypeMP3
+} Methcla_SoundFileType;
+
+typedef enum
+{
+    kMethcla_SoundFileFormatUnknown,
+    kMethcla_SoundFileFormatPCM16,
+    kMethcla_SoundFileFormatPCM24,
+    kMethcla_SoundFileFormatPCM32,
+    kMethcla_SoundFileFormatFloat,
+    kMethcla_SoundFileFormatIMA_ADPCM
+} Methcla_SoundFileFormat;
+
 typedef struct
 {
-    int64_t      frames;
-    unsigned int channels;
-    unsigned int samplerate;
+    int64_t                 frames;
+    unsigned int            channels;
+    unsigned int            samplerate;
+    Methcla_SoundFileType   file_type;
+    Methcla_SoundFileFormat file_format;
 } Methcla_SoundFileInfo;
 
 typedef struct Methcla_SoundFile Methcla_SoundFile;
