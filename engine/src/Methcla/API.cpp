@@ -222,3 +222,19 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const v
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
+
+METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(const Methcla_Engine* engine, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
+{
+    if (engine == nullptr)
+        return kMethcla_ArgumentError;
+    if (path == nullptr || *path == '\0')
+        return kMethcla_ArgumentError;
+    if (mode < kMethcla_FileModeRead || mode > kMethcla_FileModeWrite)
+        return kMethcla_ArgumentError;
+    if (file == nullptr)
+        return kMethcla_ArgumentError;
+    if (info == nullptr)
+        return kMethcla_ArgumentError;
+    const Methcla_Host* host = static_cast<const Methcla_Host*>(engine->m_engine->env());
+    return methcla_host_soundfile_open(host, path, mode, file, info);
+}

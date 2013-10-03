@@ -88,6 +88,9 @@ enum Methcla_BusMappingFlags
   , kMethcla_BusMappingReplace  = 0x04
 };
 
+//* Open a sound file.
+METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(const Methcla_Engine* engine, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+
 #if defined(__cplusplus)
 }
 #endif
