@@ -29,3 +29,6 @@ pluginSources = []
 
 testSources :: SourceTree BuildFlags
 testSources = SourceTree.empty
+
+testBuildFlags :: BuildFlags -> BuildFlags
+testBuildFlags = id

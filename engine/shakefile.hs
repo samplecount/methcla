@@ -407,6 +407,7 @@ mkRules options = do
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> stdlib "libc++"
                            >>> append libraries ["c++", "m"]
+                           >>> Pro.testBuildFlags
                            $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
                 result <- executable env cTarget toolChain buildFlags
