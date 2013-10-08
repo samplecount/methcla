@@ -25,14 +25,20 @@
 
 #include <methcla/engine.hpp>
 
-TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
+static Methcla_Engine* makeEngine()
 {
     Methcla_Engine* engine = nullptr;
     Methcla_Error result;
     result = methcla_engine_new(nullptr, nullptr, nullptr, &engine);
     REQUIRE(result == kMethcla_NoError);
     REQUIRE(engine);
-    result = methcla_engine_start(engine);
+    return engine;
+}
+
+TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
+{
+    Methcla_Engine* engine = makeEngine();
+    Methcla_Error result = methcla_engine_start(engine);
     REQUIRE(result == kMethcla_NoError);
     result = methcla_engine_stop(engine);
     REQUIRE(result == kMethcla_NoError);
