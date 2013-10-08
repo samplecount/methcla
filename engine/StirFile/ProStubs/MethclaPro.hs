@@ -26,3 +26,6 @@ engineSources = SourceTree.empty
 
 pluginSources :: [(String, SourceTree BuildFlags)]
 pluginSources = []
+
+testSources :: SourceTree BuildFlags
+testSources = SourceTree.empty
