@@ -14,6 +14,7 @@
 
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
+#include <methcla/plugins/sine.h>
 
 #include "Methcla/API.hpp"
 #include "Methcla/Audio/Engine.hpp"
@@ -70,6 +71,9 @@ struct Methcla_Engine
     {
         Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
+
+        // Register sine plugin by default
+        engineOptions.pluginLibraries.push_back(methcla_plugins_sine);
 
         if (inOptions != nullptr)
             Methcla::API::parseOptions(inOptions, &engineOptions, &driverOptions);
