@@ -36,11 +36,7 @@ typedef enum
 {
     kMethcla_SoundFileTypeUnknown,
     kMethcla_SoundFileTypeAIFF,
-    kMethcla_SoundFileTypeWAV,
-    kMethcla_SoundFileTypeFLAC,
-    kMethcla_SoundFileTypeOGG,
-    kMethcla_SoundFileTypeCAF,
-    kMethcla_SoundFileTypeMP3
+    kMethcla_SoundFileTypeWAV
 } Methcla_SoundFileType;
 
 typedef enum
@@ -49,8 +45,7 @@ typedef enum
     kMethcla_SoundFileFormatPCM16,
     kMethcla_SoundFileFormatPCM24,
     kMethcla_SoundFileFormatPCM32,
-    kMethcla_SoundFileFormatFloat,
-    kMethcla_SoundFileFormatIMA_ADPCM
+    kMethcla_SoundFileFormatFloat
 } Methcla_SoundFileFormat;
 
 typedef struct
