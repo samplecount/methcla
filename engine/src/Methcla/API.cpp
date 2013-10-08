@@ -71,7 +71,8 @@ struct Methcla_Engine
         Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
 
-        Methcla::API::parseOptions(inOptions, &engineOptions, &driverOptions);
+        if (inOptions != nullptr)
+            Methcla::API::parseOptions(inOptions, &engineOptions, &driverOptions);
 
         using namespace std::placeholders;
 
@@ -106,17 +107,17 @@ struct Methcla_Engine
         return kMethcla_UnspecifiedError; \
     }
 
+static void dummy_packet_handler(void*, Methcla_RequestId, const void*, size_t)
+{
+}
+
 METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
 {
     // cout << "Methcla_Engine_new" << endl;
-    if (handler == nullptr)
-        return kMethcla_ArgumentError;
-    if (options == nullptr)
-        return kMethcla_ArgumentError;
     if (engine == nullptr)
         return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
-        *engine = new Methcla_Engine(handler, handler_data, options);
+        *engine = new Methcla_Engine(handler == nullptr ? dummy_packet_handler : handler, handler_data, options);
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }

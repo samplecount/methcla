@@ -44,6 +44,10 @@ typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId requ
 typedef struct Methcla_Engine Methcla_Engine;
 
 //* Create a new engine with the given packet handling closure and options.
+// @handler Packet handler (may be NULL).
+// @handler_data Pointer passed to the packet handler callback.
+// @options OSC packet with engine options (may be NULL).
+// @engine Output parameter for the newly created engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_new(
     Methcla_PacketHandler handler,
     void* handler_data,
