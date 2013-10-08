@@ -411,7 +411,9 @@ mkRules options = do
             return $ do
                 result <- executable env cTarget toolChain buildFlags
                             "methcla-tests"
-                            (methclaSources $ SourceTree.files ["tests/methcla_tests.cpp"])
+                            (methclaSources $ SourceTree.files [
+                                "tests/methcla_tests.cpp"
+                              , "tests/methcla_engine_tests.cpp" ])
                 phony "macosx-tests" $ do
                     need [result]
                     system' result []
