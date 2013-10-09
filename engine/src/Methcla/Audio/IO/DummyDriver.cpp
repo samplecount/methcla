@@ -15,6 +15,8 @@
 #include "Methcla/Audio/IO/DummyDriver.hpp"
 
 #include <cassert>
+#include <chrono>
+#include <iostream>
 
 using namespace Methcla::Audio::IO;
 
@@ -40,8 +42,33 @@ DummyDriver::~DummyDriver()
 
 void DummyDriver::start()
 {
+    if (!m_thread.joinable())
+    {
+        m_continue = true;
+        m_thread = std::thread(&DummyDriver::run, this);
+    }
 }
 
 void DummyDriver::stop()
 {
+    if (m_thread.joinable())
+    {
+        m_continue = false;
+        m_thread.join();
+    }
+}
+
+void DummyDriver::run()
+{
+    auto dt = std::chrono::duration<double>(bufferSize()/sampleRate());
+    auto t0 = std::chrono::steady_clock::now();
+    auto t = t0 + std::chrono::duration<double>(0);
+
+    while (m_continue)
+    {
+        m_time = std::chrono::duration_cast<std::chrono::duration<double>>(t-t0).count();
+        process(m_time, bufferSize(), m_inputBuffers, m_outputBuffers);
+        std::this_thread::sleep_until(t);
+        t += dt;
+    }
 }
