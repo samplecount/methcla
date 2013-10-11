@@ -1,1 +1,3 @@
-external_libraries/stir/stir
+#!/bin/sh
+
+exec external_libraries/stir/stir "$@"
