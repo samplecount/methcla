@@ -1,0 +1,324 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A5C3A8C718081AF200AFFF45 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C3A8C618081AF200AFFF45 /* Foundation.framework */; };
+		A5C3A8DE180825A000AFFF45 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */; };
+		A5C3A8EE1808332B00AFFF45 /* methcla_init.c in Sources */ = {isa = PBXBuildFile; fileRef = A5C3A8ED1808332B00AFFF45 /* methcla_init.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A5C3A8D818081DA000AFFF45 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A5C3A8BB18081AF200AFFF45 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A5C3A8D418081CBC00AFFF45;
+			remoteInfo = libmethcla;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A5C3A8C318081AF200AFFF45 /* libmethcla.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libmethcla.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5C3A8C618081AF200AFFF45 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		A5C3A8ED1808332B00AFFF45 /* methcla_init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = methcla_init.c; sourceTree = "<group>"; };
+		A5C3A92218083FDB00AFFF45 /* methcla */ = {isa = PBXFileReference; lastKnownFileType = folder; name = methcla; path = ../../include/methcla; sourceTree = "<group>"; };
+		A5C3A92318083FE400AFFF45 /* oscpp */ = {isa = PBXFileReference; lastKnownFileType = folder; name = oscpp; path = ../../external_libraries/oscpp/include/oscpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A5C3A8C018081AF200AFFF45 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5C3A8DE180825A000AFFF45 /* AudioToolbox.framework in Frameworks */,
+				A5C3A8C718081AF200AFFF45 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A5C3A8BA18081AF200AFFF45 = {
+			isa = PBXGroup;
+			children = (
+				A5C3A92118083FCF00AFFF45 /* include */,
+				A5C3A8ED1808332B00AFFF45 /* methcla_init.c */,
+				A5C3A8C518081AF200AFFF45 /* Frameworks */,
+				A5C3A8C418081AF200AFFF45 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A5C3A8C418081AF200AFFF45 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A5C3A8C318081AF200AFFF45 /* libmethcla.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A5C3A8C518081AF200AFFF45 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */,
+				A5C3A8C618081AF200AFFF45 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A5C3A92118083FCF00AFFF45 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				A5C3A92218083FDB00AFFF45 /* methcla */,
+				A5C3A92318083FE400AFFF45 /* oscpp */,
+			);
+			name = include;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		A5C3A8D418081CBC00AFFF45 /* libmethcla */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "${PROJECT_DIR}/build_methcla.sh";
+			buildConfigurationList = A5C3A8D718081CBC00AFFF45 /* Build configuration list for PBXLegacyTarget "libmethcla" */;
+			buildPhases = (
+			);
+			buildToolPath = /bin/sh;
+			buildWorkingDirectory = "${PROJECT_DIR}/../../";
+			dependencies = (
+			);
+			name = libmethcla;
+			passBuildSettingsInEnvironment = 1;
+			productName = libmethcla;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXNativeTarget section */
+		A5C3A8C218081AF200AFFF45 /* methcla */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5C3A8D118081AF200AFFF45 /* Build configuration list for PBXNativeTarget "methcla" */;
+			buildPhases = (
+				A5C3A926180840BF00AFFF45 /* ShellScript */,
+				A5C3A8BF18081AF200AFFF45 /* Sources */,
+				A5C3A8C018081AF200AFFF45 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A5C3A8D918081DA000AFFF45 /* PBXTargetDependency */,
+			);
+			name = methcla;
+			productName = Methcla;
+			productReference = A5C3A8C318081AF200AFFF45 /* libmethcla.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A5C3A8BB18081AF200AFFF45 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = Samplecount;
+			};
+			buildConfigurationList = A5C3A8BE18081AF200AFFF45 /* Build configuration list for PBXProject "Methcla" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = A5C3A8BA18081AF200AFFF45;
+			productRefGroup = A5C3A8C418081AF200AFFF45 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A5C3A8C218081AF200AFFF45 /* methcla */,
+				A5C3A8D418081CBC00AFFF45 /* libmethcla */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A5C3A926180840BF00AFFF45 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp -LR ../../include \"${BUILT_PRODUCTS_DIR}/\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A5C3A8BF18081AF200AFFF45 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5C3A8EE1808332B00AFFF45 /* methcla_init.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A5C3A8D918081DA000AFFF45 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A5C3A8D418081CBC00AFFF45 /* libmethcla */;
+			targetProxy = A5C3A8D818081DA000AFFF45 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A5C3A8CF18081AF200AFFF45 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		A5C3A8D018081AF200AFFF45 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A5C3A8D218081AF200AFFF45 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/Methcla.dst;
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../build/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				OTHER_LDFLAGS = "-lmethcla";
+				PRIVATE_HEADERS_FOLDER_PATH = include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = include;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		A5C3A8D318081AF200AFFF45 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/Methcla.dst;
+				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../build/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				OTHER_LDFLAGS = "-lmethcla";
+				PRIVATE_HEADERS_FOLDER_PATH = include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PUBLIC_HEADERS_FOLDER_PATH = include;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		A5C3A8D518081CBC00AFFF45 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUGGING_SYMBOLS = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		A5C3A8D618081CBC00AFFF45 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A5C3A8BE18081AF200AFFF45 /* Build configuration list for PBXProject "Methcla" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5C3A8CF18081AF200AFFF45 /* Debug */,
+				A5C3A8D018081AF200AFFF45 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A5C3A8D118081AF200AFFF45 /* Build configuration list for PBXNativeTarget "methcla" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5C3A8D218081AF200AFFF45 /* Debug */,
+				A5C3A8D318081AF200AFFF45 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A5C3A8D718081CBC00AFFF45 /* Build configuration list for PBXLegacyTarget "libmethcla" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5C3A8D518081CBC00AFFF45 /* Debug */,
+				A5C3A8D618081CBC00AFFF45 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A5C3A8BB18081AF200AFFF45 /* Project object */;
+}
