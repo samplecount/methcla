@@ -347,17 +347,29 @@ static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, c
     assert(info);
 
     auto& apis = static_cast<Environment*>(host->handle)->soundFileAPIs();
-    Methcla_Error result = kMethcla_UnsupportedFileTypeError;
+
+    if (apis.empty())
+        return kMethcla_UnsupportedFileTypeError;
+
+    Methcla_Error result;
 
     // Open sound file with first API that doesn't return an error.
     for (auto it=apis.begin(); it != apis.end(); it++)
     {
         Methcla_Error result = (*it)->open(*it, path, mode, file, info);
         if (result == kMethcla_NoError)
+        {
+            assert(file != nullptr);
             return result;
+        }
+        else if (   result != kMethcla_UnsupportedFileTypeError
+                 && result != kMethcla_UnsupportedDataFormatError)
+        {
+            return result;
+        }
     }
 
-    return result;
+    return kMethcla_UnsupportedFileTypeError;
 }
 
 static double methcla_api_world_samplerate(const Methcla_World* world)
