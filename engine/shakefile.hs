@@ -239,11 +239,15 @@ mapTarget mkTarget archs f = mapM (f . mkTarget) archs
 androidTargetPlatform :: Platform
 androidTargetPlatform = Android.platform 9
 
+mkBuildPrefix :: Show a => a -> FilePath -> FilePath
+mkBuildPrefix config target = shakeBuildDir </> map toLower (show config) </> target
+
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
     let config = options ^. buildConfig
         mkEnv target = set buildPrefix
-                            (defaultBuildPrefix target (show config))
+                            -- (defaultBuildPrefix target (show config))
+                            (mkBuildPrefix config (platformString $ target ^. targetPlatform))
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
@@ -290,10 +294,7 @@ mkRules options = do
                 let universalTarget = "iphone-universal"
                 universalLib <- OSX.universalBinary
                                     [iphoneosLib, iphonesimulatorLib]
-                                    (shakeBuildDir
-                                      </> map toLower (show config)
-                                      </> universalTarget
-                                      </> "libmethcla.a")
+                                    (mkBuildPrefix config universalTarget </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
             ndk <- maybe "." id `fmap` lookupEnv "ANDROID_NDK"
