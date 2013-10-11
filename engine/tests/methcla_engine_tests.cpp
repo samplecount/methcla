@@ -23,7 +23,11 @@
 # pragma clang diagnostic pop
 #endif
 
+#include <methcla/engine.h>
 #include <methcla/engine.hpp>
+#include <methcla/plugins/sine.h>
+
+#include <chrono>
 
 static Methcla_Engine* makeEngine()
 {
@@ -43,4 +47,23 @@ TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
     result = methcla_engine_stop(engine);
     REQUIRE(result == kMethcla_NoError);
     methcla_engine_free(engine);
+}
+
+TEST_CASE("methcla/engine/node/free", "Test node freeing.")
+{
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine({
+            Methcla::Option::pluginLibrary(methcla_plugins_sine)
+        })
+    );
+    engine->start();
+
+    // try {
+    engine->free(-1);
+    // } catch (...) {
+    // }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    engine->stop();
+    REQUIRE(true);
 }
