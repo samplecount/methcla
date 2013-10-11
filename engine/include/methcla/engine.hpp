@@ -805,10 +805,12 @@ namespace Methcla
 
         static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
+#if 0
             if (requestId == kMethcla_Notification)
                 static_cast<Engine*>(data)->handleNotification(packet, size);
             else
                 static_cast<Engine*>(data)->handleReply(requestId, packet, size);
+#endif
         }
 
         void handleNotification(const void* packet, size_t size)
