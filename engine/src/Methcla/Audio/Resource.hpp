@@ -125,7 +125,7 @@ namespace Methcla { namespace Audio
 
         bool contains(Id id) const
         {
-            return m_elems[id] != nullptr;
+            return id >= Id(0) && id < Id(m_elems.size()) && m_elems[id] != nullptr;
         }
 
         Id nextId()

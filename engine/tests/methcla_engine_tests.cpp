@@ -29,41 +29,30 @@
 
 #include <chrono>
 
-static Methcla_Engine* makeEngine()
+TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
 {
     Methcla_Engine* engine = nullptr;
     Methcla_Error result;
     result = methcla_engine_new(nullptr, nullptr, nullptr, &engine);
     REQUIRE(result == kMethcla_NoError);
     REQUIRE(engine);
-    return engine;
-}
-
-TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
-{
-    Methcla_Engine* engine = makeEngine();
-    Methcla_Error result = methcla_engine_start(engine);
+    result = methcla_engine_start(engine);
     REQUIRE(result == kMethcla_NoError);
     result = methcla_engine_stop(engine);
     REQUIRE(result == kMethcla_NoError);
     methcla_engine_free(engine);
 }
 
-TEST_CASE("methcla/engine/node/free", "Test node freeing.")
+TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn't crash the engine.")
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine({
-            Methcla::Option::pluginLibrary(methcla_plugins_sine)
-        })
+        new Methcla::Engine()
     );
+
     engine->start();
-
-    // try {
     engine->free(-1);
-    // } catch (...) {
-    // }
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::duration<double>(0.25));
     engine->stop();
+
     REQUIRE(true);
 }
