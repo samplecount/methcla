@@ -399,7 +399,7 @@ mkRules options = do
             developer <- liftIO OSX.getDeveloperPath
             sdkVersion <- liftIO OSX.getSystemVersion
             let platform = OSX.macOSX sdkVersion
-                cTarget = OSX.target (X86 I386) platform
+                cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ OSX.toolChain_MacOSX developer
                 env = mkEnv cTarget
                 buildFlags =   applyConfiguration config configurations
