@@ -490,7 +490,7 @@ namespace Methcla
     class Engine
     {
     public:
-        Engine(const Options& options)
+        Engine(const Options& options={})
             : m_nodeIds(1, 1023)
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
