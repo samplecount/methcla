@@ -351,8 +351,6 @@ static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, c
     if (apis.empty())
         return kMethcla_UnsupportedFileTypeError;
 
-    Methcla_Error result;
-
     // Open sound file with first API that doesn't return an error.
     for (auto it=apis.begin(); it != apis.end(); it++)
     {
