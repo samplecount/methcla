@@ -107,6 +107,7 @@
 				A5C3A926180840BF00AFFF45 /* ShellScript */,
 				A5C3A8BF18081AF200AFFF45 /* Sources */,
 				A5C3A8C018081AF200AFFF45 /* Frameworks */,
+				A5B265D4180ECF970088BD47 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -146,6 +147,19 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		A5B265D4180ECF970088BD47 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cp \"../../build/${CONFIGURATION}/${PLATFORM_NAME}/libmethcla.a\" \"${BUILT_PRODUCTS_DIR}/\"";
+		};
 		A5C3A926180840BF00AFFF45 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
