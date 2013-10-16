@@ -246,8 +246,8 @@ mkRules :: Options -> IO (Rules ())
 mkRules options = do
     let config = options ^. buildConfig
         mkEnv target = set buildPrefix
-                            -- (defaultBuildPrefix target (show config))
-                            (mkBuildPrefix config (platformString $ target ^. targetPlatform))
+                            (defaultBuildPrefix target (show config))
+                            -- (mkBuildPrefix config (platformString $ target ^. targetPlatform))
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
