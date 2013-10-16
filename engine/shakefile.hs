@@ -267,18 +267,20 @@ mkRules options = do
                                                   , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
             developer <- liftIO OSX.getDeveloperPath
             return $ do
-                iphoneosLib <- do
-                    let platform = OSX.iPhoneOS iOS_SDK
-                        cTarget = OSX.target (Arm Armv7) platform
-                        toolChain = applyEnv $ OSX.toolChain_IOS developer
-                        env = mkEnv cTarget
+                iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
+                    let toolChain = applyEnv $ OSX.toolChain_IOS developer
+                        env = mkEnv target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> iosBuildFlags
-                                   $   OSX.buildFlags_IOS cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
-                    platformAlias platform lib
+                                   $   OSX.buildFlags_IOS target developer
+                    lib <- staticLibrary env target toolChain buildFlags methcla iosSources
                     return lib
+                iphoneosLib <- OSX.universalBinary
+                                iphoneosLibs
+                                (mkBuildPrefix config "iphoneos" </> "libmethcla.a")
+                phony "iphoneos" (need [iphoneosLib])
+
                 iphonesimulatorLib <- do
                     let platform = OSX.iPhoneSimulator iOS_SDK
                         cTarget = OSX.target (X86 I386) platform
@@ -291,9 +293,10 @@ mkRules options = do
                     lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
                     platformAlias platform lib
                     return lib
+
                 let universalTarget = "iphone-universal"
                 universalLib <- OSX.universalBinary
-                                    [iphoneosLib, iphonesimulatorLib]
+                                    (iphoneosLibs ++ [iphonesimulatorLib])
                                     (mkBuildPrefix config universalTarget </> "libmethcla.a")
                 phony universalTarget (need [universalLib])
       , do -- android
