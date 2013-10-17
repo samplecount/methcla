@@ -465,6 +465,7 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
 
 Environment::~Environment()
 {
+    delete m_impl;
 }
 
 //* Convert environment to Methcla_Host.
