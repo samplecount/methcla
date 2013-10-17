@@ -265,7 +265,7 @@ mkRules options = do
                 iosSources = methclaSources $
                                  SourceTree.files [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
                                                   , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
-            developer <- liftIO OSX.getDeveloperPath
+            developer <- OSX.getDeveloperPath
             return $ do
                 iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
                     let toolChain = applyEnv $ OSX.toolChain_IOS developer
@@ -342,9 +342,9 @@ mkRules options = do
                 phony "android" $ need $ map fst libs
                 phony "android-tests" $ need $ map snd libs
       , do -- macosx-icecast
-            developer <- liftIO OSX.getDeveloperPath
-            sdkVersion <- liftIO OSX.getSystemVersion
-            libshout <- liftIO $ pkgConfig "shout"
+            developer <- OSX.getDeveloperPath
+            sdkVersion <- OSX.getSystemVersion
+            libshout <- pkgConfig "shout"
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ OSX.toolChain_MacOSX developer
@@ -376,9 +376,9 @@ mkRules options = do
                 phony "macosx-icecast" $ need [lib]
                 phony "macosx-icecast-example" $ need [example]
       , do -- macosx-jack
-            developer <- liftIO OSX.getDeveloperPath
-            sdkVersion <- liftIO OSX.getSystemVersion
-            jackBuildFlags <- liftIO $ pkgConfig "jack"
+            developer <- OSX.getDeveloperPath
+            sdkVersion <- OSX.getSystemVersion
+            jackBuildFlags <- pkgConfig "jack"
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ OSX.toolChain_MacOSX developer
@@ -399,8 +399,8 @@ mkRules options = do
                 phony "macosx-jack" $ need [staticLib]
                 phony "macosx-jack-shared" $ need [sharedLib]
       , do -- tests (macosx)
-            developer <- liftIO OSX.getDeveloperPath
-            sdkVersion <- liftIO OSX.getSystemVersion
+            developer <- OSX.getDeveloperPath
+            sdkVersion <- OSX.getSystemVersion
             let platform = OSX.macOSX sdkVersion
                 cTarget = OSX.target (X86 X86_64) platform
                 toolChain = applyEnv $ OSX.toolChain_MacOSX developer
