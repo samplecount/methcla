@@ -16,7 +16,7 @@
 #define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
-#include <boost/cstdint.hpp>
+#include <cstdint>
 
 namespace Methcla { namespace Audio { namespace IO {
 
