@@ -26,6 +26,7 @@
 #include <boost/lockfree/spsc_queue.hpp>
 #pragma GCC diagnostic pop
 
+#include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
 
@@ -34,7 +35,7 @@ namespace Methcla { namespace Utility {
 //* MWSR queue for sending commands to the engine.
 // Request payload lifetime: from request until response callback.
 // Caller is responsible for freeing request payload after the response callback has been called.
-template <typename T> class MessageQueue
+template <typename T> class MessageQueue : public MessageQueueInterface<T>
 {
 public:
     MessageQueue(size_t queueSize)
@@ -44,14 +45,14 @@ public:
     MessageQueue(const MessageQueue<T>& other) = delete;
     MessageQueue<T>& operator=(const MessageQueue<T>& other) = delete;
 
-    inline void send(const T& msg)
+    void send(const T& msg) override
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         bool success = m_queue.push(msg);
         if (!success) throw std::runtime_error("Message queue overflow");
     }
 
-    inline bool next(T& msg)
+    bool next(T& msg) override
     {
         return m_queue.pop(msg);
     }
