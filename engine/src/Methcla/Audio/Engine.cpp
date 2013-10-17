@@ -29,81 +29,83 @@ using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
 // OSC request with reference counting.
-class Request
-{
-    typedef size_t RefCount;
-
-    Environment* m_env;
-    RefCount*    m_refs;
-    void*        m_packet;
-    size_t       m_size;
-
-public:
-    Request()
-        : m_env(nullptr)
-        , m_refs(nullptr)
-        , m_packet(nullptr)
-        , m_size(0)
+namespace Methcla { namespace Audio {
+    class Request
     {
-    }
+        typedef size_t RefCount;
 
-    Request(Environment* env, const void* packet, size_t size)
-        : m_env(env)
-        , m_size(size)
-    {
-        // Allocate memory for packet and data block
-        char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
-        if (mem == nullptr)
-            throw std::bad_alloc();
+        Environment* m_env;
+        RefCount*    m_refs;
+        void*        m_packet;
+        size_t       m_size;
 
-        m_refs = reinterpret_cast<RefCount*>(mem);
-        *m_refs = 1;
-
-        m_packet = mem + sizeof(RefCount);
-        memcpy(m_packet, packet, size);
-    }
-
-    Request(const Request& other) = delete;
-    Request& operator=(const Request& other) = delete;
-
-    ~Request()
-    {
-        // std::cout << "~Request()\n";
-        Methcla::Memory::free(m_refs);
-    }
-
-    void* packet()
-    {
-        return m_packet;
-    }
-
-    size_t size() const
-    {
-        return m_size;
-    }
-
-    void retain()
-    {
-        if (m_refs != nullptr)
-            (*m_refs)++;
-    }
-
-    void release()
-    {
-        if (m_refs != nullptr)
+    public:
+        Request()
+            : m_env(nullptr)
+            , m_refs(nullptr)
+            , m_packet(nullptr)
+            , m_size(0)
         {
-            (*m_refs)--;
-            if (*m_refs == 0)
-                m_env->sendToWorker(perform_delete_request, this);
         }
-    }
 
-private:
-    static void perform_delete_request(Environment*, CommandData* data)
-    {
-        delete static_cast<Request*>(data);
-    }
-};
+        Request(Environment* env, const void* packet, size_t size)
+            : m_env(env)
+            , m_size(size)
+        {
+            // Allocate memory for packet and data block
+            char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
+            if (mem == nullptr)
+                throw std::bad_alloc();
+
+            m_refs = reinterpret_cast<RefCount*>(mem);
+            *m_refs = 1;
+
+            m_packet = mem + sizeof(RefCount);
+            memcpy(m_packet, packet, size);
+        }
+
+        Request(const Request& other) = delete;
+        Request& operator=(const Request& other) = delete;
+
+        ~Request()
+        {
+            // std::cout << "~Request()\n";
+            Methcla::Memory::free(m_refs);
+        }
+
+        void* packet()
+        {
+            return m_packet;
+        }
+
+        size_t size() const
+        {
+            return m_size;
+        }
+
+        void retain()
+        {
+            if (m_refs != nullptr)
+                (*m_refs)++;
+        }
+
+        void release()
+        {
+            if (m_refs != nullptr)
+            {
+                (*m_refs)--;
+                if (*m_refs == 0)
+                    m_env->sendToWorker(perform_delete_request, this);
+            }
+        }
+
+    private:
+        static void perform_delete_request(Environment*, CommandData* data)
+        {
+            delete static_cast<Request*>(data);
+        }
+    };
+} }
 
 template <typename T> class Scheduler
 {
@@ -214,7 +216,7 @@ public:
     typedef Utility::MessageQueue<Request*> MessageQueue;
     typedef Utility::WorkerThread<Environment::Command> Worker;
 
-    MessageQueue                m_requests;
+    Environment::MessageQueue*  m_requests;
     Environment::Worker*        m_worker;
 
     struct ScheduledBundle
@@ -241,7 +243,7 @@ public:
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
 
-    EnvironmentImpl(Environment* owner, const Environment::Options& options, Environment::Worker* worker);
+    EnvironmentImpl(Environment* owner, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
 
     // Initialization that has to take place after constructor returns
@@ -271,16 +273,18 @@ public:
 EnvironmentImpl::EnvironmentImpl(
     Environment* owner,
     const Environment::Options& options,
+    Environment::MessageQueue* messageQueue,
     Environment::Worker* worker
     )
     : m_owner(owner)
     , m_rtMem(options.realtimeMemorySize)
-    , m_requests(kQueueSize)
+    , m_requests(messageQueue == nullptr ? new Utility::MessageQueue<Request*>(kQueueSize) : messageQueue)
     , m_worker(worker)
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_nodes(options.maxNumNodes)
 {
+    // FIXME: Why isn't this done in the member initializer?
     if (m_worker == nullptr)
         m_worker = new Utility::WorkerThread<Environment::Command>(kQueueSize, 2);
 
@@ -312,6 +316,7 @@ EnvironmentImpl::EnvironmentImpl(
 
 EnvironmentImpl::~EnvironmentImpl()
 {
+    delete m_requests;
     delete m_worker;
 }
 
@@ -427,7 +432,7 @@ static void methcla_api_world_perform_command(const Methcla_World*, Methcla_Host
 
 } // extern "C"
 
-Environment::Environment(PacketHandler handler, const Options& options, Worker* worker)
+Environment::Environment(PacketHandler handler, const Options& options, MessageQueue* messageQueue, Worker* worker)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
     , m_listener(handler)
@@ -454,7 +459,7 @@ Environment::Environment(PacketHandler handler, const Options& options, Worker* 
         methcla_api_world_resource_release
     };
 
-    m_impl = new EnvironmentImpl(this, options, worker);
+    m_impl = new EnvironmentImpl(this, options, messageQueue, worker);
     m_impl->init(options);
 }
 
@@ -521,7 +526,12 @@ Epoch Environment::epoch() const
 
 void Environment::send(const void* packet, size_t size)
 {
-    m_impl->m_requests.send(new Request(this, packet, size));
+    m_impl->m_requests->send(new Request(this, packet, size));
+}
+
+bool Environment::hasPendingCommands() const
+{
+    return !m_impl->m_scheduler.isEmpty();
 }
 
 void Environment::sendToWorker(PerformFunc f, void* data)
@@ -701,7 +711,7 @@ void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const 
 void EnvironmentImpl::processRequests(Methcla_Time currentTime)
 {
     Request* request;
-    while (m_requests.next(request))
+    while (m_requests->next(request))
     {
         try
         {

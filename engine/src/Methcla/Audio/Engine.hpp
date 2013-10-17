@@ -23,6 +23,7 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/Node.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
+#include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
 
 #include <cstddef>
@@ -44,6 +45,8 @@ namespace Methcla { namespace Audio
     class Group;
 
     typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;
+
+    class Request;
 
     class EnvironmentImpl;
 
@@ -83,9 +86,10 @@ namespace Methcla { namespace Audio
             void*        m_data;
         };
 
+        typedef Utility::MessageQueueInterface<Request*> MessageQueue;
         typedef Utility::WorkerInterface<Command> Worker;
 
-        Environment(PacketHandler handler, const Options& options, Worker* worker=nullptr);
+        Environment(PacketHandler handler, const Options& options, MessageQueue* queue=nullptr, Worker* worker=nullptr);
         ~Environment();
 
         Environment(const Environment&) = delete;
@@ -124,6 +128,9 @@ namespace Methcla { namespace Audio
 
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
+
+        //* Return true if there are any pending scheduled commands.
+        bool hasPendingCommands() const;
 
         //* Register SynthDef.
         void registerSynthDef(const Methcla_SynthDef* synthDef);
