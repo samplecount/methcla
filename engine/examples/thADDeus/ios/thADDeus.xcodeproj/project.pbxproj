@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A5848B03174FAC0700F626A4 /* methcla_init.c in Sources */ = {isa = PBXBuildFile; fileRef = A5848B02174FAC0700F626A4 /* methcla_init.c */; };
 		A5C3A8EC180826B500AFFF45 /* libmethcla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C3A8E6180825EB00AFFF45 /* libmethcla.a */; };
 		A5D0BA7C16C2C2C600C3A046 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		A5D0BA7D16C2C2C600C3A046 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
@@ -50,11 +49,9 @@
 		1D3623EB0D0F72F000981E51 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		53EAEA8416A84D7E00380DD3 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../../../src; sourceTree = "<group>"; };
-		53F752F5170C9FDD00916D62 /* libmethcla.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmethcla.a; path = ../../../build/debug/iphoneos/armv7/libmethcla.a; sourceTree = "<group>"; };
 		A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		A52CEE2B16C162E0008D8457 /* platform */ = {isa = PBXFileReference; lastKnownFileType = folder; name = platform; path = ../../../platform; sourceTree = "<group>"; };
-		A5848B02174FAC0700F626A4 /* methcla_init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = methcla_init.c; path = ../../../../platform/xcode/methcla_init.c; sourceTree = "<group>"; };
 		A5A044D616C3C3CE00B84E4E /* Engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
 		A5ADD5E5173127590014FDA6 /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../../../include; sourceTree = "<group>"; };
 		A5C3A8E0180825EB00AFFF45 /* Methcla.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Methcla.xcodeproj; path = ../../../platform/xcode/Methcla.xcodeproj; sourceTree = "<group>"; };
@@ -84,13 +81,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A5C3A8EC180826B500AFFF45 /* libmethcla.a in Frameworks */,
 				A5D0BABC16C2C5E700C3A046 /* AudioToolbox.framework in Frameworks */,
 				A5D0BA7C16C2C2C600C3A046 /* UIKit.framework in Frameworks */,
 				A5D0BA7D16C2C2C600C3A046 /* Foundation.framework in Frameworks */,
 				A5D0BA7E16C2C2C600C3A046 /* CoreGraphics.framework in Frameworks */,
 				A5D0BA8016C2C2C600C3A046 /* GLKit.framework in Frameworks */,
 				A5D0BA8116C2C2C600C3A046 /* OpenGLES.framework in Frameworks */,
+				A5C3A8EC180826B500AFFF45 /* libmethcla.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -122,7 +119,6 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				53F752F5170C9FDD00916D62 /* libmethcla.a */,
 				A16C473E0DE3801700F4A0B3 /* QuartzCore.framework */,
 				A16C47110DE37F9E00F4A0B3 /* OpenGLES.framework */,
 				F7E58ED90DCFD988006C4A2F /* AudioToolbox.framework */,
@@ -146,7 +142,6 @@
 		A5D0BA8216C2C2C600C3A046 /* Methcla */ = {
 			isa = PBXGroup;
 			children = (
-				A5848B02174FAC0700F626A4 /* methcla_init.c */,
 				A5D0BA8B16C2C2C600C3A046 /* AppDelegate.h */,
 				A5D0BA8C16C2C2C600C3A046 /* AppDelegate.mm */,
 				A5D0BA9416C2C2C600C3A046 /* Shader.fsh */,
@@ -266,7 +261,6 @@
 				A5D0BA8916C2C2C600C3A046 /* main.mm in Sources */,
 				A5D0BA8D16C2C2C600C3A046 /* AppDelegate.mm in Sources */,
 				A5D0BA9A16C2C2C600C3A046 /* ViewController.mm in Sources */,
-				A5848B03174FAC0700F626A4 /* methcla_init.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
