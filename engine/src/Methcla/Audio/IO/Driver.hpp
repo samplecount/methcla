@@ -16,7 +16,9 @@
 #define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
+
 #include <cstdint>
+#include <cstring>
 
 namespace Methcla { namespace Audio { namespace IO {
 
@@ -67,6 +69,53 @@ private:
     ProcessCallback m_processCallback;
     void*           m_processData;
     size_t          m_blockSize;
+};
+
+class MultiChannelBuffer
+{
+public:
+    MultiChannelBuffer(size_t numChannels, size_t numFrames)
+        : m_numChannels(numChannels)
+        , m_numFrames(numFrames)
+        , m_data(Driver::makeBuffers(m_numChannels, m_numFrames))
+    { }
+    ~MultiChannelBuffer()
+    {
+        Driver::freeBuffers(m_numChannels, m_data);
+    }
+
+    size_t numChannels() const
+    {
+        return m_numChannels;
+    }
+
+    size_t numFrames() const
+    {
+        return m_numFrames;
+    }
+
+    Methcla_AudioSample* const* data()
+    {
+        return m_data;
+    }
+
+    const Methcla_AudioSample* const* data() const
+    {
+        return m_data;
+    }
+
+    void zero()
+    {
+        for (size_t i=0; i < numChannels(); i++)
+        {
+            std::memset(data()[i], 0, numFrames() * sizeof(Methcla_AudioSample));
+        }
+    }
+
+private:
+    size_t                m_numChannels;
+    size_t                m_numFrames;
+    Methcla_AudioSample** m_data;
 };
 
 //* Instantiate the default driver for the current platform.
