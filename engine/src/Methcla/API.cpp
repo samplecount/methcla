@@ -112,6 +112,11 @@ struct Methcla_Engine
         return kMethcla_UnspecifiedError; \
     }
 
+const char* methcla_version()
+{
+    return Methcla::kVersion;
+}
+
 static void dummy_packet_handler(void*, Methcla_RequestId, const void*, size_t)
 {
 }

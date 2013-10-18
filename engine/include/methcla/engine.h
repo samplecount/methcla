@@ -26,6 +26,9 @@
 extern "C" {
 #endif
 
+//* Return library version string.
+const char* methcla_version();
+
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;
 

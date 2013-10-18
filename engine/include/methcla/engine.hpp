@@ -36,6 +36,11 @@
 
 namespace Methcla
 {
+    inline static const char* version()
+    {
+        return methcla_version();
+    }
+
     inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
     {
         out << "Request (send): " << packet << std::endl;
