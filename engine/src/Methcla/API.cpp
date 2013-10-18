@@ -20,6 +20,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/Version.hpp"
 
 #include <cstdlib>
 #include <cstring>

@@ -17,10 +17,11 @@
 import           Control.Arrow ((>>>))
 import           Control.Lens hiding (Action, (<.>), under)
 import           Data.Char (toLower)
-import           Data.Version (Version(..))
+import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import qualified MethclaPro as Pro
+import qualified Paths_shakefile as Package
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.OSX as OSX
@@ -126,8 +127,7 @@ methclaSources platformSources =
               -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
               --   [ SourceTree.files [ "src/Methcla/Audio/Engine.cpp" ] ],
               SourceTree.files
-                [ "src/Methcla/API.cpp"
-                , "src/Methcla/Audio/AudioBus.cpp"
+                [ "src/Methcla/Audio/AudioBus.cpp"
                 , "src/Methcla/Audio/Engine.cpp"
                 , "src/Methcla/Audio/Group.cpp"
                 , "src/Methcla/Audio/IO/Driver.cpp"
@@ -141,6 +141,8 @@ methclaSources platformSources =
                 , "src/Methcla/Plugin/Loader.cpp"
                 , "src/Methcla/Utility/Semaphore.cpp"
                 ]
+            , SourceTree.filesWithDeps
+                [ ("src/Methcla/API.cpp", [ fst versionHeader ]) ]
                 -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
               -- platform dependent
             , platformSources
@@ -153,6 +155,18 @@ methclaSources platformSources =
 
 methcla :: String
 methcla = "methcla"
+
+versionHeader :: (FilePath, String)
+versionHeader = ("src/Methcla/Version.hpp", unlines [
+    "#ifndef METHCLA_VERSION_HPP_INCLUDED"
+  , "#define METHCLA_VERSION_HPP_INCLUDED"
+  , ""
+  , "namespace Methcla {"
+  , "    const char* kVersion = \"" ++ showVersion (Package.version) ++ "\";"
+  , "}"
+  , ""
+  , "#endif /* METHCLA_VERSION_HPP_INCLUDED */"
+  ])
 
 -- plugins :: Platform -> [Library]
 -- plugins platform = [
@@ -241,6 +255,10 @@ androidTargetPlatform = Android.platform 9
 
 mkBuildPrefix :: Show a => a -> FilePath -> FilePath
 mkBuildPrefix config target = shakeBuildDir </> map toLower (show config) </> target
+
+commonRules :: Rules ()
+commonRules =
+    fst versionHeader *> flip writeFile' (snd versionHeader)
 
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
@@ -446,14 +464,19 @@ mkRules options = do
                      ++ ["-L", tagFiles]
         ]
 
+-- Bump this in order to force a rebuild
+buildSystemVersion :: String
+buildSystemVersion = "3"
+
 main :: IO ()
 main = do
     let shakeOptions' = shakeOptions {
                         shakeFiles = shakeBuildDir ++ "/"
+                      , shakeVersion = showVersion Package.version ++ "-shake-" ++ buildSystemVersion
                       , shakeVerbosity = Normal }
         f xs ts = do
             let os = foldl (.) id xs $ defaultOptions
             rules <- mkRules os
-            return $ Just $ rules >> want ts
+            return $ Just $ commonRules >> rules >> want ts
     shakeArgsWith shakeOptions' optionDescrs f
 
