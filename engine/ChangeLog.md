@@ -1,3 +1,5 @@
+## 0.2.0
+
 * Rename `Methcla::Engine::freeNode` to `Methcla::Engine::free`
 * Use `Methcla::Engine::Bundle` instead of `Methcla::Engine::Request`
 * Move plugin includes to `<methcla/plugins/*>`
