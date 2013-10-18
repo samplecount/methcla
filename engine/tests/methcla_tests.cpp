@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "methcla_tests.hpp"
+
 #if defined(__clang__)
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-private-field"
@@ -31,6 +33,16 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
+
+std::string Methcla::Tests::inputFile(const std::string& name)
+{
+    return std::string("tests/input/") + name;
+}
+
+std::string Methcla::Tests::outputFile(const std::string& name)
+{
+    return std::string("tests/output/") + name;
+}
 
 namespace test_Methcla_Utility_Worker
 {

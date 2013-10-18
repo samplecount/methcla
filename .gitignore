@@ -15,5 +15,6 @@ cabal-dev/
 dist/
 .shake.database
 .shake.journal
+engine/tests/output/*
 xcuserdata/
 *.xcworkspace/
