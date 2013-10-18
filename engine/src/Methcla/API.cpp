@@ -197,6 +197,11 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
     return kMethcla_NoError;
 }
 
+METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla_EngineLogFlags flags)
+{
+    engine->m_engine->env().setLogFlags(flags);
+}
+
 METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time)
 {
     static_assert(sizeof(uint64_t) == sizeof(Methcla_Time), "sizeof(uint64_t) != sizeof(Methcla_Time)");

@@ -101,6 +101,7 @@ namespace Methcla { namespace Audio
         //* Convert environment to Methcla_World.
         operator const Methcla_World* () const;
 
+        //* Return the root group node.
         Group* rootNode();
 
         double sampleRate() const { return m_sampleRate; }
@@ -160,6 +161,8 @@ namespace Methcla { namespace Audio
             const sample_t* const* inputs,
             sample_t* const* outputs
             );
+
+        void setLogFlags(Methcla_EngineLogFlags flags);
 
     private:
         friend class EnvironmentImpl;

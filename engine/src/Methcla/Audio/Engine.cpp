@@ -28,6 +28,7 @@
 # pragma clang diagnostic pop
 #endif
 
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <oscpp/print.hpp>
@@ -251,6 +252,8 @@ public:
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
 
+    std::atomic<Methcla_EngineLogFlags>             m_logFlags;
+
     EnvironmentImpl(Environment* owner, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
 
@@ -262,10 +265,10 @@ public:
 
     void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
-    void processRequests(Methcla_Time currentTime);
-    void processScheduler(Methcla_Time currentTime, Methcla_Time nextTime);
-    void processBundle(Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
-    void processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
+    void processRequests(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime);
+    void processScheduler(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime, Methcla_Time nextTime);
+    void processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
+    void processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
 
     void sendToWorker(const Environment::Command& cmd)
     {
@@ -291,6 +294,7 @@ EnvironmentImpl::EnvironmentImpl(
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_nodes(options.maxNumNodes)
+    , m_logFlags(kMethcla_EngineLogDefault)
 {
     // FIXME: Why isn't this done in the member initializer?
     if (m_worker == nullptr)
@@ -567,6 +571,11 @@ void Environment::process(Methcla_Time currentTime, size_t numFrames, const samp
     m_impl->process(currentTime, numFrames, inputs, outputs);
 }
 
+void Environment::setLogFlags(Methcla_EngineLogFlags flags)
+{
+    m_impl->m_logFlags = flags;
+}
+
 static void perform_nrt_free(Environment*, CommandData* data)
 {
     Methcla::Memory::free(data);
@@ -678,10 +687,11 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
+    const Methcla_EngineLogFlags logFlags(m_logFlags);
     // Process external requests
-    processRequests(currentTime);
+    processRequests(logFlags, currentTime);
     // Process scheduled requests
-    processScheduler(currentTime, currentTime + numFrames / m_owner->sampleRate());
+    processScheduler(logFlags, currentTime, currentTime + numFrames / m_owner->sampleRate());
     // std::cout << "Environment::process " << currentTime << std::endl;
 
     // Process non-realtime commands
@@ -717,7 +727,7 @@ void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const 
     m_epoch++;
 }
 
-void EnvironmentImpl::processRequests(Methcla_Time currentTime)
+void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime)
 {
     Request* request;
     while (m_requests->next(request))
@@ -731,7 +741,7 @@ void EnvironmentImpl::processRequests(Methcla_Time currentTime)
                 Methcla_Time bundleTime = methcla_time_from_uint64(bundle.time());
                 if (bundleTime == 0.)
                 {
-                    processBundle(request, bundle, currentTime, currentTime);
+                    processBundle(logFlags, request, bundle, currentTime, currentTime);
                 }
                 else
                 {
@@ -741,7 +751,7 @@ void EnvironmentImpl::processRequests(Methcla_Time currentTime)
             }
             else
             {
-                processMessage(packet, currentTime, currentTime);
+                processMessage(logFlags, packet, currentTime, currentTime);
             }
             request->release();
         }
@@ -752,7 +762,7 @@ void EnvironmentImpl::processRequests(Methcla_Time currentTime)
     }
 }
 
-void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time nextTime)
+void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime, Methcla_Time nextTime)
 {
     while (!m_scheduler.isEmpty())
     {
@@ -762,7 +772,7 @@ void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time ne
             ScheduledBundle bundle = m_scheduler.top();
             BOOST_ASSERT_MSG( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime
                             , "Scheduled bundle timestamp inconsistency" );
-            processBundle(bundle.m_request, bundle.m_bundle, scheduleTime, currentTime);
+            processBundle(logFlags, bundle.m_request, bundle.m_bundle, scheduleTime, currentTime);
             m_scheduler.pop();
             bundle.m_request->release();
         }
@@ -773,7 +783,7 @@ void EnvironmentImpl::processScheduler(Methcla_Time currentTime, Methcla_Time ne
     }
 }
 
-void EnvironmentImpl::processBundle(Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
+void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     auto packets = bundle.packets();
     while (!packets.atEnd())
@@ -785,7 +795,7 @@ void EnvironmentImpl::processBundle(Request* request, const OSCPP::Server::Bundl
             Methcla_Time innerBundleTime = methcla_time_from_uint64(innerBundle.time());
             if (innerBundleTime <= scheduleTime)
             {
-                processBundle(request, innerBundle, scheduleTime, currentTime);
+                processBundle(logFlags, request, innerBundle, scheduleTime, currentTime);
             }
             else
             {
@@ -795,16 +805,15 @@ void EnvironmentImpl::processBundle(Request* request, const OSCPP::Server::Bundl
         }
         else
         {
-            processMessage(packet, scheduleTime, currentTime);
+            processMessage(logFlags, packet, scheduleTime, currentTime);
         }
     }
 }
 
-void EnvironmentImpl::processMessage(const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
+void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
-#if 0
-    std::cerr << "Request (recv): " << msg << std::endl;
-#endif
+    if (logFlags & kMethcla_EngineLogRequests)
+        std::cerr << "Request: " << msg << std::endl;
 
     auto args = msg.args();
     // Methcla_RequestId requestId = args.int32();

@@ -72,6 +72,16 @@ METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine);
 //* Stop the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine);
 
+enum Methcla_EngineLogFlags
+{
+    kMethcla_EngineLogDefault   = 0x00,
+    kMethcla_EngineLogDebug     = 0x01,
+    kMethcla_EngineLogRequests  = 0x02
+};
+
+//* Set flags for debug logging.
+METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla_EngineLogFlags flags);
+
 //* Time in seconds.
 typedef double Methcla_Time;
 
