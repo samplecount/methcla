@@ -106,6 +106,7 @@ static inline const char* methcla_system_error_description(const Methcla_SystemE
         return error->description(error);
     return "Unknown system error";
 }
+
 static inline void methcla_system_error_destroy(const Methcla_SystemError* error)
 {
     if (error && error->destroy)
