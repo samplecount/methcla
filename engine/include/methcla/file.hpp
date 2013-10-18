@@ -15,7 +15,7 @@
 #ifndef METHCLA_FILE_HPP_INCLUDED
 #define METHCLA_FILE_HPP_INCLUDED
 
-#include <methcla/engine.h>
+#include <methcla/engine.hpp>
 #include <methcla/file.h>
 
 namespace Methcla
@@ -26,16 +26,34 @@ namespace Methcla
         Methcla_SoundFileInfo m_info;
 
     public:
-        SoundFile(const Engine& engine, const char* path)
+        SoundFile()
+            : m_file(nullptr)
         {
-            detail::checkReturnCode(methcla_engine_soundfile_open(engine, path, kMethcla_FileModeRead, &m_file, &m_info));
+            memset(&m_info, 0, sizeof(m_info));
         }
 
-        SoundFile(const Engine& engine, const char* path, const Methcla_SoundFileInfo& info)
+        SoundFile(Methcla_SoundFile* file, const Methcla_SoundFileInfo& info)
+            : m_file(file)
+            , m_info(info)
+        { }
+
+        SoundFile(const Engine& engine, const std::string& path)
+        {
+            detail::checkReturnCode(
+                methcla_engine_soundfile_open(engine, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info)
+            );
+        }
+
+        SoundFile(const Engine& engine, const std::string& path, const Methcla_SoundFileInfo& info)
             : m_info(info)
         {
-            detail::checkReturnCode(methcla_engine_soundfile_open(engine, path, kMethcla_FileModeWrite, &m_file, &m_info));
+            detail::checkReturnCode(
+                methcla_engine_soundfile_open(engine, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info)
+            );
         }
+
+        SoundFile(const SoundFile&) = delete;
+        SoundFile& operator=(const SoundFile&) = delete;
 
         ~SoundFile()
         {
