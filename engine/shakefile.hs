@@ -258,7 +258,9 @@ mkBuildPrefix config target = shakeBuildDir </> map toLower (show config) </> ta
 
 commonRules :: Rules ()
 commonRules =
-    fst versionHeader *> flip writeFile' (snd versionHeader)
+    fst versionHeader *> \file -> do
+        alwaysRerun
+        writeFileChanged file (snd versionHeader)
 
 mkRules :: Options -> IO (Rules ())
 mkRules options = do
