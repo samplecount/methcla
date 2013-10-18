@@ -570,7 +570,7 @@ namespace Methcla
         Request(const Request&) = delete;
         Request& operator=(const Request&) = delete;
 
-        void openBundle(Methcla_Time time)
+        void openBundle(Methcla_Time time=immediately)
         {
             if (m_flags.isMessage)
             {
