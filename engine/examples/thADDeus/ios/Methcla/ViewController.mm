@@ -459,7 +459,7 @@ static Methcla_Time kLatency = 0.05;
         SynthParams ps = [self synthParamsForTouch:touch];
         Methcla::SynthId synth;
         engine->bundle(Methcla::immediately, [&](Methcla::Request& request) {
-            synth = request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { ps.freq });
+            synth = request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { ps.freq, 0.05 });
             request.mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
             request.mapOutput(synth, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
             request.bundle(engine->currentTime() + kLatency, [&](Methcla::Request& request) {
