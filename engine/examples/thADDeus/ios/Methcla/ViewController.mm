@@ -458,11 +458,11 @@ static Methcla_Time kLatency = 0.05;
     for (UITouch* touch in touches) {
         SynthParams ps = [self synthParamsForTouch:touch];
         Methcla::SynthId synth;
-        engine->bundle(Methcla::immediately, [&](Methcla::Engine::Bundle& request) {
+        engine->bundle(Methcla::immediately, [&](Methcla::Request& request) {
             synth = request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { ps.freq });
             request.mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
             request.mapOutput(synth, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
-            request.bundle(engine->currentTime() + kLatency, [&](Methcla::Engine::Bundle& request) {
+            request.bundle(engine->currentTime() + kLatency, [&](Methcla::Request& request) {
                 request.activate(synth);
             });
         });
@@ -488,7 +488,7 @@ static Methcla_Time kLatency = 0.05;
 {
     for (UITouch* touch in touches) {
         Methcla::SynthId synth([[synths objectForKey:[NSValue valueWithPointer:(const void*)touch]] longValue]);
-        engine->bundle(engine->currentTime() + kLatency, [&](Methcla::Engine::Bundle& request){
+        engine->bundle(engine->currentTime() + kLatency, [&](Methcla::Request& request){
             request.free(synth);
         });
 //        std::cout << "Synth " << synth << " stopped" << std::endl;
