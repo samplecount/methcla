@@ -73,8 +73,10 @@ apiIncludes = append systemIncludes [
 engineBuildFlags :: BuildFlags -> BuildFlags
 engineBuildFlags =
     append userIncludes
-      ( -- Library headers
-        [ "src" ]
+      ( -- Generated headers
+        [ shakeBuildDir </> "include" ]
+        -- Library headers
+     ++ [ "src" ]
         -- External libraries
      ++ [ externalLibraries ] )
   . append systemIncludes
@@ -157,15 +159,13 @@ methcla :: String
 methcla = "methcla"
 
 versionHeader :: (FilePath, String)
-versionHeader = ("src/Methcla/Version.hpp", unlines [
-    "#ifndef METHCLA_VERSION_HPP_INCLUDED"
-  , "#define METHCLA_VERSION_HPP_INCLUDED"
+versionHeader = (shakeBuildDir </> "include/Methcla/Version.h", unlines [
+    "#ifndef METHCLA_VERSION_H_INCLUDED"
+  , "#define METHCLA_VERSION_H_INCLUDED"
   , ""
-  , "namespace Methcla {"
-  , "    const char* kVersion = \"" ++ showVersion (Package.version) ++ "\";"
-  , "}"
+  , "static const char* kMethclaVersion = \"" ++ showVersion (Package.version) ++ "\";"
   , ""
-  , "#endif /* METHCLA_VERSION_HPP_INCLUDED */"
+  , "#endif /* METHCLA_VERSION_H_INCLUDED */"
   ])
 
 -- plugins :: Platform -> [Library]

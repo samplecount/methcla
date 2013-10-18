@@ -20,7 +20,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
-#include "Methcla/Version.hpp"
+#include "Methcla/Version.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -114,7 +114,7 @@ struct Methcla_Engine
 
 const char* methcla_version()
 {
-    return Methcla::kVersion;
+    return kMethclaVersion;
 }
 
 static void dummy_packet_handler(void*, Methcla_RequestId, const void*, size_t)
