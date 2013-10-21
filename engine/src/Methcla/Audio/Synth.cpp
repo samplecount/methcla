@@ -27,8 +27,6 @@ Synth::Synth( Environment& env
             , Group* target
             , Node::AddAction addAction
             , const SynthDef& synthDef
-            , OSCPP::Server::ArgStream controls
-            , const Methcla_SynthOptions* synthOptions
             , Methcla_PortCount numControlInputs
             , Methcla_PortCount numControlOutputs
             , Methcla_PortCount numAudioInputs
@@ -137,8 +135,7 @@ ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, Group* targ
 
     // Instantiate synth
     auto synth = ResourceRef<Synth>(
-        new (mem) Synth( env, nodeId, target, addAction
-                       , synthDef, controls, synthOptions
+        new (mem) Synth( env, nodeId, target, addAction, synthDef
                        , numControlInputs
                        , numControlOutputs
                        , numAudioInputs

@@ -146,8 +146,6 @@ protected:
          , Group* target
          , AddAction addAction
          , const SynthDef& synthDef
-         , OSCPP::Server::ArgStream controls
-         , const Methcla_SynthOptions* synthOptions
          , Methcla_PortCount numControlInputs
          , Methcla_PortCount numControlOutputs
          , Methcla_PortCount numAudioInputs
