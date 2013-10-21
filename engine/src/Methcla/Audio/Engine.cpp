@@ -811,6 +811,14 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* re
     }
 }
 
+static void throwError(const char* command, Methcla_Error code, std::function<void(std::stringstream&)> func)
+{
+    std::stringstream stream;
+    stream << command << ": ";
+    func(stream);
+    throw Error(code, stream.str());
+}
+
 void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     if (logFlags & kMethcla_EngineLogRequests)
@@ -820,19 +828,25 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
     // Methcla_RequestId requestId = args.int32();
 
     try {
-        if (msg == "/group/new") {
+        if (msg == "/group/new")
+        {
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
             args.drop(); // int32_t addAction = args.int32();
 
             auto targetNode = m_nodes.lookup(targetId);
             if (targetNode == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/group/new", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Target node " << targetId << " not found";
+                });
+
             auto targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode.get())
                                                      : dynamic_cast<Synth*>(targetNode.get())->parent();
             auto group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
             m_nodes.insert(group->id(), group);
-        } else if (msg == "/synth/new") {
+        }
+        else if (msg == "/synth/new")
+        {
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
@@ -849,57 +863,100 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             Node* targetNode = m_nodes.lookup(targetId).get();
             if (targetNode == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/synth/new", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Target node " << targetId << " not found";
+                });
+
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            ResourceRef<Synth> synth = Synth::construct(
-                *m_owner,
-                nodeId,
-                targetGroup,
-                Node::kAddToTail,
-                *def,
-                synthControls,
-                synthArgs);
 
-            m_nodes.insert(synth->id(), synth);
-        } else if (msg == "/synth/activate") {
+            try
+            {
+                ResourceRef<Synth> synth = Synth::construct(
+                    *m_owner,
+                    nodeId,
+                    targetGroup,
+                    Node::kAddToTail,
+                    *def,
+                    synthControls,
+                    synthArgs);
+
+                m_nodes.insert(synth->id(), synth);
+            }
+            catch (OSCPP::UnderrunError&)
+            {
+                throwError("/synth/new", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Missing control initializer for synth " << nodeId;
+                });
+            }
+            catch (OSCPP::ParseError&)
+            {
+                throwError("/synth/new", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Invalid control initializer for synth " << nodeId;
+                });
+            }
+        }
+        else if (msg == "/synth/activate")
+        {
             NodeId nodeId = NodeId(args.int32());
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/synth/activate", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Synth " << nodeId << " not found";
+                });
             else if (!node->isSynth())
-                throw Error(kMethcla_NodeTypeError);
+                throwError("/synth/activate", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " is not a synth";
+                });
             Synth* synth = dynamic_cast<Synth*>(node);
             // TODO: Use sample rate estimate from driver
             const float sampleOffset = std::max(0., (scheduleTime - currentTime) * m_owner->sampleRate());
             synth->activate(sampleOffset);
-        } else if (msg == "/node/free") {
+        }
+        else if (msg == "/node/free")
+        {
             NodeId nodeId = NodeId(args.int32());
 
             // Check node id validity
-            if (!m_nodes.contains(nodeId)) {
-                throw Error(kMethcla_NodeIdError);
-            } else if (nodeId == m_rootNode->id()) {
-                throw Error(kMethcla_NodeIdError);
-            }
+            if (!m_nodes.contains(nodeId))
+                throwError("/node/free", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " not found";
+                });
+            else if (nodeId == m_rootNode->id())
+                throwError("/node/free", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Cannot free root node " << nodeId;
+                });
 
             // Drop reference from node map
             m_nodes.remove(nodeId);
-        } else if (msg == "/node/set") {
+        }
+        else if (msg == "/node/set")
+        {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             float value = args.float32();
+
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/node/set", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " not found";
+                });
             else if (!node->isSynth())
-                throw Error(kMethcla_NodeTypeError);
+                throwError("/node/set", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " is not a synth";
+                });
+
             Synth* synth = dynamic_cast<Synth*>(node);
-            if ((index < 0) || (index >= (int32_t)synth->numControlInputs())) {
-                throw std::runtime_error("/node/set: Control input index out of range");
-            }
+
+            if ((index < 0) || (index >= (int32_t)synth->numControlInputs()))
+                throwError("/node/set", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Control input index " << index << " out of range for synth " << nodeId;
+                });
+
             synth->controlInput(index) = value;
-        } else if (msg == "/synth/map/input") {
+        }
+        else if (msg == "/synth/map/input")
+        {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             int32_t busId = AudioBusId(args.int32());
@@ -907,20 +964,31 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioInputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
-                throw std::runtime_error("/synth/map/input: Audio input bus index out of range");
+                throwError("/synth/map/input", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Audio bus id " << busId << " out of range";
+                });
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/synth/map/input", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Synth " << nodeId << " not found";
+                });
             else if (!node->isSynth())
-                throw Error(kMethcla_NodeTypeError);
+                throwError("/synth/map/input", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " is not a synth";
+                });
 
             Synth* synth = dynamic_cast<Synth*>(node);
+
             if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
-                throw std::runtime_error("/synth/map/input: Synth input index out of range");
+                throwError("/synth/map/input", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Audio input index " << index << " out of range for synth " << nodeId;
+                });
 
             synth->mapInput(index, AudioBusId(busId), flags);
-        } else if (msg == "/synth/map/output") {
+        }
+        else if (msg == "/synth/map/output")
+        {
             NodeId nodeId = NodeId(args.int32());
             int32_t index = args.int32();
             int32_t busId = args.int32();
@@ -928,23 +996,35 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioOutputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
-                throw std::runtime_error("/synth/map/output: Audio output bus index out of range");
+                throwError("/synth/map/output", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Audio bus id " << busId << " out of range";
+                });
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throw Error(kMethcla_NodeIdError);
+                throwError("/synth/map/output", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Synth " << nodeId << " not found";
+                });
             else if (!node->isSynth())
-                throw Error(kMethcla_NodeTypeError);
+                throwError("/synth/map/output", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " is not a synth";
+                });
 
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
-                throw std::runtime_error("/synth/map/output: Synth output index out of range");
+                throwError("/synth/map/output", kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Audio output index " << index << " out of range for synth " << nodeId;
+                });
 
             synth->mapOutput(index, AudioBusId(busId), flags);
-        } else if (msg == "/query/external_inputs") {
+        }
+        else if (msg == "/query/external_inputs")
+        {
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
-        } else if (msg == "/query/external_outputs") {
+        }
+        else if (msg == "/query/external_outputs")
+        {
     // Methcla_RequestId requestId = args.int32();
             // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
         }
