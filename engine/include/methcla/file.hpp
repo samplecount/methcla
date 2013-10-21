@@ -20,16 +20,46 @@
 
 namespace Methcla
 {
+    struct SoundFileInfo : public Methcla_SoundFileInfo
+    {
+        SoundFileInfo()
+        {
+            frames      = 0;
+            channels    = 0;
+            samplerate  = 0;
+            file_type   = kMethcla_SoundFileTypeUnknown;
+            file_format = kMethcla_SoundFileFormatUnknown;
+        }
+
+        SoundFileInfo(const Methcla_SoundFileInfo& info)
+        {
+            frames      = info.frames;
+            channels    = info.channels;
+            samplerate  = info.samplerate;
+            file_type   = info.file_type;
+            file_format = info.file_format;
+        }
+
+        int64_t samples() const
+        {
+            return channels * frames;
+        }
+
+        double duration() const
+        {
+            return (double)frames/(double)samplerate;
+        }
+    };
+
     class SoundFile
     {
         Methcla_SoundFile* m_file;
-        Methcla_SoundFileInfo m_info;
+        SoundFileInfo      m_info;
 
     public:
         SoundFile()
             : m_file(nullptr)
         {
-            memset(&m_info, 0, sizeof(m_info));
         }
 
         SoundFile(Methcla_SoundFile* file, const Methcla_SoundFileInfo& info)
@@ -60,7 +90,7 @@ namespace Methcla
             detail::checkReturnCode(methcla_soundfile_close(m_file));
         }
 
-        const Methcla_SoundFileInfo& info() const
+        const SoundFileInfo& info() const
         {
             return m_info;
         }
