@@ -16,6 +16,7 @@
 #define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
+#include "Methcla/Audio/MultiChannelBuffer.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -59,8 +60,15 @@ public:
     virtual void start() = 0;
     virtual void stop() = 0;
 
-    static sample_t** makeBuffers(size_t numChannels, size_t numFrames);
-    static void freeBuffers(size_t numChannels, sample_t** buffers);
+    static Methcla_AudioSample** makeBuffers(size_t numChannels, size_t numFrames)
+    {
+        return MultiChannelBuffer::makeBuffers(numChannels, numFrames);
+    }
+
+    static void freeBuffers(size_t numChannels, Methcla_AudioSample** buffers)
+    {
+        MultiChannelBuffer::freeBuffers(numChannels, buffers);
+    }
 
 protected:
     void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
@@ -69,53 +77,6 @@ private:
     ProcessCallback m_processCallback;
     void*           m_processData;
     size_t          m_blockSize;
-};
-
-class MultiChannelBuffer
-{
-public:
-    MultiChannelBuffer(size_t numChannels, size_t numFrames)
-        : m_numChannels(numChannels)
-        , m_numFrames(numFrames)
-        , m_data(Driver::makeBuffers(m_numChannels, m_numFrames))
-    { }
-    ~MultiChannelBuffer()
-    {
-        Driver::freeBuffers(m_numChannels, m_data);
-    }
-
-    size_t numChannels() const
-    {
-        return m_numChannels;
-    }
-
-    size_t numFrames() const
-    {
-        return m_numFrames;
-    }
-
-    Methcla_AudioSample* const* data()
-    {
-        return m_data;
-    }
-
-    const Methcla_AudioSample* const* data() const
-    {
-        return m_data;
-    }
-
-    void zero()
-    {
-        for (size_t i=0; i < numChannels(); i++)
-        {
-            std::memset(data()[i], 0, numFrames() * sizeof(Methcla_AudioSample));
-        }
-    }
-
-private:
-    size_t                m_numChannels;
-    size_t                m_numFrames;
-    Methcla_AudioSample** m_data;
 };
 
 //* Instantiate the default driver for the current platform.
