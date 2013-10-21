@@ -50,8 +50,6 @@ Synth::Synth( Environment& env
     , m_controlBuffers(controlBuffers)
     , m_audioBuffers(audioBuffers)
 {
-    const size_t blockSize = env.blockSize();
-
     // Initialize flags
     memset(&m_flags, 0, sizeof(m_flags));
     m_flags.state = kStateInactive;
