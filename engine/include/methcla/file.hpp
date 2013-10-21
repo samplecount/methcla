@@ -20,8 +20,9 @@
 
 namespace Methcla
 {
-    struct SoundFileInfo : public Methcla_SoundFileInfo
+    class SoundFileInfo : public Methcla_SoundFileInfo
     {
+    public:
         SoundFileInfo()
         {
             frames      = 0;
@@ -45,9 +46,9 @@ namespace Methcla
             return channels * frames;
         }
 
-        double duration() const
+        template <typename T> T duration() const
         {
-            return (double)frames/(double)samplerate;
+            return (T)frames/(T)samplerate;
         }
     };
 
