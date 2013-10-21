@@ -17,6 +17,7 @@
 
 #include <methcla/engine.hpp>
 #include <methcla/file.h>
+#include <methcla/plugin.h>
 
 namespace Methcla
 {
@@ -80,6 +81,21 @@ namespace Methcla
         {
             detail::checkReturnCode(
                 methcla_engine_soundfile_open(engine, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info)
+            );
+        }
+
+        SoundFile(const Methcla_Host* host, const std::string& path)
+        {
+            detail::checkReturnCode(
+                methcla_host_soundfile_open(host, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info)
+            );
+        }
+
+        SoundFile(const Methcla_Host* host, const std::string& path, const SoundFileInfo& info)
+            : m_info(info)
+        {
+            detail::checkReturnCode(
+                methcla_host_soundfile_open(host, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info)
             );
         }
 
