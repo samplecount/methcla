@@ -28,6 +28,28 @@ namespace Methcla { namespace Audio
     {
         virtual Methcla_Time currentTime() const = 0;
     };
+
+    template <typename A, typename B> void deinterleave(A* const* dst, const B* src, size_t numChannels, size_t numFrames)
+    {
+        for (size_t c=0; c < numChannels; c++)
+        {
+            for (size_t i=0; i < numFrames; i++)
+            {
+                dst[c][i] = src[i*numChannels+c];
+            }
+        }
+    }
+
+    template <typename A, typename B> void interleave(A* dst, const B* const* src, size_t numChannels, size_t numFrames)
+    {
+        for (size_t c=0; c < numChannels; c++)
+        {
+            for (size_t i=0; i < numFrames; i++)
+            {
+                dst[i*numChannels+c] = src[c][i];
+            }
+        }
+    }
 } }
 
 #endif // METHCLA_AUDIO_HPP_INCLUDED
