@@ -17,9 +17,9 @@
 
 using namespace Methcla::Audio;
 
-Group* Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
+ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
 {
-    return new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction);
+    return ResourceRef<Group>(new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction));
 }
 
 void Group::doProcess(size_t numFrames)

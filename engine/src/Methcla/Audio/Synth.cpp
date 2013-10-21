@@ -61,9 +61,6 @@ Synth::Synth( Environment& env
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
 
-    // Construct synth
-    synthDef.construct(env, synthOptions, this, m_synth);
-
     // Validate alignment
     BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
                                        (uintptr_t)m_audioInputConnections) );
@@ -72,68 +69,6 @@ Synth::Synth( Environment& env
     BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<sample_t>::value,
                                        (uintptr_t)m_controlBuffers) );
     BOOST_ASSERT( kBufferAlignment.isAligned(m_audioBuffers) );
-
-
-    // Connect ports
-    Methcla_PortDescriptor port;
-    Methcla_PortCount controlInputIndex  = 0;
-    Methcla_PortCount controlOutputIndex = 0;
-    Methcla_PortCount audioInputIndex    = 0;
-    Methcla_PortCount audioOutputIndex   = 0;
-    for (size_t i=0; synthDef.portDescriptor(synthOptions, i, &port); i++) {
-        switch (port.type) {
-        case kMethcla_ControlPort:
-            switch (port.direction) {
-            case kMethcla_Input: {
-                // Initialize with control value
-                m_controlBuffers[controlInputIndex] = controls.next<float>();
-                sample_t* buffer = &m_controlBuffers[controlInputIndex];
-                m_synthDef.connect(m_synth, i, buffer);
-                controlInputIndex++;
-                };
-                break;
-            case kMethcla_Output: {
-                sample_t* buffer = &m_controlBuffers[numControlInputs + controlOutputIndex];
-                m_synthDef.connect(m_synth, i, buffer);
-                controlOutputIndex++;
-                };
-                break;
-            };
-            break;
-        case kMethcla_AudioPort:
-            switch (port.direction) {
-            case kMethcla_Input: {
-                new (&m_audioInputConnections[audioInputIndex]) AudioInputConnection(audioInputIndex);
-                sample_t* buffer = m_audioBuffers + audioInputIndex * blockSize;
-                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
-                m_synthDef.connect(m_synth, i, buffer);
-                audioInputIndex++;
-                };
-                break;
-            case kMethcla_Output: {
-                new (&m_audioOutputConnections[audioOutputIndex]) AudioOutputConnection(audioOutputIndex);
-                sample_t* buffer = m_audioBuffers + (numAudioInputs + audioOutputIndex) * blockSize;
-                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
-                m_synthDef.connect(m_synth, i, buffer);
-                audioOutputIndex++;
-                };
-                break;
-            };
-            break;
-        }
-    }
-
-    // Check for control input triggers
-//    for (size_t i=0; i < numControlInputs(); i++) {
-//        if (m_synthDef.controlInputSpec(i).flags & kMethclaControlTrigger) {
-//            m_flags.set(kHasTriggerInput);
-//            break;
-//        }
-//    }
-
-    // Activate synth instance
-    // This might be deferred to when the synth is actually started by the scheduler
-    synthDef.activate(env, m_synth);
 }
 
 Synth::~Synth()
@@ -141,12 +76,13 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
+ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
                     , "Environment.blockSize must be a multiple of kBufferAlignment" );
 
+    // Get synth options
     const Methcla_SynthOptions* synthOptions = synthDef.configure(options);
 
     Methcla_PortCount numControlInputs  = 0;
@@ -200,18 +136,88 @@ Synth* Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::Ad
     char* mem = env.rtMem().allocOf<char>(allocSize);
 
     // Instantiate synth
-    return new (mem) Synth( env, nodeId, target, addAction
-                          , synthDef, controls, synthOptions
-                          , numControlInputs
-                          , numControlOutputs
-                          , numAudioInputs
-                          , numAudioOutputs
-                          , reinterpret_cast<Methcla_Synth*>(mem + sizeof(Synth))
-                          , reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset)
-                          , reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset)
-                          , reinterpret_cast<sample_t*>(mem + controlBufferOffset)
-                          , reinterpret_cast<sample_t*>(mem + audioBufferOffset)
-                          );
+    auto synth = ResourceRef<Synth>(
+        new (mem) Synth( env, nodeId, target, addAction
+                       , synthDef, controls, synthOptions
+                       , numControlInputs
+                       , numControlOutputs
+                       , numAudioInputs
+                       , numAudioOutputs
+                       , reinterpret_cast<Methcla_Synth*>(mem + sizeof(Synth))
+                       , reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset)
+                       , reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset)
+                       , reinterpret_cast<sample_t*>(mem + controlBufferOffset)
+                       , reinterpret_cast<sample_t*>(mem + audioBufferOffset)
+                       )
+    );
+
+    // Construct synth
+    // NOTE: It's important that a reference (ResourceRef) to the Synth object
+    //       exists before the plugin's construct method is called. The plugin might
+    //       call methcla_world_resource_release and we might be left with a
+    //       dangling pointer.
+    synth->construct(synthOptions);
+
+    // Connect ports
+    synth->connectPorts(synthOptions, controls);
+
+    return synth;
+}
+
+void Synth::construct(const Methcla_SynthOptions* synthOptions)
+{
+    m_synthDef.construct(env(), synthOptions, this, m_synth);
+}
+
+void Synth::connectPorts(const Methcla_SynthOptions* synthOptions, OSCPP::Server::ArgStream controls)
+{
+    Methcla_PortDescriptor port;
+    Methcla_PortCount controlInputIndex  = 0;
+    Methcla_PortCount controlOutputIndex = 0;
+    Methcla_PortCount audioInputIndex    = 0;
+    Methcla_PortCount audioOutputIndex   = 0;
+    for (size_t i=0; m_synthDef.portDescriptor(synthOptions, i, &port); i++) {
+        switch (port.type) {
+        case kMethcla_ControlPort:
+            switch (port.direction) {
+            case kMethcla_Input: {
+                // Initialize with control value
+                m_controlBuffers[controlInputIndex] = controls.next<float>();
+                sample_t* buffer = &m_controlBuffers[controlInputIndex];
+                m_synthDef.connect(m_synth, i, buffer);
+                controlInputIndex++;
+                };
+                break;
+            case kMethcla_Output: {
+                sample_t* buffer = &m_controlBuffers[numControlInputs() + controlOutputIndex];
+                m_synthDef.connect(m_synth, i, buffer);
+                controlOutputIndex++;
+                };
+                break;
+            };
+            break;
+        case kMethcla_AudioPort:
+            switch (port.direction) {
+            case kMethcla_Input: {
+                new (&m_audioInputConnections[audioInputIndex]) AudioInputConnection(audioInputIndex);
+                sample_t* buffer = m_audioBuffers + audioInputIndex * env().blockSize();
+                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
+                m_synthDef.connect(m_synth, i, buffer);
+                audioInputIndex++;
+                };
+                break;
+            case kMethcla_Output: {
+                new (&m_audioOutputConnections[audioOutputIndex]) AudioOutputConnection(audioOutputIndex);
+                sample_t* buffer = m_audioBuffers + (numAudioInputs() + audioOutputIndex) * env().blockSize();
+                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
+                m_synthDef.connect(m_synth, i, buffer);
+                audioOutputIndex++;
+                };
+                break;
+            };
+            break;
+        }
+    }
 }
 
 template <class T>

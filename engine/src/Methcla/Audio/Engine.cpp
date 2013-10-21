@@ -248,7 +248,7 @@ public:
     Epoch                                           m_epoch;
 
     ResourceMap<NodeId,Node>                        m_nodes;
-    Group*                                          m_rootNode;
+    ResourceRef<Group>                              m_rootNode;
 
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
@@ -487,7 +487,7 @@ Environment::operator const Methcla_Host* () const
     return &m_host;
 }
 
-Group* Environment::rootNode()
+ResourceRef<Group> Environment::rootNode()
 {
     return m_impl->m_rootNode;
 }
@@ -825,12 +825,12 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             NodeId targetId = NodeId(args.int32());
             args.drop(); // int32_t addAction = args.int32();
 
-            Node* targetNode = m_nodes.lookup(targetId).get();
+            auto targetNode = m_nodes.lookup(targetId);
             if (targetNode == nullptr)
                 throw Error(kMethcla_NodeIdError);
-            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
-                                                       : dynamic_cast<Synth*>(targetNode)->parent();
-            Group* group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
+            auto targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode.get())
+                                                     : dynamic_cast<Synth*>(targetNode.get())->parent();
+            auto group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
             m_nodes.insert(group->id(), group);
         } else if (msg == "/synth/new") {
             const char* defName = args.string();
@@ -852,7 +852,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
                 throw Error(kMethcla_NodeIdError);
             Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
                                                        : dynamic_cast<Synth*>(targetNode)->parent();
-            Synth* synth = Synth::construct(
+            ResourceRef<Synth> synth = Synth::construct(
                 *m_owner,
                 nodeId,
                 targetGroup,

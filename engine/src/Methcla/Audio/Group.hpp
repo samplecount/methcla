@@ -29,7 +29,7 @@ protected:
     virtual void doProcess(size_t numFrames) override;
 
 public:
-    static Group* construct(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
+    static ResourceRef<Group> construct(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
 
     virtual bool isGroup() const override { return true; }
 

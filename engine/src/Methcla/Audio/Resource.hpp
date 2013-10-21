@@ -103,6 +103,8 @@ namespace Methcla { namespace Audio
         Id              m_id;
     };
 
+    template <class T> using ResourceRef = boost::intrusive_ptr<T>;
+
     /// Simple map for holding pointers to resources.
     //
     // Also provides unique id allocation facility.
@@ -145,11 +147,6 @@ namespace Methcla { namespace Audio
             } else {
                 throw std::out_of_range("Invalid resource id");
             }
-        }
-
-        void insert(Id id, T* a)
-        {
-            insert(id, Pointer(a));
         }
 
         void remove(Id id)

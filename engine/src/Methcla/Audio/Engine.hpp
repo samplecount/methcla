@@ -102,7 +102,7 @@ namespace Methcla { namespace Audio
         operator const Methcla_World* () const;
 
         //* Return the root group node.
-        Group* rootNode();
+        ResourceRef<Group> rootNode();
 
         double sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }

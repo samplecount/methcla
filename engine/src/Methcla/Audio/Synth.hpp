@@ -160,10 +160,12 @@ protected:
          );
     ~Synth();
 
+    void construct(const Methcla_SynthOptions* synthOptions);
+    void connectPorts(const Methcla_SynthOptions* synthOptions, OSCPP::Server::ArgStream controls);
     virtual void doProcess(size_t numFrames) override;
 
 public:
-    static Synth* construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
+    static ResourceRef<Synth> construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
 
     virtual bool isSynth() const override { return true; }
 
