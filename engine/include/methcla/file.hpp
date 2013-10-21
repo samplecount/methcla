@@ -75,7 +75,7 @@ namespace Methcla
             );
         }
 
-        SoundFile(const Engine& engine, const std::string& path, const Methcla_SoundFileInfo& info)
+        SoundFile(const Engine& engine, const std::string& path, const SoundFileInfo& info)
             : m_info(info)
         {
             detail::checkReturnCode(
