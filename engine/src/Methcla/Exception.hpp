@@ -28,11 +28,9 @@ class Exception : public virtual std::exception
 class Error : public Exception
 {
 public:
-    Error(Methcla_Error code)
+    Error(Methcla_Error code, const std::string& description="")
         : m_code(code)
-    {}
-    Error(const Error& other)
-        : m_code(other.m_code)
+        , m_description(description)
     { }
 
     Methcla_Error errorCode() const noexcept
@@ -42,33 +40,16 @@ public:
 
     const char* what() const noexcept override
     {
-        return methcla_error_message(m_code);
+        return m_description.empty() ? methcla_error_message(m_code) : m_description.c_str();
     }
 
     static Error unspecified() { return Error(kMethcla_UnspecifiedError); }
     static Error memory() { return Error(kMethcla_MemoryError); }
 
 private:
-    Methcla_Error m_code;
+    Methcla_Error   m_code;
+    std::string     m_description;
 };
-
-class SystemError : public Error
-{
-public:
-    SystemError(const char* description)
-        : Error(kMethcla_SystemError)
-        , m_description(description)
-    {}
-
-    const char* what() const noexcept override
-    {
-        return m_description.c_str();
-    }
-
-private:
-    std::string m_description;
-};
-
 }
 
 #endif // METHCLA_EXCEPTION_HPP_INCLUDED
