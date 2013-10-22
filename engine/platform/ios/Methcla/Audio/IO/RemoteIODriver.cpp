@@ -30,7 +30,7 @@ using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 
 #define METHCLA_CASE_SYSTEM_ERROR(status) \
-    case status: throw SystemError(#status)
+    case status: throw Error(kMethcla_SystemError, #status)
 
 static void throwAudioServicesError(OSStatus status)
 {
