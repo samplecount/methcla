@@ -575,6 +575,12 @@ namespace Methcla
         Request(const Request&) = delete;
         Request& operator=(const Request&) = delete;
 
+        //* Return size of request packet in bytes.
+        size_t size() const
+        {
+            return m_packet->packet().size();
+        }
+
         void openBundle(Methcla_Time time=immediately)
         {
             if (m_flags.isMessage)
