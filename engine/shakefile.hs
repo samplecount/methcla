@@ -133,7 +133,6 @@ methclaSources platformSources =
                 , "src/Methcla/Audio/Engine.cpp"
                 , "src/Methcla/Audio/Group.cpp"
                 , "src/Methcla/Audio/IO/Driver.cpp"
-                , "src/Methcla/Audio/IO/DummyDriver.cpp"
                 , "src/Methcla/Audio/Node.cpp"
                 -- , "src/Methcla/Audio/Resource.cpp"
                 , "src/Methcla/Audio/Synth.cpp"
@@ -438,7 +437,8 @@ mkRules options = do
                             "methcla-tests"
                             (methclaSources $ SourceTree.list [
                                 SourceTree.files [
-                                    "tests/methcla_tests.cpp"
+                                    "src/Methcla/Audio/IO/DummyDriver.cpp"
+                                  , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp" ]
                               , Pro.testSources ])
                 phony "macosx-tests" $ do
