@@ -18,7 +18,6 @@
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
-#include "Methcla/Version.h"
 
 #if defined(__clang__)
 # pragma clang diagnostic push
@@ -1121,7 +1120,7 @@ Engine::Engine(PacketHandler handler, const Environment::Options& engineOptions,
 #endif
     m_driver->setProcessCallback(processCallback, this);
 
-    std::cout << "Starting methcla engine (version " << kMethclaVersion << ")" << std::endl
+    std::cout << "Starting methcla engine (version " << methcla_version() << ")" << std::endl
               << "  sampleRate = " << m_driver->sampleRate() << std::endl
               << "  numInputs = "  << m_driver->numInputs() << std::endl
               << "  numOutputs = " << m_driver->numOutputs() << std::endl
