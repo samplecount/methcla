@@ -28,6 +28,7 @@ public:
         , m_numFrames(numFrames)
         , m_data(makeBuffers(m_numChannels, m_numFrames))
     { }
+
     ~MultiChannelBuffer()
     {
         freeBuffers(m_numChannels, m_data);
@@ -51,6 +52,26 @@ public:
     const Methcla_AudioSample* const* data() const
     {
         return m_data;
+    }
+
+    void deinterleave(const Methcla_AudioSample* src, size_t srcFrames)
+    {
+        Methcla::Audio::deinterleave(data(), src, numChannels(), std::min(numFrames(), srcFrames));
+    }
+
+    void deinterleave(const Methcla_AudioSample* src)
+    {
+        deinterleave(src, numFrames());
+    }
+
+    void interleave(Methcla_AudioSample* dst, size_t dstFrames) const
+    {
+        Methcla::Audio::interleave(dst, data(), numChannels(), std::min(numFrames(), dstFrames));
+    }
+
+    void interleave(Methcla_AudioSample* dst) const
+    {
+        interleave(dst, numFrames());
     }
 
     void zero()
