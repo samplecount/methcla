@@ -23,6 +23,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A5B265EA18212B360088BD47 /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../../src; sourceTree = "<group>"; };
+		A5B265EB18212B500088BD47 /* plugins */ = {isa = PBXFileReference; lastKnownFileType = folder; name = plugins; path = ../../plugins; sourceTree = "<group>"; };
 		A5C3A8C318081AF200AFFF45 /* libmethcla.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libmethcla.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5C3A8C618081AF200AFFF45 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -49,6 +51,8 @@
 			children = (
 				A5C3A92118083FCF00AFFF45 /* include */,
 				A5C3A8ED1808332B00AFFF45 /* methcla_init.c */,
+				A5B265EB18212B500088BD47 /* plugins */,
+				A5B265EA18212B360088BD47 /* src */,
 				A5C3A8C518081AF200AFFF45 /* Frameworks */,
 				A5C3A8C418081AF200AFFF45 /* Products */,
 			);
