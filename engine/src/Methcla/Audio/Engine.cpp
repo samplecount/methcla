@@ -225,8 +225,10 @@ public:
     typedef Utility::MessageQueue<Request*> MessageQueue;
     typedef Utility::WorkerThread<Environment::Command> Worker;
 
-    Environment::MessageQueue*  m_requests;
-    Environment::Worker*        m_worker;
+    std::unique_ptr<Environment::MessageQueue> m_requests;
+
+    // NOTE: Worker needs to be constructed before and destroyed after node map (m_nodes).
+    std::unique_ptr<Environment::Worker> m_worker;
 
     struct ScheduledBundle
     {
@@ -328,8 +330,6 @@ EnvironmentImpl::EnvironmentImpl(
 
 EnvironmentImpl::~EnvironmentImpl()
 {
-    delete m_requests;
-    delete m_worker;
 }
 
 void EnvironmentImpl::init(const Environment::Options& options)
