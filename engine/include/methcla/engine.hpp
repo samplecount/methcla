@@ -644,6 +644,16 @@ namespace Methcla
             return GroupId(nodeId);
         }
 
+        void freeAll(GroupId group)
+        {
+            beginMessage();
+
+            oscPacket()
+                .openMessage("/group/freeAll", 1)
+                    .int32(group.id())
+                .closeMessage();
+        }
+
         SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             beginMessage();
@@ -789,6 +799,13 @@ namespace Methcla
             GroupId result = request.group(parent);
             request.send();
             return result;
+        }
+
+        void freeAll(GroupId group)
+        {
+            Request request(this);
+            request.freeAll(group);
+            request.send();
         }
 
         SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())

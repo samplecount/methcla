@@ -850,6 +850,24 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             auto group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
             m_nodes.insert(group->id(), group);
         }
+        else if (msg == "/group/freeAll")
+        {
+            NodeId nodeId = NodeId(args.int32());
+
+            Node* node = m_nodes.lookup(nodeId).get();
+            if (node == nullptr)
+                throwError("/group/freeAll", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Group " << nodeId << " not found";
+                });
+            else if (!node->isGroup())
+                throwError("/group/freeAll", kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Node " << nodeId << " is not a group";
+                });
+
+            Group* group =  dynamic_cast<Group*>(node);
+
+            group->freeAll();
+        }
         else if (msg == "/synth/new")
         {
             const char* defName = args.string();
