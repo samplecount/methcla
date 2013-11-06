@@ -336,7 +336,7 @@ EnvironmentImpl::~EnvironmentImpl()
 void EnvironmentImpl::init(const Environment::Options& options)
 {
     // Create root group
-    m_rootNode = Group::construct(*m_owner, NodeId(0), nullptr, Node::kAddToTail);
+    m_rootNode = Group::construct(*m_owner, NodeId(0));
     m_nodes.insert(m_rootNode->id(), m_rootNode);
     // Load plugins
     m_plugins.loadPlugins(*m_owner, options.pluginLibraries);
@@ -816,12 +816,52 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* re
     }
 }
 
+static void throwError(const char* command, Methcla_Error code, const std::string& msg)
+{
+    std::stringstream stream;
+    stream << command << ": ";
+    throw Error(code, msg);
+}
+
 static void throwError(const char* command, Methcla_Error code, std::function<void(std::stringstream&)> func)
 {
     std::stringstream stream;
     stream << command << ": ";
     func(stream);
     throw Error(code, stream.str());
+}
+
+static void addNodeToTarget(const char* command, Node* target, Node* node, Methcla_NodePlacement nodePlacement)
+{
+    switch (nodePlacement)
+    {
+        case kMethcla_NodePlacementHeadOfGroup:
+            if (!target->isGroup())
+                throwError(command, kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Target node " << target->id() << " is not a group";
+                });
+            dynamic_cast<Group*>(target)->addToHead(node);
+            break;
+        case kMethcla_NodePlacementTailOfGroup:
+            if (!target->isGroup())
+                throwError(command, kMethcla_NodeIdError, [&](std::stringstream& s) {
+                    s << "Target node " << target->id() << " is not a group";
+                });
+            dynamic_cast<Group*>(target)->addToTail(node);
+            break;
+        case kMethcla_NodePlacementBeforeNode:
+            if (target->parent() == nullptr)
+                throwError(command, kMethcla_NodeIdError, "Cannot place node before root node");
+            target->parent()->addBefore(target, node);
+            break;
+        case kMethcla_NodePlacementAfterNode:
+            if (target->parent() == nullptr)
+                throwError(command, kMethcla_NodeIdError, "Cannot place node after root node");
+            target->parent()->addAfter(target, node);
+            break;
+        default:
+            throwError(command, kMethcla_ArgumentError, "Invalid node placement specification");
+    }
 }
 
 void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
@@ -837,17 +877,17 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
         {
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
-            args.drop(); // int32_t addAction = args.int32();
+            Methcla_NodePlacement nodePlacement = Methcla_NodePlacement(args.int32());
 
-            auto targetNode = m_nodes.lookup(targetId);
-            if (targetNode == nullptr)
+            auto target = m_nodes.lookup(targetId);
+            if (target == nullptr)
                 throwError("/group/new", kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << targetId << " not found";
                 });
 
-            auto targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode.get())
-                                                     : dynamic_cast<Synth*>(targetNode.get())->parent();
-            auto group = Group::construct(*m_owner, nodeId, targetGroup, Node::kAddToTail);
+            auto group = Group::construct(*m_owner, nodeId);
+            addNodeToTarget("/group/new", target.get(), group.get(), nodePlacement);
+
             m_nodes.insert(group->id(), group);
         }
         else if (msg == "/group/freeAll")
@@ -873,7 +913,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             const char* defName = args.string();
             NodeId nodeId = NodeId(args.int32());
             NodeId targetId = NodeId(args.int32());
-            args.drop(); // int32_t addAction = args.int32();
+            Methcla_NodePlacement nodePlacement = Methcla_NodePlacement(args.int32());
 
             const std::shared_ptr<SynthDef> def = m_owner->synthDef(defName);
 
@@ -884,25 +924,22 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             // }
             auto synthArgs = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
 
-            Node* targetNode = m_nodes.lookup(targetId).get();
-            if (targetNode == nullptr)
+            auto target = m_nodes.lookup(targetId);
+            if (target == nullptr)
                 throwError("/synth/new", kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << targetId << " not found";
                 });
-
-            Group* targetGroup = targetNode->isGroup() ? dynamic_cast<Group*>(targetNode)
-                                                       : dynamic_cast<Synth*>(targetNode)->parent();
 
             try
             {
                 ResourceRef<Synth> synth = Synth::construct(
                     *m_owner,
                     nodeId,
-                    targetGroup,
-                    Node::kAddToTail,
                     *def,
                     synthControls,
                     synthArgs);
+
+                addNodeToTarget("/synth/new", target.get(), synth.get(), nodePlacement);
 
                 m_nodes.insert(synth->id(), synth);
             }

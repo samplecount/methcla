@@ -17,8 +17,8 @@
 
 using namespace Methcla::Audio;
 
-Group::Group(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
-    : Node(env, nodeId, target, addAction)
+Group::Group(Environment& env, NodeId nodeId)
+    : Node(env, nodeId)
     , m_first(nullptr)
     , m_last(nullptr)
 {
@@ -29,9 +29,9 @@ Group::~Group()
     freeAll();
 }
 
-ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
+ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId)
 {
-    return ResourceRef<Group>(new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction));
+    return ResourceRef<Group>(new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId));
 }
 
 void Group::doProcess(size_t numFrames)
@@ -46,7 +46,12 @@ void Group::doProcess(size_t numFrames)
 
 void Group::addToHead(Node* node)
 {
-    assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
+    assert(node != nullptr);
+    assert(node->parent() == nullptr);
+    assert(node->m_prev == nullptr);
+    assert(node->m_next == nullptr);
+
+    node->m_parent = this;
     node->m_next = m_first;
 
     if (m_first != nullptr)
@@ -60,7 +65,12 @@ void Group::addToHead(Node* node)
 
 void Group::addToTail(Node* node)
 {
-    assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
+    assert(node != nullptr);
+    assert(node->parent() == nullptr);
+    assert(node->m_prev == nullptr);
+    assert(node->m_next == nullptr);
+
+    node->m_parent = this;
     node->m_prev = m_last;
 
     if (m_last != nullptr)
@@ -72,12 +82,48 @@ void Group::addToTail(Node* node)
         m_first = node;
 }
 
+void Group::addBefore(Node* target, Node* node)
+{
+    assert(target != nullptr);
+    assert(node != nullptr);
+    assert(target->parent() == this);
+    assert(node->parent() == nullptr);
+    assert(node->m_prev == nullptr);
+    assert(node->m_next == nullptr);
+
+    node->m_parent = this;
+    node->m_prev = target->m_prev;
+    target->m_prev = node;
+    node->m_next = target;
+
+    if (target == m_first)
+        m_first = node;
+}
+
+void Group::addAfter(Node* target, Node* node)
+{
+    assert(target != nullptr);
+    assert(node != nullptr);
+    assert(target->parent() == this);
+    assert(node->parent() == nullptr);
+    assert(node->m_prev == nullptr);
+    assert(node->m_next == nullptr);
+
+    node->m_parent = this;
+    node->m_next = target->m_next;
+    target->m_next = node;
+    node->m_prev = target;
+
+    if (target == m_last)
+        m_last = node;
+}
+
 void Group::remove(Node* node)
 {
-    assert(    (node != nullptr)
-           && (   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
-               || !((node->m_prev == nullptr) && (node->m_next == nullptr)) )
-          );
+    assert(node != nullptr);
+    assert(node->parent() == this);
+    assert(   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
+           || !((node->m_prev == nullptr) && (node->m_next == nullptr)) );
 
     Node* prev = node->m_prev;
     Node* next = node->m_next;

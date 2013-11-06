@@ -22,23 +22,26 @@ namespace Methcla { namespace Audio {
 class Group : public Node
 {
 protected:
-    Group(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction);
+    Group(Environment& env, NodeId nodeId);
     ~Group();
 
     virtual void doProcess(size_t numFrames) override;
 
     friend class Node;
 
-    void addToHead(Node* node);
-    void addToTail(Node* node);
     void remove(Node* node);
 
 public:
-    static ResourceRef<Group> construct(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
+    static ResourceRef<Group> construct(Environment& env, NodeId nodeId);
 
     virtual bool isGroup() const override { return true; }
 
     bool isEmpty() const;
+
+    void addToHead(Node* node);
+    void addToTail(Node* node);
+    void addBefore(Node* target, Node* node);
+    void addAfter(Node* target, Node* node);
 
     void freeAll();
 

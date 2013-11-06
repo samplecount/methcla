@@ -159,6 +159,53 @@ namespace Methcla
         { }
     };
 
+    // Node placement specification given a target.
+    class NodePlacement
+    {
+        NodeId                m_target;
+        Methcla_NodePlacement m_placement;
+
+    public:
+        NodePlacement(NodeId target, Methcla_NodePlacement placement)
+            : m_target(target)
+            , m_placement(placement)
+        { }
+
+        NodePlacement(GroupId target)
+            : NodePlacement(target, kMethcla_NodePlacementTailOfGroup)
+        { }
+
+        NodeId target() const
+        {
+            return m_target;
+        }
+
+        Methcla_NodePlacement placement() const
+        {
+            return m_placement;
+        }
+
+        static NodePlacement head(GroupId target)
+        {
+            return NodePlacement(target, kMethcla_NodePlacementHeadOfGroup);
+        }
+
+        static NodePlacement tail(GroupId target)
+        {
+            return NodePlacement(target, kMethcla_NodePlacementTailOfGroup);
+        }
+
+        static NodePlacement before(NodeId target)
+        {
+            return NodePlacement(target, kMethcla_NodePlacementBeforeNode);
+        }
+
+        static NodePlacement after(NodeId target)
+        {
+            return NodePlacement(target, kMethcla_NodePlacementAfterNode);
+        }
+    };
+
     enum BusMappingFlags
     {
         kBusMappingInternal = kMethcla_BusMappingInternal,
@@ -628,7 +675,7 @@ namespace Methcla
             m_engine->sendPacket(m_packet);
         }
 
-        GroupId group(GroupId parent)
+        GroupId group(const NodePlacement& placement)
         {
             beginMessage();
 
@@ -637,8 +684,8 @@ namespace Methcla
             oscPacket()
                 .openMessage("/group/new", 3)
                     .int32(nodeId)
-                    .int32(parent.id())
-                    .int32(0) // add action
+                    .int32(placement.target().id())
+                    .int32(placement.placement())
                 .closeMessage();
 
             return GroupId(nodeId);
@@ -654,7 +701,7 @@ namespace Methcla
                 .closeMessage();
         }
 
-        SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             beginMessage();
 
@@ -664,8 +711,8 @@ namespace Methcla
                 .openMessage("/synth/new", 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size()))
                     .string(synthDef)
                     .int32(nodeId)
-                    .int32(parent.id())
-                    .int32(0)
+                    .int32(placement.target().id())
+                    .int32(placement.placement())
                     .putArray(controls.begin(), controls.end());
 
                     oscPacket().openArray();
@@ -793,10 +840,10 @@ namespace Methcla
             request.send();
         }
 
-        GroupId group(GroupId parent)
+        GroupId group(const NodePlacement& placement)
         {
             Request request(this);
-            GroupId result = request.group(parent);
+            GroupId result = request.group(placement);
             request.send();
             return result;
         }
@@ -808,10 +855,10 @@ namespace Methcla
             request.send();
         }
 
-        SynthId synth(const char* synthDef, GroupId parent, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
         {
             Request request(this);
-            SynthId result = request.synth(synthDef, parent, controls, options);
+            SynthId result = request.synth(synthDef, placement, controls, options);
             request.send();
             return result;
         }

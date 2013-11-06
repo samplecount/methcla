@@ -24,8 +24,6 @@ static const Alignment kBufferAlignment = kSIMDAlignment;
 
 Synth::Synth( Environment& env
             , NodeId nodeId
-            , Group* target
-            , Node::AddAction addAction
             , const SynthDef& synthDef
             , Methcla_PortCount numControlInputs
             , Methcla_PortCount numControlOutputs
@@ -37,7 +35,7 @@ Synth::Synth( Environment& env
             , sample_t* controlBuffers
             , sample_t* audioBuffers
             )
-    : Node(env, nodeId, target, addAction)
+    : Node(env, nodeId)
     , m_synthDef(synthDef)
     , m_numControlInputs(numControlInputs)
     , m_numControlOutputs(numControlOutputs)
@@ -72,7 +70,7 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
+ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
@@ -133,7 +131,9 @@ ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, Group* targ
 
     // Instantiate synth
     auto synth = ResourceRef<Synth>(
-        new (mem) Synth( env, nodeId, target, addAction, synthDef
+        new (mem) Synth( env
+                       , nodeId
+                       , synthDef
                        , numControlInputs
                        , numControlOutputs
                        , numAudioInputs

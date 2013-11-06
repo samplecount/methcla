@@ -60,7 +60,7 @@ namespace Methcla { namespace Audio {
         void unlink();
 
     protected:
-        Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
+        Node(Environment& env, NodeId nodeId);
         ~Node();
 
         //* Free a node.

@@ -97,6 +97,14 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* en
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
+enum Methcla_NodePlacement
+{
+    kMethcla_NodePlacementHeadOfGroup,
+    kMethcla_NodePlacementTailOfGroup,
+    kMethcla_NodePlacementBeforeNode,
+    kMethcla_NodePlacementAfterNode
+};
+
 enum Methcla_BusMappingFlags
 {
     kMethcla_BusMappingInternal = 0x00

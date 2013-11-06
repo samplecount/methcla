@@ -143,8 +143,6 @@ class Synth : public Node
 protected:
     Synth( Environment& env
          , NodeId nodeId
-         , Group* target
-         , AddAction addAction
          , const SynthDef& synthDef
          , Methcla_PortCount numControlInputs
          , Methcla_PortCount numControlOutputs
@@ -163,7 +161,7 @@ protected:
     virtual void doProcess(size_t numFrames) override;
 
 public:
-    static ResourceRef<Synth> construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
+    static ResourceRef<Synth> construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
 
     virtual bool isSynth() const override { return true; }
 

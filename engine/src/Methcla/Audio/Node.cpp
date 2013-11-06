@@ -18,24 +18,12 @@
 
 using namespace Methcla::Audio;
 
-Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
+Node::Node(Environment& env, NodeId nodeId)
     : Resource(env, nodeId)
-    , m_parent(target)
+    , m_parent(nullptr)
     , m_prev(nullptr)
     , m_next(nullptr)
 {
-    if (m_parent)
-    {
-        switch (addAction)
-        {
-            case kAddToHead:
-                m_parent->addToHead(this);
-                break;
-            case kAddToTail:
-                m_parent->addToTail(this);
-                break;
-        }
-    }
 }
 
 Node::~Node()
