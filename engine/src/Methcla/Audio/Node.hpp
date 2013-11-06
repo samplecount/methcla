@@ -18,7 +18,6 @@
 #include "Methcla/Audio/Resource.hpp"
 #include "Methcla/Memory/Manager.hpp"
 
-#include <boost/intrusive/list.hpp>
 #include <boost/serialization/strong_typedef.hpp>
 #include <cstdint>
 
@@ -31,7 +30,6 @@ namespace Methcla { namespace Audio {
     class Group;
 
     class Node : public Resource<NodeId>
-               , public boost::intrusive::list_base_hook<boost::intrusive::link_mode<boost::intrusive::auto_unlink>>
     {
     public:
         Node(const Node&) = delete;
@@ -61,8 +59,12 @@ namespace Methcla { namespace Audio {
         // Process a number of frames.
         void process(size_t numFrames);
 
+        // Remove node from parent.
+        void unlink();
+
     protected:
         Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction);
+        ~Node();
 
         //* Free a node.
         virtual void free() override;
@@ -70,10 +72,12 @@ namespace Methcla { namespace Audio {
         virtual void doProcess(size_t numFrames);
 
     private:
-        Group* m_parent;
-    };
+        friend class Group;
 
-    typedef boost::intrusive::list<Node,boost::intrusive::constant_time_size<false>> NodeList;
+        Group*  m_parent;
+        Node*   m_prev;
+        Node*   m_next;
+    };
 } }
 
 #endif // METHCLA_AUDIO_NODE_HPP_INCLUDED

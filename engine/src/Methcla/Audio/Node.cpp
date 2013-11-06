@@ -20,20 +20,39 @@ using namespace Methcla::Audio;
 
 Node::Node(Environment& env, NodeId nodeId, Group* target, AddAction addAction)
     : Resource(env, nodeId)
+    , m_parent(target)
+    , m_prev(nullptr)
+    , m_next(nullptr)
 {
-    if (target == nullptr) {
-        m_parent = nullptr;
-    } else {
-        switch (addAction) {
+    if (m_parent)
+    {
+        switch (addAction)
+        {
             case kAddToHead:
-                m_parent = target;
-                target->addToHead(*this);
+                m_parent->addToHead(this);
                 break;
             case kAddToTail:
-                m_parent = target;
-                target->addToTail(*this);
+                m_parent->addToTail(this);
                 break;
         }
+    }
+}
+
+Node::~Node()
+{
+    unlink();
+}
+
+void Node::unlink()
+{
+    if (m_parent)
+    {
+        m_parent->remove(this);
+    }
+    else
+    {
+        assert(m_prev == nullptr);
+        assert(m_next == nullptr);
     }
 }
 

@@ -17,6 +17,18 @@
 
 using namespace Methcla::Audio;
 
+Group::Group(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
+    : Node(env, nodeId, target, addAction)
+    , m_first(nullptr)
+    , m_last(nullptr)
+{
+}
+
+Group::~Group()
+{
+    freeAll();
+}
+
 ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId, Group* target, Node::AddAction addAction)
 {
     return ResourceRef<Group>(new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId, target, addAction));
@@ -24,5 +36,78 @@ ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId, Group* targ
 
 void Group::doProcess(size_t numFrames)
 {
-    for (Node& node : m_children) { node.process(numFrames); }
+    Node* node = m_first;
+    while (node != nullptr)
+    {
+        node->process(numFrames);
+        node = node->m_next;
+    }
+}
+
+void Group::addToHead(Node* node)
+{
+    assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
+    node->m_next = m_first;
+    m_first = node;
+    if (m_last == nullptr)
+        m_last = m_first;
+}
+
+void Group::addToTail(Node* node)
+{
+    assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
+    node->m_prev = m_last;
+    m_last = node;
+    if (m_first == nullptr)
+        m_first = m_last;
+}
+
+void Group::remove(Node* node)
+{
+    assert(    (node != nullptr)
+           && (   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
+               || !((node->m_prev == nullptr) && (node->m_next == nullptr)) )
+          );
+
+    Node* prev = node->m_prev;
+    Node* next = node->m_next;
+
+    if (node == m_first)
+    {
+        assert( prev == nullptr );
+        m_first = next;
+    }
+    else
+    {
+        prev->m_next = next;
+    }
+
+    if (node == m_last)
+    {
+        assert( next == nullptr );
+        m_last = prev;
+    }
+    else
+    {
+        next->m_prev = prev;
+    }
+
+    node->m_parent = nullptr;
+    node->m_prev = nullptr;
+    node->m_next = nullptr;
+}
+
+bool Group::isEmpty() const
+{
+    return m_first == nullptr;
+}
+
+void Group::freeAll()
+{
+    while (!isEmpty())
+    {
+        Node* node = m_first;
+        remove(node);
+        env().releaseNode(node->id());
+    }
 }

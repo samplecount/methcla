@@ -197,6 +197,9 @@ namespace Methcla { namespace Audio
             notify(packet.data(), packet.size());
         }
 
+        friend class Group;
+        void releaseNode(NodeId nodeId);
+
     private:
         EnvironmentImpl*                        m_impl;
         const double                            m_sampleRate;

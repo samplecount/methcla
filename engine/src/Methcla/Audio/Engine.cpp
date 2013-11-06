@@ -281,6 +281,11 @@ public:
     {
         m_worker->sendFromWorker(cmd);
     }
+
+    void releaseNode(NodeId nodeId)
+    {
+        m_nodes.remove(nodeId);
+    }
 };
 
 EnvironmentImpl::EnvironmentImpl(
@@ -681,6 +686,11 @@ void Environment::replyError(Methcla_RequestId requestId, const char* msg)
     std::cerr << "ERROR: " << msg << std::endl;
 }
 
+void Environment::releaseNode(NodeId nodeId)
+{
+    m_impl->releaseNode(nodeId);
+}
+
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
     const Methcla_EngineLogFlags logFlags(m_logFlags);
@@ -922,8 +932,11 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
                     s << "Cannot free root node " << nodeId;
                 });
 
-            // Drop reference from node map
-            m_nodes.remove(nodeId);
+            // Remove node from parent (asynchronous commands might still refer to the node)
+            m_nodes.lookup(nodeId)->unlink();
+
+            // Drop node reference
+            releaseNode(nodeId);
         }
         else if (msg == "/node/set")
         {
