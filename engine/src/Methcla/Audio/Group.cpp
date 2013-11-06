@@ -48,18 +48,28 @@ void Group::addToHead(Node* node)
 {
     assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
     node->m_next = m_first;
+
+    if (m_first != nullptr)
+        m_first->m_prev = node;
+
     m_first = node;
+
     if (m_last == nullptr)
-        m_last = m_first;
+        m_last = node;
 }
 
 void Group::addToTail(Node* node)
 {
     assert( (node != nullptr) && (node->m_prev == nullptr) && (node->m_next == nullptr) );
     node->m_prev = m_last;
+
+    if (m_last != nullptr)
+        m_last->m_next = node;
+
     m_last = node;
+
     if (m_first == nullptr)
-        m_first = m_last;
+        m_first = node;
 }
 
 void Group::remove(Node* node)
