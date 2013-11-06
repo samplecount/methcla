@@ -86,6 +86,8 @@ void Group::remove(Node* node)
     {
         assert( prev == nullptr );
         m_first = next;
+        if (m_first != nullptr)
+            m_first->m_prev = nullptr;
     }
     else
     {
@@ -96,6 +98,8 @@ void Group::remove(Node* node)
     {
         assert( next == nullptr );
         m_last = prev;
+        if (m_last != nullptr)
+            m_last->m_next = nullptr;
     }
     else
     {
