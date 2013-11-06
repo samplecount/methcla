@@ -53,9 +53,6 @@ namespace Methcla { namespace Audio {
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
 
-        //* Return true if the node is the root node.
-        bool isRootNode() const { return parent() == 0; }
-
         // Process a number of frames.
         void process(size_t numFrames);
 
