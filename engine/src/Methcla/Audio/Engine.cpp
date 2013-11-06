@@ -292,16 +292,12 @@ EnvironmentImpl::EnvironmentImpl(
     : m_owner(owner)
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(messageQueue == nullptr ? new Utility::MessageQueue<Request*>(kQueueSize) : messageQueue)
-    , m_worker(worker)
+    , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, 2))
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_nodes(options.maxNumNodes)
     , m_logFlags(kMethcla_EngineLogDefault)
 {
-    // FIXME: Why isn't this done in the member initializer?
-    if (m_worker == nullptr)
-        m_worker = new Utility::WorkerThread<Environment::Command>(kQueueSize, 2);
-
     const Epoch prevEpoch = m_epoch - 1;
 
     m_externalAudioInputs.reserve(options.numHardwareInputChannels);
