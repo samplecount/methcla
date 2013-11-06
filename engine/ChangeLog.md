@@ -1,3 +1,7 @@
+## 0.3.0 (upcoming)
+
+* Add playback rate control to disksampler
+
 ## 0.2.0
 
 * Rename `Methcla::Engine::freeNode` to `Methcla::Engine::free`
