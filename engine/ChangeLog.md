@@ -1,6 +1,8 @@
 ## 0.3.0 (upcoming)
 
 * Add playback rate control to disksampler
+* Add node placement options to node creation API commands. `Methcla::NodePlacement` can be used to control node placement in the C++ API.
+* Remove `Methcla_Resource` from plugin API: Remove argument from `Methcla_SynthDef::construct` and rename `methcla_world_resource_retain`/`methcla_world_resource_release` to `methcla_world_synth_retain`/`methcla_world_synth_release`
 
 ## 0.2.0
 

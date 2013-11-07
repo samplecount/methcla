@@ -62,7 +62,6 @@ static void
 construct( const Methcla_World* world
          , const Methcla_SynthDef* synthDef
          , const Methcla_SynthOptions* options
-         , Methcla_Resource* owner
          , Methcla_Synth* synth )
 {
     Sine* sine = (Sine*)synth;

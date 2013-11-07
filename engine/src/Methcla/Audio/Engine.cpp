@@ -428,16 +428,16 @@ static void methcla_api_world_free(const Methcla_World* world, void* ptr)
     return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
 }
 
-static void methcla_api_world_resource_retain(const Methcla_World*, Methcla_Resource* resource)
+static void methcla_api_world_synth_retain(const Methcla_World*, Methcla_Synth* synth)
 {
-    assert(resource);
-    static_cast<Reference*>(resource)->retain();
+    assert(synth);
+    Synth::fromSynth(synth)->retain();
 }
 
-static void methcla_api_world_resource_release(const Methcla_World*, Methcla_Resource* resource)
+static void methcla_api_world_synth_release(const Methcla_World*, Methcla_Synth* synth)
 {
-    assert(resource);
-    static_cast<Reference*>(resource)->release();
+    assert(synth);
+    Synth::fromSynth(synth)->release();
 }
 
 static void methcla_api_host_perform_command(const Methcla_Host*, Methcla_WorldPerformFunction, void*);
@@ -468,8 +468,8 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
         methcla_api_world_alloc_aligned,
         methcla_api_world_free,
         methcla_api_world_perform_command,
-        methcla_api_world_resource_retain,
-        methcla_api_world_resource_release
+        methcla_api_world_synth_retain,
+        methcla_api_world_synth_release
     };
 
     m_impl = new EnvironmentImpl(this, options, messageQueue, worker);

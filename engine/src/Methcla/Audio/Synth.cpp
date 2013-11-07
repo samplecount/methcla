@@ -159,9 +159,15 @@ ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, const Synth
     return synth;
 }
 
+Synth* Synth::fromSynth(Methcla_Synth* synth)
+{
+    // NOTE: This needs to be adapted if Synth memory layout is changed!
+    return reinterpret_cast<Synth*>(static_cast<char*>(synth) - sizeof(Synth));
+}
+
 void Synth::construct(const Methcla_SynthOptions* synthOptions)
 {
-    m_synthDef.construct(env(), synthOptions, this, m_synth);
+    m_synthDef.construct(env(), synthOptions, m_synth);
 }
 
 void Synth::connectPorts(const Methcla_SynthOptions* synthOptions, OSCPP::Server::ArgStream controls)

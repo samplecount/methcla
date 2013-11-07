@@ -163,6 +163,9 @@ protected:
 public:
     static ResourceRef<Synth> construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream args);
 
+    // Convert Methcla_Synth to Synth.
+    static Synth* fromSynth(Methcla_Synth* synth);
+
     virtual bool isSynth() const override { return true; }
 
     //* Return this synth's SynthDef.

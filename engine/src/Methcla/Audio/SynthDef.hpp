@@ -51,7 +51,7 @@ public:
     //* Return port descriptor at index.
     bool portDescriptor(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port) const;
 
-    void construct(const Methcla_World* world, const Methcla_SynthOptions* options, Synth* owner, Methcla_Synth* synth) const;
+    void construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const;
     void destroy(const Methcla_World* world, Methcla_Synth* synth) const;
 
     inline void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data) const

@@ -144,7 +144,6 @@ static void
 construct( const Methcla_World* world
          , const Methcla_SynthDef* /* synthDef */
          , const Methcla_SynthOptions* inOptions
-         , Methcla_Resource* /* owner */
          , Methcla_Synth* synth )
 {
     const Options* options = (const Options*)inOptions;

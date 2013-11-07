@@ -49,7 +49,6 @@ static void
 construct( const Methcla_World*
          , const Methcla_SynthDef*
          , const Methcla_SynthOptions*
-         , Methcla_Resource*
          , Methcla_Synth* synth )
 {
     PatchCable* self = static_cast<PatchCable*>(synth);

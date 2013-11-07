@@ -39,9 +39,6 @@ typedef struct Methcla_Host Methcla_Host;
 //* Synth handle managed by a plugin.
 typedef void Methcla_Synth;
 
-//* Shared resource handle managed by the realtime context.
-typedef void Methcla_Resource;
-
 //* Callback function type for performing commands in the non-realtime context.
 typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
 
@@ -69,8 +66,8 @@ struct Methcla_World
     void (*perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
 
     //* Reference counted resources.
-    void (*resource_retain)(const struct Methcla_World* world, Methcla_Resource* resource);
-    void (*resource_release)(const struct Methcla_World* world, Methcla_Resource* resource);
+    void (*synth_retain)(const struct Methcla_World* world, Methcla_Synth* synth);
+    void (*synth_release)(const struct Methcla_World* world, Methcla_Synth* synth);
 };
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
@@ -110,18 +107,20 @@ static inline void methcla_world_perform_command(const Methcla_World* world, Met
     world->perform_command(world, perform, data);
 }
 
-static inline void methcla_world_resource_retain(const Methcla_World* world, Methcla_Resource* resource)
+static inline void methcla_world_synth_retain(const Methcla_World* world, Methcla_Synth* synth)
 {
-    assert(world && world->resource_retain);
-    assert(resource);
-    world->resource_retain(world, resource);
+    assert(world);
+    assert(world->synth_retain);
+    assert(synth);
+    world->synth_retain(world, synth);
 }
 
-static inline void methcla_world_resource_release(const Methcla_World* world, Methcla_Resource* resource)
+static inline void methcla_world_synth_release(const Methcla_World* world, Methcla_Synth* synth)
 {
-    assert(world && world->resource_release);
-    assert(resource);
-    world->resource_release(world, resource);
+    assert(world);
+    assert(world->synth_release);
+    assert(synth);
+    world->synth_release(world, synth);
 }
 
 typedef enum
@@ -175,7 +174,7 @@ struct Methcla_SynthDef
     bool (*port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
 
     //* Construct a synth instance at the location given.
-    void (*construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Resource* owner, Methcla_Synth* synth);
+    void (*construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Synth* synth);
 
     //* Connect port at index to data.
     void (*connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
