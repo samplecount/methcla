@@ -35,15 +35,6 @@ namespace Methcla { namespace Audio {
         Node(const Node&) = delete;
         Node& operator=(const Node&) = delete;
 
-        enum AddAction
-        {
-            kAddToHead
-          , kAddToTail
-          // , kAddBefore
-          // , kAddAfter
-          // , kReplace
-        };
-
         //* Return true if this node is a group.
         virtual bool isGroup() const { return false; }
         //* Return true if this node is a synth.
