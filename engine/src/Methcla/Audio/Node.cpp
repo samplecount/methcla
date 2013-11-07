@@ -37,11 +37,10 @@ void Node::unlink()
     {
         m_parent->remove(this);
     }
-    else
-    {
-        assert(m_prev == nullptr);
-        assert(m_next == nullptr);
-    }
+
+    assert(m_parent == nullptr);
+    assert(m_prev == nullptr);
+    assert(m_next == nullptr);
 }
 
 void Node::process(size_t numFrames)
@@ -58,4 +57,29 @@ void Node::free()
 
 void Node::doProcess(size_t)
 {
+}
+
+void Node::setDone(Methcla_NodeDoneFlags flags)
+{
+    switch (flags)
+    {
+        case kMethcla_NodeDoneDoNothing:
+            break;
+        case kMethcla_NodeDoneFreePreceeding:
+            if (m_prev != nullptr)
+                env().freeNode(m_prev->id());
+            break;
+        case kMethcla_NodeDoneFreeFollowing:
+            if (m_next != nullptr)
+                env().freeNode(m_next->id());
+            break;
+        case kMethcla_NodeDoneFreeAll:
+            if (m_parent != nullptr)
+                m_parent->freeAll();
+                break;
+        case kMethcla_NodeDoneFreeParent:
+            if (m_parent != nullptr)
+                env().freeNode(m_parent->id());
+            break;
+    }
 }

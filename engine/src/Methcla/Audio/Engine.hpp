@@ -164,6 +164,11 @@ namespace Methcla { namespace Audio
 
         void setLogFlags(Methcla_EngineLogFlags flags);
 
+        //* Free a node.
+        //
+        // Context: RT
+        void freeNode(NodeId nodeId);
+
     private:
         friend class EnvironmentImpl;
 
@@ -196,9 +201,6 @@ namespace Methcla { namespace Audio
         {
             notify(packet.data(), packet.size());
         }
-
-        friend class Group;
-        void releaseNode(NodeId nodeId);
 
     private:
         EnvironmentImpl*                        m_impl;

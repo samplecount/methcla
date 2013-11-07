@@ -17,6 +17,7 @@
 
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
+#include <methcla/types.h>
 
 #include <exception>
 #include <future>
@@ -783,6 +784,18 @@ namespace Methcla
                 .int32(node.id())
                 .closeMessage();
             m_engine->nodeIdAllocator().free(node.id());
+        }
+
+        void whenDone(NodeId node, Methcla_NodeDoneFlags flags)
+        {
+            beginMessage();
+
+            oscPacket()
+                .openMessage("/node/property/set", 3)
+                    .string("doneFlags")
+                    .int32(node.id())
+                    .int32(flags)
+                .closeMessage();
         }
     };
 

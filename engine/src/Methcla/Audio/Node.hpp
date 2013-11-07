@@ -18,6 +18,8 @@
 #include "Methcla/Audio/Resource.hpp"
 #include "Methcla/Memory/Manager.hpp"
 
+#include <methcla/types.h>
+
 #include <boost/serialization/strong_typedef.hpp>
 #include <cstdint>
 
@@ -50,6 +52,8 @@ namespace Methcla { namespace Audio {
         // Remove node from parent.
         void unlink();
 
+        void setDone(Methcla_NodeDoneFlags flags);
+
     protected:
         Node(Environment& env, NodeId nodeId);
         ~Node();
@@ -59,7 +63,7 @@ namespace Methcla { namespace Audio {
 
         virtual void doProcess(size_t numFrames);
 
-    private:
+    protected:
         friend class Group;
 
         Group*  m_parent;

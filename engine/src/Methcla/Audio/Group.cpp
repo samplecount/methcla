@@ -167,7 +167,6 @@ void Group::freeAll()
     while (!isEmpty())
     {
         Node* node = m_first;
-        remove(node);
-        env().releaseNode(node->id());
+        env().freeNode(node->id());
     }
 }

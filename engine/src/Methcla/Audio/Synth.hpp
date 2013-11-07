@@ -213,6 +213,12 @@ public:
         return m_sampleOffset;
     }
 
+    Methcla_NodeDoneFlags doneFlags() const;
+    void setDoneFlags(Methcla_NodeDoneFlags flags);
+
+    // Set the synth to done with the current done flags.
+    void setDone();
+
 private:
     enum State
     {
@@ -229,6 +235,7 @@ private:
     //     // bool controlInputConnectionsChanged     : 1;
     //     // bool controlOutputConnectionsChanged    : 1;
     //     // bool hasTriggerInput                    : 1;
+        unsigned int doneFlags : 8;
     };
 
     const SynthDef&         m_synthDef;

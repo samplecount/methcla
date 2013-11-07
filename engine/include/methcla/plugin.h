@@ -65,9 +65,12 @@ struct Methcla_World
     //* Schedule a command for execution in the non-realtime context.
     void (*perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
 
-    //* Reference counted resources.
+    //* Manipulate synth reference counts.
     void (*synth_retain)(const struct Methcla_World* world, Methcla_Synth* synth);
     void (*synth_release)(const struct Methcla_World* world, Methcla_Synth* synth);
+
+    //* Free synth.
+    void (*synth_done)(const struct Methcla_World* world, Methcla_Synth* synth);
 };
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
@@ -121,6 +124,14 @@ static inline void methcla_world_synth_release(const Methcla_World* world, Methc
     assert(world->synth_release);
     assert(synth);
     world->synth_release(world, synth);
+}
+
+static inline void methcla_world_synth_done(const Methcla_World* world, Methcla_Synth* synth)
+{
+    assert(world);
+    assert(world->synth_done);
+    assert(synth);
+    world->synth_done(world, synth);
 }
 
 typedef enum

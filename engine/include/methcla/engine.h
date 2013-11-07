@@ -97,22 +97,6 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* en
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);
 
-enum Methcla_NodePlacement
-{
-    kMethcla_NodePlacementHeadOfGroup,
-    kMethcla_NodePlacementTailOfGroup,
-    kMethcla_NodePlacementBeforeNode,
-    kMethcla_NodePlacementAfterNode
-};
-
-enum Methcla_BusMappingFlags
-{
-    kMethcla_BusMappingInternal = 0x00
-  , kMethcla_BusMappingExternal = 0x01
-  , kMethcla_BusMappingFeedback = 0x02
-  , kMethcla_BusMappingReplace  = 0x04
-};
-
 //* Open a sound file.
 METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(const Methcla_Engine* engine, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
 
