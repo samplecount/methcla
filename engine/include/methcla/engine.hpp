@@ -215,6 +215,15 @@ namespace Methcla
         kBusMappingReplace  = kMethcla_BusMappingReplace
     };
 
+    enum NodeDoneFlags
+    {
+        kNodeDoneDoNothing      = kMethcla_NodeDoneDoNothing
+      , kNodeDoneFreePreceeding = kMethcla_NodeDoneFreePreceeding
+      , kNodeDoneFreeFollowing  = kMethcla_NodeDoneFreeFollowing
+      , kNodeDoneFreeAll        = kMethcla_NodeDoneFreeAll
+      , kNodeDoneFreeParent     = kMethcla_NodeDoneFreeParent
+    };
+
     template <typename T> class ResourceIdAllocator
     {
     public:
@@ -786,7 +795,7 @@ namespace Methcla
             m_engine->nodeIdAllocator().free(node.id());
         }
 
-        void whenDone(SynthId synth, Methcla_NodeDoneFlags flags)
+        void whenDone(SynthId synth, NodeDoneFlags flags)
         {
             beginMessage();
 
