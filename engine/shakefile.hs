@@ -281,9 +281,10 @@ mkRules options = do
                         append userIncludes [ "platform/ios"
                                             , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
                     >>> stdlib "libc++"
-                iosSources = methclaSources $
-                                 SourceTree.files [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
-                                                  , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
+                iosSources = methclaSources $ SourceTree.files $
+                                [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
+                                , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
+                                ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
             developer <- OSX.getDeveloperPath
             return $ do
                 iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
