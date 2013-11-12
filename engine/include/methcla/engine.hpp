@@ -786,14 +786,13 @@ namespace Methcla
             m_engine->nodeIdAllocator().free(node.id());
         }
 
-        void whenDone(NodeId node, Methcla_NodeDoneFlags flags)
+        void whenDone(SynthId synth, Methcla_NodeDoneFlags flags)
         {
             beginMessage();
 
             oscPacket()
-                .openMessage("/node/property/set", 3)
-                    .string("doneFlags")
-                    .int32(node.id())
+                .openMessage("/synth/property/doneFlags/set", 2)
+                    .int32(synth.id())
                     .int32(flags)
                 .closeMessage();
         }

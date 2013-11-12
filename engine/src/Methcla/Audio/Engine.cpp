@@ -1082,6 +1082,13 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             synth->mapOutput(index, AudioBusId(busId), flags);
         }
+        else if (msg == "/synth/property/doneFlags/set")
+        {
+            NodeId nodeId = NodeId(args.int32());
+            Methcla_NodeDoneFlags flags = Methcla_NodeDoneFlags(args.int32());
+            Synth* synth = lookupNodeAs<Synth>(this, "Synth", nodeId);
+            synth->setDoneFlags(flags);
+        }
         else if (msg == "/node/free")
         {
             NodeId nodeId = NodeId(args.int32());
@@ -1123,17 +1130,6 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
                 });
 
             synth->controlInput(index) = value;
-        }
-        else if (msg == "/node/property/set")
-        {
-            const char* prop = args.string();
-            if (strcmp(prop, "doneFlags") == 0)
-            {
-                NodeId nodeId = NodeId(args.int32());
-                Methcla_NodeDoneFlags flags = Methcla_NodeDoneFlags(args.int32());
-                Synth* synth = lookupNodeAs<Synth>(this, "Synth", nodeId);
-                synth->setDoneFlags(flags);
-            }
         }
         else if (msg == "/query/external_inputs")
         {
