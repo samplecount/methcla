@@ -301,7 +301,7 @@ mkRules options = do
                                 (mkBuildPrefix config "iphoneos" </> "libmethcla.a")
                 phony "iphoneos" (need [iphoneosLib])
 
-                iphonesimulatorLib <- do
+                iphonesimulatorLibI386 <- do
                     let platform = OSX.iPhoneSimulator iOS_SDK
                         cTarget = OSX.target (X86 I386) platform
                         toolChain = applyEnv $ OSX.toolChain_IOS_Simulator developer
@@ -311,8 +311,10 @@ mkRules options = do
                                    >>> iosBuildFlags
                                    $   OSX.buildFlags_IOS_Simulator cTarget developer
                     lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
-                    platformAlias platform lib
                     return lib
+                let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
+                iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
+                phony "iphonesimulator" (need [iphonesimulatorLib])
 
                 let universalTarget = "iphone-universal"
                 universalLib <- OSX.universalBinary
