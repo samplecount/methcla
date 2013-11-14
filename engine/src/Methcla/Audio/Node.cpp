@@ -61,25 +61,27 @@ void Node::doProcess(size_t)
 
 void Node::setDone(Methcla_NodeDoneFlags flags)
 {
-    switch (flags)
+    if (flags & kMethcla_NodeDoneFreeParent)
     {
-        case kMethcla_NodeDoneDoNothing:
-            break;
-        case kMethcla_NodeDoneFreePreceeding:
+        if (m_parent != nullptr)
+            env().freeNode(m_parent->id());
+    }
+    else if (flags & kMethcla_NodeDoneFreeAllSiblings)
+    {
+        if (m_parent != nullptr)
+            m_parent->freeAll();
+    }
+    else
+    {
+        if (flags & kMethcla_NodeDoneFreePreceeding)
+        {
             if (m_prev != nullptr)
                 env().freeNode(m_prev->id());
-            break;
-        case kMethcla_NodeDoneFreeFollowing:
-            if (m_next != nullptr)
-                env().freeNode(m_next->id());
-            break;
-        case kMethcla_NodeDoneFreeAll:
-            if (m_parent != nullptr)
-                m_parent->freeAll();
-                break;
-        case kMethcla_NodeDoneFreeParent:
-            if (m_parent != nullptr)
-                env().freeNode(m_parent->id());
-            break;
+        }
+        if (flags & kMethcla_NodeDoneFreeFollowing)
+        {
+             if (m_next != nullptr)
+                 env().freeNode(m_next->id());
+        }
     }
 }

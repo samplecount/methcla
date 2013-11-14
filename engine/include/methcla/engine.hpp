@@ -217,11 +217,12 @@ namespace Methcla
 
     enum NodeDoneFlags
     {
-        kNodeDoneDoNothing      = kMethcla_NodeDoneDoNothing
-      , kNodeDoneFreePreceeding = kMethcla_NodeDoneFreePreceeding
-      , kNodeDoneFreeFollowing  = kMethcla_NodeDoneFreeFollowing
-      , kNodeDoneFreeAll        = kMethcla_NodeDoneFreeAll
-      , kNodeDoneFreeParent     = kMethcla_NodeDoneFreeParent
+        kNodeDoneDoNothing       = kMethcla_NodeDoneDoNothing
+      , kNodeDoneFreeSelf        = kMethcla_NodeDoneFreeSelf
+      , kNodeDoneFreePreceeding  = kMethcla_NodeDoneFreePreceeding
+      , kNodeDoneFreeFollowing   = kMethcla_NodeDoneFreeFollowing
+      , kNodeDoneFreeAllSiblings = kMethcla_NodeDoneFreeAllSiblings
+      , kNodeDoneFreeParent      = kMethcla_NodeDoneFreeParent
     };
 
     template <typename T> class ResourceIdAllocator

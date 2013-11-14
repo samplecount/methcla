@@ -36,10 +36,11 @@ enum Methcla_BusMappingFlags
 enum Methcla_NodeDoneFlags
 {
     kMethcla_NodeDoneDoNothing          = 0x00
-  , kMethcla_NodeDoneFreePreceeding     = 0x01
-  , kMethcla_NodeDoneFreeFollowing      = 0x02
-  , kMethcla_NodeDoneFreeAll            = 0x10
-  , kMethcla_NodeDoneFreeParent         = 0x20
+  , kMethcla_NodeDoneFreeSelf           = 0x01
+  , kMethcla_NodeDoneFreePreceeding     = 0x02
+  , kMethcla_NodeDoneFreeFollowing      = 0x04
+  , kMethcla_NodeDoneFreeAllSiblings    = 0x08
+  , kMethcla_NodeDoneFreeParent         = 0x10
 };
 
 #endif /* METHCLA_TYPES_H_INCLUDED */
