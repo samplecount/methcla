@@ -251,40 +251,47 @@ RemoteIODriver::RemoteIODriver(Options options)
           , "couldn't enable input on the remote I/O unit");
     }
 
-    // This needs to be set before initializing the AudioUnit?
-    m_bufferSize = (size_t)(m_sampleRate * hwBufferDuration + .5);
-    UInt32 maxFPS = m_bufferSize;
-    METHCLA_THROW_IF_ERROR(
-        AudioUnitSetProperty(
-            m_rioUnit
-          , kAudioUnitProperty_MaximumFramesPerSlice
-          , kAudioUnitScope_Global
-          , kInputBus
-          , &maxFPS
-          , sizeof(maxFPS))
-      , "couldn't set AudioUnit buffer size");
+#if !TARGET_IPHONE_SIMULATOR // Doesn't work on the simulator
+    {
+        // This needs to be set before initializing the AudioUnit?
+        m_bufferSize = (size_t)(m_sampleRate * hwBufferDuration + .5);
+        UInt32 maxFPS = m_bufferSize;
+        METHCLA_THROW_IF_ERROR(
+            AudioUnitSetProperty(
+                m_rioUnit
+              , kAudioUnitProperty_MaximumFramesPerSlice
+              , kAudioUnitScope_Global
+              , kInputBus
+              , &maxFPS
+              , sizeof(maxFPS))
+          , "couldn't set AudioUnit buffer size");
 
-    METHCLA_THROW_IF_ERROR(
-        AudioUnitSetProperty(
-            m_rioUnit
-          , kAudioUnitProperty_MaximumFramesPerSlice
-          , kAudioUnitScope_Global
-          , kOutputBus
-          , &maxFPS
-          , sizeof(maxFPS))
-      , "couldn't set AudioUnit buffer size");
+        METHCLA_THROW_IF_ERROR(
+            AudioUnitSetProperty(
+                m_rioUnit
+              , kAudioUnitProperty_MaximumFramesPerSlice
+              , kAudioUnitScope_Global
+              , kOutputBus
+              , &maxFPS
+              , sizeof(maxFPS))
+          , "couldn't set AudioUnit buffer size");
+    }
+#endif // !TARGET_IPHONE_SIMULATOR
 
-    // UInt32 maxFPS = m_bufferSize;
-    // METHCLA_THROW_IF_ERROR(
-    //     AudioUnitGetProperty(
-    //         m_rioUnit
-    //       , kAudioUnitProperty_MaximumFramesPerSlice
-    //       , kAudioUnitScope_Global
-    //       , kOutputBus
-    //       , &maxFPS
-    //       , &outSize)
-    //   , "couldn't get AudioUnit buffer size");
-    // m_bufferSize = maxFPS;
+    {
+        // Retrieve actual buffer size.
+        UInt32 maxFPS;
+        METHCLA_THROW_IF_ERROR(
+            AudioUnitGetProperty(
+                m_rioUnit
+              , kAudioUnitProperty_MaximumFramesPerSlice
+              , kAudioUnitScope_Global
+              , kOutputBus
+              , &maxFPS
+              , &outSize)
+          , "couldn't get AudioUnit buffer size");
+        m_bufferSize = maxFPS;
+    }
 
     // Set input format
     if (m_numInputs > 0) {
