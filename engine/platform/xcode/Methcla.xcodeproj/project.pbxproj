@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		A5C3A8C718081AF200AFFF45 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C3A8C618081AF200AFFF45 /* Foundation.framework */; };
 		A5C3A8DE180825A000AFFF45 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */; };
-		A5C3A8EE1808332B00AFFF45 /* methcla_init.c in Sources */ = {isa = PBXBuildFile; fileRef = A5C3A8ED1808332B00AFFF45 /* methcla_init.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,7 +27,6 @@
 		A5C3A8C318081AF200AFFF45 /* libmethcla.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libmethcla.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5C3A8C618081AF200AFFF45 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		A5C3A8DD180825A000AFFF45 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
-		A5C3A8ED1808332B00AFFF45 /* methcla_init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = methcla_init.c; sourceTree = "<group>"; };
 		A5C3A92218083FDB00AFFF45 /* methcla */ = {isa = PBXFileReference; lastKnownFileType = folder; name = methcla; path = ../../include/methcla; sourceTree = "<group>"; };
 		A5C3A92318083FE400AFFF45 /* oscpp */ = {isa = PBXFileReference; lastKnownFileType = folder; name = oscpp; path = ../../external_libraries/oscpp/include/oscpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -50,7 +48,6 @@
 			isa = PBXGroup;
 			children = (
 				A5C3A92118083FCF00AFFF45 /* include */,
-				A5C3A8ED1808332B00AFFF45 /* methcla_init.c */,
 				A5B265EB18212B500088BD47 /* plugins */,
 				A5B265EA18212B360088BD47 /* src */,
 				A5C3A8C518081AF200AFFF45 /* Frameworks */,
@@ -184,7 +181,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A5C3A8EE1808332B00AFFF45 /* methcla_init.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -33,5 +33,3 @@ esac
 
 ./stir -V -c $CONFIGURATION -j`sysctl -n hw.ncpu` $TARGET || exit $?
 
-# Touch this to force relinking against libmethcla.a in Xcode
-touch platform/xcode/methcla_init.c
