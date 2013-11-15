@@ -267,10 +267,10 @@ public:
 
     void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
-    void processRequests(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime);
-    void processScheduler(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime, Methcla_Time nextTime);
-    void processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime);
-    void processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime);
+    void processRequests(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime);
+    void processScheduler(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime, const Methcla_Time nextTime);
+    void processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
+    void processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
 
     void sendToWorker(const Environment::Command& cmd)
     {
@@ -741,7 +741,7 @@ void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const 
     m_epoch++;
 }
 
-void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime)
+void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime)
 {
     Request* request;
     while (m_requests->next(request))
@@ -776,7 +776,7 @@ void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, Methcla_T
     }
 }
 
-void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, Methcla_Time currentTime, Methcla_Time nextTime)
+void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime, const Methcla_Time nextTime)
 {
     while (!m_scheduler.isEmpty())
     {
@@ -797,7 +797,7 @@ void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, Methcla_
     }
 }
 
-void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, Methcla_Time scheduleTime, Methcla_Time currentTime)
+void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, const Methcla_Time scheduleTime, const Methcla_Time currentTime)
 {
     auto packets = bundle.packets();
     while (!packets.atEnd())
