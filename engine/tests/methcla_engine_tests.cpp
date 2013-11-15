@@ -56,3 +56,14 @@ TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn'
 
     REQUIRE(true);
 }
+
+TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
+{
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine()
+    );
+    Methcla::Request request(*engine);
+    request.openBundle(0.);
+    request.closeBundle();
+    REQUIRE_THROWS( request.group(engine->root()) );
+}

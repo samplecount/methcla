@@ -590,6 +590,7 @@ namespace Methcla
         {
             bool isMessage : 1;
             bool isBundle : 1;
+            bool isClosed : 1;
         };
 
         EngineInterface*    m_engine;
@@ -601,7 +602,9 @@ namespace Methcla
         void beginMessage()
         {
             if (m_flags.isMessage)
-                throw std::runtime_error("Cannot send more than one message in non-bundle packet");
+                throw std::runtime_error("Cannot add more than one message to non-bundle packet");
+            else if (m_flags.isBundle && m_flags.isClosed)
+                throw std::runtime_error("Cannot add message to closed top-level bundle");
             else if (!m_flags.isBundle)
                 m_flags.isMessage = true;
         }
@@ -619,6 +622,7 @@ namespace Methcla
         {
             m_flags.isMessage = false;
             m_flags.isBundle = false;
+            m_flags.isClosed = false;
         }
 
         Request(EngineInterface& engine)
@@ -668,6 +672,8 @@ namespace Methcla
             {
                 oscPacket().closeBundle();
                 m_bundleCount--;
+                if (m_bundleCount == 0)
+                    m_flags.isClosed = true;
             }
         }
 
