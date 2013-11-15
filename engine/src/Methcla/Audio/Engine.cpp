@@ -769,9 +769,13 @@ void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, const Met
             }
             request->release();
         }
+        catch (OSCPP::Error&)
+        {
+            m_owner->replyError(kMethcla_Notification, "Couldn't parse request packet");
+        }
         catch (std::exception& e)
         {
-            std::cerr << "Unhandled exception in `processRequests': " << e.what() << std::endl;
+            m_owner->replyError(kMethcla_Notification, e.what());
         }
     }
 }
