@@ -781,7 +781,7 @@ void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, const Me
     while (!m_scheduler.isEmpty())
     {
         Methcla_Time scheduleTime = m_scheduler.time();
-        if (scheduleTime <= nextTime)
+        if (scheduleTime < nextTime)
         {
             ScheduledBundle bundle = m_scheduler.top();
             BOOST_ASSERT_MSG( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime
