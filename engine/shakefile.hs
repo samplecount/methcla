@@ -14,7 +14,7 @@
 
 {-# LANGUAGE TemplateHaskell #-}
 
-import           Control.Arrow ((>>>), runKleisli, second)
+import           Control.Arrow ((>>>), second)
 import           Control.Lens hiding (Action, (<.>), under)
 import           Data.Char (toLower)
 import           Data.Version (Version(..), showVersion)
@@ -24,6 +24,7 @@ import qualified MethclaPro as Pro
 import qualified Paths_shakefile as Package
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
+import           Shakefile.C.Host (getDefaultToolChain)
 import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
@@ -418,8 +419,8 @@ mkRules options = do
                 sharedLib <- build sharedLibrary
                 phony "macosx-jack" $ need [staticLib]
                 phony "macosx-jack-shared" $ need [sharedLib]
-      , do -- tests (macosx)
-            (target, toolChain) <- fmap (second applyEnv) OSX.getDefaultToolChain
+      , do -- tests
+            (target, toolChain) <- fmap (second applyEnv) getDefaultToolChain
             let env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
@@ -437,7 +438,7 @@ mkRules options = do
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp" ]
                               , Pro.testSources ]
-                phony "macosx-tests" $ do
+                phony "test" $ do
                     need [result]
                     system' result []
       , do -- tags
