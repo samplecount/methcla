@@ -1016,7 +1016,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
                 });
             Synth* synth = dynamic_cast<Synth*>(node);
             // TODO: Use sample rate estimate from driver
-            const float sampleOffset = std::max(0., (scheduleTime - currentTime) * m_owner->sampleRate());
+            const double sampleOffset = std::max(0., (scheduleTime - currentTime) * m_owner->sampleRate());
             synth->activate(sampleOffset);
         }
         else if (msg == "/synth/map/input")

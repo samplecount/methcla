@@ -41,7 +41,7 @@ Synth::Synth( Environment& env
     , m_numControlOutputs(numControlOutputs)
     , m_numAudioInputs(numAudioInputs)
     , m_numAudioOutputs(numAudioOutputs)
-    , m_sampleOffset(0.f)
+    , m_sampleOffset(0.)
     , m_synth(synth)
     , m_audioInputConnections(audioInputConnections)
     , m_audioOutputConnections(audioOutputConnections)
@@ -279,7 +279,7 @@ void Synth::mapOutput(Methcla_PortCount index, const AudioBusId& busId, Methcla_
     }
 }
 
-void Synth::activate(float sampleOffset)
+void Synth::activate(double sampleOffset)
 {
     if (m_flags.state == kStateInactive)
     {
@@ -334,8 +334,8 @@ void Synth::doProcess(size_t numFrames)
 //        }
 //    }
     } else if (m_flags.state == kStateActivating) {
-        const size_t sampleOffset = static_cast<size_t>(m_sampleOffset);
-        BOOST_ASSERT( sampleOffset < numFrames );
+        const size_t sampleOffset = std::floor(m_sampleOffset);
+        BOOST_ASSERT( m_sampleOffset < (double)numFrames && sampleOffset < numFrames );
 
         for (size_t i=0; i < numAudioInputs(); i++) {
             AudioInputConnection& x = m_audioInputConnections[i];

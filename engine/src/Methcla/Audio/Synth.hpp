@@ -205,7 +205,7 @@ public:
     }
 
     //* Activate synth.
-    void activate(float sampleOffset=0.f);
+    void activate(double sampleOffset=0.);
 
     /// Sample offset for sample accurate synth scheduling.
     float sampleOffset() const
@@ -244,7 +244,7 @@ private:
     const Methcla_PortCount m_numAudioInputs;
     const Methcla_PortCount m_numAudioOutputs;
     Flags                   m_flags;
-    float                   m_sampleOffset;
+    double                  m_sampleOffset;
     Methcla_Synth*          m_synth;
     AudioInputConnection*   m_audioInputConnections;
     AudioOutputConnection*  m_audioOutputConnections;
