@@ -14,7 +14,7 @@
 
 {-# LANGUAGE TemplateHaskell #-}
 
-import           Control.Arrow ((>>>))
+import           Control.Arrow ((>>>), runKleisli, second)
 import           Control.Lens hiding (Action, (<.>), under)
 import           Data.Char (toLower)
 import           Data.Version (Version(..), showVersion)
@@ -288,13 +288,12 @@ mkRules options = do
             developer <- OSX.getDeveloperPath
             return $ do
                 iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
-                    let toolChain = applyEnv $ OSX.toolChain_IOS developer
+                    let toolChain = applyEnv $ OSX.toolChain_IOS target developer
                         env = mkEnv target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> iosBuildFlags
-                                   $   OSX.buildFlags_IOS target developer
-                    lib <- staticLibrary env target toolChain buildFlags methcla iosSources
+                    lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
                     return lib
                 iphoneosLib <- OSX.universalBinary
                                 iphoneosLibs
@@ -303,14 +302,13 @@ mkRules options = do
 
                 iphonesimulatorLibI386 <- do
                     let platform = OSX.iPhoneSimulator iOS_SDK
-                        cTarget = OSX.target (X86 I386) platform
-                        toolChain = applyEnv $ OSX.toolChain_IOS_Simulator developer
-                        env = mkEnv cTarget
+                        target = OSX.target (X86 I386) platform
+                        toolChain = applyEnv $ OSX.toolChain_IOS_Simulator target developer
+                        env = mkEnv target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> iosBuildFlags
-                                   $   OSX.buildFlags_IOS_Simulator cTarget developer
-                    lib <- staticLibrary env cTarget toolChain buildFlags methcla iosSources
+                    lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
                     return lib
                 let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
                 iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
@@ -334,25 +332,25 @@ mkRules options = do
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
-                                   $   Android.buildFlags ndk target
-                    libmethcla <- staticLibrary (mkEnv target) target toolChain buildFlags
-                            methcla (methclaSources $
+                    libmethcla <- staticLibrary (mkEnv target) target toolChain methcla $
+                                    SourceTree.flags buildFlags $ methclaSources $
                                         SourceTree.files [
                                           "platform/android/opensl_io.c",
-                                          "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
+                                          "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
                     let testBuildFlags =
                                        engineBuildFlags
                                    >>> append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
                                    >>> append staticLibraries [libmethcla]
                                    >>> append libraries ["android", "log", "OpenSLES"]
-                                   $   buildFlags
-                    libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain testBuildFlags
+                                   >>> buildFlags
+                    libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain
                                   "methcla-tests"
                                   -- TODO: Build static library for native_app_glue to link against.
-                                  (SourceTree.append (Android.native_app_glue ndk)
-                                                     (SourceTree.files [ "tests/methcla_tests.cpp"
-                                                                       , "tests/android/main.cpp" ]))
+                                  $ SourceTree.flags testBuildFlags
+                                  $ SourceTree.append (Android.native_app_glue ndk)
+                                                      (SourceTree.files [ "tests/methcla_tests.cpp"
+                                                                       , "tests/android/main.cpp" ])
 
                     let installPath = "libs/android" </> abi </> takeFileName libmethcla
                     installPath ?=> \_ -> copyFile' libmethcla installPath
@@ -368,9 +366,9 @@ mkRules options = do
             sdkVersion <- OSX.getSystemVersion
             libshout <- pkgConfig "shout"
             let platform = OSX.macOSX sdkVersion
-                cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
-                env = mkEnv cTarget
+                target = OSX.target (X86 X86_64) platform
+                toolChain = applyEnv $ OSX.toolChain_MacOSX target developer
+                env = mkEnv target
                 liblame = append systemIncludes ["/usr/local/include"]
                         . append libraryPath ["/usr/local/lib"]
                         . append libraries ["mp3lame"]
@@ -381,20 +379,20 @@ mkRules options = do
                            >>> liblame
                            >>> stdlib "libc++"
                            >>> append libraries ["c++"]
-                           $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
-                lib <- staticLibrary env cTarget toolChain buildFlags
+                lib <- staticLibrary env target toolChain
                             "methcla-icecast"
                           $ methclaSources
+                          $ SourceTree.flags buildFlags
                           $ SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
-                example <- executable env cTarget toolChain
-                            (  apiIncludes
-                             . append userIncludes ["examples/thADDeus/src"]
-                             . append staticLibraries [lib]
-                             $ buildFlags)
+                example <- executable env target toolChain
                             "methcla-icecast-example"
-                            (SourceTree.files [ "examples/icecast/main.cpp"
-                                              , "examples/thADDeus/src/synth.cpp" ])
+                            $ SourceTree.flags (    apiIncludes
+                                                >>> append userIncludes ["examples/thADDeus/src"]
+                                                >>> append staticLibraries [lib]
+                                                >>> buildFlags )
+                            $ SourceTree.files [ "examples/icecast/main.cpp"
+                                               , "examples/thADDeus/src/synth.cpp" ]
                 phony "macosx-icecast" $ need [lib]
                 phony "macosx-icecast-example" $ need [example]
       , do -- macosx-jack
@@ -402,31 +400,27 @@ mkRules options = do
             sdkVersion <- OSX.getSystemVersion
             jackBuildFlags <- pkgConfig "jack"
             let platform = OSX.macOSX sdkVersion
-                cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
-                env = mkEnv cTarget
+                target = OSX.target (X86 X86_64) platform
+                toolChain = applyEnv $ OSX.toolChain_MacOSX target developer
+                env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
                            >>> stdlib "libc++"
                            >>> append libraries ["c++", "m"]
-                           $   OSX.buildFlags_MacOSX cTarget developer
-                build f = f env cTarget toolChain buildFlags
-                            "methcla-jack" (methclaSources $
-                                SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"])
+                build f = f env target toolChain "methcla-jack"
+                            $ SourceTree.flags buildFlags
+                            $ methclaSources $
+                                SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]
             return $ do
                 staticLib <- build staticLibrary
                 sharedLib <- build sharedLibrary
                 phony "macosx-jack" $ need [staticLib]
                 phony "macosx-jack-shared" $ need [sharedLib]
       , do -- tests (macosx)
-            developer <- OSX.getDeveloperPath
-            sdkVersion <- OSX.getSystemVersion
-            let platform = OSX.macOSX sdkVersion
-                cTarget = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain_MacOSX developer
-                env = mkEnv cTarget
+            (target, toolChain) <- fmap (second applyEnv) OSX.getDefaultToolChain
+            let env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
@@ -434,16 +428,15 @@ mkRules options = do
                            >>> stdlib "libc++"
                            >>> append libraries ["c++", "m"]
                            >>> Pro.testBuildFlags
-                           $   OSX.buildFlags_MacOSX cTarget developer
             return $ do
-                result <- executable env cTarget toolChain buildFlags
-                            "methcla-tests"
-                            (methclaSources $ SourceTree.list [
+                result <- executable env target toolChain "methcla-tests"
+                            $ SourceTree.flags buildFlags
+                            $ methclaSources $ SourceTree.list [
                                 SourceTree.files [
                                     "src/Methcla/Audio/IO/DummyDriver.cpp"
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp" ]
-                              , Pro.testSources ])
+                              , Pro.testSources ]
                 phony "macosx-tests" $ do
                     need [result]
                     system' result []
