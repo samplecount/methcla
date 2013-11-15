@@ -38,8 +38,6 @@ namespace Methcla { namespace Audio
 {
     class Environment;
 
-    typedef void CommandData;
-
     typedef void (*PerformFunc)(Environment* env, void* data);
 
     class Group;
@@ -171,12 +169,6 @@ namespace Methcla { namespace Audio
 
     private:
         friend class EnvironmentImpl;
-
-        static void perform_response_ack(Environment*, CommandData*);
-        static void perform_response_nodeId(Environment*, CommandData*);
-        static void perform_response_error(Environment*, CommandData*);
-        static void perform_response_query_external_inputs(Environment*, CommandData*);
-        static void perform_response_query_external_outputs(Environment*, CommandData*);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)

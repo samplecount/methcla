@@ -37,6 +37,21 @@ using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
+static void perform_nrt_free(Environment*, void* data)
+{
+    Methcla::Memory::free(data);
+}
+
+static void perform_rt_free(Environment* env, void* data)
+{
+    env->rtMem().free(data);
+}
+
+template <class T> static void perform_delete(Environment*, void* data)
+{
+    delete static_cast<T>(data);
+}
+
 // OSC request with reference counting.
 namespace Methcla { namespace Audio {
     class Request
@@ -104,14 +119,8 @@ namespace Methcla { namespace Audio {
             {
                 (*m_refs)--;
                 if (*m_refs == 0)
-                    m_env->sendToWorker(perform_delete_request, this);
+                    m_env->sendToWorker(perform_delete<Request*>, this);
             }
-        }
-
-    private:
-        static void perform_delete_request(Environment*, CommandData* data)
-        {
-            delete static_cast<Request*>(data);
         }
     };
 } }
@@ -583,102 +592,6 @@ void Environment::process(Methcla_Time currentTime, size_t numFrames, const samp
 void Environment::setLogFlags(Methcla_EngineLogFlags flags)
 {
     m_impl->m_logFlags = flags;
-}
-
-static void perform_nrt_free(Environment*, CommandData* data)
-{
-    Methcla::Memory::free(data);
-}
-
-static void perform_rt_free(Environment* env, CommandData* data)
-{
-    env->rtMem().free(data);
-}
-
-void Environment::perform_response_ack(Environment* env, CommandData* data)
-{
-    const char address[] = "/ack";
-    const size_t numArgs = 1;
-    const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                                + OSCPP::Size::int32();
-    const int32_t requestId = *static_cast<int32_t*>(data);
-    OSCPP::Client::StaticPacket<packetSize> packet;
-    // OSCPP::Client::DynamicPacket packet(kPacketSize);
-    packet
-        .openMessage(address, numArgs)
-            .int32(requestId)
-        .closeMessage();
-    env->reply(requestId, packet);
-    env->sendFromWorker(perform_rt_free, data);
-}
-
-void Environment::perform_response_nodeId(Environment* env, CommandData* data)
-{
-    const char address[] = "/ack";
-    const size_t numArgs = 2;
-    const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                                + 2 * OSCPP::Size::int32();
-    const int32_t requestId = ((int32_t*)data)[0];
-    const int32_t nodeId = ((int32_t*)data)[1];
-    OSCPP::Client::StaticPacket<packetSize> packet;
-    // OSCPP::Client::DynamicPacket packet(kPacketSize);
-    packet
-        .openMessage(address, numArgs)
-            .int32(requestId)
-            .int32(nodeId)
-        .closeMessage();
-    env->reply(requestId, packet);
-    env->sendFromWorker(perform_rt_free, data);
-}
-
-void Environment::perform_response_query_external_inputs(Environment* env, CommandData* data)
-{
-    // const char address[] = "/ack";
-    // const size_t numBuses = env->numExternalAudioInputs();
-    // const size_t numArgs = 1 + numBuses;
-    // const size_t packetSize = OSCPP::Size::message(address, numArgs) + numArgs * OSCPP::Size::int32();
-    // OSCPP::Client::DynamicPacket packet(packetSize);
-    // packet.openMessage(address, numArgs);
-    // packet.int32(data->response.requestId);
-    // for (size_t i=0; i < numBuses; i++) {
-    //     packet.int32(env->externalAudioInput(i).id());
-    // }
-    // packet.closeMessage();
-    // env->reply(data->response.requestId, packet);
-}
-
-void Environment::perform_response_query_external_outputs(Environment* env, CommandData* data)
-{
-    // const char address[] = "/ack";
-    // const size_t numBuses = env->numExternalAudioOutputs();
-    // const size_t numArgs = 1 + numBuses;
-    // const size_t packetSize = OSCPP::Size::message(address, numArgs) +  numArgs * OSCPP::Size::int32();
-    // OSCPP::Client::DynamicPacket packet(packetSize);
-    // packet.openMessage(address, numArgs);
-    // packet.int32(data->response.requestId);
-    // for (size_t i=0; i < numBuses; i++) {
-    //     packet.int32(env->externalAudioOutput(i).id());
-    // }
-    // packet.closeMessage();
-    // env->reply(data->response.requestId, packet);
-}
-
-void Environment::perform_response_error(Environment* env, CommandData* commandData)
-{
-    EnvironmentImpl::ErrorData* data = (EnvironmentImpl::ErrorData*)commandData;
-    const char address[] = "/error";
-    const size_t numArgs = 2;
-    const size_t packetSize = OSCPP::Size::message(address, numArgs)
-                            + OSCPP::Size::int32()
-                            + OSCPP::Size::string(strlen(data->message));
-    OSCPP::Client::DynamicPacket packet(packetSize);
-    packet
-        .openMessage(address, numArgs)
-            .int32(data->requestId)
-            .string(data->message)
-        .closeMessage();
-    env->reply(data->requestId, packet);
-    env->sendFromWorker(perform_rt_free, data);
 }
 
 void Environment::replyError(Methcla_RequestId requestId, const char* msg)
@@ -1194,7 +1107,7 @@ template <typename T> struct CallbackData
     void* arg;
 };
 
-static void perform_worldCommand(Environment* env, CommandData* data)
+static void perform_worldCommand(Environment* env, void* data)
 {
     CallbackData<Methcla_WorldPerformFunction>* self = (CallbackData<Methcla_WorldPerformFunction>*)data;
     self->func(*env, self->arg);
@@ -1210,7 +1123,7 @@ static void methcla_api_host_perform_command(const Methcla_Host* host, Methcla_W
     env->sendFromWorker(perform_worldCommand, callbackData);
 }
 
-static void perform_hostCommand(Environment* env, CommandData* data)
+static void perform_hostCommand(Environment* env, void* data)
 {
     CallbackData<Methcla_HostPerformFunction>* self = (CallbackData<Methcla_HostPerformFunction>*)data;
     self->func(*env, self->arg);
