@@ -580,8 +580,8 @@ namespace Methcla
 
         virtual NodeIdAllocator& nodeIdAllocator() = 0;
 
-        virtual Packet* allocPacket() = 0;
-        virtual void sendPacket(const Packet* packet) = 0;
+        virtual std::unique_ptr<Packet> allocPacket() = 0;
+        virtual void sendPacket(const std::unique_ptr<Packet>& packet) = 0;
     };
 
     class Request
@@ -593,10 +593,10 @@ namespace Methcla
             bool isClosed : 1;
         };
 
-        EngineInterface*    m_engine;
-        Packet*             m_packet;
-        size_t              m_bundleCount;
-        Flags               m_flags;
+        EngineInterface*        m_engine;
+        std::unique_ptr<Packet> m_packet;
+        size_t                  m_bundleCount;
+        Flags                   m_flags;
 
     private:
         void beginMessage()
@@ -628,11 +628,6 @@ namespace Methcla
         Request(EngineInterface& engine)
             : Request(&engine)
         { }
-
-        ~Request()
-        {
-            delete m_packet;
-        }
 
         Request(const Request&) = delete;
         Request& operator=(const Request&) = delete;
@@ -931,12 +926,12 @@ namespace Methcla
             return m_nodeIds;
         }
 
-        Packet* allocPacket()
+        std::unique_ptr<Packet> allocPacket() override
         {
-            return new Packet(m_packets);
+            return std::unique_ptr<Packet>(new Packet(m_packets));
         }
 
-        void sendPacket(const Packet* packet) override
+        void sendPacket(const std::unique_ptr<Packet>& packet) override
         {
             send(*packet);
         }
