@@ -21,6 +21,9 @@
 #include <string.h>
 #include <stdio.h>
 
+/* M_PI is not in C11 */
+static const double kPi 3.14159265358979323846264338327950288;
+
 typedef enum {
     kSine_freq,
     kSine_amp,
@@ -66,7 +69,7 @@ construct( const Methcla_World* world
 {
     Sine* sine = (Sine*)synth;
     sine->phase = 0.;
-    sine->freqToPhaseInc = 2.*M_PI/methcla_world_samplerate(world);
+    sine->freqToPhaseInc = 2.*kPi/methcla_world_samplerate(world);
     // methcla_world_perform_command(world, print_freq, sine);
 }
 
