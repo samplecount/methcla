@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 /* M_PI is not in C11 */
-static const double kPi 3.14159265358979323846264338327950288;
+static const double kPi = 3.14159265358979323846264338327950288;
 
 typedef enum {
     kSine_freq,
