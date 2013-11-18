@@ -257,12 +257,13 @@ mkBuildPrefix :: Show a => a -> FilePath -> FilePath
 mkBuildPrefix config target = shakeBuildDir </> map toLower (show config) </> target
 
 commonRules :: Rules ()
-commonRules =
+commonRules = do
     fst versionHeader *> \file -> do
         alwaysRerun
         writeFileChanged file (snd versionHeader)
+    phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
 
-mkRules :: Options -> IO (Rules ())
+mkRules :: Options -> [([String], IO (Rules ()))]
 mkRules options = do
     let config = options ^. buildConfig
         mkEnv target = set buildPrefix
@@ -272,55 +273,54 @@ mkRules options = do
         platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
                                 . need . (:[])
-    applyEnv <- toolChainFromEnvironment
-    fmap sequence_ $ sequence [
-        do
-            return $ phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
-      , do -- iphone
-            let iOS_SDK = Version [6,1] []
-                iosBuildFlags =
-                        append userIncludes [ "platform/ios"
-                                            , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
-                    >>> stdlib "libc++"
-                iosSources = methclaSources $ SourceTree.files $
-                                [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
-                                , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
-                                ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
-            developer <- OSX.getDeveloperPath
-            return $ do
-                iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
-                    let toolChain = applyEnv $ OSX.toolChain_IOS target developer
-                        env = mkEnv target
-                        buildFlags =   applyConfiguration config configurations
-                                   >>> commonBuildFlags
-                                   >>> iosBuildFlags
-                    lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
-                    return lib
-                iphoneosLib <- OSX.universalBinary
-                                iphoneosLibs
-                                (mkBuildPrefix config "iphoneos" </> "libmethcla.a")
-                phony "iphoneos" (need [iphoneosLib])
+    [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
+        applyEnv <- toolChainFromEnvironment
+        let iOS_SDK = Version [6,1] []
+            iosBuildFlags =
+                    append userIncludes [ "platform/ios"
+                                        , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
+                >>> stdlib "libc++"
+            iosSources = methclaSources $ SourceTree.files $
+                            [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
+                            , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
+                            ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
+        developer <- OSX.getDeveloperPath
+        return $ do
+            iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
+                let toolChain = applyEnv $ OSX.toolChain_IOS target developer
+                    env = mkEnv target
+                    buildFlags =   applyConfiguration config configurations
+                               >>> commonBuildFlags
+                               >>> iosBuildFlags
+                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
+                return lib
+            iphoneosLib <- OSX.universalBinary
+                            iphoneosLibs
+                            (mkBuildPrefix config "iphoneos" </> "libmethcla.a")
+            phony "iphoneos" (need [iphoneosLib])
 
-                iphonesimulatorLibI386 <- do
-                    let platform = OSX.iPhoneSimulator iOS_SDK
-                        target = OSX.target (X86 I386) platform
-                        toolChain = applyEnv $ OSX.toolChain_IOS_Simulator target developer
-                        env = mkEnv target
-                        buildFlags =   applyConfiguration config configurations
-                                   >>> commonBuildFlags
-                                   >>> iosBuildFlags
-                    lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
-                    return lib
-                let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
-                iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
-                phony "iphonesimulator" (need [iphonesimulatorLib])
+            iphonesimulatorLibI386 <- do
+                let platform = OSX.iPhoneSimulator iOS_SDK
+                    target = OSX.target (X86 I386) platform
+                    toolChain = applyEnv $ OSX.toolChain_IOS_Simulator target developer
+                    env = mkEnv target
+                    buildFlags =   applyConfiguration config configurations
+                               >>> commonBuildFlags
+                               >>> iosBuildFlags
+                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
+                return lib
+            let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
+            iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
+            phony "iphonesimulator" (need [iphonesimulatorLib])
 
-                let universalTarget = "iphone-universal"
-                universalLib <- OSX.universalBinary
-                                    (iphoneosLibs ++ [iphonesimulatorLib])
-                                    (mkBuildPrefix config universalTarget </> "libmethcla.a")
-                phony universalTarget (need [universalLib])
-      , do -- android
+            let universalTarget = "iphone-universal"
+            universalLib <- OSX.universalBinary
+                                (iphoneosLibs ++ [iphonesimulatorLib])
+                                (mkBuildPrefix config universalTarget </> "libmethcla.a")
+            phony universalTarget (need [universalLib])
+        )
+      , (["android", "android-tests"], do
+            applyEnv <- toolChainFromEnvironment
             ndk <- maybe "." id `fmap` lookupEnv "ANDROID_NDK"
             return $ do
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
@@ -362,7 +362,9 @@ mkRules options = do
                     return (installPath, testInstallPath)
                 phony "android" $ need $ map fst libs
                 phony "android-tests" $ need $ map snd libs
-      , do -- macosx-icecast
+        )
+      , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
+            applyEnv <- toolChainFromEnvironment
             developer <- OSX.getDeveloperPath
             sdkVersion <- OSX.getSystemVersion
             libshout <- pkgConfig "shout"
@@ -396,7 +398,9 @@ mkRules options = do
                                                , "examples/thADDeus/src/synth.cpp" ]
                 phony "macosx-icecast" $ need [lib]
                 phony "macosx-icecast-example" $ need [example]
-      , do -- macosx-jack
+            )
+      , (["macosx-jack"], do -- macosx-jack
+            applyEnv <- toolChainFromEnvironment
             developer <- OSX.getDeveloperPath
             sdkVersion <- OSX.getSystemVersion
             jackBuildFlags <- pkgConfig "jack"
@@ -419,7 +423,9 @@ mkRules options = do
                 sharedLib <- build sharedLibrary
                 phony "macosx-jack" $ need [staticLib]
                 phony "macosx-jack-shared" $ need [sharedLib]
-      , do -- tests
+        )
+      , (["test"], do -- tests
+            applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) getDefaultToolChain
             let env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
@@ -441,7 +447,8 @@ mkRules options = do
                 phony "test" $ do
                     need [result]
                     system' result []
-      , do -- tags
+        )
+      , (["tags"], do -- tags
             let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
                 files clause dir = find always clause dir
                 sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
@@ -461,6 +468,7 @@ mkRules options = do
                         (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
                      ++ ["-f", output]
                      ++ ["-L", tagFiles]
+        )
         ]
 
 -- Bump this in order to force a rebuild
@@ -475,7 +483,7 @@ main = do
                       , shakeVerbosity = Normal }
         f xs ts = do
             let os = foldl (.) id xs $ defaultOptions
-            rules <- mkRules os
+            rules <- fmap sequence $ sequence $ map snd $ filter (any (flip elem ts) . fst) $ mkRules os
             return $ Just $ commonRules >> rules >> want ts
     shakeArgsWith shakeOptions' optionDescrs f
 
