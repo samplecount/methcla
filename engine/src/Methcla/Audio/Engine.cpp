@@ -31,7 +31,9 @@
 #include <atomic>
 #include <cstdlib>
 #include <iostream>
+
 #include <oscpp/print.hpp>
+#include <oscpp/util.hpp>
 
 using namespace Methcla;
 using namespace Methcla::Audio;
@@ -50,6 +52,11 @@ static void perform_rt_free(Environment* env, void* data)
 template <class T> static void perform_delete(Environment*, void* data)
 {
     delete static_cast<T>(data);
+}
+
+template <class T> static void perform_perform(Environment* env, void* data)
+{
+    static_cast<T*>(data)->perform(env);
 }
 
 // OSC request with reference counting.
@@ -271,6 +278,16 @@ public:
     // Initialization that has to take place after constructor returns
     void init(const Environment::Options& options);
 
+    ResourceRef<Group> rootNode()
+    {
+        return m_rootNode;
+    }
+
+    Memory::RTMemoryManager& rtMem()
+    {
+        return m_rtMem;
+    }
+
     void registerSynthDef(const Methcla_SynthDef* def);
     const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
 
@@ -281,14 +298,37 @@ public:
     void processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
     void processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
 
-    void sendToWorker(const Environment::Command& cmd)
+    void sendToWorker(PerformFunc f, void* data)
     {
+        Environment::Command cmd;
+        cmd.m_env = m_owner;
+        cmd.m_perform = f;
+        cmd.m_data = data;
         m_worker->sendToWorker(cmd);
     }
 
-    void sendFromWorker(const Environment::Command& cmd)
+    void sendFromWorker(PerformFunc f, void* data)
     {
+        Environment::Command cmd;
+        cmd.m_env = m_owner;
+        cmd.m_perform = f;
+        cmd.m_data = data;
         m_worker->sendFromWorker(cmd);
+    }
+
+    template <class T> void sendToWorker(T* command)
+    {
+        sendToWorker(perform_perform<T>, command);
+    }
+
+    template <class T, class ... Args> void sendToWorker(Args&&...args)
+    {
+        sendToWorker(perform_perform<T>, rtMem().construct<T,Args...>(std::forward<Args>(args)...));
+    }
+
+    template <class T> void sendFromWorker(T* command)
+    {
+        sendFromWorker(perform_perform<T>, command);
     }
 
     void freeNode(NodeId nodeId)
@@ -506,7 +546,7 @@ Environment::operator const Methcla_Host* () const
 
 ResourceRef<Group> Environment::rootNode()
 {
-    return m_impl->m_rootNode;
+    return m_impl->rootNode();
 }
 
 //* Convert environment to Methcla_World.
@@ -547,7 +587,7 @@ AudioBus* Environment::externalAudioInput(AudioBusId id)
 
 Memory::RTMemoryManager& Environment::rtMem()
 {
-    return m_impl->m_rtMem;
+    return m_impl->rtMem();
 }
 
 Epoch Environment::epoch() const
@@ -567,20 +607,12 @@ bool Environment::hasPendingCommands() const
 
 void Environment::sendToWorker(PerformFunc f, void* data)
 {
-    Command cmd;
-    cmd.m_env = this;
-    cmd.m_perform = f;
-    cmd.m_data = data;
-    m_impl->sendToWorker(cmd);
+    m_impl->sendToWorker(f, data);
 }
 
 void Environment::sendFromWorker(PerformFunc f, void* data)
 {
-    Command cmd;
-    cmd.m_env = this;
-    cmd.m_perform = f;
-    cmd.m_data = data;
-    m_impl->sendFromWorker(cmd);
+    m_impl->sendFromWorker(f, data);
 }
 
 void Environment::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
@@ -594,7 +626,7 @@ void Environment::setLogFlags(Methcla_EngineLogFlags flags)
     m_impl->m_logFlags = flags;
 }
 
-void Environment::replyError(Methcla_RequestId requestId, const char* msg)
+void Environment::replyError(Methcla_RequestId, const char* msg)
 {
 #if 0
     EnvironmentImpl::ErrorData* data =
@@ -1048,15 +1080,72 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             synth->controlInput(index) = value;
         }
-        else if (msg == "/query/external_inputs")
+        else if (msg == "/node/tree/statistics")
         {
-    // Methcla_RequestId requestId = args.int32();
-            // sendToWorker(Command(this, perform_response_query_external_inputs, requestId));
-        }
-        else if (msg == "/query/external_outputs")
-        {
-    // Methcla_RequestId requestId = args.int32();
-            // sendToWorker(Command(this, perform_response_query_external_outputs, requestId));
+            class CommandNodeTreeStatistics
+            {
+            public:
+                struct Statistics
+                {
+                    size_t numGroups = 0;
+                    size_t numSynths = 0;
+                };
+
+                static Statistics collectStatistics(const Group* group, Statistics stats=Statistics())
+                {
+                    stats.numGroups++;
+
+                    const Node* cur = group->first();
+
+                    while (cur != nullptr)
+                    {
+                        const Group* subGroup = dynamic_cast<const Group*>(cur);
+                        if (subGroup == nullptr)
+                        {
+                            stats.numSynths++;
+                        }
+                        else
+                        {
+                            stats = collectStatistics(subGroup, stats);
+                        }
+                        cur = cur->next();
+                    }
+
+                    return stats;
+                }
+
+                CommandNodeTreeStatistics(Methcla_RequestId requestId, Statistics stats)
+                    : m_requestId(requestId)
+                    , m_stats(stats)
+                {
+                }
+
+                void perform(Environment* env)
+                {
+                    static const char* address = "/node/tree/statistics";
+                    OSCPP::Client::DynamicPacket packet(
+                        OSCPP::Size::message(address, 2)
+                      + OSCPP::Size::int32(2)
+                    );
+                    packet.openMessage(address, 2);
+                    packet.int32(m_stats.numGroups);
+                    packet.int32(m_stats.numSynths);
+                    packet.closeMessage();
+                    env->reply(m_requestId, packet);
+                    env->sendFromWorker(perform_rt_free, this);
+                }
+
+            private:
+                Methcla_RequestId m_requestId;
+                Statistics        m_stats;
+            };
+
+            Methcla_RequestId requestId = args.int32();
+
+            CommandNodeTreeStatistics::Statistics stats =
+                CommandNodeTreeStatistics::collectStatistics(rootNode().get());
+
+            sendToWorker<CommandNodeTreeStatistics>(requestId, stats);
         }
     }
     catch (std::exception& e)

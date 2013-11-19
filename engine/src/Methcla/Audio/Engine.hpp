@@ -167,9 +167,6 @@ namespace Methcla { namespace Audio
         // Context: RT
         void freeNode(NodeId nodeId);
 
-    private:
-        friend class EnvironmentImpl;
-
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)
         {

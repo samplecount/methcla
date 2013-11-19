@@ -67,3 +67,21 @@ TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
     request.closeBundle();
     REQUIRE_THROWS( request.group(engine->root()) );
 }
+
+TEST_CASE("Node tree should only contain root node after startup", "[engine]")
+{
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine(
+            { Methcla::Option::pluginLibrary(methcla_plugins_sine) }
+        )
+    );
+    // engine->setLogFlags(kMethcla_EngineLogRequests);
+    engine->start();
+    // Methcla::Request request(*engine);
+    // request.openBundle(0.);
+    // request.closeBundle();
+    // REQUIRE_THROWS( request.group(engine->root()) );
+    const Methcla::NodeTreeStatistics stats = engine->getNodeTreeStatistics();
+    REQUIRE( stats.numGroups == 1 );
+    REQUIRE( stats.numSynths == 0 );
+}
