@@ -1087,6 +1087,11 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             public:
                 struct Statistics
                 {
+                    Statistics()
+                        : numGroups(0)
+                        , numSynths(0)
+                    { }
+
                     size_t numGroups = 0;
                     size_t numSynths = 0;
                 };
