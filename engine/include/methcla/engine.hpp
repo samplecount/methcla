@@ -341,7 +341,6 @@ namespace Methcla
         OSCPP::Client::Packet   m_packet;
     };
 
-#if 1
     namespace detail
     {
         class Result
@@ -479,7 +478,6 @@ namespace Methcla
             wait();
         }
     };
-#endif
 
     class Value
     {
