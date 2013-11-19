@@ -46,6 +46,12 @@ namespace Methcla { namespace Audio {
         const Group* parent() const { return m_parent; }
         Group* parent() { return m_parent; }
 
+        const Node* prev() const { return m_prev; }
+        Node* prev() { return m_prev; }
+
+        const Node* next() const { return m_next; }
+        Node* next() { return m_next; }
+
         // Process a number of frames.
         void process(size_t numFrames);
 
