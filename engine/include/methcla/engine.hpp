@@ -856,6 +856,11 @@ namespace Methcla
             return methcla_engine_current_time(m_engine);
         }
 
+        void setLogFlags(Methcla_EngineLogFlags flags)
+        {
+            methcla_engine_set_log_flags(m_engine, flags);
+        }
+
         void bundle(Methcla_Time time, std::function<void(Request&)> func)
         {
             Request request(this);
