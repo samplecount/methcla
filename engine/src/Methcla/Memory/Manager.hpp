@@ -64,7 +64,7 @@ public:
     //* Construct an object in a chunk of memory returned by this allocator.
     template <class T, class ... Args> T* construct(Args&&... args)
     {
-        void* mem = this->alloc(sizeof(T));
+        void* mem = alloc(sizeof(T));
         try
         {
             return new (mem) T(std::forward<Args>(args)...);
