@@ -25,27 +25,23 @@
 
 namespace Methcla { namespace Memory {
 
-class RTMemoryManager
+class Allocator
 {
 public:
-    //* Construct a realtime memory allocator with a capacity of `size` kB.
-    RTMemoryManager(size_t size);
-    ~RTMemoryManager();
-
     //* Allocate memory of `size` bytes.
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    void* alloc(size_t size);
+    virtual void* alloc(size_t size) = 0;
 
     //* Allocate aligned memory of `size` bytes.
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
-    void* allocAligned(Alignment align, size_t size);
+    virtual void* allocAligned(Alignment align, size_t size) = 0;
 
     //* Free memory allocated by this allocator.
-    void free(void* ptr) noexcept;
+    virtual void free(void* ptr) noexcept = 0;
 
     //* Allocate memory for `n` elements of type `T`.
     //
@@ -64,6 +60,30 @@ public:
     {
         return static_cast<T*>(allocAligned(align, n * sizeof(T)));
     }
+
+};
+
+class RTMemoryManager : public Allocator
+{
+public:
+    //* Construct a realtime memory allocator with a capacity of `size` kB.
+    RTMemoryManager(size_t size);
+    ~RTMemoryManager();
+
+    //* Allocate memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    void* alloc(size_t size) override;
+
+    //* Allocate aligned memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    void* allocAligned(Alignment align, size_t size) override;
+
+    //* Free memory allocated by this allocator.
+    void free(void* ptr) noexcept override;
 
 private:
     void*       m_memory;
