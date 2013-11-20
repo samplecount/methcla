@@ -62,7 +62,8 @@ struct Options
 {
     const char* path;
     bool loop;
-    int32_t numFrames;
+    size_t startFrame;
+    size_t numFrames;
 };
 
 static void
@@ -72,7 +73,8 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     Options* options = (Options*)outOptions;
     options->path = argStream.string();
     options->loop = argStream.atEnd() ? false : argStream.int32();
-    options->numFrames = argStream.atEnd() ? -1 : argStream.int32();
+    options->startFrame = argStream.atEnd() ? 0 : std::max(0, argStream.int32());
+    options->numFrames = argStream.atEnd() ? -1 : std::max(0, argStream.int32());
     // std::cout << "Sampler: "
     //           << options->path << " "
     //           << options->loop << " "
@@ -83,6 +85,7 @@ struct LoadMessage
 {
     Synth* synth;
     size_t numChannels;
+    int64_t startFrame;
     int64_t numFrames;
     float* buffer;
     char* path;
@@ -110,16 +113,32 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 
     Methcla_Error err = methcla_host_soundfile_open(host, msg->path, kMethcla_FileModeRead, &file, &info);
 
-    if (err == kMethcla_NoError) {
-        msg->numFrames = msg->numFrames < 0 ? info.frames : std::min<int64_t>(msg->numFrames, info.frames);
+    if (err == kMethcla_NoError)
+    {
+        msg->startFrame = std::min(std::max(0ll, msg->startFrame), info.frames);
+        msg->numFrames = msg->numFrames < 0
+                            ? info.frames - msg->startFrame
+                            : std::min(msg->numFrames, info.frames - msg->startFrame);
         msg->numChannels = info.channels;
-        msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
-        // std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
-        // TODO: error handling
-        if (msg->buffer != nullptr) {
-            size_t numFrames;
-            err = methcla_soundfile_read_float(file, msg->buffer, msg->numFrames, &numFrames);
+
+        if (msg->numFrames > 0)
+        {
+            msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
+            // std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
+
+            // TODO: error handling
+            if (msg->buffer != nullptr)
+            {
+                methcla_soundfile_seek(file, msg->startFrame);
+                size_t numFrames;
+                err = methcla_soundfile_read_float(file, msg->buffer, msg->numFrames, &numFrames);
+            }
         }
+        else
+        {
+            msg->buffer = nullptr;
+        }
+
         methcla_soundfile_close(file);
     }
 
@@ -158,6 +177,7 @@ construct( const Methcla_World* world
     LoadMessage* msg = (LoadMessage*)methcla_world_alloc(world, sizeof(LoadMessage) + strlen(options->path)+1);
     msg->synth = self;
     msg->numChannels = 0;
+    msg->startFrame = options->startFrame;
     msg->numFrames = options->numFrames;
     msg->path = (char*)msg + sizeof(LoadMessage);
     strcpy(msg->path, options->path);
@@ -190,7 +210,8 @@ process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
     float* out1 = self->ports[kSampler_output_1];
 
     float* buffer = self->buffer;
-    if (buffer) {
+    if (buffer)
+    {
         size_t pos = self->pos;
         const size_t left = self->frames - pos;
         const size_t channels = self->channels;
