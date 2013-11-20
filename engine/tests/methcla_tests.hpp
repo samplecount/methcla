@@ -19,6 +19,7 @@
 #include <cmath>
 #include <limits>
 #include <string>
+#include <vector>
 #include <thread>
 
 namespace Methcla { namespace Tests {
@@ -47,6 +48,22 @@ namespace Methcla { namespace Tests {
             // use relative error
             return diff / (absA + absB) < epsilon;
         }
+    }
+
+    template <typename T> double rmsError(const T* a, const T* b, size_t n)
+    {
+        double rms = 0.;
+        for (size_t i=0; i < n; i++)
+        {
+            double x = a[i] - b[i];
+            rms += x * x;
+        }
+        return sqrt(rms/n);
+    }
+
+    template <typename T> double rmsError(const std::vector<T>& a, const std::vector<T>& b)
+    {
+        return rmsError<T>(a.data(), b.data(), std::min(a.size(), b.size()));
     }
 
     inline static void sleepFor(double seconds)
