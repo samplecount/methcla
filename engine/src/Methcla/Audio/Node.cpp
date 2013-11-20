@@ -83,5 +83,9 @@ void Node::setDone(Methcla_NodeDoneFlags flags)
              if (m_next != nullptr)
                  env().freeNode(m_next->id());
         }
+        if (flags & kMethcla_NodeDoneFreeSelf)
+        {
+            env().freeNode(id());
+        }
     }
 }
