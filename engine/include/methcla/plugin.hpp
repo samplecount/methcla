@@ -154,6 +154,12 @@ namespace Methcla { namespace Plugin {
             static_cast<Synth*>(synth)->process(World<Synth>(world), numFrames);
         }
 
+        static void
+        destroy(const Methcla_World* world, Methcla_Synth* synth)
+        {
+            static_cast<Synth*>(synth)->~Synth();
+        }
+
     public:
         void operator()(const Methcla_Host* host, const char* uri)
         {
@@ -168,7 +174,7 @@ namespace Methcla { namespace Plugin {
                 connect,
                 NULL,
                 process,
-                NULL
+                destroy
             };
             methcla_host_register_synthdef(host, &kClass);
         }
