@@ -173,6 +173,9 @@ namespace Methcla { namespace Plugin {
             methcla_host_register_synthdef(host, &kClass);
         }
     };
+
+    template <class Synth, class Options, class Ports> using StaticSynthClass
+        = SynthClass<Synth, StaticSynthOptions<Options,Ports>, Ports>;
 } }
 
 #endif // METHCLA_PLUGIN_HPP_INCLUDED

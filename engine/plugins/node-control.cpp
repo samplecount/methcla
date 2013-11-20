@@ -17,8 +17,6 @@
 
 using namespace Methcla::Plugin;
 
-static const char kDoneAfterUri[] = METHCLA_PLUGINS_DONE_AFTER_URI;
-
 class DoneAfterOptions
 {
 public:
@@ -62,8 +60,7 @@ public:
     }
 };
 
-SynthClass<DoneAfter,StaticSynthOptions<DoneAfterOptions,DoneAfterPorts>,DoneAfterPorts,kDoneAfterUri>
-    kDoneAfterClass;
+StaticSynthClass<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterClass;
 
 static const Methcla_Library library = { NULL, NULL };
 
