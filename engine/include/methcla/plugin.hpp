@@ -127,7 +127,7 @@ namespace Methcla { namespace Plugin {
         }
     };
 
-    template <class Synth, class Options, class PortDescriptor, const char* Uri> class SynthClass
+    template <class Synth, class Options, class PortDescriptor> class SynthClass
     {
         static void
         construct( const Methcla_World* world
@@ -155,11 +155,11 @@ namespace Methcla { namespace Plugin {
         }
 
     public:
-        const Methcla_SynthDef* descriptor()
+        void operator()(const Methcla_Host* host, const char* uri)
         {
-            static const Methcla_SynthDef kDescriptor =
+            static const Methcla_SynthDef kClass =
             {
-                Uri,
+                uri,
                 sizeof(Synth),
                 sizeof(typename Options::Type),
                 Options::configure,
@@ -170,7 +170,7 @@ namespace Methcla { namespace Plugin {
                 process,
                 NULL
             };
-            return &kDescriptor;
+            methcla_host_register_synthdef(host, &kClass);
         }
     };
 } }

@@ -69,9 +69,6 @@ static const Methcla_Library library = { NULL, NULL };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla_Host* host, const char* /* bundlePath */)
 {
-    methcla_host_register_synthdef(
-        host,
-        kDoneAfterClass.descriptor()
-    );
+    kDoneAfterClass(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     return &library;
 }
