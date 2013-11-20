@@ -52,13 +52,18 @@ namespace Methcla { namespace Tests {
 
     template <typename T> double rmsError(const T* a, const T* b, size_t n)
     {
+        if (n == 0)
+            return 0;
+
         double rms = 0.;
+
         for (size_t i=0; i < n; i++)
         {
             double x = a[i] - b[i];
             rms += x * x;
         }
-        return sqrt(rms/n);
+
+        return sqrt(rms/(double)n);
     }
 
     template <typename T> double rmsError(const std::vector<T>& a, const std::vector<T>& b)
