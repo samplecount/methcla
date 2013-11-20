@@ -97,7 +97,8 @@ pluginBuildFlags =
 
 pluginSources :: SourceTree BuildFlags
 pluginSources = SourceTree.files [
-    "plugins/patch-cable.cpp"
+    "plugins/node-control.cpp"
+  , "plugins/patch-cable.cpp"
   , "plugins/sampler.cpp"
   , "plugins/sine.c"
   , "plugins/soundfile_api_dummy.cpp"
