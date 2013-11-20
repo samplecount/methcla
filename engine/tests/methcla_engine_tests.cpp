@@ -25,9 +25,12 @@
 
 #include <methcla/engine.h>
 #include <methcla/engine.hpp>
+#include <methcla/plugins/node-control.h>
 #include <methcla/plugins/sine.h>
 
-#include <chrono>
+#include "methcla_tests.hpp"
+
+using namespace Methcla::Tests;
 
 TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
 {
@@ -51,8 +54,7 @@ TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn'
 
     engine->start();
     engine->free(-1);
-    std::this_thread::sleep_for(std::chrono::duration<double>(0.25));
-    engine->stop();
+    sleepFor(0.25);
 
     REQUIRE(true);
 }
@@ -84,4 +86,85 @@ TEST_CASE("Node tree should only contain root node after startup", "[engine]")
     const Methcla::NodeTreeStatistics stats = engine->getNodeTreeStatistics();
     REQUIRE( stats.numGroups == 1 );
     REQUIRE( stats.numSynths == 0 );
+}
+
+TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
+{
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine(
+            { Methcla::Option::pluginLibrary(methcla_plugins_sine)
+            , Methcla::Option::pluginLibrary(methcla_plugins_node_control) }
+        )
+    );
+
+    engine->start();
+
+    // kNodeDoneFreeSelf
+    {
+        Methcla::Request request(*engine);
+        request.openBundle();
+        request.freeAll(engine->root());
+        Methcla::SynthId synth = request.synth(METHCLA_PLUGINS_DONE_AFTER_URI, engine->root(), {}, { Methcla::Value(1.45e-3f) });
+        request.whenDone(synth, Methcla::kNodeDoneFreeSelf);
+        request.activate(synth);
+        request.closeBundle();
+        request.send();
+    }
+
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 1 );
+    sleepFor(0.1);
+    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
+
+    // kNodeDoneFreePreceeding
+    {
+        Methcla::Request request(*engine);
+        request.openBundle();
+        request.freeAll(engine->root());
+        request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { 440.f, 1.f });
+        Methcla::SynthId synth = request.synth(METHCLA_PLUGINS_DONE_AFTER_URI, engine->root(), {}, { Methcla::Value(0.1f) });
+        request.whenDone(synth, Methcla::kNodeDoneFreePreceeding);
+        request.activate(synth);
+        request.closeBundle();
+        request.send();
+    }
+
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 2 );
+    sleepFor(0.15);
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 1 );
+
+    // kNodeDoneFreePreceeding|kNodeDoneFreeFollowing
+    {
+        Methcla::Request request(*engine);
+        request.openBundle();
+        request.freeAll(engine->root());
+        request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { 440.f, 1.f });
+        Methcla::SynthId synth = request.synth(METHCLA_PLUGINS_DONE_AFTER_URI, engine->root(), {}, { Methcla::Value(0.1f) });
+        request.whenDone(synth, Methcla::kNodeDoneFreePreceeding|Methcla::kNodeDoneFreeFollowing);
+        request.activate(synth);
+        request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { 440.f, 1.f });
+        request.closeBundle();
+        request.send();
+    }
+
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 3 );
+    sleepFor(0.15);
+    CHECK( engine->getNodeTreeStatistics().numSynths == 1 );
+
+    // kNodeDoneFreePreceeding|kNodeDoneFreeSelf|kNodeDoneFreeFollowing
+    {
+        Methcla::Request request(*engine);
+        request.openBundle();
+        request.freeAll(engine->root());
+        request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { 440.f, 1.f });
+        Methcla::SynthId synth = request.synth(METHCLA_PLUGINS_DONE_AFTER_URI, engine->root(), {}, { Methcla::Value(0.033f) });
+        request.whenDone(synth, Methcla::kNodeDoneFreePreceeding|Methcla::kNodeDoneFreeSelf|Methcla::kNodeDoneFreeFollowing);
+        request.activate(synth);
+        request.synth(METHCLA_PLUGINS_SINE_URI, engine->root(), { 440.f, 1.f });
+        request.closeBundle();
+        request.send();
+    }
+
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 3 );
+    sleepFor(0.04);
+    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
 }

@@ -15,9 +15,11 @@
 #ifndef METHCLA_TESTS_HPP_INCLUDED
 #define METHCLA_TESTS_HPP_INCLUDED
 
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <string>
+#include <thread>
 
 namespace Methcla { namespace Tests {
     std::string inputFile(const std::string& name);
@@ -45,6 +47,11 @@ namespace Methcla { namespace Tests {
             // use relative error
             return diff / (absA + absB) < epsilon;
         }
+    }
+
+    inline static void sleepFor(double seconds)
+    {
+        std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
     }
 } }
 
