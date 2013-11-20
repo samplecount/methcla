@@ -212,6 +212,12 @@ namespace Methcla
       , kNodeDoneFreeParent      = kMethcla_NodeDoneFreeParent
     };
 
+    static inline NodeDoneFlags operator|(NodeDoneFlags a, NodeDoneFlags b)
+    {
+      typedef std::underlying_type<NodeDoneFlags>::type enum_type;
+      return static_cast<NodeDoneFlags>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
+    }
+
     struct NodeTreeStatistics
     {
         size_t numGroups;
