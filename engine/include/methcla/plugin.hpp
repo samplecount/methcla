@@ -149,6 +149,12 @@ namespace Methcla { namespace Plugin {
         }
 
         static void
+        activate(const Methcla_World* world, Methcla_Synth* synth)
+        {
+            static_cast<Synth*>(synth)->activate(World<Synth>(world));
+        }
+
+        static void
         process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
         {
             static_cast<Synth*>(synth)->process(World<Synth>(world), numFrames);
@@ -172,7 +178,7 @@ namespace Methcla { namespace Plugin {
                 Options::port_descriptor,
                 construct,
                 connect,
-                NULL,
+                activate,
                 process,
                 destroy
             };

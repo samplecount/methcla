@@ -46,6 +46,10 @@ public:
     {
     }
 
+    void activate(const World<DoneAfter>& world)
+    {
+    }
+
     void process(const World<DoneAfter>& world, size_t numFrames)
     {
         if (!m_done)
