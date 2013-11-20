@@ -99,6 +99,12 @@ namespace Methcla
         {
             throwError(err, methcla_error_message(err));
         }
+
+        template <typename T> T combineFlags(T a, T b)
+        {
+            typedef typename std::underlying_type<T>::type enum_type;
+            return static_cast<T>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
+        }
     }
 
     class NodeId : public detail::Id<NodeId,int32_t>
@@ -202,6 +208,11 @@ namespace Methcla
         kBusMappingReplace  = kMethcla_BusMappingReplace
     };
 
+    static inline BusMappingFlags operator|(BusMappingFlags a, BusMappingFlags b)
+    {
+        return detail::combineFlags<BusMappingFlags>(a, b);
+    }
+
     enum NodeDoneFlags
     {
         kNodeDoneDoNothing       = kMethcla_NodeDoneDoNothing
@@ -214,8 +225,7 @@ namespace Methcla
 
     static inline NodeDoneFlags operator|(NodeDoneFlags a, NodeDoneFlags b)
     {
-      typedef std::underlying_type<NodeDoneFlags>::type enum_type;
-      return static_cast<NodeDoneFlags>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
+        return detail::combineFlags<NodeDoneFlags>(a, b);
     }
 
     struct NodeTreeStatistics
