@@ -12,6 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <methcla/engine.h>
+#include <methcla/engine.hpp>
+#include <methcla/plugins/node-control.h>
+#include <methcla/plugins/sine.h>
+
+#include "methcla_tests.hpp"
+
+using namespace Methcla::Tests;
 #if defined(__clang__)
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-private-field"
@@ -22,15 +30,6 @@
 #if defined(__clang__)
 # pragma clang diagnostic pop
 #endif
-
-#include <methcla/engine.h>
-#include <methcla/engine.hpp>
-#include <methcla/plugins/node-control.h>
-#include <methcla/plugins/sine.h>
-
-#include "methcla_tests.hpp"
-
-using namespace Methcla::Tests;
 
 TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
 {

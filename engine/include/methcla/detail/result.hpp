@@ -17,6 +17,9 @@
 
 #include <methcla/common.h>
 #include <oscpp/server.hpp>
+
+#include <sstream>
+#include <string>
 #include <thread>
 
 namespace Methcla

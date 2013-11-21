@@ -15,6 +15,9 @@
 #ifndef METHCLA_DETAIL_HPP_INCLUDED
 #define METHCLA_DETAIL_HPP_INCLUDED
 
+#include <stdexcept>
+#include <memory>
+
 namespace Methcla
 {
     namespace detail
@@ -74,7 +77,6 @@ namespace Methcla
             typedef typename std::underlying_type<T>::type enum_type;
             return static_cast<T>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
         }
-
     }
 }
 
