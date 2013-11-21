@@ -19,6 +19,9 @@
 #include <methcla/plugin.h>
 #include <methcla/types.h>
 
+#include <methcla/detail.hpp>
+#include <methcla/detail/result.hpp>
+
 #include <exception>
 #include <iostream>
 #include <list>
@@ -45,65 +48,6 @@ namespace Methcla
     inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
     {
         out << "Request (send): " << packet << std::endl;
-    }
-
-    namespace detail
-    {
-        template <class D, typename T> class Id
-        {
-        public:
-            explicit Id(T id)
-                : m_id(id)
-            { }
-            Id(const D& other)
-                : m_id(other.m_id)
-            { }
-
-            T id() const
-            {
-                return m_id;
-            }
-
-            bool operator==(const D& other) const
-            {
-                return m_id == other.m_id;
-            }
-
-            bool operator!=(const D& other) const
-            {
-                return m_id != other.m_id;
-            }
-
-        private:
-            T m_id;
-        };
-
-        inline static void throwError(Methcla_Error err, const char* msg)
-        {
-            if (err != kMethcla_NoError)
-            {
-                if (err == kMethcla_ArgumentError) {
-                    throw std::invalid_argument(msg);
-                } else if (err == kMethcla_LogicError) {
-                    throw std::logic_error(msg);
-                } else if (err == kMethcla_MemoryError) {
-                    throw std::bad_alloc();
-                } else {
-                    throw std::runtime_error(msg);
-                }
-            }
-        }
-
-        inline static void checkReturnCode(Methcla_Error err)
-        {
-            throwError(err, methcla_error_message(err));
-        }
-
-        template <typename T> T combineFlags(T a, T b)
-        {
-            typedef typename std::underlying_type<T>::type enum_type;
-            return static_cast<T>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
-        }
     }
 
     class NodeId : public detail::Id<NodeId,int32_t>
@@ -354,144 +298,6 @@ namespace Methcla
     private:
         PacketPool&             m_pool;
         OSCPP::Client::Packet   m_packet;
-    };
-
-    namespace detail
-    {
-        class Result
-        {
-        public:
-            Result()
-                : m_cond(false)
-                , m_error(kMethcla_NoError)
-            { }
-            Result(const Result&) = delete;
-            Result& operator=(const Result&) = delete;
-
-            inline static void checkResponse(const char* requestAddress, const OSCPP::Server::Message& msg, Result& result)
-            {
-                if (msg == "/error")
-                {
-                    auto args(msg.args());
-                    Methcla_Error errorCode = Methcla_Error(args.int32());
-                    const char* errorMessage = args.string();
-                    result.setError(errorCode, errorMessage);
-                }
-                else if (msg != requestAddress)
-                {
-                    std::stringstream s;
-                    s << "Unexpected response message address " << msg.address() << " (expected " << requestAddress << ")";
-                    result.setError(kMethcla_LogicError, s.str().c_str());
-                }
-            }
-
-        protected:
-            inline void notify()
-            {
-                m_cond = true;
-                m_cond_var.notify_one();
-            }
-
-            inline void wait()
-            {
-                std::unique_lock<std::mutex> lock(m_mutex);
-                while (!m_cond) {
-                    m_cond_var.wait(lock);
-                }
-                if (m_error != kMethcla_NoError) {
-                    throwError(m_error, m_errorMessage.c_str());
-                }
-            }
-
-            void setError(Methcla_Error error, const char* message)
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                if (m_cond)
-                {
-                    m_error = kMethcla_LogicError;
-                    m_errorMessage = "Result error already set";
-                }
-                else
-                {
-                    m_error = error;
-                    m_errorMessage = message;
-                }
-                notify();
-            }
-
-            std::mutex              m_mutex;
-            std::condition_variable m_cond_var;
-            bool                    m_cond;
-            Methcla_Error           m_error;
-            std::string             m_errorMessage;
-        };
-    };
-
-    template <class T> class Result : public detail::Result
-    {
-    public:
-        void set(Methcla_Error error, const char* message)
-        {
-            detail::Result::setError(error, message);
-        }
-
-        void set(const T& value)
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_error == kMethcla_NoError)
-            {
-                if (m_cond)
-                {
-                    m_error = kMethcla_LogicError;
-                    m_errorMessage = "Result already set";
-                }
-                else
-                {
-                    m_value = value;
-                    notify();
-                }
-            }
-        }
-
-        const T& get()
-        {
-            wait();
-            return m_value;
-        }
-
-    private:
-        T m_value;
-    };
-
-    template <> class Result<void> : public detail::Result
-    {
-    public:
-        void set(Methcla_Error error, const char* message)
-        {
-            detail::Result::setError(error, message);
-        }
-
-        void set()
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (m_error == kMethcla_NoError)
-            {
-                if (m_cond)
-                {
-                    m_error = kMethcla_LogicError;
-                    m_errorMessage = "Result already set";
-                }
-                else
-                {
-                    notify();
-                }
-            }
-        }
-
-        void get()
-        {
-            wait();
-        }
     };
 
     class Value
@@ -979,9 +785,9 @@ namespace Methcla
                 .openMessage("/node/tree/statistics", 1)
                 .int32(requestId)
                 .closeMessage();
-            Result<NodeTreeStatistics> result;
+            detail::Result<NodeTreeStatistics> result;
             withRequest(requestId, packet->packet(), [&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                detail::Result::checkResponse("/node/tree/statistics", response, result);
+                result.checkResponse("/node/tree/statistics", response);
                 OSCPP::Server::ArgStream args(response.args());
                 NodeTreeStatistics value;
                 value.numGroups = args.int32();
@@ -1081,9 +887,9 @@ namespace Methcla
 
         void execRequest(const char* requestAddress, Methcla_RequestId requestId, const OSCPP::Client::Packet& request)
         {
-            Result<void> result;
+            detail::Result<void> result;
             withRequest(requestId, request, [requestAddress,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                detail::Result::checkResponse(requestAddress, response, result);
+                result.checkResponse(requestAddress, response);
                 result.set();
             });
             result.get();
