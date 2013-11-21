@@ -72,10 +72,11 @@ TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
 
 TEST_CASE("Node tree should only contain root node after startup", "[engine]")
 {
+    Methcla::EngineOptions options;
+    options.pluginLibraries = { methcla_plugins_sine };
+
     auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(
-            { Methcla::Option::pluginLibrary(methcla_plugins_sine) }
-        )
+        new Methcla::Engine(options)
     );
     // engine->setLogFlags(kMethcla_EngineLogRequests);
     engine->start();

@@ -415,6 +415,54 @@ namespace Methcla
 
     typedef std::vector<std::shared_ptr<Option>> Options;
 
+    template <typename T> class Optional
+    {
+        bool m_isSet;
+        T m_value;
+
+    public:
+        Optional()
+            : m_isSet(false)
+        { }
+        Optional(const T& value)
+            : m_isSet(true)
+            , m_value(value)
+        { }
+        Optional(const Optional& other) = default;
+
+        operator bool() const
+        {
+            return m_isSet;
+        }
+
+        const T& value() const
+        {
+            if (!m_isSet)
+                throw std::logic_error("Optional value unset");
+            return m_value;
+        }
+    };
+
+    class AudioDriverOptions
+    {
+    public:
+        Optional<size_t> bufferSize;
+    };
+
+    class EngineOptions
+    {
+    public:
+        size_t realtimeMemorySize = 1024*1024;
+        size_t maxNumNodes = 1024;
+        size_t maxNumAudioBuses = 1024;
+        size_t maxNumControlBuses = 4096;
+        size_t sampleRate = 44100;
+        size_t blockSize = 64;
+        std::list<Methcla_LibraryFunction> pluginLibraries;
+
+        AudioDriverOptions audioDriver;
+    };
+
     static const Methcla_Time immediately = 0.;
 
     typedef ResourceIdAllocator<int32_t> NodeIdAllocator;
@@ -663,7 +711,46 @@ namespace Methcla
     class Engine : public EngineInterface
     {
     public:
-        Engine(const Options& options={})
+        Engine(const EngineOptions& options=EngineOptions())
+            : m_nodeIds(1, options.maxNumNodes - 1)
+            , m_requestId(kMethcla_Notification+1)
+            , m_packets(8192)
+        {
+            OSCPP::Client::DynamicPacket bundle(8192);
+            bundle.openBundle(1);
+
+            ValueOption("/engine/option/realtimeMemorySize", Value(static_cast<int>(options.realtimeMemorySize)))
+                .put(bundle);
+            ValueOption("/engine/option/maxNumNodes", Value(static_cast<int>(options.maxNumNodes)))
+                .put(bundle);
+            ValueOption("/engine/option/maxNumAudioBuses", Value(static_cast<int>(options.maxNumAudioBuses)))
+                .put(bundle);
+            ValueOption("/engine/option/maxNumControlBuses", Value(static_cast<int>(options.maxNumControlBuses)))
+                .put(bundle);
+            ValueOption("/engine/option/sampleRate", Value(static_cast<int>(options.sampleRate)))
+                .put(bundle);
+            ValueOption("/engine/option/blockSize", Value(static_cast<int>(options.blockSize)))
+                .put(bundle);
+
+            // Engine options
+            for (auto f : options.pluginLibraries)
+            {
+                BlobOption<Methcla_LibraryFunction>("/engine/option/plugin-library", f)
+                    .put(bundle);
+            }
+
+            // Driver options
+            if (options.audioDriver.bufferSize)
+                ValueOption("/engine/option/driver/buffer-size", Value(static_cast<int>(options.audioDriver.bufferSize.value())))
+                    .put(bundle);
+
+            bundle.closeBundle();
+
+            const Methcla_OSCPacket packet = { bundle.data(), bundle.size() };
+            detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
+        }
+
+        Engine(const Options& options)
             : m_nodeIds(1, 1023) // FIXME: Get max number of nodes from options
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
@@ -677,6 +764,7 @@ namespace Methcla
             const Methcla_OSCPacket packet = { .data = bundle.data(), .size = bundle.size() };
             detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
+
         ~Engine()
         {
             methcla_engine_free(m_engine);

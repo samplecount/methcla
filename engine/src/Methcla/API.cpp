@@ -47,7 +47,31 @@ void Methcla::API::parseOptions(
             if (optionPacket.isMessage())
             {
                 OSCPP::Server::Message option(optionPacket);
-                if (option == "/engine/option/plugin-library")
+                if (option == "/engine/option/realtimeMemorySize")
+                {
+                    engineOptions->realtimeMemorySize = std::max(0, option.args().int32());
+                }
+                else if (option == "/engine/option/maxNumNodes")
+                {
+                    engineOptions->maxNumNodes = std::max(0, option.args().int32());
+                }
+                else if (option == "/engine/option/maxNumAudioBuses")
+                {
+                    engineOptions->maxNumAudioBuses = std::max(0, option.args().int32());
+                }
+                else if (option == "/engine/option/maxNumControlBuses")
+                {
+                    engineOptions->maxNumControlBuses = std::max(0, option.args().int32());
+                }
+                else if (option == "/engine/option/sampleRate")
+                {
+                    engineOptions->sampleRate = std::max(1, option.args().int32());
+                }
+                else if (option == "/engine/option/blockSize")
+                {
+                    engineOptions->blockSize = std::max(1, option.args().int32());
+                }
+                else if (option == "/engine/option/plugin-library")
                 {
                     OSCPP::Blob x = option.args().blob();
                     if (x.size() == sizeof(Methcla_LibraryFunction))
