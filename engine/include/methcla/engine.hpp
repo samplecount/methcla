@@ -356,8 +356,8 @@ namespace Methcla
         virtual ~Option() { }
         virtual void put(OSCPP::Client::Packet& packet) const = 0;
 
-        inline static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f);
-        inline static std::shared_ptr<Option> driverBufferSize(int32_t bufferSize);
+        inline static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f) __attribute__ ((deprecated));
+        inline static std::shared_ptr<Option> driverBufferSize(int32_t bufferSize) __attribute__ ((deprecated));
     };
 
     class ValueOption : public Option
@@ -413,7 +413,7 @@ namespace Methcla
         return std::make_shared<ValueOption>("/engine/option/driver/buffer-size", Value(bufferSize));
     }
 
-    typedef std::vector<std::shared_ptr<Option>> Options;
+    typedef std::vector<std::shared_ptr<Option>> Options __attribute__ ((deprecated));
 
     template <typename T> class Optional
     {
