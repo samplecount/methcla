@@ -20,7 +20,6 @@
 #include <methcla/types.h>
 
 #include <exception>
-#include <future>
 #include <iostream>
 #include <list>
 #include <memory>
