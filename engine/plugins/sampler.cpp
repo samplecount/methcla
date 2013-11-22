@@ -115,7 +115,7 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 
     if (err == kMethcla_NoError)
     {
-        msg->startFrame = std::min(std::max(0ll, msg->startFrame), info.frames);
+        msg->startFrame = std::min(std::max(int64_t(0), msg->startFrame), info.frames);
         msg->numFrames = msg->numFrames < 0
                             ? info.frames - msg->startFrame
                             : std::min(msg->numFrames, info.frames - msg->startFrame);
