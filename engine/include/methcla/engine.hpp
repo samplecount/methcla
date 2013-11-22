@@ -188,6 +188,7 @@ namespace Methcla
 
         T alloc()
         {
+            std::lock_guard<std::mutex> lock(m_mutex);
             for (size_t i=m_pos; i < m_bits.size(); i++) {
                 if (!m_bits[i]) {
                     m_bits[i] = true;
@@ -207,6 +208,7 @@ namespace Methcla
 
         void free(T id)
         {
+            std::lock_guard<std::mutex> lock(m_mutex);
             T i = id - m_offset;
             if ((i >= 0) && (i < (T)m_bits.size()) && m_bits[i]) {
                 m_bits[i] = false;
@@ -221,6 +223,8 @@ namespace Methcla
         T                 m_offset;
         std::vector<bool> m_bits;
         size_t            m_pos;
+        // TODO: Make lock configurable?
+        std::mutex        m_mutex;
     };
 
     class PacketPool
