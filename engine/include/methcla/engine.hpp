@@ -177,7 +177,7 @@ namespace Methcla
         size_t numSynths;
     };
 
-    template <typename T> class ResourceIdAllocator
+    template <class Id, typename T> class ResourceIdAllocator
     {
     public:
         ResourceIdAllocator(T minValue, size_t n)
@@ -186,30 +186,30 @@ namespace Methcla
             , m_pos(0)
         { }
 
-        T alloc()
+        Id alloc()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
             for (size_t i=m_pos; i < m_bits.size(); i++) {
                 if (!m_bits[i]) {
                     m_bits[i] = true;
                     m_pos = (i+1) == m_bits.size() ? 0 : i+1;
-                    return T(m_offset + i);
+                    return Id(m_offset + i);
                 }
             }
             for (size_t i=0; i < m_pos; i++) {
                 if (!m_bits[i]) {
                     m_bits[i] = true;
                     m_pos = i+1;
-                    return T(m_offset + i);
+                    return Id(m_offset + i);
                 }
             }
             throw std::runtime_error("No free ids");
         }
 
-        void free(T id)
+        void free(Id id)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            T i = id - m_offset;
+            T i = id.id() - m_offset;
             if ((i >= 0) && (i < (T)m_bits.size()) && m_bits[i]) {
                 m_bits[i] = false;
 #if 0 // Don't throw exception for now
@@ -469,7 +469,7 @@ namespace Methcla
 
     static const Methcla_Time immediately = 0.;
 
-    typedef ResourceIdAllocator<int32_t> NodeIdAllocator;
+    typedef ResourceIdAllocator<NodeId,int32_t> NodeIdAllocator;
 
     class EngineInterface
     {
@@ -594,16 +594,16 @@ namespace Methcla
         {
             beginMessage();
 
-            const int32_t nodeId = m_engine->nodeIdAllocator().alloc();
+            const NodeId nodeId(m_engine->nodeIdAllocator().alloc());
 
             oscPacket()
                 .openMessage("/group/new", 3)
-                    .int32(nodeId)
+                    .int32(nodeId.id())
                     .int32(placement.target().id())
                     .int32(placement.placement())
                 .closeMessage();
 
-            return GroupId(nodeId);
+            return GroupId(nodeId.id());
         }
 
         void freeAll(GroupId group)
@@ -620,12 +620,12 @@ namespace Methcla
         {
             beginMessage();
 
-            const int32_t nodeId = m_engine->nodeIdAllocator().alloc();
+            const NodeId nodeId(m_engine->nodeIdAllocator().alloc());
 
             oscPacket()
                 .openMessage("/synth/new", 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size()))
                     .string(synthDef)
-                    .int32(nodeId)
+                    .int32(nodeId.id())
                     .int32(placement.target().id())
                     .int32(placement.placement())
                     .putArray(controls.begin(), controls.end());
@@ -638,7 +638,7 @@ namespace Methcla
 
                 oscPacket().closeMessage();
 
-            return SynthId(nodeId);
+            return SynthId(nodeId.id());
         }
 
         void activate(SynthId synth)
@@ -1017,15 +1017,15 @@ namespace Methcla
         typedef std::unordered_map<Methcla_RequestId,ResponseHandler> ResponseHandlers;
         typedef std::list<NotificationHandler> NotificationHandlers;
 
-        Methcla_Engine*              m_engine;
-        ResourceIdAllocator<int32_t> m_nodeIds;
-        Methcla_RequestId            m_requestId;
-        std::mutex                   m_requestIdMutex;
-        ResponseHandlers             m_responseHandlers;
-        std::mutex                   m_responseHandlersMutex;
-        NotificationHandlers         m_notificationHandlers;
-        std::mutex                   m_notificationHandlersMutex;
-        PacketPool                   m_packets;
+        Methcla_Engine*         m_engine;
+        NodeIdAllocator         m_nodeIds;
+        Methcla_RequestId       m_requestId;
+        std::mutex              m_requestIdMutex;
+        ResponseHandlers        m_responseHandlers;
+        std::mutex              m_responseHandlersMutex;
+        NotificationHandlers    m_notificationHandlers;
+        std::mutex              m_notificationHandlersMutex;
+        PacketPool              m_packets;
     };
 };
 
