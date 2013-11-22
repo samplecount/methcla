@@ -168,36 +168,23 @@ namespace Methcla { namespace Audio
         void freeNode(NodeId nodeId);
 
         //* Context: NRT
-        void reply(Methcla_RequestId requestId, const void* packet, size_t size)
-        {
-            m_listener(requestId, packet, size);
-        }
-
-        void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet)
-        {
-            reply(requestId, packet.data(), packet.size());
-        }
-
+        void reply(Methcla_RequestId requestId, const void* packet, size_t size);
+        //* Context: NRT
+        void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet);
+        //* Context: NRT
         void replyError(Methcla_RequestId requestId, const char* what);
 
         //* Context: NRT
-        void notify(const void* packet, size_t size)
-        {
-            m_listener(kMethcla_Notification, packet, size);
-        }
-
-        void notify(const OSCPP::Client::Packet& packet)
-        {
-            notify(packet.data(), packet.size());
-        }
+        void notify(const void* packet, size_t size);
+        //* Context: NRT
+        void notify(const OSCPP::Client::Packet& packet);
 
     private:
-        EnvironmentImpl*                        m_impl;
-        const double                            m_sampleRate;
-        const size_t                            m_blockSize;
-        PacketHandler                           m_listener;
-        Methcla_Host                            m_host;
-        Methcla_World                           m_world;
+        EnvironmentImpl*    m_impl;
+        const double        m_sampleRate;
+        const size_t        m_blockSize;
+        Methcla_Host        m_host;
+        Methcla_World       m_world;
     };
 
     class Engine

@@ -235,6 +235,8 @@ public:
 
     Environment*                m_owner;
 
+    PacketHandler               m_listener;
+
     PluginManager               m_plugins;
     Memory::RTMemoryManager     m_rtMem;
 
@@ -272,7 +274,7 @@ public:
 
     std::atomic<Methcla_EngineLogFlags>             m_logFlags;
 
-    EnvironmentImpl(Environment* owner, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
+    EnvironmentImpl(Environment* owner, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
 
     // Initialization that has to take place after constructor returns
@@ -331,20 +333,63 @@ public:
         sendFromWorker(perform_perform<T>, command);
     }
 
+    //* Context: RT
     void freeNode(NodeId nodeId)
     {
         m_nodes.lookup(nodeId)->unlink();
         m_nodes.remove(nodeId);
     }
+
+    //* Context: NRT
+    void reply(Methcla_RequestId requestId, const void* packet, size_t size)
+    {
+        m_listener(requestId, packet, size);
+    }
+
+    //* Context: NRT
+    void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet)
+    {
+        reply(requestId, packet.data(), packet.size());
+    }
+
+    //* Context: NRT
+    void replyError(Methcla_RequestId requestId, const char* what)
+    {
+        // EnvironmentImpl::ErrorData* data =
+        //     (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
+        // data->requestId = requestId;
+        // data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
+        // strcpy(data->message, msg);
+        // sendToWorker(perform_response_error, data);
+        auto& out(std::cerr);
+        out << "ERROR";
+        if (requestId != kMethcla_Notification)
+            out << "[" << requestId << "]";
+        out << ": " << what << std::endl;
+    }
+
+    //* Context: NRT
+    void notify(const void* packet, size_t size)
+    {
+        m_listener(kMethcla_Notification, packet, size);
+    }
+
+    //* Context: NRT
+    void notify(const OSCPP::Client::Packet& packet)
+    {
+        notify(packet.data(), packet.size());
+    }
 };
 
 EnvironmentImpl::EnvironmentImpl(
     Environment* owner,
+    PacketHandler listener,
     const Environment::Options& options,
     Environment::MessageQueue* messageQueue,
     Environment::Worker* worker
     )
     : m_owner(owner)
+    , m_listener(listener)
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(messageQueue == nullptr ? new Utility::MessageQueue<Request*>(kQueueSize) : messageQueue)
     , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, 2))
@@ -504,7 +549,6 @@ static void methcla_api_world_perform_command(const Methcla_World*, Methcla_Host
 Environment::Environment(PacketHandler handler, const Options& options, MessageQueue* messageQueue, Worker* worker)
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
-    , m_listener(handler)
 {
     // Initialize Methcla_Host interface
     m_host = {
@@ -529,7 +573,7 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
         methcla_api_world_synth_done
     };
 
-    m_impl = new EnvironmentImpl(this, options, messageQueue, worker);
+    m_impl = new EnvironmentImpl(this, handler, options, messageQueue, worker);
     m_impl->init(options);
 }
 
@@ -626,22 +670,34 @@ void Environment::setLogFlags(Methcla_EngineLogFlags flags)
     m_impl->m_logFlags = flags;
 }
 
-void Environment::replyError(Methcla_RequestId, const char* msg)
-{
-#if 0
-    EnvironmentImpl::ErrorData* data =
-        (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
-    data->requestId = requestId;
-    data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
-    strcpy(data->message, msg);
-    sendToWorker(perform_response_error, data);
-#endif
-    std::cerr << "ERROR: " << msg << std::endl;
-}
-
 void Environment::freeNode(NodeId nodeId)
 {
     m_impl->freeNode(nodeId);
+}
+
+void Environment::reply(Methcla_RequestId requestId, const void* packet, size_t size)
+{
+    m_impl->reply(requestId, packet, size);
+}
+
+void Environment::reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet)
+{
+    m_impl->reply(requestId, packet);
+}
+
+void Environment::replyError(Methcla_RequestId requestId, const char* msg)
+{
+    m_impl->replyError(requestId, msg);
+}
+
+void Environment::notify(const void* packet, size_t size)
+{
+    m_impl->notify(packet, size);
+}
+
+void Environment::notify(const OSCPP::Client::Packet& packet)
+{
+    m_impl->notify(packet);
 }
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
@@ -716,11 +772,11 @@ void EnvironmentImpl::processRequests(Methcla_EngineLogFlags logFlags, const Met
         }
         catch (OSCPP::Error&)
         {
-            m_owner->replyError(kMethcla_Notification, "Couldn't parse request packet");
+            replyError(kMethcla_Notification, "Couldn't parse request packet");
         }
         catch (std::exception& e)
         {
-            m_owner->replyError(kMethcla_Notification, e.what());
+            replyError(kMethcla_Notification, e.what());
         }
     }
 }
@@ -1157,7 +1213,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
     {
         std::stringstream s;
         s << msg.address() << ": " << e.what();
-        m_owner->replyError(kMethcla_Notification, s.str().c_str());
+        replyError(kMethcla_Notification, s.str().c_str());
     }
 }
 
