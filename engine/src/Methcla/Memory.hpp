@@ -90,7 +90,8 @@ private:
 
 //* Default alignment.
 static const Alignment kDefaultAlignment(
-#if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8))
+    // GCC <= 4.8 doesn't define std::max_align_t
     alignof(max_align_t)
 #else
     alignof(std::max_align_t)
