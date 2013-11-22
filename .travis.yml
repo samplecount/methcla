@@ -1,0 +1,3 @@
+language: haskell
+script:
+  - cd engine && cabal configure && cabal build && ./dist/build/shakefile/shakefile test
