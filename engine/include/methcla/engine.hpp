@@ -904,6 +904,14 @@ namespace Methcla
             send(*packet);
         }
 
+        typedef std::function<bool(const OSCPP::Server::Message&)> NotificationHandler;
+
+        void addNotificationHandler(NotificationHandler handler)
+        {
+            std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
+            m_notificationHandlers.push_back(handler);
+        }
+
     private:
         static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
@@ -913,23 +921,39 @@ namespace Methcla
                 static_cast<Engine*>(data)->handleReply(requestId, packet, size);
         }
 
-        void handleNotification(const void* /* packet */, size_t /* size */)
+        void handleNotification(const void* packet, size_t size)
         {
+            // Parse notification packet
+            OSCPP::Server::Message message(OSCPP::Server::Packet(packet, size));
+
+            // Broadcast notification to handlers
+            std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
+            for (auto it=m_notificationHandlers.begin(); it != m_notificationHandlers.end(); it++)
+            {
+                if ((*it)(message))
+                    it = m_notificationHandlers.erase(it);
+            }
         }
 
         void handleReply(Methcla_RequestId requestId, const void* packet, size_t size)
         {
-            OSCPP::Server::Packet response(packet, size);
-            OSCPP::Server::Message message(response);
-            std::lock_guard<std::mutex> lock(m_callbacksMutex);
-            // look up request id and invoke callback
-            auto it = m_callbacks.find(requestId);
-            if (it != m_callbacks.end()) {
-                try {
+            // Parse response packet
+            OSCPP::Server::Message message(OSCPP::Server::Packet(packet, size));
+
+            // Look up request id and invoke callback
+            std::lock_guard<std::mutex> lock(m_responseHandlersMutex);
+
+            auto it = m_responseHandlers.find(requestId);
+            if (it != m_responseHandlers.end())
+            {
+                try
+                {
                     it->second(requestId, message);
-                    m_callbacks.erase(it);
-                } catch (...) {
-                    m_callbacks.erase(it);
+                    m_responseHandlers.erase(it);
+                }
+                catch (...)
+                {
+                    m_responseHandlers.erase(it);
                     throw;
                 }
             }
@@ -962,18 +986,20 @@ namespace Methcla
             return result;
         }
 
-        void registerResponse(Methcla_RequestId requestId, std::function<void (Methcla_RequestId, const OSCPP::Server::Message&)> callback)
+        typedef std::function<void(Methcla_RequestId, const OSCPP::Server::Message&)> ResponseHandler;
+
+        void addResponseHandler(Methcla_RequestId requestId, ResponseHandler handler)
         {
-            std::lock_guard<std::mutex> lock(m_callbacksMutex);
-            if (m_callbacks.find(requestId) != m_callbacks.end()) {
-                throw std::logic_error("Duplicate request id");
+            std::lock_guard<std::mutex> lock(m_responseHandlersMutex);
+            if (m_responseHandlers.find(requestId) != m_responseHandlers.end()) {
+                throw std::logic_error("Methcla::Engine::addResponseHandler: Duplicate request id");
             }
-            m_callbacks[requestId] = callback;
+            m_responseHandlers[requestId] = handler;
         }
 
-        void withRequest(Methcla_RequestId requestId, const OSCPP::Client::Packet& request, std::function<void (Methcla_RequestId, const OSCPP::Server::Message&)> callback)
+        void withRequest(Methcla_RequestId requestId, const OSCPP::Client::Packet& request, ResponseHandler handler)
         {
-            registerResponse(requestId, callback);
+            addResponseHandler(requestId, handler);
             send(request);
         }
 
@@ -988,13 +1014,18 @@ namespace Methcla
         }
 
     private:
-        Methcla_Engine*     m_engine;
+        typedef std::unordered_map<Methcla_RequestId,ResponseHandler> ResponseHandlers;
+        typedef std::list<NotificationHandler> NotificationHandlers;
+
+        Methcla_Engine*              m_engine;
         ResourceIdAllocator<int32_t> m_nodeIds;
-        Methcla_RequestId   m_requestId;
-        std::mutex          m_requestIdMutex;
-        std::unordered_map<Methcla_RequestId,std::function<void(Methcla_RequestId,const OSCPP::Server::Message&)>> m_callbacks;
-        std::mutex          m_callbacksMutex;
-        PacketPool          m_packets;
+        Methcla_RequestId            m_requestId;
+        std::mutex                   m_requestIdMutex;
+        ResponseHandlers             m_responseHandlers;
+        std::mutex                   m_responseHandlersMutex;
+        NotificationHandlers         m_notificationHandlers;
+        std::mutex                   m_notificationHandlersMutex;
+        PacketPool                   m_packets;
     };
 };
 
