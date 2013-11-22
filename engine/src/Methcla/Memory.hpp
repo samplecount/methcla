@@ -90,7 +90,7 @@ private:
 
 //* Default alignment.
 static const Alignment kDefaultAlignment(
-#if defined(__ANDROID__)
+#if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
     alignof(max_align_t)
 #else
     alignof(std::max_align_t)
