@@ -18,6 +18,8 @@
 #include <methcla/common.h>
 #include <oscpp/server.hpp>
 
+#include <condition_variable>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>

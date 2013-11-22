@@ -18,6 +18,8 @@
 #include "Methcla/Audio.hpp"
 #include "Methcla/Memory.hpp"
 
+#include <cstring>
+
 namespace Methcla { namespace Audio {
 
 class MultiChannelBuffer
