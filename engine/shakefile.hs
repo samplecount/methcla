@@ -439,6 +439,7 @@ mkRules options = do
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> Host.onlyOn Host.OSX libcpp -- FIXME: better check for toolchain variant Clang
+                           >>> Host.onlyOn Host.Linux (append libraries ["pthread", "dl"])
                            >>> libm
                            >>> Pro.testBuildFlags
             return $ do
