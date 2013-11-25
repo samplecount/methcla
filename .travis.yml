@@ -3,4 +3,4 @@ install:
   - cd engine && cabal install --only-dependencies --enable-tests
 script:
   - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
-env: CC=clang
+env: CC=clang TOOLCHAIN_VARIANT=clang
