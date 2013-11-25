@@ -234,9 +234,10 @@ libm :: BuildFlags -> BuildFlags
 libm = append libraries ["m"]
 
 -- | Build with specific C++ standard library (clang).
-libcpp :: BuildFlags -> BuildFlags
-libcpp = append compilerFlags [(Just Cpp, ["-stdlib=lib"++lib])]
-       . append libraries [lib]
+libcpp :: ToolChain -> BuildFlags -> BuildFlags
+libcpp toolChain = onlyFor toolChain LLVM $
+           append compilerFlags [(Just Cpp, ["-stdlib=lib"++lib])]
+         . append libraries [lib]
     where lib = "c++"
 
 rtti :: Bool -> BuildFlags -> BuildFlags
@@ -281,16 +282,17 @@ mkRules options = do
         targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
                                 . need . (:[])
     [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
-        applyEnv <- toolChainFromEnvironment
         let iOS_SDK = Version [6,1] []
-            iosBuildFlags =
+            iosBuildFlags toolChain =
                     append userIncludes [ "platform/ios"
                                         , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
-                >>> libcpp
+                >>> libcpp toolChain
             iosSources = methclaSources $ SourceTree.files $
                             [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
                             , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
                             ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
+
+        applyEnv <- toolChainFromEnvironment
         developer <- OSX.getDeveloperPath
         return $ do
             iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
@@ -298,7 +300,7 @@ mkRules options = do
                     env = mkEnv target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
-                               >>> iosBuildFlags
+                               >>> iosBuildFlags toolChain
                 lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
                 return lib
             iphoneosLib <- OSX.universalBinary
@@ -313,7 +315,7 @@ mkRules options = do
                     env = mkEnv target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
-                               >>> iosBuildFlags
+                               >>> iosBuildFlags toolChain
                 lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
                 return lib
             let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
@@ -332,7 +334,7 @@ mkRules options = do
             return $ do
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
                     let abi = Android.abiString (target ^. targetArch)
-                        toolChain = applyEnv $ Android.toolChain ndk Android.GCC_4_7 target
+                        toolChain = applyEnv $ Android.toolChain ndk GCC (Version [4,7] []) target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/android"]
@@ -387,7 +389,7 @@ mkRules options = do
                            >>> append userIncludes ["platform/icecast"]
                            >>> libshout
                            >>> liblame
-                           >>> libcpp
+                           >>> libcpp toolChain
             return $ do
                 lib <- staticLibrary env target toolChain
                             "methcla-icecast"
@@ -418,7 +420,7 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
-                           >>> libcpp
+                           >>> libcpp toolChain
                            >>> libm
                 build f = f env target toolChain "methcla-jack"
                             $ SourceTree.flags buildFlags
@@ -438,7 +440,7 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
-                           >>> Host.onlyOn Host.OSX libcpp -- FIXME: better check for toolchain variant Clang
+                           >>> libcpp toolChain
                            >>> Host.onlyOn Host.Linux (append libraries ["pthread", "dl"])
                            >>> libm
                            >>> Pro.testBuildFlags
