@@ -24,7 +24,7 @@ import qualified MethclaPro as Pro
 import qualified Paths_shakefile as Package
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
-import           Shakefile.C.Host (getDefaultToolChain)
+import qualified Shakefile.C.Host as Host
 import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
@@ -229,9 +229,15 @@ optionDescrs = [ Option "c" ["config"]
 enable :: Bool -> String -> String -> String
 enable on flag name = flag ++ (if on then "" else "no-") ++ name
 
+-- | Standard math library.
+libm :: BuildFlags -> BuildFlags
+libm = append libraries ["m"]
+
 -- | Build with specific C++ standard library (clang).
-stdlib :: String -> BuildFlags -> BuildFlags
-stdlib libcpp = append compilerFlags [(Just Cpp, ["-stdlib="++libcpp])]
+libcpp :: BuildFlags -> BuildFlags
+libcpp = append compilerFlags [(Just Cpp, ["-stdlib=lib"++lib])]
+       . append libraries [lib]
+    where lib = "c++"
 
 rtti :: Bool -> BuildFlags -> BuildFlags
 rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
@@ -280,7 +286,7 @@ mkRules options = do
             iosBuildFlags =
                     append userIncludes [ "platform/ios"
                                         , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
-                >>> stdlib "libc++"
+                >>> libcpp
             iosSources = methclaSources $ SourceTree.files $
                             [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
                             , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
@@ -381,8 +387,7 @@ mkRules options = do
                            >>> append userIncludes ["platform/icecast"]
                            >>> libshout
                            >>> liblame
-                           >>> stdlib "libc++"
-                           >>> append libraries ["c++"]
+                           >>> libcpp
             return $ do
                 lib <- staticLibrary env target toolChain
                             "methcla-icecast"
@@ -413,8 +418,8 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
-                           >>> stdlib "libc++"
-                           >>> append libraries ["c++", "m"]
+                           >>> libcpp
+                           >>> libm
                 build f = f env target toolChain "methcla-jack"
                             $ SourceTree.flags buildFlags
                             $ methclaSources $
@@ -427,14 +432,14 @@ mkRules options = do
         )
       , (["test"], do -- tests
             applyEnv <- toolChainFromEnvironment
-            (target, toolChain) <- fmap (second applyEnv) getDefaultToolChain
+            (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             let env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
-                           >>> stdlib "libc++"
-                           >>> append libraries ["c++", "m"]
+                           >>> Host.onlyOn Host.OSX libcpp -- FIXME: better check for toolchain variant Clang
+                           >>> libm
                            >>> Pro.testBuildFlags
             return $ do
                 result <- executable env target toolChain "methcla-tests"
