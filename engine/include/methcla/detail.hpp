@@ -74,7 +74,10 @@ namespace Methcla
 
         template <typename T> T combineFlags(T a, T b)
         {
-            typedef typename std::underlying_type<T>::type enum_type;
+            // FIXME: Not available in GCC 4.6, Clang 3.3
+            // typedef typename std::underlying_type<T>::type enum_type;
+            typedef int enum_type;
+            static_assert(sizeof(T) <= sizeof(enum_type), "combineFlags: Cannot determine underlying enum type");
             return static_cast<T>(static_cast<enum_type>(a) | static_cast<enum_type>(b));
         }
     }
