@@ -180,11 +180,35 @@ namespace Methcla
     template <class Id, typename T> class ResourceIdAllocator
     {
     public:
+        class Statistics
+        {
+            size_t m_capacity;
+            size_t m_allocated;
+
+        public:
+            Statistics(size_t capacity, size_t allocated)
+                : m_capacity(capacity)
+                , m_allocated(allocated)
+            { }
+            Statistics(const Statistics&) = default;
+
+            size_t capacity() const { return m_capacity; }
+            size_t allocated() const { return m_allocated; }
+            size_t available() const { return capacity() - allocated(); }
+        };
+
         ResourceIdAllocator(T minValue, size_t n)
             : m_offset(minValue)
             , m_bits(n)
             , m_pos(0)
+            , m_allocated(0)
         { }
+
+        Statistics getStatistics()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            return Statistics(m_bits.size(), m_allocated);
+        }
 
         Id alloc()
         {
@@ -193,6 +217,7 @@ namespace Methcla
                 if (!m_bits[i]) {
                     m_bits[i] = true;
                     m_pos = (i+1) == m_bits.size() ? 0 : i+1;
+                    m_allocated++;
                     return Id(m_offset + i);
                 }
             }
@@ -200,6 +225,7 @@ namespace Methcla
                 if (!m_bits[i]) {
                     m_bits[i] = true;
                     m_pos = i+1;
+                    m_allocated++;
                     return Id(m_offset + i);
                 }
             }
@@ -212,6 +238,7 @@ namespace Methcla
             T i = id.id() - m_offset;
             if ((i >= 0) && (i < (T)m_bits.size()) && m_bits[i]) {
                 m_bits[i] = false;
+                m_allocated--;
 #if 0 // Don't throw exception for now
             } else {
                 throw std::runtime_error("Invalid id");
@@ -223,6 +250,7 @@ namespace Methcla
         T                 m_offset;
         std::vector<bool> m_bits;
         size_t            m_pos;
+        size_t            m_allocated;
         // TODO: Make lock configurable?
         std::mutex        m_mutex;
     };
@@ -910,6 +938,21 @@ namespace Methcla
         {
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
             m_notificationHandlers.push_back(handler);
+        }
+
+        NotificationHandler freeNodeIdHandler(NodeId nodeId)
+        {
+            return [this,nodeId](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended")
+                {
+                    NodeId otherNodeId = NodeId(msg.args().int32());
+                    if (nodeId == otherNodeId)
+                    {
+                        nodeIdAllocator().free(nodeId);
+                        return true;
+                    }
+                }
+            };
         }
 
     private:

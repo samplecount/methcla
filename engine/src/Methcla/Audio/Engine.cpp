@@ -336,8 +336,33 @@ public:
     //* Context: RT
     void freeNode(NodeId nodeId)
     {
+        class CommandNotifyNodeEnded
+        {
+            NodeId m_nodeId;
+
+        public:
+            CommandNotifyNodeEnded(NodeId nodeId)
+                : m_nodeId(nodeId)
+            {}
+
+            void perform(Environment* env)
+            {
+                static const char* address = "/node/ended";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 1)
+                  + OSCPP::Size::int32(1)
+                );
+                packet.openMessage(address, 1);
+                packet.int32(m_nodeId);
+                packet.closeMessage();
+                env->notify(packet);
+                env->sendFromWorker(perform_rt_free, this);
+            }
+        };
+
         m_nodes.lookup(nodeId)->unlink();
         m_nodes.remove(nodeId);
+        sendToWorker<CommandNotifyNodeEnded>(nodeId);
     }
 
     //* Context: NRT

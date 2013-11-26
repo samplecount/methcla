@@ -168,3 +168,34 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
     sleepFor(0.04);
     CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
 }
+
+TEST_CASE("/node/ended notification", "[engine]")
+{
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine(
+            { Methcla::Option::pluginLibrary(methcla_plugins_sine)
+            , Methcla::Option::pluginLibrary(methcla_plugins_node_control) }
+        )
+    );
+
+    engine->start();
+
+    // kNodeDoneFreeSelf
+    {
+        Methcla::Request request(*engine);
+        request.openBundle();
+        request.freeAll(engine->root());
+        Methcla::SynthId synth = request.synth(METHCLA_PLUGINS_DONE_AFTER_URI, engine->root(), {}, { Methcla::Value(1.45e-3f) });
+        request.whenDone(synth, Methcla::kNodeDoneFreeSelf);
+        request.activate(synth);
+        request.closeBundle();
+        // NOTE: Add notification handler before sending request in order to avoid race condition.
+        engine->addNotificationHandler(engine->freeNodeIdHandler(synth));
+        request.send();
+    }
+
+    REQUIRE( engine->getNodeTreeStatistics().numSynths == 1 );
+    sleepFor(0.1);
+    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
+    CHECK( engine->nodeIdAllocator().getStatistics().allocated() == 0 );
+}
