@@ -526,6 +526,8 @@ namespace Methcla
         inline void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
         inline void set(NodeId node, size_t index, double value);
         inline void free(NodeId node);
+
+        inline static std::unique_ptr<OSCPP::Client::Packet> serializeOptions(const EngineOptions& options);
     };
 
     class Request
@@ -818,6 +820,42 @@ namespace Methcla
         request.send();
     }
 
+    std::unique_ptr<OSCPP::Client::Packet> EngineInterface::serializeOptions(const EngineOptions& options)
+    {
+        auto bundle = std::unique_ptr<OSCPP::Client::Packet>(new OSCPP::Client::DynamicPacket(8192));
+
+        bundle->openBundle(1);
+
+        ValueOption("/engine/option/realtimeMemorySize", Value(static_cast<int>(options.realtimeMemorySize)))
+            .put(*bundle);
+        ValueOption("/engine/option/maxNumNodes", Value(static_cast<int>(options.maxNumNodes)))
+            .put(*bundle);
+        ValueOption("/engine/option/maxNumAudioBuses", Value(static_cast<int>(options.maxNumAudioBuses)))
+            .put(*bundle);
+        ValueOption("/engine/option/maxNumControlBuses", Value(static_cast<int>(options.maxNumControlBuses)))
+            .put(*bundle);
+        ValueOption("/engine/option/sampleRate", Value(static_cast<int>(options.sampleRate)))
+            .put(*bundle);
+        ValueOption("/engine/option/blockSize", Value(static_cast<int>(options.blockSize)))
+            .put(*bundle);
+
+        // Engine options
+        for (auto f : options.pluginLibraries)
+        {
+            BlobOption<Methcla_LibraryFunction>("/engine/option/plugin-library", f)
+                .put(*bundle);
+        }
+
+        // Driver options
+        if (options.audioDriver.bufferSize)
+            ValueOption("/engine/option/driver/buffer-size", Value(static_cast<int>(options.audioDriver.bufferSize.value())))
+                .put(*bundle);
+
+        bundle->closeBundle();
+
+        return bundle;
+    }
+
     class Engine : public EngineInterface
     {
     public:
@@ -826,37 +864,8 @@ namespace Methcla
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
         {
-            OSCPP::Client::DynamicPacket bundle(8192);
-            bundle.openBundle(1);
-
-            ValueOption("/engine/option/realtimeMemorySize", Value(static_cast<int>(options.realtimeMemorySize)))
-                .put(bundle);
-            ValueOption("/engine/option/maxNumNodes", Value(static_cast<int>(options.maxNumNodes)))
-                .put(bundle);
-            ValueOption("/engine/option/maxNumAudioBuses", Value(static_cast<int>(options.maxNumAudioBuses)))
-                .put(bundle);
-            ValueOption("/engine/option/maxNumControlBuses", Value(static_cast<int>(options.maxNumControlBuses)))
-                .put(bundle);
-            ValueOption("/engine/option/sampleRate", Value(static_cast<int>(options.sampleRate)))
-                .put(bundle);
-            ValueOption("/engine/option/blockSize", Value(static_cast<int>(options.blockSize)))
-                .put(bundle);
-
-            // Engine options
-            for (auto f : options.pluginLibraries)
-            {
-                BlobOption<Methcla_LibraryFunction>("/engine/option/plugin-library", f)
-                    .put(bundle);
-            }
-
-            // Driver options
-            if (options.audioDriver.bufferSize)
-                ValueOption("/engine/option/driver/buffer-size", Value(static_cast<int>(options.audioDriver.bufferSize.value())))
-                    .put(bundle);
-
-            bundle.closeBundle();
-
-            const Methcla_OSCPacket packet = { bundle.data(), bundle.size() };
+            auto bundle = serializeOptions(options);
+            const Methcla_OSCPacket packet = { bundle->data(), bundle->size() };
             detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
 
