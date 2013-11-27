@@ -493,6 +493,12 @@ namespace Methcla
         std::list<Methcla_LibraryFunction> pluginLibraries;
 
         AudioDriverOptions audioDriver;
+
+        EngineOptions& operator<<(Methcla_LibraryFunction pluginLibrary)
+        {
+            pluginLibraries.push_back(pluginLibrary);
+            return *this;
+        }
     };
 
     static const Methcla_Time immediately = 0.;
