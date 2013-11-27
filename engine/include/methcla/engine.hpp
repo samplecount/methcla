@@ -499,6 +499,8 @@ namespace Methcla
 
     typedef ResourceIdAllocator<NodeId,int32_t> NodeIdAllocator;
 
+    class Request;
+
     class EngineInterface
     {
     public:
@@ -513,6 +515,17 @@ namespace Methcla
 
         virtual std::unique_ptr<Packet> allocPacket() = 0;
         virtual void sendPacket(const std::unique_ptr<Packet>& packet) = 0;
+
+        inline void bundle(Methcla_Time time, std::function<void(Request&)> func);
+
+        inline GroupId group(const NodePlacement& placement);
+        inline void freeAll(GroupId group);
+        inline SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>());
+        inline void activate(SynthId synth);
+        inline void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
+        inline void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
+        inline void set(NodeId node, size_t index, double value);
+        inline void free(NodeId node);
     };
 
     class Request
@@ -740,6 +753,71 @@ namespace Methcla
         }
     };
 
+    void EngineInterface::bundle(Methcla_Time time, std::function<void(Request&)> func)
+    {
+        Request request(this);
+        request.bundle(time, func);
+        request.send();
+    }
+
+    GroupId EngineInterface::group(const NodePlacement& placement)
+    {
+        Request request(this);
+        GroupId result = request.group(placement);
+        request.send();
+        return result;
+    }
+
+    void EngineInterface::freeAll(GroupId group)
+    {
+        Request request(this);
+        request.freeAll(group);
+        request.send();
+    }
+
+    SynthId EngineInterface::synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options)
+    {
+        Request request(this);
+        SynthId result = request.synth(synthDef, placement, controls, options);
+        request.send();
+        return result;
+    }
+
+    void EngineInterface::activate(SynthId synth)
+    {
+        Request request(this);
+        request.activate(synth);
+        request.send();
+    }
+
+    void EngineInterface::mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags)
+    {
+        Request request(this);
+        request.mapInput(synth, index, bus, flags);
+        request.send();
+    }
+
+    void EngineInterface::mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags)
+    {
+        Request request(this);
+        request.mapOutput(synth, index, bus, flags);
+        request.send();
+    }
+
+    void EngineInterface::set(NodeId node, size_t index, double value)
+    {
+        Request request(this);
+        request.set(node, index, value);
+        request.send();
+    }
+
+    void EngineInterface::free(NodeId node)
+    {
+        Request request(this);
+        request.free(node);
+        request.send();
+    }
+
     class Engine : public EngineInterface
     {
     public:
@@ -830,71 +908,6 @@ namespace Methcla
         void setLogFlags(Methcla_EngineLogFlags flags)
         {
             methcla_engine_set_log_flags(m_engine, flags);
-        }
-
-        void bundle(Methcla_Time time, std::function<void(Request&)> func)
-        {
-            Request request(this);
-            request.bundle(time, func);
-            request.send();
-        }
-
-        GroupId group(const NodePlacement& placement)
-        {
-            Request request(this);
-            GroupId result = request.group(placement);
-            request.send();
-            return result;
-        }
-
-        void freeAll(GroupId group)
-        {
-            Request request(this);
-            request.freeAll(group);
-            request.send();
-        }
-
-        SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
-        {
-            Request request(this);
-            SynthId result = request.synth(synthDef, placement, controls, options);
-            request.send();
-            return result;
-        }
-
-        void activate(SynthId synth)
-        {
-            Request request(this);
-            request.activate(synth);
-            request.send();
-        }
-
-        void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
-        {
-            Request request(this);
-            request.mapInput(synth, index, bus, flags);
-            request.send();
-        }
-
-        void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
-        {
-            Request request(this);
-            request.mapOutput(synth, index, bus, flags);
-            request.send();
-        }
-
-        void set(NodeId node, size_t index, double value)
-        {
-            Request request(this);
-            request.set(node, index, value);
-            request.send();
-        }
-
-        void free(NodeId node)
-        {
-            Request request(this);
-            request.free(node);
-            request.send();
         }
 
         NodeTreeStatistics getNodeTreeStatistics()
