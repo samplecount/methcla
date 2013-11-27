@@ -63,6 +63,7 @@ commonBuildFlags = append compilerFlags [
   , (Just Cpp, ["-std=c++0x"])
   , (Nothing, ["-Wall", "-Wextra"])
   , (Just Cpp, ["-fvisibility-inlines-hidden"])
+  , (Nothing, ["-Werror=return-type"])
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
   ]
 
