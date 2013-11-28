@@ -441,8 +441,8 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
-                           >>> libcpp toolChain
-                           >>> Host.onlyOn Host.Linux (append libraries ["pthread", "dl"])
+                           >>> Host.notOn [Host.Linux] (libcpp toolChain)
+                           >>> Host.onlyOn [Host.Linux] (append libraries ["pthread", "dl"])
                            >>> libm
                            >>> Pro.testBuildFlags
             return $ do
