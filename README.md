@@ -2,6 +2,10 @@
 
 Methcla is a light-weight, efficient sound engine for mobile devices, see our [website](http://methc.la) for the full picture.
 
+## Build requirements
+
+* GCC >= 4.7 or Clang >= 3.3
+
 ## Building the sound engine
 
 Our build system is written in Haskell and you need to install at least the [Haskell platform](http://www.haskell.org/platform/) and [cabal-dev](http://hackage.haskell.org/package/cabal-dev) before building Methcla.
