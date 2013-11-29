@@ -57,13 +57,13 @@ Synth::Synth( Environment& env
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
 
     // Validate alignment
-    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
-                                       (uintptr_t)m_audioInputConnections) );
-    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<AudioOutputConnection>::value,
-                                       (uintptr_t)m_audioOutputConnections) );
-    BOOST_ASSERT( Alignment::isAligned(boost::alignment_of<sample_t>::value,
-                                       (uintptr_t)m_controlBuffers) );
-    BOOST_ASSERT( kBufferAlignment.isAligned(m_audioBuffers) );
+    assert( Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
+                                 (uintptr_t)m_audioInputConnections) );
+    assert( Alignment::isAligned(boost::alignment_of<AudioOutputConnection>::value,
+                                 (uintptr_t)m_audioOutputConnections) );
+    assert( Alignment::isAligned(boost::alignment_of<sample_t>::value,
+                                 (uintptr_t)m_controlBuffers) );
+    assert( kBufferAlignment.isAligned(m_audioBuffers) );
 }
 
 Synth::~Synth()
@@ -74,8 +74,7 @@ Synth::~Synth()
 ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
-    BOOST_ASSERT_MSG( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t))
-                    , "Environment.blockSize must be a multiple of kBufferAlignment" );
+    assert( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t)) );
 
     // Get synth options
     const Methcla_SynthOptions* synthOptions = synthDef.configure(options);
@@ -203,7 +202,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions, OSCPP::Server
             case kMethcla_Input: {
                 new (&m_audioInputConnections[audioInputIndex]) AudioInputConnection(audioInputIndex);
                 sample_t* buffer = m_audioBuffers + audioInputIndex * env().blockSize();
-                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
+                assert( kBufferAlignment.isAligned(buffer) );
                 m_synthDef.connect(m_synth, i, buffer);
                 audioInputIndex++;
                 };
@@ -211,7 +210,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions, OSCPP::Server
             case kMethcla_Output: {
                 new (&m_audioOutputConnections[audioOutputIndex]) AudioOutputConnection(audioOutputIndex);
                 sample_t* buffer = m_audioBuffers + (numAudioInputs() + audioOutputIndex) * env().blockSize();
-                BOOST_ASSERT( kBufferAlignment.isAligned(buffer) );
+                assert( kBufferAlignment.isAligned(buffer) );
                 m_synthDef.connect(m_synth, i, buffer);
                 audioOutputIndex++;
                 };
@@ -335,7 +334,7 @@ void Synth::doProcess(size_t numFrames)
 //    }
     } else if (m_flags.state == kStateActivating) {
         const size_t sampleOffset = std::floor(m_sampleOffset);
-        BOOST_ASSERT( m_sampleOffset < (double)numFrames && sampleOffset < numFrames );
+        assert( m_sampleOffset < (double)numFrames && sampleOffset < numFrames );
 
         for (size_t i=0; i < numAudioInputs(); i++) {
             AudioInputConnection& x = m_audioInputConnections[i];

@@ -29,6 +29,7 @@
 #endif
 
 #include <atomic>
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
 
@@ -686,7 +687,7 @@ void Environment::sendFromWorker(PerformFunc f, void* data)
 
 void Environment::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
-    BOOST_ASSERT_MSG( numFrames <= blockSize(), "numFrames exceeds blockSize()" );
+    assert( numFrames <= blockSize() );
     m_impl->process(currentTime, numFrames, inputs, outputs);
 }
 
@@ -814,8 +815,7 @@ void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, const Me
         if (scheduleTime < nextTime)
         {
             ScheduledBundle bundle = m_scheduler.top();
-            BOOST_ASSERT_MSG( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime
-                            , "Scheduled bundle timestamp inconsistency" );
+            assert( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime );
             processBundle(logFlags, bundle.m_request, bundle.m_bundle, scheduleTime, currentTime);
             m_scheduler.pop();
             bundle.m_request->release();

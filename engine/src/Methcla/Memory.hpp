@@ -16,7 +16,7 @@
 #define METHCLA_MEMORY_HPP_INCLUDED
 
 #include <algorithm>
-#include <boost/assert.hpp>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 
@@ -28,7 +28,7 @@ public:
     Alignment(size_t alignment)
         : m_alignment(std::max(alignment, sizeof(void*)))
     {
-        BOOST_ASSERT_MSG( (m_alignment & (m_alignment - 1)) == 0, "Alignment must be a power of two" );
+        assert( (m_alignment & (m_alignment - 1)) == 0 /* Alignment must be a power of two */ );
     }
     Alignment(const Alignment&) = default;
 

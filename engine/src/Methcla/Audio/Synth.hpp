@@ -188,19 +188,19 @@ public:
 
     float controlInput(Methcla_PortCount index) const
     {
-        BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
+        assert( index < numControlInputs() );
         return m_controlBuffers[index];
     }
 
     float& controlInput(Methcla_PortCount index)
     {
-        BOOST_ASSERT_MSG( index < numControlInputs(), "control input index out of range" );
+        assert( index < numControlInputs() );
         return m_controlBuffers[index];
     }
 
     float controlOutput(Methcla_PortCount index) const
     {
-        BOOST_ASSERT_MSG( index < numControlOutputs(), "control output index out of range" );
+        assert( index < numControlOutputs() );
         return m_controlBuffers[numControlInputs() + index];
     }
 

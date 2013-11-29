@@ -17,9 +17,10 @@
 
 #include "Methcla/Memory.hpp"
 
-#include <boost/assert.hpp>
 #include <boost/type_traits/alignment_of.hpp>
 #include <boost/type_traits/aligned_storage.hpp>
+
+#include <cassert>
 #include <cstddef>
 #include <tlsf.h>
 
@@ -120,7 +121,7 @@ protected:
         Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
         chunk->alloc = &allocator;
         void* ptr = chunk + 1;
-        BOOST_ASSERT( Alignment::isAligned(
+        assert( Alignment::isAligned(
             boost::alignment_of<T>::value,
             reinterpret_cast<std::uintptr_t>(ptr)) );
         return ptr;
