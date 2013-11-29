@@ -33,7 +33,7 @@ import           Shakefile.SourceTree (SourceTree)
 import qualified Shakefile.SourceTree as SourceTree
 import           System.Console.GetOpt
 import           System.Directory (removeFile)
-import           System.Environment (lookupEnv)
+import qualified System.Environment as Env
 import           System.FilePath.Find
 
 {-import Debug.Trace-}
@@ -331,7 +331,7 @@ mkRules options = do
         )
       , (["android", "android-tests"], do
             applyEnv <- toolChainFromEnvironment
-            ndk <- maybe "." id `fmap` lookupEnv "ANDROID_NDK"
+            ndk <- Env.getEnv "ANDROID_NDK"
             return $ do
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
                     let abi = Android.abiString (target ^. targetArch)
