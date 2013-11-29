@@ -60,7 +60,7 @@ tlsfDir = externalLibrary "tlsf"
 commonBuildFlags :: BuildFlags -> BuildFlags
 commonBuildFlags = append compilerFlags [
     (Just C, ["-std=c99"])
-  , (Just Cpp, ["-std=c++0x"])
+  , (Just Cpp, ["-std=c++11"])
   , (Nothing, ["-Wall", "-Wextra"])
   , (Just Cpp, ["-fvisibility-inlines-hidden"])
   , (Nothing, ["-Werror=return-type"])
