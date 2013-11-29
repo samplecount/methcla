@@ -25,6 +25,7 @@ import qualified Paths_shakefile as Package
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.Host as Host
+import qualified Shakefile.C.NaCl as NaCl
 import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
@@ -372,6 +373,28 @@ mkRules options = do
                     return (installPath, testInstallPath)
                 phony "android" $ need $ map fst libs
                 phony "android-tests" $ need $ map snd libs
+        )
+      , (["pnacl"], do
+        sdk <- Env.getEnv "NACL_SDK"
+        return $ do
+          let -- target = NaCl.target (NaCl.pepper 31)
+              target = NaCl.target NaCl.canary
+              toolChain = NaCl.toolChain sdk target
+              buildFlags =   applyConfiguration config configurations
+                         >>> commonBuildFlags
+                         >>> libcpp toolChain
+                         -- Currently -std=c++11 produces compile errors, may be fixed with future llvm/libcxx versions.
+                         >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
+                         -- >>> append userIncludes ["platform/android"]
+                         -- >>> rtti True
+                         -- >>> exceptions True
+          libmethcla <- staticLibrary (mkEnv target) target toolChain methcla $
+                              SourceTree.flags buildFlags $ methclaSources $
+                                SourceTree.empty
+                                  -- SourceTree.files [
+                                  --   "platform/android/opensl_io.c",
+                                  --   "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
+          phony "pnacl" $ need [libmethcla]
         )
       , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
             applyEnv <- toolChainFromEnvironment
