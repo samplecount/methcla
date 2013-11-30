@@ -392,6 +392,7 @@ mkRules options = do
                          -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing)]
                          -- >>> stdlib_libcpp toolChain
                          -- Currently -std=c++11 produces compile errors with libc++
+                         >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
           libmethcla <- staticLibrary env target toolChain methcla $
                               SourceTree.flags buildFlags $ methclaSources $
                                 SourceTree.empty
