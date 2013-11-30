@@ -168,9 +168,33 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
     }
 }
 
-#if !defined(__ANDROID__)
+#if !defined(__ANDROID__) && !defined(__native_client__)
 int main(int argc, char* const argv[])
 {
     return Catch::Session().run(argc, argv);
 }
 #endif // defined(__ANDROID__)
+
+// ============================================================================
+// NaCl
+
+#if defined(__native_client__)
+
+#include <stdio.h>
+#include <string.h>
+
+#include "ppapi_simple/ps_main.h"
+
+int test_main(int argc, char* argv[])
+{
+    /* Use ppb_messaging to send "Hello World" to JavaScript. */
+    printf("Hello World STDOUT.\n");
+
+    /* Use ppb_console send "Hello World" to the JavaScript Console. */
+    fprintf(stderr, "Hello World STDERR.\n");
+
+    return 0;
+}
+
+PPAPI_SIMPLE_REGISTER_MAIN(test_main)
+#endif // __native_client__

@@ -240,12 +240,12 @@ libm = append libraries ["m"]
 libpthread :: BuildFlags -> BuildFlags
 libpthread = append libraries ["pthread"]
 
--- | Build with specific C++ standard library (clang).
-libcpp :: ToolChain -> BuildFlags -> BuildFlags
-libcpp toolChain = onlyFor toolChain LLVM $
-           append compilerFlags [(Just Cpp, ["-stdlib=lib"++lib])]
-         . append libraries [lib]
-    where lib = "c++"
+-- | Pass -stdlib=libc++ (clang).
+stdlib_libcpp :: ToolChain -> BuildFlags -> BuildFlags
+stdlib_libcpp toolChain = onlyFor toolChain LLVM $
+    append compilerFlags [(Just Cpp, flags)]
+  . append linkerFlags flags
+  where flags = ["-stdlib=libc++"]
 
 rtti :: Bool -> BuildFlags -> BuildFlags
 rtti on = append compilerFlags [(Just Cpp, [enable on "-f" "rtti"])]
@@ -293,7 +293,7 @@ mkRules options = do
             iosBuildFlags toolChain =
                     append userIncludes [ "platform/ios"
                                         , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
-                >>> libcpp toolChain
+                >>> stdlib_libcpp toolChain
             iosSources = methclaSources $ SourceTree.files $
                             [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
                             , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
@@ -384,30 +384,30 @@ mkRules options = do
         return $ do
           let -- target = NaCl.target (NaCl.pepper 31)
               target = NaCl.target NaCl.canary
-              toolChain = NaCl.toolChain sdk target
+              toolChain = NaCl.toolChain sdk NaCl.Debug target
               env = mkEnv target
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
-                         >>> libcpp toolChain
-                         -- Currently -std=c++11 produces compile errors, may be fixed with future llvm/libcxx versions.
-                         >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
-                         -- >>> append userIncludes ["platform/android"]
-                         -- >>> rtti True
-                         -- >>> exceptions True
+                         -- Not detected by boost for PNaCl platform
+                         -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing)]
+                         -- >>> stdlib_libcpp toolChain
+                         -- Currently -std=c++11 produces compile errors with libc++
           libmethcla <- staticLibrary env target toolChain methcla $
                               SourceTree.flags buildFlags $ methclaSources $
                                 SourceTree.empty
-                                  -- SourceTree.files [
-                                  --   "platform/android/opensl_io.c",
-                                  --   "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
           phony "pnacl" $ need [libmethcla]
           let testBuildFlags =   buildFlags
+                             -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
+                             >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
                              >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                              >>> append systemIncludes [externalLibrary "catch/single_include"]
+                             >>> NaCl.libppapi_simple
+                             >>> NaCl.libnacl_io
+                             >>> NaCl.libppapi_cpp
+                             >>> NaCl.libppapi
                              >>> libpthread
-                             -- >>> libm
                              >>> Pro.testBuildFlags
-          pnacl_test <- executable env target toolChain "pnacl-test"
+          pnacl_test_bc <- executable env target toolChain "pnacl-test"
                             $ SourceTree.flags testBuildFlags
                             $ methclaSources $ SourceTree.list [
                                 SourceTree.files [
@@ -415,6 +415,7 @@ mkRules options = do
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp" ]
                               , Pro.testSources ]
+          pnacl_test <- NaCl.finalize toolChain pnacl_test_bc pnacl_test_bc
           phony "pnacl-test" $ need [pnacl_test]
         )
       , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
@@ -434,7 +435,7 @@ mkRules options = do
                            >>> append userIncludes ["platform/icecast"]
                            >>> libshout
                            >>> liblame
-                           >>> libcpp toolChain
+                           >>> stdlib_libcpp toolChain
             return $ do
                 lib <- staticLibrary env target toolChain
                             "methcla-icecast"
@@ -465,7 +466,7 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
-                           >>> libcpp toolChain
+                           >>> stdlib_libcpp toolChain
                            >>> libm
                 build f = f env target toolChain "methcla-jack"
                             $ SourceTree.flags buildFlags
@@ -485,7 +486,7 @@ mkRules options = do
                            >>> commonBuildFlags
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
-                           >>> Host.notOn [Host.Linux] (libcpp toolChain)
+                           >>> Host.notOn [Host.Linux] (stdlib_libcpp toolChain)
                            >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
                            >>> Pro.testBuildFlags
