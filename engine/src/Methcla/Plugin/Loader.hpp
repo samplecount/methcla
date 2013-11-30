@@ -42,53 +42,6 @@ public:
     virtual std::shared_ptr<Library> open(const std::string& path) = 0;
 };
 
-// These are for systems without dynamically loadable modules.
-
-//* Static binary module.
-class StaticLibrary : public Library
-{
-public:
-    // typedef std::unordered_map<std::string,Methcla_Library_Function> SymbolMap;
-
-    StaticLibrary() = default;
-    StaticLibrary(const StaticLibrary&) = default;
-    // StaticLibrary(const SymbolMap& symbols);
-    StaticLibrary(const std::string& prefix);
-
-    virtual Function symbol(const std::string& name) override;
-
-private:
-    // SymbolMap m_symbols;
-    std::string m_prefix;
-};
-
-//* Static library loader.
-class StaticLoader : public Loader
-{
-public:
-    //* Add a library.
-    void addLibrary(const std::string& path, const std::string& symbolPrefix);
-
-    virtual std::shared_ptr<Library> open(const std::string& path) override;
-
-private:
-    typedef std::unordered_map<std::string,std::shared_ptr<Library>>
-            LibraryMap;
-    LibraryMap m_libs;
-};
-
-// class SymbolTable
-// {
-// public:
-//     SymbolTable(const Methcla_Library_Symbol* symbols);
-//
-//     Function lookup(const std::string& uri, const std::string& name) const;
-//
-// private:
-//     typedef std::unordered_map<std::string,Function> SymbolMap;
-//     SymbolMap m_symbols;
-// };
-
 } }
 
 #endif // METHCLA_PLUGIN_LOADER_HPP_INCLUDED
