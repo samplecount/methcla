@@ -18,6 +18,10 @@
 #include <memory>
 #include <stdexcept>
 
+#if defined(__ANDROID__) || defined(__native_client__)
+#  include <malloc.h>
+#endif
+
 void* Methcla::Memory::alloc(size_t size)
 {
     if (size == 0)
@@ -33,7 +37,7 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
     if (size == 0)
         throw std::invalid_argument("size must be greater than zero");
     void* ptr;
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__native_client__)
     ptr = memalign(align, size);
     if (ptr == nullptr)
         throw std::bad_alloc();
