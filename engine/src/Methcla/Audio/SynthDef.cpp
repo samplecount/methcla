@@ -78,7 +78,7 @@ void SynthDef::destroy(const Methcla_World* world, Methcla_Synth* synth) const
     if (m_descriptor->destroy) m_descriptor->destroy(world, synth);
 }
 
-PluginLibrary::PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin)
+PluginLibrary::PluginLibrary(const Methcla_Library* lib, Memory::shared_ptr<Methcla::Plugin::Library> plugin)
     : m_lib(lib)
     , m_plugin(plugin)
 {
@@ -98,7 +98,7 @@ void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcl
     for (auto f : funcs) {
         const Methcla_Library* lib = f(host, ".");
         if (lib != nullptr) {
-            m_libs.push_back(std::make_shared<PluginLibrary>(lib));
+            m_libs.push_back(Memory::make_shared<PluginLibrary>(lib));
         }
     }
 }

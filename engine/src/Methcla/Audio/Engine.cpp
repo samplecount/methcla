@@ -258,9 +258,9 @@ public:
 
     Scheduler<ScheduledBundle>  m_scheduler;
 
-    std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioInputs;
-    std::vector<std::shared_ptr<ExternalAudioBus>>  m_externalAudioOutputs;
-    std::vector<std::shared_ptr<AudioBus>>          m_internalAudioBuses;
+    std::vector<shared_ptr<ExternalAudioBus>>       m_externalAudioInputs;
+    std::vector<shared_ptr<ExternalAudioBus>>       m_externalAudioOutputs;
+    std::vector<shared_ptr<AudioBus>>               m_internalAudioBuses;
     Epoch                                           m_epoch;
 
     ResourceMap<NodeId,Node>                        m_nodes;
@@ -288,7 +288,7 @@ public:
     }
 
     void registerSynthDef(const Methcla_SynthDef* def);
-    const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+    const shared_ptr<SynthDef>& synthDef(const char* uri) const;
 
     void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
 
@@ -426,7 +426,7 @@ EnvironmentImpl::EnvironmentImpl(
     for (size_t i=0; i < options.numHardwareInputChannels; i++)
     {
         m_externalAudioInputs.push_back(
-            std::make_shared<ExternalAudioBus>(prevEpoch)
+            Memory::make_shared<ExternalAudioBus>(prevEpoch)
         );
     }
 
@@ -434,14 +434,14 @@ EnvironmentImpl::EnvironmentImpl(
     for (size_t i=0; i < options.numHardwareOutputChannels; i++)
     {
         m_externalAudioOutputs.push_back(
-            std::make_shared<ExternalAudioBus>(prevEpoch)
+            Memory::make_shared<ExternalAudioBus>(prevEpoch)
         );
     }
 
     for (size_t i=0; i < options.maxNumAudioBuses; i++)
     {
         m_internalAudioBuses.push_back(
-            std::make_shared<InternalAudioBus>(options.blockSize, prevEpoch)
+            Memory::make_shared<InternalAudioBus>(options.blockSize, prevEpoch)
         );
     }
 }
@@ -987,7 +987,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             NodeId targetId = NodeId(args.int32());
             Methcla_NodePlacement nodePlacement = Methcla_NodePlacement(args.int32());
 
-            const std::shared_ptr<SynthDef> def = m_owner->synthDef(defName);
+            const shared_ptr<SynthDef> def = m_owner->synthDef(defName);
 
             auto synthControls = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
             // FIXME: Cannot be checked before the synth is instantiated.
@@ -1245,16 +1245,16 @@ void Environment::registerSynthDef(const Methcla_SynthDef* def)
 
 void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 {
-    auto synthDef = std::make_shared<SynthDef>(def);
+    auto synthDef = Memory::make_shared<SynthDef>(def);
     m_synthDefs[synthDef->uri()] = synthDef;
 }
 
-const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
+const shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
 {
     return m_impl->synthDef(uri);
 }
 
-const std::shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) const
+const shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) const
 {
     auto it = m_synthDefs.find(uri);
     if (it == m_synthDefs.end())

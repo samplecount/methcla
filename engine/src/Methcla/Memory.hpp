@@ -15,10 +15,29 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
+#include "Methcla/Utility/Macros.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+
+#if !defined(METHCLA_USE_BOOST_SHARED_PTR)
+#  if defined(__native_client__)
+#    define METHCLA_USE_BOOST_SHARED_PTR 1
+# else
+#    define METHCLA_USE_BOOST_SHARED_PTR 0
+# endif
+#endif
+
+#if METHCLA_USE_BOOST_SHARED_PTR
+METHCLA_WITHOUT_WARNINGS_BEGIN
+#  include <boost/shared_ptr.hpp>
+#  include <boost/make_shared.hpp>
+METHCLA_WITHOUT_WARNINGS_END
+#else
+#  include <memory>
+#endif
 
 namespace Methcla { namespace Memory {
 
@@ -124,6 +143,15 @@ template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
     return static_cast<T*>(allocAligned(align, n * sizeof(T)));
 }
 
+#if METHCLA_USE_BOOST_SHARED_PTR
+using boost::shared_ptr;
+using boost::make_shared;
+using boost::allocate_shared;
+#else
+using std::shared_ptr;
+using std::make_shared;
+using std::allocate_shared;
+#endif
 } }
 
 #endif // METHCLA_MEMORY_HPP_INCLUDED

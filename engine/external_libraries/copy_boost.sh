@@ -14,7 +14,7 @@
 # limitations under the License.
 
 boost_src="$1"
-src_dirs="include platform src"
+src_dirs="include platform src tests"
 out_dir="./external_libraries/boost"
 
 mkdir -p "$out_dir"

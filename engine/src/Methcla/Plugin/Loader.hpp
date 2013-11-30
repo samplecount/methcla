@@ -15,7 +15,7 @@
 #ifndef METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 #define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 
-#include <methcla/engine.h>
+#include "Methcla/Memory.hpp"
 
 #include <memory>
 #include <string>
@@ -39,7 +39,7 @@ class Loader
 {
 public:
     virtual ~Loader() { }
-    virtual std::shared_ptr<Library> open(const std::string& path) = 0;
+    virtual Memory::shared_ptr<Library> open(const std::string& path) = 0;
 };
 
 } }

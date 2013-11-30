@@ -35,10 +35,6 @@
 
 #undef __GNUC_VERSION__
 
-#if defined(__pnacl__)
-#undef BOOST_LOCKFREE_NO_HDR_ATOMIC
-#endif
-
 #if defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 #include <boost/atomic.hpp>
 #else

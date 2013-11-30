@@ -18,6 +18,7 @@
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
 
+#include "Methcla/Memory.hpp"
 #include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
@@ -75,7 +76,7 @@ private:
 };
 
 typedef std::unordered_map<const char*,
-                           std::shared_ptr<SynthDef>,
+                           Memory::shared_ptr<SynthDef>,
                            Utility::Hash::cstr_hash,
                            Utility::Hash::cstr_equal>
         SynthDefMap;
@@ -84,15 +85,15 @@ typedef std::unordered_map<const char*,
 class PluginLibrary
 {
 public:
-    PluginLibrary(const Methcla_Library* lib, std::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
+    PluginLibrary(const Methcla_Library* lib, Memory::shared_ptr<Methcla::Plugin::Library> plugin=nullptr);
     ~PluginLibrary();
 
     PluginLibrary(const PluginLibrary&) = delete;
     PluginLibrary& operator=(const PluginLibrary&) = delete;
 
 private:
-    const Methcla_Library*                      m_lib;
-    std::shared_ptr<Methcla::Plugin::Library>   m_plugin;
+    const Methcla_Library*                          m_lib;
+    Memory::shared_ptr<Methcla::Plugin::Library>    m_plugin;
 };
 
 class PluginManager
@@ -110,7 +111,7 @@ public:
     void loadPlugins(const Methcla_Host* host, const std::string& directory);
 
 private:
-    typedef std::list<std::shared_ptr<PluginLibrary>>
+    typedef std::list<Memory::shared_ptr<PluginLibrary>>
             Libraries;
     Libraries m_libs;
 };
