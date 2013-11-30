@@ -855,7 +855,7 @@ static void throwError(Methcla_Error code, const std::string& msg)
     throw Error(code, msg);
 }
 
-static void throwError(Methcla_Error code, std::function<void(std::stringstream&)> func)
+static void throwErrorWith(Methcla_Error code, std::function<void(std::stringstream&)> func)
 {
     std::stringstream stream;
     func(stream);
@@ -882,7 +882,7 @@ Node* lookupNode(EnvironmentImpl* env, const char* prefix, NodeId nodeId)
     Node* node = env->m_nodes.lookup(nodeId).get();
 
     if (node == nullptr)
-        throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
             s << prefix << " " << nodeId << " not found";
         });
 
@@ -895,7 +895,7 @@ template <class T> T* lookupNodeAs(EnvironmentImpl* env, const char* prefix, Nod
 
     T* result = dynamic_cast<T*>(node);
     if (result == nullptr)
-        throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
             s << nodeId << " is not a " << nodeTypeName<T>();
         });
 
@@ -908,14 +908,14 @@ static void addNodeToTarget(Node* target, Node* node, Methcla_NodePlacement node
     {
         case kMethcla_NodePlacementHeadOfGroup:
             if (!target->isGroup())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << target->id() << " is not a group";
                 });
             dynamic_cast<Group*>(target)->addToHead(node);
             break;
         case kMethcla_NodePlacementTailOfGroup:
             if (!target->isGroup())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << target->id() << " is not a group";
                 });
             dynamic_cast<Group*>(target)->addToTail(node);
@@ -953,7 +953,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             auto target = m_nodes.lookup(targetId);
             if (target == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << targetId << " not found";
                 });
 
@@ -968,11 +968,11 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Group " << nodeId << " not found";
                 });
             else if (!node->isGroup())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " is not a group";
                 });
 
@@ -998,7 +998,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             auto target = m_nodes.lookup(targetId);
             if (target == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Target node " << targetId << " not found";
                 });
 
@@ -1017,13 +1017,13 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             }
             catch (OSCPP::UnderrunError&)
             {
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Missing control initializer for synth " << nodeId;
                 });
             }
             catch (OSCPP::ParseError&)
             {
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Invalid control initializer for synth " << nodeId;
                 });
             }
@@ -1033,11 +1033,11 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             NodeId nodeId = NodeId(args.int32());
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Synth " << nodeId << " not found";
                 });
             else if (!node->isSynth())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " is not a synth";
                 });
             Synth* synth = dynamic_cast<Synth*>(node);
@@ -1054,24 +1054,24 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioInputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio bus id " << busId << " out of range";
                 });
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Synth " << nodeId << " not found";
                 });
             else if (!node->isSynth())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " is not a synth";
                 });
 
             Synth* synth = dynamic_cast<Synth*>(node);
 
             if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio input index " << index << " out of range for synth " << nodeId;
                 });
 
@@ -1086,23 +1086,23 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioOutputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio bus id " << busId << " out of range";
                 });
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Synth " << nodeId << " not found";
                 });
             else if (!node->isSynth())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " is not a synth";
                 });
 
             Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio output index " << index << " out of range for synth " << nodeId;
                 });
 
@@ -1121,11 +1121,11 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             // Check node id validity
             if (!m_nodes.contains(nodeId))
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " not found";
                 });
             else if (nodeId == m_rootNode->id())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Cannot free root node " << nodeId;
                 });
 
@@ -1140,18 +1140,18 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             Node* node = m_nodes.lookup(nodeId).get();
             if (node == nullptr)
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " not found";
                 });
             else if (!node->isSynth())
-                throwError(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Node " << nodeId << " is not a synth";
                 });
 
             Synth* synth = dynamic_cast<Synth*>(node);
 
             if ((index < 0) || (index >= (int32_t)synth->numControlInputs()))
-                throwError(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Control input index " << index << " out of range for synth " << nodeId;
                 });
 
