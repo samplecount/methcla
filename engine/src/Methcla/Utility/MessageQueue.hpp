@@ -21,14 +21,14 @@
 #include <thread>
 #include <vector>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#include <boost/lockfree/spsc_queue.hpp>
-#pragma GCC diagnostic pop
-
+#include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
+
+METHCLA_WITHOUT_WARNINGS_BEGIN
+# include <boost/lockfree/spsc_queue.hpp>
+METHCLA_WITHOUT_WARNINGS_END
 
 namespace Methcla { namespace Utility {
 

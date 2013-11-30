@@ -12,19 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "Methcla/Utility/Macros.h"
 #include "methcla_tests.hpp"
 
-#if defined(__clang__)
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wunused-private-field"
-#endif
-
-#define CATCH_CONFIG_RUNNER
-#include <catch.hpp>
-
-#if defined(__clang__)
-# pragma clang diagnostic pop
-#endif
+METHCLA_WITHOUT_WARNINGS_BEGIN
+# define CATCH_CONFIG_RUNNER
+# include <catch.hpp>
+METHCLA_WITHOUT_WARNINGS_END
 
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"

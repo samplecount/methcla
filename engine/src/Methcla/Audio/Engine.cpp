@@ -17,16 +17,12 @@
 #include "Methcla/Audio/Synth.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory/Manager.hpp"
+#include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
-#if defined(__clang__)
-# pragma clang diagnostic push
-# pragma clang diagnostic ignored "-Wunused-parameter"
-#endif
-#include <boost/heap/priority_queue.hpp>
-#if defined(__clang__)
-# pragma clang diagnostic pop
-#endif
+METHCLA_WITHOUT_WARNINGS_BEGIN
+# include <boost/heap/priority_queue.hpp>
+METHCLA_WITHOUT_WARNINGS_END
 
 #include <atomic>
 #include <cassert>
