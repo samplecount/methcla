@@ -161,7 +161,7 @@ namespace Methcla { namespace Plugin {
         }
 
         static void
-        destroy(const Methcla_World* world, Methcla_Synth* synth)
+        destroy(const Methcla_World*, Methcla_Synth* synth)
         {
             static_cast<Synth*>(synth)->~Synth();
         }
