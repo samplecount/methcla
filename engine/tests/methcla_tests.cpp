@@ -24,7 +24,6 @@ METHCLA_WITHOUT_WARNINGS_END
 #include "Methcla/Utility/Semaphore.hpp"
 
 #include <atomic>
-#include <chrono>
 #include <mutex>
 #include <thread>
 
@@ -127,7 +126,6 @@ namespace test_Methcla_Utility_WorkerThread
     {
         void perform()
         {
-            // std::this_thread::sleep_for(std::chrono::seconds(1));
             (*m_count)++;
             m_sem->post();
             Methcla::Test::Log() << "POST " << m_id << "\n";

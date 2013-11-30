@@ -15,12 +15,17 @@
 #ifndef METHCLA_TESTS_HPP_INCLUDED
 #define METHCLA_TESTS_HPP_INCLUDED
 
-#include <chrono>
 #include <cmath>
 #include <limits>
 #include <string>
 #include <vector>
 #include <thread>
+
+#if defined(__native_client__)
+# include <chrono>
+#else
+# include <time.h>
+#endif
 
 namespace Methcla { namespace Tests {
     std::string inputFile(const std::string& name);
@@ -73,7 +78,14 @@ namespace Methcla { namespace Tests {
 
     inline static void sleepFor(double seconds)
     {
+#if defined(__native_client__)
+        struct timespec ts;
+        ts.tv_sec = seconds;
+        ts.tv_nsec = (seconds - ts.tv_sec) * 1e9;
+        nanosleep(&ts, &ts);
+#else
         std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
+#endif
     }
 } }
 
