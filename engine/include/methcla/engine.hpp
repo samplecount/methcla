@@ -387,9 +387,6 @@ namespace Methcla
     public:
         virtual ~Option() { }
         virtual void put(OSCPP::Client::Packet& packet) const = 0;
-
-        inline static std::shared_ptr<Option> pluginLibrary(Methcla_LibraryFunction f) __attribute__ ((deprecated));
-        inline static std::shared_ptr<Option> driverBufferSize(int32_t bufferSize) __attribute__ ((deprecated));
     };
 
     class ValueOption : public Option
@@ -434,18 +431,6 @@ namespace Methcla
         std::string m_key;
         T m_value;
     };
-
-    std::shared_ptr<Option> Option::pluginLibrary(Methcla_LibraryFunction f)
-    {
-        return std::make_shared<BlobOption<Methcla_LibraryFunction>>("/engine/option/plugin-library", f);
-    }
-
-    std::shared_ptr<Option> Option::driverBufferSize(int32_t bufferSize)
-    {
-        return std::make_shared<ValueOption>("/engine/option/driver/buffer-size", Value(bufferSize));
-    }
-
-    typedef std::vector<std::shared_ptr<Option>> Options __attribute__ ((deprecated));
 
     template <typename T> class Optional
     {
@@ -872,21 +857,6 @@ namespace Methcla
         {
             auto bundle = serializeOptions(options);
             const Methcla_OSCPacket packet = { bundle->data(), bundle->size() };
-            detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
-        }
-
-        Engine(const Options& options)
-            : m_nodeIds(1, 1023) // FIXME: Get max number of nodes from options
-            , m_requestId(kMethcla_Notification+1)
-            , m_packets(8192)
-        {
-            OSCPP::Client::DynamicPacket bundle(8192);
-            bundle.openBundle(1);
-            for (auto option : options) {
-                option->put(bundle);
-            }
-            bundle.closeBundle();
-            const Methcla_OSCPacket packet = { .data = bundle.data(), .size = bundle.size() };
             detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
         }
 
