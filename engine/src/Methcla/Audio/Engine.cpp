@@ -269,7 +269,7 @@ public:
     SynthDefMap                                     m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
 
-    std::atomic<Methcla_EngineLogFlags>             m_logFlags;
+    std::atomic<int>                                m_logFlags;
 
     EnvironmentImpl(Environment* owner, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
@@ -420,6 +420,8 @@ EnvironmentImpl::EnvironmentImpl(
     , m_nodes(options.maxNumNodes)
     , m_logFlags(kMethcla_EngineLogDefault)
 {
+    assert( m_logFlags.is_lock_free() );
+
     const Epoch prevEpoch = m_epoch - 1;
 
     m_externalAudioInputs.reserve(options.numHardwareInputChannels);
@@ -689,7 +691,7 @@ void Environment::process(Methcla_Time currentTime, size_t numFrames, const samp
 
 void Environment::setLogFlags(Methcla_EngineLogFlags flags)
 {
-    m_impl->m_logFlags = flags;
+    m_impl->m_logFlags.store(flags);
 }
 
 void Environment::freeNode(NodeId nodeId)
@@ -724,7 +726,7 @@ void Environment::notify(const OSCPP::Client::Packet& packet)
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
-    const Methcla_EngineLogFlags logFlags(m_logFlags);
+    const Methcla_EngineLogFlags logFlags = (Methcla_EngineLogFlags)m_logFlags.load();
     // Process external requests
     processRequests(logFlags, currentTime);
     // Process scheduled requests
