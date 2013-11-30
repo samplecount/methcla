@@ -236,6 +236,10 @@ enable on flag name = flag ++ (if on then "" else "no-") ++ name
 libm :: BuildFlags -> BuildFlags
 libm = append libraries ["m"]
 
+-- | Pthread library.
+libpthread :: BuildFlags -> BuildFlags
+libpthread = append libraries ["pthread"]
+
 -- | Build with specific C++ standard library (clang).
 libcpp :: ToolChain -> BuildFlags -> BuildFlags
 libcpp toolChain = onlyFor toolChain LLVM $
@@ -466,7 +470,7 @@ mkRules options = do
                            >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> Host.notOn [Host.Linux] (libcpp toolChain)
-                           >>> Host.onlyOn [Host.Linux] (append libraries ["pthread", "dl"])
+                           >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
                            >>> Pro.testBuildFlags
             return $ do
