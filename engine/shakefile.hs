@@ -379,12 +379,13 @@ mkRules options = do
                 phony "android" $ need $ map fst libs
                 phony "android-tests" $ need $ map snd libs
         )
-      , (["pnacl"], do
+      , (["pnacl", "pnacl-test"], do
         sdk <- Env.getEnv "NACL_SDK"
         return $ do
           let -- target = NaCl.target (NaCl.pepper 31)
               target = NaCl.target NaCl.canary
               toolChain = NaCl.toolChain sdk target
+              env = mkEnv target
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
                          >>> libcpp toolChain
@@ -393,13 +394,28 @@ mkRules options = do
                          -- >>> append userIncludes ["platform/android"]
                          -- >>> rtti True
                          -- >>> exceptions True
-          libmethcla <- staticLibrary (mkEnv target) target toolChain methcla $
+          libmethcla <- staticLibrary env target toolChain methcla $
                               SourceTree.flags buildFlags $ methclaSources $
                                 SourceTree.empty
                                   -- SourceTree.files [
                                   --   "platform/android/opensl_io.c",
                                   --   "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
           phony "pnacl" $ need [libmethcla]
+          let testBuildFlags =   buildFlags
+                             >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
+                             >>> append systemIncludes [externalLibrary "catch/single_include"]
+                             >>> libpthread
+                             -- >>> libm
+                             >>> Pro.testBuildFlags
+          pnacl_test <- executable env target toolChain "pnacl-test"
+                            $ SourceTree.flags testBuildFlags
+                            $ methclaSources $ SourceTree.list [
+                                SourceTree.files [
+                                    "src/Methcla/Audio/IO/DummyDriver.cpp"
+                                  , "tests/methcla_tests.cpp"
+                                  , "tests/methcla_engine_tests.cpp" ]
+                              , Pro.testSources ]
+          phony "pnacl-test" $ need [pnacl_test]
         )
       , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
             applyEnv <- toolChainFromEnvironment
