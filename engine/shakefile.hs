@@ -143,7 +143,8 @@ methclaSources platformSources =
                 , "src/Methcla/Audio/SynthDef.cpp"
                 , "src/Methcla/Memory/Manager.cpp"
                 , "src/Methcla/Memory.cpp"
-                , "src/Methcla/Plugin/Loader.cpp"
+                -- Disable for now
+                -- , "src/Methcla/Plugin/Loader.cpp"
                 , "src/Methcla/Utility/Semaphore.cpp"
                 ]
             , SourceTree.filesWithDeps
