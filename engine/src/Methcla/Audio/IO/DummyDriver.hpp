@@ -18,6 +18,7 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 
 #include <atomic>
+#include <cstdint>
 #include <thread>
 
 namespace Methcla { namespace Audio { namespace IO
@@ -41,19 +42,21 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void start() override;
         virtual void stop() override;
 
+        virtual Methcla_Time currentTime() const override;
+
     private:
         void run();
 
     private:
-        double              m_sampleRate;
-        size_t              m_numInputs;
-        size_t              m_numOutputs;
-        size_t              m_bufferSize;
-        sample_t**          m_inputBuffers;
-        sample_t**          m_outputBuffers;
-        std::atomic<bool>   m_continue;
-        std::atomic<double> m_time;
-        std::thread         m_thread;
+        double                  m_sampleRate;
+        size_t                  m_numInputs;
+        size_t                  m_numOutputs;
+        size_t                  m_bufferSize;
+        sample_t**              m_inputBuffers;
+        sample_t**              m_outputBuffers;
+        std::atomic<bool>       m_continue;
+        std::atomic<uint64_t>   m_time;
+        std::thread             m_thread;
     };
 }; }; };
 
