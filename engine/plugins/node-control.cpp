@@ -36,17 +36,17 @@ class DoneAfter
     bool   m_done;
 
 public:
-    DoneAfter(const World<DoneAfter>& world, const Methcla_SynthDef* synthDef, const DoneAfterOptions& options)
+    DoneAfter(const World<DoneAfter>& world, const Methcla_SynthDef*, const DoneAfterOptions& options)
         : m_numFramesLeft((double)options.m_seconds * world.sampleRate())
         , m_done(false)
     {
     }
 
-    void connect(DoneAfterPorts::Port port, void* data)
+    void connect(DoneAfterPorts::Port, void*)
     {
     }
 
-    void activate(const World<DoneAfter>& world)
+    void activate(const World<DoneAfter>&)
     {
     }
 
