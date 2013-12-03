@@ -180,21 +180,51 @@ int main(int argc, char* const argv[])
 
 #if defined(__native_client__)
 
-#include <stdio.h>
-#include <string.h>
+#include <string>
 
-#include "ppapi_simple/ps_main.h"
+#include "ppapi/cpp/instance.h"
+#include "ppapi/cpp/module.h"
+#include "ppapi/cpp/var.h"
 
-int test_main(int argc, char* argv[])
+#include "catch_callback_reporter.hpp"
+
+class MethclaTestInstance : public pp::Instance
 {
-    /* Use ppb_messaging to send "Hello World" to JavaScript. */
-    printf("Hello World STDOUT.\n");
+public:
+    explicit MethclaTestInstance(PP_Instance instance)
+        : pp::Instance(instance)
+    {}
 
-    /* Use ppb_console send "Hello World" to the JavaScript Console. */
-    fprintf(stderr, "Hello World STDERR.\n");
+private:
+    virtual void HandleMessage(const pp::Var& var_message)
+    {
+        Catch::registerCallbackReporter("callback", [this](const std::string& str) {
+            this->PostMessage(pp::Var(str));
+        });
 
-    return 0;
+        Catch::Session session; // There must be exactly once instance
+        session.configData().reporterName = "callback";
+        session.run();
+    }
+};
+
+class MethclaTestModule : public pp::Module
+{
+public:
+    virtual ~MethclaTestModule() {}
+
+    virtual pp::Instance* CreateInstance(PP_Instance instance)
+    {
+        return new MethclaTestInstance(instance);
+    }
+};
+
+namespace pp
+{
+    Module* CreateModule()
+    {
+        return new MethclaTestModule();
+    }
 }
 
-PPAPI_SIMPLE_REGISTER_MAIN(test_main)
 #endif // __native_client__
