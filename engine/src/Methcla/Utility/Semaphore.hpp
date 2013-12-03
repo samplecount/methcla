@@ -17,7 +17,7 @@
 
 namespace Methcla { namespace Utility {
 
-namespace detail { struct SemaphoreImpl; }
+namespace detail { class SemaphoreImpl; }
 
 class Semaphore
 {
@@ -33,7 +33,7 @@ public:
     bool tryWait();
 
 private:
-    struct detail::SemaphoreImpl* m_impl;
+    detail::SemaphoreImpl* m_impl;
 };
 
 } }

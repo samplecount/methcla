@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "Methcla/Utility/Semaphore.hpp"
+
+#if !METHCLA_USE_CV_SEMAPHORE
+
 #include "Methcla/Exception.hpp"
 #include "zix/sem.h"
 
@@ -22,7 +25,7 @@
 using namespace Methcla;
 using namespace Methcla::Utility;
 
-struct Methcla::Utility::detail::SemaphoreImpl : public ZixSem { };
+class Methcla::Utility::detail::SemaphoreImpl : public ZixSem { };
 
 static void check(ZixStatus status)
 {
@@ -72,3 +75,86 @@ bool Semaphore::tryWait()
 {
     return zix_sem_try_wait(m_impl);
 }
+
+#else // !METHCLA_USE_CV_SEMAPHORE
+#include <mutex>
+#include <condition_variable>
+
+namespace Methcla { namespace Utility {
+
+    namespace detail
+    {
+        class SemaphoreImpl
+        {
+            std::mutex m_mutex;
+            std::condition_variable m_condVar;
+            unsigned m_count;
+
+        public:
+            SemaphoreImpl(unsigned count)
+                : m_count(count)
+            {}
+
+            void post()
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_count++;
+                m_condVar.notify_one();
+            }
+
+            void wait()
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+
+                while (m_count == 0) {
+                    m_condVar.wait(lock);
+                }
+
+                m_count--;
+            }
+
+            bool tryWait()
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+
+                if (m_count > 0)
+                {
+                    m_count--;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+       };
+   }
+
+   Semaphore::Semaphore(unsigned initial)
+   {
+       m_impl = new detail::SemaphoreImpl(initial);
+   }
+
+   Semaphore::~Semaphore()
+   {
+       delete m_impl;
+   }
+
+   void Semaphore::post()
+   {
+       m_impl->post();
+   }
+
+   void Semaphore::wait()
+   {
+       m_impl->wait();
+   }
+
+   bool Semaphore::tryWait()
+   {
+       return m_impl->tryWait();
+   }
+
+} }
+
+#endif // !METHCLA_USE_CV_SEMAPHORE
