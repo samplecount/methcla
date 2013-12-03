@@ -278,6 +278,17 @@ commonRules = do
         writeFileChanged file (snd versionHeader)
     phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
 
+copyTo :: FilePath -> FilePath -> Rules FilePath
+copyTo output input = do
+  output ?=> \_ -> copyFile' input output
+  return output
+
+phonyFiles :: String -> [FilePath] -> Rules ()
+phonyFiles target = phony target . need
+
+phonyFile :: String -> FilePath -> Rules ()
+phonyFile target input = phonyFiles target [input]
+
 mkRules :: Options -> [([String], IO (Rules ()))]
 mkRules options = do
     let config = options ^. buildConfig
@@ -389,7 +400,7 @@ mkRules options = do
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
                          -- Not detected by boost for PNaCl platform
-                         -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing)]
+                         -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
                          -- >>> stdlib_libcpp toolChain
                          -- Currently -std=c++11 produces compile errors with libc++
                          >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
@@ -402,22 +413,27 @@ mkRules options = do
                              >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
                              >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
                              >>> append systemIncludes [externalLibrary "catch/single_include"]
-                             >>> NaCl.libppapi_simple
-                             >>> NaCl.libnacl_io
+                             -- >>> NaCl.libppapi_simple
+                             -- >>> NaCl.libnacl_io
                              >>> NaCl.libppapi_cpp
                              >>> NaCl.libppapi
                              >>> libpthread
                              >>> Pro.testBuildFlags
-          pnacl_test_bc <- executable env target toolChain "pnacl-test"
+          pnacl_test_bc <- executable env target toolChain "methcla-pnacl-tests"
                             $ SourceTree.flags testBuildFlags
                             $ methclaSources $ SourceTree.list [
                                 SourceTree.files [
                                     "src/Methcla/Audio/IO/DummyDriver.cpp"
                                   , "tests/methcla_tests.cpp"
-                                  , "tests/methcla_engine_tests.cpp" ]
+                                  , "tests/methcla_engine_tests.cpp"
+                                  ]
                               , Pro.testSources ]
           pnacl_test <- NaCl.finalize toolChain pnacl_test_bc pnacl_test_bc
-          phony "pnacl-test" $ need [pnacl_test]
+          pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
+                                        (pnacl_test `replaceExtension` "nmf")
+          pnacl_test' <- copyTo ("tests/pnacl" </> takeFileName pnacl_test) pnacl_test
+          pnacl_test_nmf' <- copyTo ("tests/pnacl" </> takeFileName pnacl_test_nmf) pnacl_test_nmf
+          phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
         )
       , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
             applyEnv <- toolChainFromEnvironment
