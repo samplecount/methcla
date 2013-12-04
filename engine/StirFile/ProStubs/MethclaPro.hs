@@ -12,23 +12,29 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-module MethclaPro where
+module MethclaPro (
+    isPresent
+  , engineSources
+  , pluginSources
+  , testSources
+  , testBuildFlags
+) where
 
-import           Shakefile.C (BuildFlags)
+import           Shakefile.C (BuildFlags, Target)
 import           Shakefile.SourceTree (SourceTree)
 import qualified Shakefile.SourceTree as SourceTree
 
 isPresent :: Bool
 isPresent = False
 
-engineSources :: SourceTree BuildFlags
-engineSources = SourceTree.empty
+engineSources :: Target -> SourceTree BuildFlags
+engineSources = const SourceTree.empty
 
-pluginSources :: [(String, SourceTree BuildFlags)]
-pluginSources = []
+pluginSources :: Target -> [(String, SourceTree BuildFlags)]
+pluginSources = const []
 
-testSources :: SourceTree BuildFlags
-testSources = SourceTree.empty
+testSources :: Target -> SourceTree BuildFlags
+testSources = const SourceTree.empty
 
-testBuildFlags :: BuildFlags -> BuildFlags
-testBuildFlags = id
+testBuildFlags :: Target -> BuildFlags -> BuildFlags
+testBuildFlags = const id

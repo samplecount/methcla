@@ -111,8 +111,8 @@ pluginSources = SourceTree.files [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaSources :: SourceTree BuildFlags -> SourceTree BuildFlags
-methclaSources platformSources =
+methclaSources :: Target -> SourceTree BuildFlags -> SourceTree BuildFlags
+methclaSources target platformSources =
     SourceTree.list [
         -- sourceFlags boostBuildFlags [ SourceTree.files $
         --   under (boostDir </> "libs") [
@@ -152,11 +152,11 @@ methclaSources platformSources =
                 -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
               -- platform dependent
             , platformSources
-            , Pro.engineSources
+            , Pro.engineSources target
           -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
           --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
-      , SourceTree.flags pluginBuildFlags $ SourceTree.list $ [pluginSources] ++ map snd Pro.pluginSources
+      , SourceTree.flags pluginBuildFlags $ SourceTree.list $ [pluginSources] ++ map snd (Pro.pluginSources target)
       ]
 
 methcla :: String
@@ -242,7 +242,7 @@ libpthread = append libraries ["pthread"]
 
 -- | Pass -stdlib=libc++ (clang).
 stdlib_libcpp :: ToolChain -> BuildFlags -> BuildFlags
-stdlib_libcpp toolChain = onlyFor toolChain LLVM $
+stdlib_libcpp toolChain = onlyIf (toolChain ^. variant == LLVM) $
     append compilerFlags [(Just Cpp, flags)]
   . append linkerFlags flags
   where flags = ["-stdlib=libc++"]
@@ -302,24 +302,25 @@ mkRules options = do
     [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
         let iOS_SDK = Version [6,1] []
             iosBuildFlags toolChain =
-                    append userIncludes [ "platform/ios"
+                    OSX.iphoneos_version_min (Version [5,0] [])
+                >>> append userIncludes [ "platform/ios"
                                         , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
                 >>> stdlib_libcpp toolChain
-            iosSources = methclaSources $ SourceTree.files $
-                            [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
-                            , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
-                            ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
+            iosSources target = methclaSources target $ SourceTree.files $
+                                [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
+                                , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
+                                ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
 
         applyEnv <- toolChainFromEnvironment
         developer <- OSX.getDeveloperPath
         return $ do
             iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
-                let toolChain = applyEnv $ OSX.toolChain_IOS target developer
+                let toolChain = applyEnv $ OSX.toolChain developer target
                     env = mkEnv target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
+                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags (iosSources target))
                 return lib
             iphoneosLib <- OSX.universalBinary
                             iphoneosLibs
@@ -329,12 +330,12 @@ mkRules options = do
             iphonesimulatorLibI386 <- do
                 let platform = OSX.iPhoneSimulator iOS_SDK
                     target = OSX.target (X86 I386) platform
-                    toolChain = applyEnv $ OSX.toolChain_IOS_Simulator target developer
+                    toolChain = applyEnv $ OSX.toolChain developer target
                     env = mkEnv target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags iosSources)
+                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags (iosSources target))
                 return lib
             let iphonesimulatorLib = mkBuildPrefix config "iphonesimulator" </> "libmethcla.a"
             iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
@@ -361,7 +362,7 @@ mkRules options = do
                                    >>> exceptions True
                                    >>> execStack False
                     libmethcla <- staticLibrary (mkEnv target) target toolChain methcla $
-                                    SourceTree.flags buildFlags $ methclaSources $
+                                    SourceTree.flags buildFlags $ methclaSources target $
                                         SourceTree.files [
                                           "platform/android/opensl_io.c",
                                           "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
@@ -405,29 +406,31 @@ mkRules options = do
                          -- Currently -std=c++11 produces compile errors with libc++
                          >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
           libmethcla <- staticLibrary env target toolChain methcla $
-                              SourceTree.flags buildFlags $ methclaSources $
+                              SourceTree.flags buildFlags $ methclaSources target $
                                 SourceTree.empty
           phony "pnacl" $ need [libmethcla]
           let testBuildFlags =   buildFlags
                              -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                              >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
-                             >>> append defines [("METHCLA_USE_DUMMY_DRIVER", Nothing)]
+                             >>> append defines [ ("METHCLA_USE_DUMMY_DRIVER", Nothing)
+                                                , ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>") ]
                              >>> append systemIncludes [externalLibrary "catch/single_include"]
                              -- >>> NaCl.libppapi_simple
                              -- >>> NaCl.libnacl_io
                              >>> NaCl.libppapi_cpp
                              >>> NaCl.libppapi
                              >>> libpthread
-                             >>> Pro.testBuildFlags
+                             >>> Pro.testBuildFlags target
           pnacl_test_bc <- executable env target toolChain "methcla-pnacl-tests"
                             $ SourceTree.flags testBuildFlags
-                            $ methclaSources $ SourceTree.list [
+                            $ methclaSources target $ SourceTree.list [
                                 SourceTree.files [
                                     "src/Methcla/Audio/IO/DummyDriver.cpp"
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp"
+                                  , "tests/test_runner_nacl.cpp"
                                   ]
-                              , Pro.testSources ]
+                              , Pro.testSources target ]
           pnacl_test <- NaCl.finalize toolChain pnacl_test_bc pnacl_test_bc
           pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
                                         (pnacl_test `replaceExtension` "nmf")
@@ -442,7 +445,7 @@ mkRules options = do
             libshout <- pkgConfig "shout"
             let platform = OSX.macOSX sdkVersion
                 target = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain_MacOSX target developer
+                toolChain = applyEnv $ OSX.toolChain developer target
                 env = mkEnv target
                 liblame = append systemIncludes ["/usr/local/include"]
                         . append libraryPath ["/usr/local/lib"]
@@ -456,7 +459,7 @@ mkRules options = do
             return $ do
                 lib <- staticLibrary env target toolChain
                             "methcla-icecast"
-                          $ methclaSources
+                          $ methclaSources target
                           $ SourceTree.flags buildFlags
                           $ SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
                 example <- executable env target toolChain
@@ -477,7 +480,7 @@ mkRules options = do
             jackBuildFlags <- pkgConfig "jack"
             let platform = OSX.macOSX sdkVersion
                 target = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain_MacOSX target developer
+                toolChain = applyEnv $ OSX.toolChain developer target
                 env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
@@ -487,7 +490,7 @@ mkRules options = do
                            >>> libm
                 build f = f env target toolChain "methcla-jack"
                             $ SourceTree.flags buildFlags
-                            $ methclaSources $
+                            $ methclaSources target $
                                 SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]
             return $ do
                 staticLib <- build staticLibrary
@@ -506,16 +509,17 @@ mkRules options = do
                            >>> Host.notOn [Host.Linux] (stdlib_libcpp toolChain)
                            >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
-                           >>> Pro.testBuildFlags
+                           >>> Pro.testBuildFlags target
             return $ do
                 result <- executable env target toolChain "methcla-tests"
                             $ SourceTree.flags buildFlags
-                            $ methclaSources $ SourceTree.list [
+                            $ methclaSources target $ SourceTree.list [
                                 SourceTree.files [
                                     "src/Methcla/Audio/IO/DummyDriver.cpp"
                                   , "tests/methcla_tests.cpp"
-                                  , "tests/methcla_engine_tests.cpp" ]
-                              , Pro.testSources ]
+                                  , "tests/methcla_engine_tests.cpp"
+                                  , "tests/test_runner_console.cpp" ]
+                              , Pro.testSources target ]
                 phony "test" $ do
                     need [result]
                     system' result []
