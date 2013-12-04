@@ -401,7 +401,7 @@ mkRules options = do
                          >>> commonBuildFlags
                          -- Not detected by boost for PNaCl platform
                          -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
-                         -- >>> stdlib_libcpp toolChain
+                         >>> stdlib_libcpp toolChain
                          -- Currently -std=c++11 produces compile errors with libc++
                          >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
           libmethcla <- staticLibrary env target toolChain methcla $
