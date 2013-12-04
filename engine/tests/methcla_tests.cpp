@@ -16,7 +16,6 @@
 #include "methcla_tests.hpp"
 
 METHCLA_WITHOUT_WARNINGS_BEGIN
-# define CATCH_CONFIG_RUNNER
 # include <catch.hpp>
 METHCLA_WITHOUT_WARNINGS_END
 
@@ -167,64 +166,3 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
         REQUIRE(count.load() == worker.maxCapacity());
     }
 }
-
-#if !defined(__ANDROID__) && !defined(__native_client__)
-int main(int argc, char* const argv[])
-{
-    return Catch::Session().run(argc, argv);
-}
-#endif // defined(__ANDROID__)
-
-// ============================================================================
-// NaCl
-
-#if defined(__native_client__)
-
-#include <string>
-
-#include "ppapi/cpp/instance.h"
-#include "ppapi/cpp/module.h"
-#include "ppapi/cpp/var.h"
-
-#include "catch_callback_reporter.hpp"
-
-class MethclaTestInstance : public pp::Instance
-{
-public:
-    explicit MethclaTestInstance(PP_Instance instance)
-        : pp::Instance(instance)
-    {}
-
-private:
-    virtual void HandleMessage(const pp::Var& var_message)
-    {
-        Catch::registerCallbackReporter("callback", [this](const std::string& str) {
-            this->PostMessage(pp::Var(str));
-        });
-
-        Catch::Session session; // There must be exactly once instance
-        session.configData().reporterName = "callback";
-        session.run();
-    }
-};
-
-class MethclaTestModule : public pp::Module
-{
-public:
-    virtual ~MethclaTestModule() {}
-
-    virtual pp::Instance* CreateInstance(PP_Instance instance)
-    {
-        return new MethclaTestInstance(instance);
-    }
-};
-
-namespace pp
-{
-    Module* CreateModule()
-    {
-        return new MethclaTestModule();
-    }
-}
-
-#endif // __native_client__
