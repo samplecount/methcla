@@ -495,7 +495,7 @@ mkRules options = do
                 phony "macosx-jack" $ need [staticLib]
                 phony "macosx-jack-shared" $ need [sharedLib]
         )
-      , (["test"], do -- tests
+      , (["test", "clean-test"], do -- tests
             applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             let env = mkEnv target
@@ -519,6 +519,7 @@ mkRules options = do
                 phony "test" $ do
                     need [result]
                     system' result []
+                phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
         )
       , (["tags"], do -- tags
             let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
