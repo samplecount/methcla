@@ -413,7 +413,8 @@ mkRules options = do
                              -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                              >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
                              >>> append defines [ ("METHCLA_USE_DUMMY_DRIVER", Nothing)
-                                                , ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>") ]
+                                                , ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
+                                                , ("METHCLA_TEST_SOUNDFILE_API_LIB", Just "methcla_soundfile_api_dummy") ]
                              >>> append systemIncludes [externalLibrary "catch/single_include"]
                              -- >>> NaCl.libppapi_simple
                              -- >>> NaCl.libnacl_io
