@@ -28,6 +28,8 @@
 #endif
 
 namespace Methcla { namespace Tests {
+    void initialize(std::string inputFileDirectory, std::string outputFileDirectory);
+
     std::string inputFile(const std::string& name);
     std::string outputFile(const std::string& name);
 

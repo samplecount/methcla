@@ -26,14 +26,23 @@ METHCLA_WITHOUT_WARNINGS_END
 #include <mutex>
 #include <thread>
 
+static std::string gInputFileDirectory = "tests/input";
+static std::string gOutputFileDirectory = "tests/output";
+
+void Methcla::Tests::initialize(std::string inputFileDirectory, std::string outputFileDirectory)
+{
+    gInputFileDirectory = inputFileDirectory;
+    gOutputFileDirectory = outputFileDirectory;
+}
+
 std::string Methcla::Tests::inputFile(const std::string& name)
 {
-    return std::string("tests/input/") + name;
+    return gInputFileDirectory + "/" + name;
 }
 
 std::string Methcla::Tests::outputFile(const std::string& name)
 {
-    return std::string("tests/output/") + name;
+    return gOutputFileDirectory + "/" + name;
 }
 
 namespace test_Methcla_Utility_Worker
