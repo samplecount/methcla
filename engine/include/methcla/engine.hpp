@@ -950,6 +950,23 @@ namespace Methcla
             };
         }
 
+        NotificationHandler freeNodeIdHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        {
+            return [this,nodeId,whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended")
+                {
+                    NodeId otherNodeId = NodeId(msg.args().int32());
+                    if (nodeId == otherNodeId)
+                    {
+                        nodeIdAllocator().free(nodeId);
+                        whenDone(nodeId);
+                        return true;
+                    }
+                }
+                return false;
+            };
+        }
+
     private:
         static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
