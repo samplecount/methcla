@@ -94,6 +94,39 @@ namespace Methcla { namespace Plugin {
         }
     };
 
+    class PortDescriptor
+    {
+    public:
+        static Methcla_PortDescriptor make(Methcla_PortDirection direction, Methcla_PortType type, Methcla_PortFlags flags=kMethcla_PortFlags)
+        {
+            Methcla_PortDescriptor pd;
+            pd.direction = direction;
+            pd.type = type;
+            pd.flags = flags;
+            return pd;
+        }
+
+        static Methcla_PortDescriptor audioInput(Methcla_PortFlags flags=kMethcla_PortFlags)
+        {
+            return make(kMethcla_Input, kMethcla_AudioPort, flags);
+        }
+
+        static Methcla_PortDescriptor audioOutput(Methcla_PortFlags flags=kMethcla_PortFlags)
+        {
+            return make(kMethcla_Output, kMethcla_AudioPort, flags);
+        }
+
+        static Methcla_PortDescriptor controlInput(Methcla_PortFlags flags=kMethcla_PortFlags)
+        {
+            return make(kMethcla_Input, kMethcla_ControlPort, flags);
+        }
+
+        static Methcla_PortDescriptor controlOutput(Methcla_PortFlags flags=kMethcla_PortFlags)
+        {
+            return make(kMethcla_Output, kMethcla_ControlPort, flags);
+        }
+    };
+
     template <class Options, class PortDescriptor> class StaticSynthOptions
     {
     public:
