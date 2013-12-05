@@ -22,5 +22,6 @@
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla_Host*, const char*);
 
 #define METHCLA_PLUGINS_DONE_AFTER_URI METHCLA_PLUGINS_URI "/done-after"
+#define METHCLA_PLUGINS_ASR_ENVELOPE_URI METHCLA_PLUGINS_URI "/asr-envelope"
 
 #endif // METHCLA_PLUGINS_NODE_CONTROL_H_INCLUDED

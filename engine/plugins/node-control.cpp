@@ -17,6 +17,8 @@
 
 using namespace Methcla::Plugin;
 
+// DoneAfter
+
 class DoneAfterOptions
 {
 public:
@@ -66,10 +68,146 @@ public:
 
 StaticSynthClass<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterClass;
 
+// LinearEnvelope
+
+class ASREnvelopeOptions
+{
+public:
+    ASREnvelopeOptions(OSCPP::Server::ArgStream args)
+    {
+        attackTime = args.float32();
+        sustainTime = args.float32();
+        sustainLevel = args.float32();
+        releaseTime = args.float32();
+    }
+
+    float attackTime;
+    float sustainTime;
+    float sustainLevel;
+    float releaseTime;
+};
+
+class ASREnvelopePorts
+{
+public:
+    enum Port
+    {
+        kInput
+      , kOutput
+    };
+
+    static constexpr size_t numPorts() { return 2; }
+
+    static Methcla_PortDescriptor descriptor(Port port)
+    {
+        switch (port)
+        {
+            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
+            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
+        }
+    }
+};
+
+class ASREnvelope
+{
+    enum State
+    {
+        kAttackPhase,
+        kSustainPhase,
+        kReleasePhase,
+        kDone
+    };
+
+    ASREnvelopeOptions m_options;
+
+    State  m_state;
+    size_t m_numFramesLeft;
+    float  m_slope;
+    float  m_level;
+    float* m_ports[ASREnvelopePorts::numPorts()];
+
+public:
+    ASREnvelope(const World<ASREnvelope>& world, const Methcla_SynthDef*, const ASREnvelopeOptions& options)
+        : m_options(options)
+        , m_state(kAttackPhase)
+        , m_numFramesLeft(options.attackTime * world.sampleRate())
+        , m_slope(m_options.sustainLevel / m_numFramesLeft)
+        , m_level(0.f)
+    {
+    }
+
+    void connect(ASREnvelopePorts::Port port, void* data)
+    {
+        m_ports[port] = static_cast<float*>(data);
+    }
+
+    void activate(const World<ASREnvelope>&) {}
+
+    void process(const World<ASREnvelope>& world, size_t numFrames)
+    {
+        const float* input = m_ports[ASREnvelopePorts::kInput];
+        float* output = m_ports[ASREnvelopePorts::kOutput];
+
+        if (m_state == kDone)
+        {
+            for (size_t k=0; k < numFrames; k++)
+                output[k] = 0.f;
+        }
+        else
+        {
+            size_t outFrame = 0;
+
+            while (outFrame < numFrames)
+            {
+                const size_t n = std::min(numFrames - outFrame, m_numFramesLeft);
+
+                for (size_t k=0; k < n; k++)
+                {
+                    output[outFrame] = input[outFrame] * m_level;
+                    m_level += m_slope;
+                    outFrame++;
+                }
+
+                m_numFramesLeft -= n;
+
+                if (m_numFramesLeft == 0)
+                {
+                    if (m_state == kAttackPhase)
+                    {
+                        m_state = kSustainPhase;
+                        m_numFramesLeft = m_options.sustainTime * world.sampleRate();
+                        m_slope = 0.f;
+                    }
+                    else if (m_state == kSustainPhase)
+                    {
+                        m_state = kReleasePhase;
+                        m_numFramesLeft = m_options.releaseTime * world.sampleRate();
+                        m_slope = -(m_level / m_numFramesLeft);
+                    }
+                    else
+                    {
+                        m_state = kDone;
+                        world.synthDone(this);
+                        break;
+                    }
+                }
+            }
+
+            for (size_t k=outFrame; k < numFrames; k++)
+                output[k] = 0.f;
+        }
+    }
+};
+
+StaticSynthClass<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeClass;
+
+// Library
+
 static const Methcla_Library library = { NULL, NULL };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla_Host* host, const char* /* bundlePath */)
 {
     kDoneAfterClass(host, METHCLA_PLUGINS_DONE_AFTER_URI);
+    kASREnvelopeClass(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);
     return &library;
 }
