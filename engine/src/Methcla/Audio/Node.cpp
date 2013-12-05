@@ -23,6 +23,8 @@ Node::Node(Environment& env, NodeId nodeId)
     , m_parent(nullptr)
     , m_prev(nullptr)
     , m_next(nullptr)
+    , m_doneFlags(kMethcla_NodeDoneDoNothing)
+    , m_done(false)
 {
 }
 
@@ -45,7 +47,14 @@ void Node::unlink()
 
 void Node::process(size_t numFrames)
 {
-    doProcess(numFrames);
+    if (m_done)
+    {
+        env().freeNode(id());
+    }
+    else
+    {
+        doProcess(numFrames);
+    }
 }
 
 void Node::free()
@@ -59,33 +68,57 @@ void Node::doProcess(size_t)
 {
 }
 
-void Node::setDone(Methcla_NodeDoneFlags flags)
+inline static void setDoneFreeSelf(Node* node)
 {
+    node->setDoneFlags((Methcla_NodeDoneFlags)(node->doneFlags() | kMethcla_NodeDoneFreeSelf));
+    node->setDone();
+}
+
+void Node::setDone()
+{
+    Methcla_NodeDoneFlags flags(m_doneFlags);
+
     if (flags & kMethcla_NodeDoneFreeParent)
     {
         if (m_parent != nullptr)
-            env().freeNode(m_parent->id());
+            setDoneFreeSelf(m_parent);
     }
     else if (flags & kMethcla_NodeDoneFreeAllSiblings)
     {
         if (m_parent != nullptr)
-            m_parent->freeAll();
+        {
+            Node* node = m_parent->m_first;
+            while (node != this)
+            {
+                // env().freeNode(node->id());
+                setDoneFreeSelf(node);
+                node = node->m_next;
+            }
+            node = this->m_next;
+            while (node != nullptr)
+            {
+                // env().freeNode(node->id());
+                setDoneFreeSelf(node);
+                node = node->m_next;
+            }
+        }
     }
     else
     {
         if (flags & kMethcla_NodeDoneFreePreceeding)
         {
             if (m_prev != nullptr)
-                env().freeNode(m_prev->id());
+                // env().freeNode(m_prev->id());
+                setDoneFreeSelf(m_prev);
         }
         if (flags & kMethcla_NodeDoneFreeFollowing)
         {
              if (m_next != nullptr)
-                 env().freeNode(m_next->id());
+                 setDoneFreeSelf(m_next);
         }
         if (flags & kMethcla_NodeDoneFreeSelf)
         {
-            env().freeNode(id());
+            m_done = true;
         }
     }
 }

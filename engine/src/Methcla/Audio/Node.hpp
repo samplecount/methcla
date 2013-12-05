@@ -58,7 +58,17 @@ namespace Methcla { namespace Audio {
         // Remove node from parent.
         void unlink();
 
-        void setDone(Methcla_NodeDoneFlags flags);
+        Methcla_NodeDoneFlags doneFlags() const
+        {
+            return m_doneFlags;
+        }
+
+        void setDoneFlags(Methcla_NodeDoneFlags flags)
+        {
+            m_doneFlags = flags;
+        }
+
+        void setDone();
 
     protected:
         Node(Environment& env, NodeId nodeId);
@@ -75,6 +85,9 @@ namespace Methcla { namespace Audio {
         Group*  m_parent;
         Node*   m_prev;
         Node*   m_next;
+
+        Methcla_NodeDoneFlags m_doneFlags;
+        bool                  m_done;
     };
 } }
 

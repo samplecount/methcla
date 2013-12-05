@@ -51,7 +51,6 @@ Synth::Synth( Environment& env
     // Initialize flags
     memset(&m_flags, 0, sizeof(m_flags));
     m_flags.state = kStateInactive;
-    m_flags.doneFlags = kMethcla_NodeDoneDoNothing;
 
     // Align audio buffers
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
@@ -351,19 +350,4 @@ void Synth::doProcess(size_t numFrames)
 
         m_flags.state = kStateActive;
     }
-}
-
-Methcla_NodeDoneFlags Synth::doneFlags() const
-{
-    return Methcla_NodeDoneFlags(m_flags.doneFlags);
-}
-
-void Synth::setDoneFlags(Methcla_NodeDoneFlags flags)
-{
-    m_flags.doneFlags = flags;
-}
-
-void Synth::setDone()
-{
-    Node::setDone(Methcla_NodeDoneFlags(m_flags.doneFlags));
 }
