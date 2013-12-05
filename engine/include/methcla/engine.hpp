@@ -342,23 +342,12 @@ namespace Methcla
             kString
         };
 
-        explicit Value(int x)
-            : m_type(kInt)
-            , m_int(x)
-        { }
-        explicit Value(float x)
-            : m_type(kFloat)
-            , m_float(x)
-        { }
-        Value(const std::string& x)
-            : m_type(kString)
-            , m_string(x)
-        { }
-
-        explicit Value(bool x)
-            : m_type(kInt)
-            , m_int(x)
-        { }
+        explicit Value(int x)                : m_type(kInt), m_int(x) {}
+        explicit Value(bool x)               : m_type(kInt), m_int(x) { }
+        explicit Value(float x)              : m_type(kFloat), m_float(x) {}
+        explicit Value(double x)             : Value((float)x) {}
+        explicit Value(const std::string& x) : m_type(kString), m_string(x) {}
+        explicit Value(const char* x)        : Value(std::string(x)) {}
 
         void put(OSCPP::Client::Packet& packet) const
         {
