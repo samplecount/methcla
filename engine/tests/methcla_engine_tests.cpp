@@ -158,7 +158,7 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
     }
 
     REQUIRE( engine->getNodeTreeStatistics().numSynths == 3 );
-    sleepFor(0.04);
+    sleepFor(0.15);
     CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
 }
 
