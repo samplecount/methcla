@@ -39,8 +39,10 @@ void Group::doProcess(size_t numFrames)
     Node* node = m_first;
     while (node != nullptr)
     {
+        // Store pointer to next node because current node might be destroyed after process.
+        Node* nextNode = node->m_next;
         node->process(numFrames);
-        node = node->m_next;
+        node = nextNode;
     }
 }
 
