@@ -478,6 +478,7 @@ namespace Methcla
     static const Methcla_Time immediately = 0.;
 
     typedef ResourceIdAllocator<NodeId,int32_t> NodeIdAllocator;
+    typedef ResourceIdAllocator<AudioBusId,int32_t> AudioBusIdAllocator;
 
     class Request;
 
@@ -841,6 +842,7 @@ namespace Methcla
     public:
         Engine(const EngineOptions& options=EngineOptions())
             : m_nodeIds(1, options.maxNumNodes - 1)
+            , m_audioBusIds(0, options.maxNumAudioBuses)
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
         {
@@ -907,6 +909,11 @@ namespace Methcla
         NodeIdAllocator& nodeIdAllocator() override
         {
             return m_nodeIds;
+        }
+
+        AudioBusIdAllocator& audioBusId()
+        {
+            return m_audioBusIds;
         }
 
         std::unique_ptr<Packet> allocPacket() override
@@ -1050,6 +1057,7 @@ namespace Methcla
 
         Methcla_Engine*         m_engine;
         NodeIdAllocator         m_nodeIds;
+        AudioBusIdAllocator     m_audioBusIds;
         Methcla_RequestId       m_requestId;
         std::mutex              m_requestIdMutex;
         ResponseHandlers        m_responseHandlers;
