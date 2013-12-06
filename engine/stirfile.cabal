@@ -17,7 +17,7 @@ Version: 0.2.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
 X-Stir-Package-Dirs: external_libraries/stir
-
+X-Stir-Sandbox: cabal
 Flag pro
   Description: Whether to build the pro configuration
   Default: False
