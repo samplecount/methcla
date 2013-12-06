@@ -2,7 +2,7 @@ language: haskell
 install:
   # - cabal install hsc2hs cabal-dev
   # - cd engine && cabal install --only-dependencies --enable-tests
-  - true
+  - cabal install split
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
   - cd engine && ./stir update && ./stir test
