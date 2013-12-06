@@ -12,10 +12,9 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators #-}
 
 import           Control.Arrow ((>>>), second)
-import           Control.Lens hiding (Action, (<.>), under)
 import           Data.Char (toLower)
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
@@ -29,7 +28,7 @@ import qualified Shakefile.C.NaCl as NaCl
 import qualified Shakefile.C.OSX as OSX
 import           Shakefile.C.PkgConfig (pkgConfig)
 import           Shakefile.Configuration
-import           Shakefile.Lens
+import           Shakefile.Label
 import           Shakefile.SourceTree (SourceTree)
 import qualified Shakefile.SourceTree as SourceTree
 import           System.Console.GetOpt
@@ -217,7 +216,9 @@ data Options = Options {
     _buildConfig :: Config
   } deriving (Show)
 
-makeLenses ''Options
+buildConfig :: Options :-> Config
+buildConfig = lens _buildConfig
+                   (\g f -> f { _buildConfig = g (_buildConfig f) })
 
 defaultOptions :: Options
 defaultOptions = Options {
@@ -242,7 +243,7 @@ libpthread = append libraries ["pthread"]
 
 -- | Pass -stdlib=libc++ (clang).
 stdlib_libcpp :: ToolChain -> BuildFlags -> BuildFlags
-stdlib_libcpp toolChain = onlyIf (toolChain ^. variant == LLVM) $
+stdlib_libcpp toolChain = onlyIf (get variant toolChain == LLVM) $
     append compilerFlags [(Just Cpp, flags)]
   . append linkerFlags flags
   where flags = ["-stdlib=libc++"]
@@ -291,13 +292,13 @@ phonyFile target input = phonyFiles target [input]
 
 mkRules :: Options -> [([String], IO (Rules ()))]
 mkRules options = do
-    let config = options ^. buildConfig
+    let config = get buildConfig options
         mkEnv target = set buildPrefix
                             (defaultBuildPrefix target (show config))
-                            -- (mkBuildPrefix config (platformString $ target ^. targetPlatform))
+                            -- (mkBuildPrefix config (platformString $ get targetPlatform target))
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
-        targetAlias target = phony (platformString (target ^. targetPlatform) ++ "-" ++ archString (target ^. targetArch))
+        targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
                                 . need . (:[])
     [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
         let iOS_SDK = Version [6,1] []
@@ -352,7 +353,7 @@ mkRules options = do
             ndk <- Env.getEnv "ANDROID_NDK"
             return $ do
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
-                    let abi = Android.abiString (target ^. targetArch)
+                    let abi = Android.abiString (get targetArch target)
                         toolChain = applyEnv $ Android.toolChain ndk GCC (Version [4,7] []) target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
@@ -385,7 +386,7 @@ mkRules options = do
                     installPath ?=> \_ -> copyFile' libmethcla installPath
                     targetAlias target installPath
 
-                    let testInstallPath = "tests/android/libs" </> Android.abiString (target ^. targetArch) </> takeFileName libmethcla_tests
+                    let testInstallPath = "tests/android/libs" </> Android.abiString (get targetArch target) </> takeFileName libmethcla_tests
                     testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
                     return (installPath, testInstallPath)
                 phony "android" $ need $ map fst libs
@@ -564,4 +565,3 @@ main = do
             rules <- fmap sequence $ sequence $ map snd $ filter (any (flip elem ts) . fst) $ mkRules os
             return $ Just $ commonRules >> rules >> want ts
     shakeArgsWith shakeOptions' optionDescrs f
-
