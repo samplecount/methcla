@@ -1,6 +1,8 @@
 language: haskell
 install:
-  - cd engine && cabal install --only-dependencies --enable-tests
+  - cabal install cabal-dev
+  # - cd engine && cabal install --only-dependencies --enable-tests
 script:
-  - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
+  # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
+  - ./stir update && ./stir test
 env: CC=clang TOOLCHAIN_VARIANT=clang
