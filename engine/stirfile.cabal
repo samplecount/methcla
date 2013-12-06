@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-Name: shakefile
+Name: stirfile
 Version: 0.2.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
@@ -23,7 +23,7 @@ Flag pro
   Default: False
   Manual: True
 
-Executable shakefile
+Executable stirfile
   Hs-Source-Dirs: .
   if flag(pro)
     Hs-Source-Dirs:
@@ -31,8 +31,8 @@ Executable shakefile
   else
     Hs-Source-Dirs:
       StirFile/ProStubs
-  Main-Is: shakefile.hs
-  Other-Modules: Paths_shakefile
+  Main-Is: stirfile.hs
+  Other-Modules: Paths_stirfile
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5

@@ -20,7 +20,7 @@ import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import qualified MethclaPro as Pro
-import qualified Paths_shakefile as Package
+import qualified Paths_stirfile as Package
 import           Shakefile.C
 import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.Host as Host
