@@ -5,5 +5,5 @@ install:
   - true
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
-  - ./stir update && ./stir test
+  - cd engine && ./stir update && ./stir test
 env: CC=clang TOOLCHAIN_VARIANT=clang
