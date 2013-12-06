@@ -1318,11 +1318,7 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 
 Engine::Engine(PacketHandler handler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
 {
-#if defined(METHCLA_USE_DUMMY_DRIVER)
-    m_driver = new IO::DummyDriver(driverOptions);
-#else
     m_driver = IO::defaultPlatformDriver(driverOptions);
-#endif
     m_driver->setProcessCallback(processCallback, this);
 
     std::cout << "Starting methcla engine (version " << methcla_version() << ")" << std::endl

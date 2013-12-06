@@ -112,3 +112,8 @@ Methcla_Time DummyDriver::currentTime() const
     std::memcpy(&result, &t64, sizeof(t64));
     return result;
 }
+
+Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
+{
+    return new DummyDriver(options);
+}
