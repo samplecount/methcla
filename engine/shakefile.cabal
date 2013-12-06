@@ -16,6 +16,7 @@ Name: shakefile
 Version: 0.2.0
 Cabal-Version: >= 1.2
 Build-Type: Simple
+X-Stir-Package-Dirs: external_libraries/stir
 
 Flag pro
   Description: Whether to build the pro configuration
@@ -23,7 +24,7 @@ Flag pro
   Manual: True
 
 Executable shakefile
-  Hs-Source-Dirs: ., external_libraries/stir
+  Hs-Source-Dirs: .
   if flag(pro)
     Hs-Source-Dirs:
       StirFile/Pro
@@ -35,11 +36,9 @@ Executable shakefile
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5
-    , directory
     , containers
-    , fclabels >= 2
+    , directory
     , filemanip
     , filepath
-    , process
     , shake >= 0.10
-    , split
+    , stir
