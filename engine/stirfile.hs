@@ -550,15 +550,11 @@ mkRules options = do
         )
         ]
 
--- Bump this in order to force a rebuild
-buildSystemVersion :: String
-buildSystemVersion = "3"
-
 main :: IO ()
 main = do
     let shakeOptions' = shakeOptions {
                         shakeFiles = shakeBuildDir ++ "/"
-                      , shakeVersion = showVersion Package.version ++ "-shake-" ++ buildSystemVersion
+                      , shakeVersion = showVersion Package.version
                       , shakeVerbosity = Normal }
         f xs ts = do
             let os = foldl (.) id xs $ defaultOptions
