@@ -508,7 +508,7 @@ mkRules options = do
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
-                           >>> Host.notOn [Host.Linux] (stdlib_libcpp toolChain)
+                           >>> stdlib_libcpp toolChain
                            >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
                            >>> Pro.testBuildFlags target
