@@ -261,7 +261,9 @@ public:
     std::vector<shared_ptr<ExternalAudioBus>>       m_externalAudioInputs;
     std::vector<shared_ptr<ExternalAudioBus>>       m_externalAudioOutputs;
     std::vector<shared_ptr<AudioBus>>               m_internalAudioBuses;
+
     Epoch                                           m_epoch;
+    Methcla_Time                                    m_currentTime;
 
     ResourceMap<NodeId,Node>                        m_nodes;
     ResourceRef<Group>                              m_rootNode;
@@ -280,6 +282,11 @@ public:
     ResourceRef<Group> rootNode()
     {
         return m_rootNode;
+    }
+
+    Methcla_Time currentTime() const
+    {
+        return m_currentTime;
     }
 
     Memory::RTMemoryManager& rtMem()
@@ -417,6 +424,7 @@ EnvironmentImpl::EnvironmentImpl(
     , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, 2))
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
+    , m_currentTime(0)
     , m_nodes(options.maxNumNodes)
     , m_logFlags(kMethcla_EngineLogDefault)
 {
@@ -519,6 +527,13 @@ static size_t methcla_api_world_block_size(const Methcla_World* world)
     return static_cast<Environment*>(world->handle)->blockSize();
 }
 
+static Methcla_Time methcla_api_world_current_time(const Methcla_World* world)
+{
+    assert(world != nullptr);
+    assert(world->handle != nullptr);
+    return static_cast<Environment*>(world->handle)->currentTime();
+}
+
 static void* methcla_api_world_alloc(const Methcla_World* world, size_t size)
 {
     assert(world && world->handle);
@@ -588,6 +603,7 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
         this,
         methcla_api_world_samplerate,
         methcla_api_world_block_size,
+        methcla_api_world_current_time,
         methcla_api_world_alloc,
         methcla_api_world_alloc_aligned,
         methcla_api_world_free,
@@ -663,6 +679,11 @@ Epoch Environment::epoch() const
     return m_impl->m_epoch;
 }
 
+Methcla_Time Environment::currentTime() const
+{
+    return m_impl->currentTime();
+}
+
 void Environment::send(const void* packet, size_t size)
 {
     m_impl->m_requests->send(new Request(this, packet, size));
@@ -726,7 +747,12 @@ void Environment::notify(const OSCPP::Client::Packet& packet)
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs)
 {
+    // Update current time
+    m_currentTime = currentTime;
+
+    // Load log flags
     const Methcla_EngineLogFlags logFlags = (Methcla_EngineLogFlags)m_logFlags.load();
+
     // Process external requests
     processRequests(logFlags, currentTime);
     // Process scheduled requests

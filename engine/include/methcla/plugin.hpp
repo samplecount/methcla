@@ -43,6 +43,11 @@ namespace Methcla { namespace Plugin {
             return methcla_world_block_size(m_world);
         }
 
+        Methcla_Time currentTime() const
+        {
+            return methcla_world_current_time(m_world);
+        }
+
         void* alloc(size_t size) const
         {
             return methcla_world_alloc(m_world, size);

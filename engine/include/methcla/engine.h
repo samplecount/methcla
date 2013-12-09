@@ -82,9 +82,6 @@ enum Methcla_EngineLogFlags
 //* Set flags for debug logging.
 METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla_EngineLogFlags flags);
 
-//* Time in seconds.
-typedef double Methcla_Time;
-
 //* Encode a Methcla_Time value as a 64 bit unsigned integer.
 METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time);
 

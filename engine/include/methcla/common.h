@@ -53,6 +53,9 @@ extern "C" {
 
 #define METHCLA_EXPORT METHCLA_C_LINKAGE METHCLA_VISIBLE
 
+//* Time in seconds.
+typedef double Methcla_Time;
+
 typedef struct
 {
     const void* data;

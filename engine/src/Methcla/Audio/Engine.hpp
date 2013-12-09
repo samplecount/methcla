@@ -126,6 +126,8 @@ namespace Methcla { namespace Audio
 
         Epoch epoch() const;
 
+        Methcla_Time currentTime() const;
+
         //* Send an OSC request to the engine.
         void send(const void* packet, size_t size);
 

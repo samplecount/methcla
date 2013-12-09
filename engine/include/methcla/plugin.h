@@ -57,8 +57,11 @@ struct Methcla_World
     //* Return maximum audio block size.
     size_t (*block_size)(const Methcla_World* world);
 
+    //* Return the time at the start of the current audio block in seconds.
+    Methcla_Time (*current_time)(const struct Methcla_World* world);
+
     // Realtime memory allocation
-    void* (*alloc)(const struct Methcla_World* world, size_t size);;
+    void* (*alloc)(const struct Methcla_World* world, size_t size);
     void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
     void (*free)(const struct Methcla_World* world, void* ptr);
 
@@ -83,6 +86,13 @@ static inline size_t methcla_world_block_size(const Methcla_World* world)
 {
     assert(world && world->block_size);
     return world->block_size(world);
+}
+
+static inline Methcla_Time methcla_world_current_time(const Methcla_World* world)
+{
+    assert(world);
+    assert(world->current_time);
+    return world->current_time(world);
 }
 
 static inline void* methcla_world_alloc(const Methcla_World* world, size_t size)
