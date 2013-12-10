@@ -399,7 +399,12 @@ mkRules options = do
         return $ do
           let -- target = NaCl.target (NaCl.pepper 31)
               target = NaCl.target NaCl.canary
-              toolChain = NaCl.toolChain sdk NaCl.Debug target
+              toolChain = NaCl.toolChain
+                            sdk
+                            (case config of
+                              Debug -> NaCl.Debug
+                              Release -> NaCl.Release)
+                            target
               env = mkEnv target
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
