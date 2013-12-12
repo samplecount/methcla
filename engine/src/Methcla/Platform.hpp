@@ -17,8 +17,11 @@
 
 #include <methcla/engine.h>
 
+#include "Methcla/Audio/IO/Driver.hpp"
+
 namespace Methcla { namespace Platform {
     Methcla_LogHandler defaultLogHandler();
+    Audio::IO::Driver* defaultAudioDriver(Audio::IO::Driver::Options options);
 } }
 
 #endif // METHCLA_PLATFORM_HPP_INCLUDED

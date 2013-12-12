@@ -1465,7 +1465,7 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 
 Engine::Engine(LogHandler logHandler, PacketHandler packetHandler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
 {
-    m_driver = IO::defaultPlatformDriver(driverOptions);
+    m_driver = Platform::defaultAudioDriver(driverOptions);
     m_driver->setProcessCallback(processCallback, this);
 
     Environment::Options options(engineOptions);

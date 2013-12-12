@@ -14,6 +14,7 @@
 
 #include "Methcla/Audio/IO/IcecastDriver.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/Platform.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
 #include <boost/assert.hpp>
@@ -255,7 +256,7 @@ void IcecastDriver::stop()
     m_impl->stop();
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver(Methcla::Audio::IO::Driver::Options driverOptions)
+Driver* Methcla::Platform::defaultAudioDriver(Driver::Options driverOptions)
 {
     IcecastDriver::IcecastOptions options;
     options.password = "h3aRh3aR";

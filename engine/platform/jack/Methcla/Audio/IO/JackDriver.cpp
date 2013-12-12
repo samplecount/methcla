@@ -15,6 +15,7 @@
 #include "Methcla/Audio/IO/JackDriver.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
+#include "Methcla/Platform.hpp"
 
 #include <methcla/common.h>
 
@@ -152,7 +153,7 @@ void JackDriver::stop()
     jack_deactivate(m_jackClient);
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
+Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {
     return new JackDriver(options);
 }

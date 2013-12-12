@@ -15,6 +15,7 @@
 #include "Methcla/Audio/IO/RemoteIODriver.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
+#include "Methcla/Platform.hpp"
 
 #include <methcla/common.h>
 
@@ -508,7 +509,7 @@ Methcla_Time RemoteIODriver::currentTime() const
     return CAHostTimeBase::GetTheCurrentTime() * CAHostTimeBase::GetInverseFrequency();
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
+Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {
     return new RemoteIODriver(options);
 }

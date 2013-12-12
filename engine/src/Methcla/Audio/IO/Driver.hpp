@@ -79,9 +79,6 @@ private:
     size_t          m_blockSize;
 };
 
-//* Instantiate the default driver for the current platform.
-Driver* defaultPlatformDriver(Driver::Options options);
-
 } } }
 
 #endif // METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED

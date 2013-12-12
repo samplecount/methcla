@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Methcla/Audio/IO/DummyDriver.hpp"
+#include "Methcla/Platform.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -113,7 +114,7 @@ Methcla_Time DummyDriver::currentTime() const
     return result;
 }
 
-Driver* Methcla::Audio::IO::defaultPlatformDriver(Driver::Options options)
+Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {
     return new DummyDriver(options);
 }
