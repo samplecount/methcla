@@ -84,8 +84,8 @@ void DummyDriver::run()
         storeTime(m_time, t);
         process(t, bufferSize(), m_inputBuffers, m_outputBuffers);
         struct timespec ts;
-        ts.tv_sec = t;
-        ts.tv_nsec = (t - ts.tv_sec) * 1e9;
+        ts.tv_sec = dt;
+        ts.tv_nsec = (dt - ts.tv_sec) * 1e9;
         nanosleep(&ts, &ts);
         t += dt;
     }
