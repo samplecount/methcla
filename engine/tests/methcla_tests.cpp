@@ -55,6 +55,7 @@ namespace test_Methcla_Utility_Worker
 
 namespace Methcla { namespace Test {
 
+// Accesses to Catch log need to be synchronized.
 class Log
 {
 public:
@@ -64,9 +65,7 @@ public:
 
     template <typename T> Log& operator<<(const T& x)
     {
-#if DEBUG
-        std::cerr << x;
-#endif
+        INFO(x);
         return *this;
     }
 
@@ -136,7 +135,7 @@ namespace test_Methcla_Utility_WorkerThread
         {
             (*m_count)++;
             m_sem->post();
-            Methcla::Test::Log() << "POST " << m_id << "\n";
+            Methcla::Test::Log() << "POST " << m_id;
         }
 
         size_t m_id;
@@ -152,7 +151,7 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
     const size_t queueSize = 16;
 
     for (size_t threadCount=1; threadCount <= 4; threadCount++) {
-        Methcla::Test::Log() << "threads " << threadCount << "\n";
+        Methcla::Test::Log() << "threads " << threadCount;
 
         Methcla::Utility::WorkerThread<Command> worker(queueSize, threadCount);
 
@@ -169,7 +168,7 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
 
         for (size_t i=0; i < worker.maxCapacity(); i++) {
             sem.wait();
-            Methcla::Test::Log() << "WAIT " << i << " " << count.load() << "\n";
+            Methcla::Test::Log() << "WAIT " << i << " " << count.load();
         }
 
         REQUIRE(count.load() == worker.maxCapacity());
