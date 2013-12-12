@@ -28,9 +28,11 @@ METHCLA_WITHOUT_WARNINGS_END
 
 TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
 {
+    Methcla_EngineOptions options;
+    methcla_engine_options_init(&options);
     Methcla_Engine* engine = nullptr;
     Methcla_Error result;
-    result = methcla_engine_new(nullptr, nullptr, nullptr, &engine);
+    result = methcla_engine_new(&options, &engine);
     REQUIRE(result == kMethcla_NoError);
     REQUIRE(engine);
     result = methcla_engine_start(engine);

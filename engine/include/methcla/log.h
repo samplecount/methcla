@@ -17,13 +17,18 @@
 #ifndef METHCLA_LOG_H_INCLUDED
 #define METHCLA_LOG_H_INCLUDED
 
-enum Methcla_LogLevel
+typedef enum Methcla_LogLevel
 {
-    kMethcla_LogDebug,
-    kMethcla_LogInfo,
-    kMethcla_LogWarn,
     kMethcla_LogError,
-    kMethcla_LogFatal
-};
+    kMethcla_LogWarn,
+    kMethcla_LogInfo,
+    kMethcla_LogDebug
+} Methcla_LogLevel;
+
+typedef struct Methcla_LogHandler
+{
+    void* handle;
+    void (*log_line)(void* handle, Methcla_LogLevel level, const char* message);
+} Methcla_LogHandler;
 
 #endif /* METHCLA_LOG_H_INCLUDED */

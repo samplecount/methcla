@@ -19,6 +19,8 @@
 
 #include <methcla/common.h>
 #include <methcla/file.h>
+#include <methcla/log.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -39,9 +41,24 @@ enum
     kMethcla_Notification = 0
 };
 
-//* Callback function type for handling OSC packets coming from the engine.
+//* Callback closure type for handling OSC packets coming from the engine.
 //  Packets can be either responses to previously issued requests, or, if request_id is equal to kMethcla_Notification, an asynchronous notification.
-typedef void (*Methcla_PacketHandler)(void* handler_data, Methcla_RequestId request_id, const void* packet, size_t size);
+typedef struct Methcla_PacketHandler
+{
+    void* handle;
+    void (*handle_packet)(void* handle, Methcla_RequestId request_id, const void* packet, size_t size);
+} Methcla_PacketHandler;
+
+typedef struct Methcla_EngineOptions Methcla_EngineOptions;
+
+struct Methcla_EngineOptions
+{
+    Methcla_LogHandler    log_handler;
+    Methcla_PacketHandler packet_handler;
+    Methcla_OSCPacket     options;
+};
+
+METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);
 
 //* Abstract type for the sound engine.
 typedef struct Methcla_Engine Methcla_Engine;
@@ -52,9 +69,7 @@ typedef struct Methcla_Engine Methcla_Engine;
 // @options OSC packet with engine options (may be NULL).
 // @engine Output parameter for the newly created engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_new(
-    Methcla_PacketHandler handler,
-    void* handler_data,
-    const Methcla_OSCPacket* options,
+    const Methcla_EngineOptions* options,
     Methcla_Engine** engine
     );
 

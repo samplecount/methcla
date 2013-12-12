@@ -20,6 +20,7 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/Platform.hpp"
 #include "Methcla/Version.h"
 
 #include <cstdlib>
@@ -92,11 +93,7 @@ void Methcla::API::parseOptions(
 
 struct Methcla_Engine
 {
-    static void null_packet_handler(Methcla_RequestId, const void*, size_t)
-    {
-    }
-
-    Methcla_Engine(Methcla_PacketHandler handler, void* handlerData, const Methcla_OSCPacket* inOptions)
+    Methcla_Engine(const Methcla_EngineOptions* inOptions)
     {
         Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
@@ -104,14 +101,14 @@ struct Methcla_Engine
         // Register sine plugin by default
         engineOptions.pluginLibraries.push_back(methcla_plugins_sine);
 
-        if (inOptions != nullptr)
-            Methcla::API::parseOptions(inOptions, &engineOptions, &driverOptions);
+        if (inOptions->options.size > 0)
+            Methcla::API::parseOptions(&inOptions->options, &engineOptions, &driverOptions);
 
         using namespace std::placeholders;
 
         m_engine = new Methcla::Audio::Engine(
-            handler == nullptr ? Methcla::Audio::PacketHandler(null_packet_handler)
-                               : std::bind(handler, handlerData, _1, _2, _3),
+            std::bind(inOptions->log_handler.log_line, inOptions->log_handler.handle, _1, _2),
+            std::bind(inOptions->packet_handler.handle_packet, inOptions->packet_handler.handle, _1, _2, _3),
             engineOptions,
             driverOptions
         );
@@ -146,13 +143,34 @@ const char* methcla_version()
     return kMethclaVersion;
 }
 
-METHCLA_EXPORT Methcla_Error methcla_engine_new(Methcla_PacketHandler handler, void* handler_data, const Methcla_OSCPacket* options, Methcla_Engine** engine)
+static void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t)
+{
+}
+
+static Methcla_PacketHandler defaultPacketHandler()
+{
+    Methcla_PacketHandler handler;
+    handler.handle = nullptr;
+    handler.handle_packet = nullPacketHandler;
+    return handler;
+}
+
+METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options)
+{
+    memset(options, 0, sizeof(Methcla_EngineOptions));
+    options->log_handler = Methcla::Platform::defaultLogHandler();
+    options->packet_handler = defaultPacketHandler();
+}
+
+METHCLA_EXPORT Methcla_Error methcla_engine_new(const Methcla_EngineOptions* options, Methcla_Engine** engine)
 {
     // cout << "Methcla_Engine_new" << endl;
     if (engine == nullptr)
         return kMethcla_ArgumentError;
+    if (options == nullptr)
+        return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
-        *engine = new Methcla_Engine(handler, handler_data, options);
+        *engine = new Methcla_Engine(options);
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }

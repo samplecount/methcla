@@ -840,15 +840,20 @@ namespace Methcla
     class Engine : public EngineInterface
     {
     public:
-        Engine(const EngineOptions& options=EngineOptions())
-            : m_nodeIds(1, options.maxNumNodes - 1)
-            , m_audioBusIds(0, options.maxNumAudioBuses)
+        Engine(const EngineOptions& inOptions=EngineOptions())
+            : m_nodeIds(1, inOptions.maxNumNodes - 1)
+            , m_audioBusIds(0, inOptions.maxNumAudioBuses)
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
         {
-            auto bundle = serializeOptions(options);
-            const Methcla_OSCPacket packet = { bundle->data(), bundle->size() };
-            detail::checkReturnCode(methcla_engine_new(handlePacket, this, &packet, &m_engine));
+            Methcla_EngineOptions options;
+            methcla_engine_options_init(&options);
+            auto bundle = serializeOptions(inOptions);
+            options.packet_handler.handle = this;
+            options.packet_handler.handle_packet = handlePacket;
+            options.options.data = bundle->data();
+            options.options.size = bundle->size();
+            detail::checkReturnCode(methcla_engine_new(&options, &m_engine));
         }
 
         ~Engine()

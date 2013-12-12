@@ -17,6 +17,7 @@
 #include "Methcla/Audio/Synth.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory/Manager.hpp"
+#include "Methcla/Platform.hpp"
 #include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
@@ -27,6 +28,7 @@ METHCLA_WITHOUT_WARNINGS_END
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 
 #include <oscpp/print.hpp>
@@ -219,6 +221,36 @@ public:
     }
 };
 
+class LogStream
+{
+    std::function<void(Methcla_LogLevel,const char*)> m_callback;
+    Methcla_LogLevel                                  m_level;
+    std::shared_ptr<std::stringstream>                m_stream;
+
+public:
+    LogStream(std::function<void(Methcla_LogLevel,const char*)> callback, Methcla_LogLevel currentLevel, Methcla_LogLevel messageLevel)
+        : m_callback(messageLevel <= currentLevel ? callback : nullptr)
+        , m_level(messageLevel)
+        , m_stream(m_callback == nullptr ? nullptr : std::unique_ptr<std::stringstream>(new std::stringstream))
+    {}
+
+    LogStream(const LogStream&) = default;
+    LogStream(LogStream&&) = default;
+
+    ~LogStream()
+    {
+        if (m_callback)
+            m_callback(m_level, m_stream->str().c_str());
+    }
+
+    template <class T> LogStream& operator<<(const T& x)
+    {
+        if (m_callback)
+            *m_stream << x;
+        return *this;
+    }
+};
+
 class Methcla::Audio::EnvironmentImpl
 {
 public:
@@ -232,7 +264,8 @@ public:
 
     Environment*                m_owner;
 
-    PacketHandler               m_listener;
+    LogHandler                  m_logHandler;
+    PacketHandler               m_packetHandler;
 
     PluginManager               m_plugins;
     Memory::RTMemoryManager     m_rtMem;
@@ -273,7 +306,7 @@ public:
 
     std::atomic<int>                                m_logFlags;
 
-    EnvironmentImpl(Environment* owner, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
+    EnvironmentImpl(Environment* owner, LogHandler logHandler, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
 
     // Initialization that has to take place after constructor returns
@@ -372,7 +405,7 @@ public:
     //* Context: NRT
     void reply(Methcla_RequestId requestId, const void* packet, size_t size)
     {
-        m_listener(requestId, packet, size);
+        m_packetHandler(requestId, packet, size);
     }
 
     //* Context: NRT
@@ -390,17 +423,18 @@ public:
         // data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
         // strcpy(data->message, msg);
         // sendToWorker(perform_response_error, data);
-        auto& out(std::cerr);
+        using namespace std::placeholders;
+        auto out = nrt_log(kMethcla_LogError);
         out << "ERROR";
         if (requestId != kMethcla_Notification)
             out << "[" << requestId << "]";
-        out << ": " << what << std::endl;
+        out << ": " << what;
     }
 
     //* Context: NRT
     void notify(const void* packet, size_t size)
     {
-        m_listener(kMethcla_Notification, packet, size);
+        m_packetHandler(kMethcla_Notification, packet, size);
     }
 
     //* Context: NRT
@@ -408,17 +442,64 @@ public:
     {
         notify(packet.data(), packet.size());
     }
+
+    //* Context: RT
+    void logLineRT(Methcla_LogLevel level, const char* message)
+    {
+        logLineNRT(level, message);
+    }
+
+    //* Context: NRT
+    void logLineNRT(Methcla_LogLevel level, const char* message)
+    {
+        // std::cout << message << std::endl;
+        m_logHandler(level, message);
+    }
+
+    LogStream rt_log(Methcla_LogLevel level)
+    {
+        using namespace std::placeholders;
+        Methcla_LogLevel logLevel =
+            m_logFlags.load() & kMethcla_EngineLogDebug
+                ? kMethcla_LogDebug
+                : kMethcla_LogWarn;
+        return LogStream(std::bind(&EnvironmentImpl::logLineRT, this, _1, _2), logLevel, level);
+    }
+
+    LogStream rt_log()
+    {
+        using namespace std::placeholders;
+        return LogStream(std::bind(&EnvironmentImpl::logLineRT, this, _1, _2), kMethcla_LogDebug, kMethcla_LogDebug);
+    }
+
+    LogStream nrt_log(Methcla_LogLevel level)
+    {
+        using namespace std::placeholders;
+        Methcla_LogLevel logLevel =
+            m_logFlags.load() & kMethcla_EngineLogDebug
+                ? kMethcla_LogDebug
+                : kMethcla_LogWarn;
+        return LogStream(std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2), logLevel, level);
+    }
+
+    LogStream nrt_log()
+    {
+        using namespace std::placeholders;
+        return LogStream(std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2), kMethcla_LogDebug, kMethcla_LogDebug);
+    }
 };
 
 EnvironmentImpl::EnvironmentImpl(
     Environment* owner,
+    LogHandler logHandler,
     PacketHandler listener,
     const Environment::Options& options,
     Environment::MessageQueue* messageQueue,
     Environment::Worker* worker
     )
     : m_owner(owner)
-    , m_listener(listener)
+    , m_logHandler(logHandler)
+    , m_packetHandler(listener)
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(messageQueue == nullptr ? new Utility::MessageQueue<Request*>(kQueueSize) : messageQueue)
     , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, 2))
@@ -470,6 +551,14 @@ void EnvironmentImpl::init(const Environment::Options& options)
 }
 
 extern "C" {
+
+static void methcla_api_host_log_line(const Methcla_Host* host, Methcla_LogLevel level, const char* message)
+{
+    assert(host);
+    assert(host->handle);
+    assert(message);
+    static_cast<Environment*>(host->handle)->logLineNRT(level, message);
+}
 
 static void methcla_api_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
 {
@@ -562,6 +651,13 @@ static void methcla_api_world_free(const Methcla_World* world, void* ptr)
     return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
 }
 
+static void methcla_api_world_log_line(const Methcla_World* world, Methcla_LogLevel level, const char* message)
+{
+    assert(world);
+    assert(world->handle);
+    static_cast<Environment*>(world->handle)->logLineRT(level, message);
+}
+
 static void methcla_api_world_synth_retain(const Methcla_World*, Methcla_Synth* synth)
 {
     assert(synth);
@@ -585,7 +681,13 @@ static void methcla_api_world_perform_command(const Methcla_World*, Methcla_Host
 
 } // extern "C"
 
-Environment::Environment(PacketHandler handler, const Options& options, MessageQueue* messageQueue, Worker* worker)
+Environment::Environment(
+    LogHandler logHandler,
+    PacketHandler packetHandler,
+    const Options& options,
+    MessageQueue* messageQueue,
+    Worker* worker
+    )
     : m_sampleRate(options.sampleRate)
     , m_blockSize(options.blockSize)
 {
@@ -595,7 +697,8 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
         methcla_api_host_register_synthdef,
         methcla_api_host_register_soundfile_api,
         methcla_api_host_soundfile_open,
-        methcla_api_host_perform_command
+        methcla_api_host_perform_command,
+        methcla_api_host_log_line
     };
 
     // Initialize Methcla_World interface
@@ -608,13 +711,19 @@ Environment::Environment(PacketHandler handler, const Options& options, MessageQ
         methcla_api_world_alloc_aligned,
         methcla_api_world_free,
         methcla_api_world_perform_command,
+        methcla_api_world_log_line,
         methcla_api_world_synth_retain,
         methcla_api_world_synth_release,
         methcla_api_world_synth_done
     };
 
-    m_impl = new EnvironmentImpl(this, handler, options, messageQueue, worker);
+    m_impl = new EnvironmentImpl(this, logHandler, packetHandler, options, messageQueue, worker);
     m_impl->init(options);
+
+    using namespace std::placeholders;
+
+    m_impl->nrt_log(kMethcla_LogDebug)
+        << "Methcla engine (version " << methcla_version() << ")";
 }
 
 Environment::~Environment()
@@ -713,6 +822,16 @@ void Environment::process(Methcla_Time currentTime, size_t numFrames, const samp
 void Environment::setLogFlags(Methcla_EngineLogFlags flags)
 {
     m_impl->m_logFlags.store(flags);
+}
+
+void Environment::logLineRT(Methcla_LogLevel level, const char* message)
+{
+    m_impl->logLineRT(level, message);
+}
+
+void Environment::logLineNRT(Methcla_LogLevel level, const char* message)
+{
+    m_impl->logLineNRT(level, message);
 }
 
 void Environment::freeNode(NodeId nodeId)
@@ -965,8 +1084,10 @@ static void addNodeToTarget(Node* target, Node* node, Methcla_NodePlacement node
 
 void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
+    using namespace std::placeholders;
+
     if (logFlags & kMethcla_EngineLogRequests)
-        std::cerr << "Request: " << msg << std::endl;
+        rt_log() << "Request: " << msg;
 
     auto args = msg.args();
     // Methcla_RequestId requestId = args.int32();
@@ -1342,23 +1463,17 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
 # include "Methcla/Audio/IO/DummyDriver.hpp"
 #endif
 
-Engine::Engine(PacketHandler handler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
+Engine::Engine(LogHandler logHandler, PacketHandler packetHandler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
 {
     m_driver = IO::defaultPlatformDriver(driverOptions);
     m_driver->setProcessCallback(processCallback, this);
-
-    std::cout << "Starting methcla engine (version " << methcla_version() << ")" << std::endl
-              << "  sampleRate = " << m_driver->sampleRate() << std::endl
-              << "  numInputs = "  << m_driver->numInputs() << std::endl
-              << "  numOutputs = " << m_driver->numOutputs() << std::endl
-              << "  bufferSize = " << m_driver->bufferSize() << std::endl;
 
     Environment::Options options(engineOptions);
     options.sampleRate = m_driver->sampleRate();
     options.blockSize = m_driver->bufferSize();
     options.numHardwareInputChannels = m_driver->numInputs();
     options.numHardwareOutputChannels = m_driver->numOutputs();
-    m_env = new Environment(handler, options);
+    m_env = new Environment(logHandler, packetHandler, options);
 }
 
 Engine::~Engine()
@@ -1386,4 +1501,14 @@ void Engine::processCallback(
     sample_t* const* outputs)
 {
     static_cast<Engine*>(data)->m_env->process(currentTime, numFrames, inputs, outputs);
+}
+
+Methcla_LogHandler Methcla::Platform::defaultLogHandler()
+{
+    Methcla_LogHandler handler;
+    handler.handle = nullptr;
+    handler.log_line = [](void*, Methcla_LogLevel, const char* message){
+        std::cout << message << std::endl;
+    };
+    return handler;
 }

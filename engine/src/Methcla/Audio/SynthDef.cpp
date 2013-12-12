@@ -37,11 +37,6 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
         throw std::invalid_argument("SynthDef: Missing `process' function");
 
     m_options = m_descriptor->options_size > 0 ? new char[m_descriptor->options_size] : nullptr;
-
-#if DEBUG
-    std::cerr << "SynthDef " << uri() << " loaded (" << m_descriptor << "):" << std::endl
-              << "    instance size: " << instanceSize() << std::endl;
-#endif
 }
 
 SynthDef::~SynthDef()

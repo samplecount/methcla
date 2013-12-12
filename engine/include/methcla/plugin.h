@@ -19,6 +19,7 @@
 
 #include <methcla/common.h>
 #include <methcla/file.h>
+#include <methcla/log.h>
 
 #include <assert.h>
 #include <stdbool.h>
@@ -67,6 +68,9 @@ struct Methcla_World
 
     //* Schedule a command for execution in the non-realtime context.
     void (*perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+
+    //* Log a message and a newline character.
+    void (*log_line)(const Methcla_World* world, Methcla_LogLevel level, const char* message);
 
     //* Manipulate synth reference counts.
     void (*synth_retain)(const struct Methcla_World* world, Methcla_Synth* synth);
@@ -118,6 +122,14 @@ static inline void methcla_world_perform_command(const Methcla_World* world, Met
     assert(world && world->perform_command);
     assert(perform);
     world->perform_command(world, perform, data);
+}
+
+static inline void methcla_world_log_line(const Methcla_World* world, Methcla_LogLevel level, const char* message)
+{
+    assert(world);
+    assert(world->log_line);
+    assert(message);
+    world->log_line(world, level, message);
 }
 
 static inline void methcla_world_synth_retain(const Methcla_World* world, Methcla_Synth* synth)
@@ -226,6 +238,9 @@ struct Methcla_Host
 
     //* Schedule a command for execution in the realtime context.
     void (*perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
+
+    //* Log a message and a newline character.
+    void (*log_line)(const Methcla_Host* host, Methcla_LogLevel level, const char* message);
 };
 
 static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
@@ -254,6 +269,14 @@ static inline void methcla_host_perform_command(const Methcla_Host* host, Methcl
 {
     assert(host && host->perform_command);
     host->perform_command(host, perform, data);
+}
+
+static inline void methcla_host_log_line(const Methcla_Host* host, Methcla_LogLevel level, const char* message)
+{
+    assert(host);
+    assert(host->log_line);
+    assert(message);
+    host->log_line(host, level, message);
 }
 
 typedef struct Methcla_Library Methcla_Library;

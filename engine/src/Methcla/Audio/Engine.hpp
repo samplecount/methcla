@@ -43,6 +43,7 @@ namespace Methcla { namespace Audio
 
     class Group;
 
+    typedef std::function<void (Methcla_LogLevel, const char*)> LogHandler;
     typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;
 
     class Request;
@@ -88,7 +89,11 @@ namespace Methcla { namespace Audio
         typedef Utility::MessageQueueInterface<Request*> MessageQueue;
         typedef Utility::WorkerInterface<Command> Worker;
 
-        Environment(PacketHandler handler, const Options& options, MessageQueue* queue=nullptr, Worker* worker=nullptr);
+        Environment(LogHandler logHandler,
+                    PacketHandler packetHandler,
+                    const Options& options,
+                    MessageQueue* queue=nullptr,
+                    Worker* worker=nullptr);
         ~Environment();
 
         Environment(const Environment&) = delete;
@@ -165,6 +170,12 @@ namespace Methcla { namespace Audio
 
         void setLogFlags(Methcla_EngineLogFlags flags);
 
+        // Context: RT
+        void logLineRT(Methcla_LogLevel level, const char* message);
+
+        // Context: NRT
+        void logLineNRT(Methcla_LogLevel level, const char* message);
+
         //* Free a node.
         //
         // Context: RT
@@ -193,7 +204,10 @@ namespace Methcla { namespace Audio
     class Engine
     {
     public:
-        Engine(PacketHandler handler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions);
+        Engine(LogHandler logHandler,
+               PacketHandler packetHandler,
+               const Environment::Options& engineOptions,
+               const IO::Driver::Options& driverOptions);
         virtual ~Engine();
 
         IO::Driver* driver()
