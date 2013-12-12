@@ -12,6 +12,7 @@ tags
 tmtags
 build/
 cabal-dev/
+.cabal-sandbox/
 dist/
 .shake.database
 .shake.journal
