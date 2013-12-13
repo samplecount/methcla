@@ -371,7 +371,7 @@ mkRules options = do
                                        engineBuildFlags
                                    >>> append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
-                                   >>> append staticLibraries [libmethcla]
+                                   >>> append localLibraries [libmethcla]
                                    >>> append libraries ["android", "log", "OpenSLES"]
                                    >>> buildFlags
                     libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain
@@ -439,7 +439,7 @@ mkRules options = do
                                   , "tests/test_runner_nacl.cpp"
                                   ]
                               , Pro.testSources target ]
-          pnacl_test <- NaCl.finalize toolChain pnacl_test_bc pnacl_test_bc
+          pnacl_test <- NaCl.finalize toolChain pnacl_test_bc (pnacl_test_bc `replaceExtension` "pexe")
           pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
                                         (pnacl_test `replaceExtension` "nmf")
           pnacl_test' <- copyTo ("tests/pnacl" </> takeFileName pnacl_test) pnacl_test
@@ -474,7 +474,7 @@ mkRules options = do
                             "methcla-icecast-example"
                             $ SourceTree.flags (    apiIncludes
                                                 >>> append userIncludes ["examples/thADDeus/src"]
-                                                >>> append staticLibraries [lib]
+                                                >>> append localLibraries [lib]
                                                 >>> buildFlags )
                             $ SourceTree.files [ "examples/icecast/main.cpp"
                                                , "examples/thADDeus/src/synth.cpp" ]
