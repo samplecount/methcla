@@ -481,30 +481,28 @@ mkRules options = do
                 phony "macosx-icecast" $ need [lib]
                 phony "macosx-icecast-example" $ need [example]
             )
-      , (["macosx-jack"], do -- macosx-jack
+      , (["jack"], do -- macosx-jack
             applyEnv <- toolChainFromEnvironment
-            developer <- OSX.getDeveloperPath
-            sdkVersion <- OSX.getSystemVersion
+            (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             jackBuildFlags <- pkgConfig "jack"
-            let platform = OSX.macOSX sdkVersion
-                target = OSX.target (X86 X86_64) platform
-                toolChain = applyEnv $ OSX.toolChain developer target
-                env = mkEnv target
+            libsndfile <- pkgConfig "sndfile"
+            let env = mkEnv target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
                            >>> jackBuildFlags
+                           >>> libsndfile
                            >>> stdlib_libcpp toolChain
                            >>> libm
                 build f = f env target toolChain "methcla-jack"
                             $ SourceTree.flags buildFlags
                             $ methclaSources target $
-                                SourceTree.files ["platform/jack/Methcla/Audio/IO/JackDriver.cpp"]
+                                SourceTree.files [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp"
+                                                 , "plugins/soundfile_api_libsndfile.cpp" ]
             return $ do
                 staticLib <- build staticLibrary
                 sharedLib <- build sharedLibrary
-                phony "macosx-jack" $ need [staticLib]
-                phony "macosx-jack-shared" $ need [sharedLib]
+                phony "jack" $ need [staticLib, sharedLib]
         )
       , (["test", "clean-test"], do -- tests
             applyEnv <- toolChainFromEnvironment
