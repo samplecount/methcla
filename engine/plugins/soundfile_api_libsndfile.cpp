@@ -80,20 +80,17 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* 
 static bool convertMode(Methcla_FileMode mode, int* outMode)
 {
     switch (mode) {
-        case kMethcla_Read:
+        case kMethcla_FileModeRead:
             *outMode = SFM_READ;
             return true;
-        case kMethcla_Write:
+        case kMethcla_FileModeWrite:
             *outMode = SFM_WRITE;
-            return true;
-        case kMethcla_ReadWrite:
-            *outMode = SFM_RDWR;
             return true;
     }
     return true;
 }
 
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** outFile, Methcla_SoundFileInfo* info)
+static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Methcla_FileMode mode, Methcla_SoundFile** outFile, Methcla_SoundFileInfo* info)
 {
     if (path == nullptr)
         return kMethcla_ArgumentError;
@@ -134,7 +131,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api, const char*
     return kMethcla_NoError;
 }
 
-static const char* soundfile_system_error_description(const Methcla_SystemError* error)
+static const char* soundfile_system_error_description(const Methcla_SystemError*)
 {
     return "Unknown system error (ExtAudioFile)";
 }
@@ -144,7 +141,7 @@ static void soundfile_system_error_destroy(const Methcla_SystemError* error)
     delete error;
 }
 
-static const Methcla_SystemError* soundfile_last_system_error(const Methcla_SoundFileAPI* api)
+static const Methcla_SystemError* soundfile_last_system_error(const Methcla_SoundFileAPI*)
 {
     Methcla_SystemError* error = new (std::nothrow) Methcla_SystemError;
     if (error) {
@@ -154,12 +151,6 @@ static const Methcla_SystemError* soundfile_last_system_error(const Methcla_Soun
     }
     return error;
 }
-
-static const Methcla_SoundFileAPI kSoundFileAPI = {
-    nullptr,
-    soundfile_open,
-    soundfile_last_system_error
-};
 
 static const Methcla_SoundFileAPI kSoundFileAPI = {
     nullptr,
