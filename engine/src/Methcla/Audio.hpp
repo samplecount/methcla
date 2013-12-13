@@ -50,6 +50,17 @@ namespace Methcla { namespace Audio
             }
         }
     }
+
+    template <typename A, typename B> void interleave(A* dst, const B* const* src, B scale, size_t numChannels, size_t numFrames)
+    {
+        for (size_t c=0; c < numChannels; c++)
+        {
+            for (size_t i=0; i < numFrames; i++)
+            {
+                dst[i*numChannels+c] = static_cast<A>(scale * src[c][i]);
+            }
+        }
+    }
 } }
 
 #endif // METHCLA_AUDIO_HPP_INCLUDED
