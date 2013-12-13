@@ -36,8 +36,10 @@ The `-c` flag allows to select a build configuration (*debug* is the default):
 
 Display the list of commandline options:
 
-    ./shake -h
+    ./stir -h
 
 ## Examples
 
-`examples/thADDeus/Methcla/Methcla.xcodeproj` is an example XCode project that builds the engine for iOS devices and provides a simple multitouch sine synthesizer.
+[thADDeus](https://github.com/samplecount/methcla/tree/develop/engine/examples/thADDeus) is an example project that builds the engine for iOS and Android devices and provides a simple multitouch sine synthesizer.
+
+The [methcla-examples](https://github.com/samplecount/methcla-examples) repository currently contains a simple multitouch sampler application (it uses a streaming disk sampler for the Pro version of Methcla).
