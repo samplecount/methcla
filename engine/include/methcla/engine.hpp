@@ -468,7 +468,7 @@ namespace Methcla
 
         AudioDriverOptions audioDriver;
 
-        EngineOptions& operator<<(Methcla_LibraryFunction pluginLibrary)
+        EngineOptions& addLibrary(Methcla_LibraryFunction pluginLibrary)
         {
             pluginLibraries.push_back(pluginLibrary);
             return *this;

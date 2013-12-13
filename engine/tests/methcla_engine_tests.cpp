@@ -69,7 +69,7 @@ TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
 TEST_CASE("Node tree should only contain root node after startup", "[engine]")
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(Methcla::EngineOptions() << methcla_plugins_sine)
+        new Methcla::Engine(Methcla::EngineOptions().addLibrary(methcla_plugins_sine))
     );
     // engine->setLogFlags(kMethcla_EngineLogRequests);
     engine->start();
@@ -87,8 +87,8 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine(
             Methcla::EngineOptions()
-                << methcla_plugins_sine
-                << methcla_plugins_node_control
+                .addLibrary(methcla_plugins_sine)
+                .addLibrary(methcla_plugins_node_control)
         )
     );
 
@@ -169,8 +169,8 @@ TEST_CASE("/node/ended notification", "[engine]")
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine(
             Methcla::EngineOptions()
-                << methcla_plugins_sine
-                << methcla_plugins_node_control
+                .addLibrary(methcla_plugins_sine)
+                .addLibrary(methcla_plugins_node_control)
         )
     );
 
