@@ -29,10 +29,9 @@ public:
     struct Options
     {
         double sampleRate = -1.;
-        int numInputs = -1;
-        int numOutputs = -1;
-        int bufferSize = -1;
-        int blockSize = -1;
+        int numInputs     = -1;
+        int numOutputs    = -1;
+        int bufferSize    = -1;
     };
 
     typedef void (*ProcessCallback)(
@@ -52,8 +51,6 @@ public:
     virtual size_t numInputs() const = 0;
     virtual size_t numOutputs() const = 0;
     virtual size_t bufferSize() const = 0;
-
-    size_t blockSize() const;
 
     virtual Methcla_Time currentTime() const override;
 
@@ -76,7 +73,6 @@ protected:
 private:
     ProcessCallback m_processCallback;
     void*           m_processData;
-    size_t          m_blockSize;
 };
 
 } } }

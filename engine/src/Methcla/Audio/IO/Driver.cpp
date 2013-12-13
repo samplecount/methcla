@@ -3,19 +3,13 @@
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 
-Driver::Driver(Options options)
-    : m_blockSize(options.blockSize >= 0 ? std::max(1, options.blockSize) : 64)
+Driver::Driver(Options)
 {
     setProcessCallback(nullptr, nullptr);
 }
 
 Driver::~Driver()
 {
-}
-
-size_t Driver::blockSize() const
-{
-    return m_blockSize;
 }
 
 void Driver::setProcessCallback(ProcessCallback callback, void* data)
