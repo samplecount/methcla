@@ -78,7 +78,7 @@ public:
 
     void interleave(Methcla_AudioSample* dst) const
     {
-        interleave(dst, numFrames());
+        Methcla::Audio::interleave(dst, data(), numChannels(), numFrames());
     }
 
     void zero()
