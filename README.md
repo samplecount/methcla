@@ -8,31 +8,31 @@ Methcla is a light-weight, efficient sound engine for mobile devices, see our [w
 
 ## Building the sound engine
 
-Our build system is written in Haskell and you need to install at least the [Haskell platform](http://www.haskell.org/platform/) and [cabal-dev](http://hackage.haskell.org/package/cabal-dev) before building Methcla.
+Our build system is written in Haskell and you need to install at least the [Haskell platform](http://www.haskell.org/platform/) and [cabal-install 1.18](http://hackage.haskell.org/package/cabal-install) before building Methcla.
 
 In the `engine` subdirectory execute
 
-    ./shake update
+    ./stir update
 
 initially and each time the build files change.
 
-Note that for the examples bundled with methcla there's no need to call *shake* directly, that's taken care of by the respective platform specific build systems.
+Note that for the examples bundled with methcla there's no need to call *stir* directly, that's taken care of by the respective platform specific build systems.
 
 To build a specific target:
 
-    ./shake TARGET
+    ./stir TARGET
 
 To clean everything
 
-    ./shake clean
+    ./stir clean
 
 Use the `-j` flag for parallel builds:
 
-    ./shake -j4 iphoneos
+    ./stir -j4 test
 
 The `-c` flag allows to select a build configuration (*debug* is the default):
 
-    ./shake -c release iphoneos
+    ./stir -c release test
 
 Display the list of commandline options:
 
@@ -40,4 +40,4 @@ Display the list of commandline options:
 
 ## Examples
 
-`examples/ios/Methcla/Methcla.xcodeproj` is an example XCode project that builds the engine for iOS devices and provides a simple multitouch sine synthesizer.
+`examples/thADDeus/Methcla/Methcla.xcodeproj` is an example XCode project that builds the engine for iOS devices and provides a simple multitouch sine synthesizer.
