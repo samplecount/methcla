@@ -20,6 +20,7 @@
 #include <methcla/common.h>
 
 #include <cassert>
+#include <iostream>
 #include <sstream>
 
 using namespace Methcla;
@@ -78,23 +79,34 @@ JackDriver::JackDriver(Options options)
     jack_set_buffer_size_callback(m_jackClient, bufferSizeCallback, this);
 }
 
+static void check(const char* function, int code)
+{
+    if (code != 0)
+    {
+        std::stringstream s;
+        s << function << " failed";
+        throw std::runtime_error(s.str());
+    }
+}
+
 JackDriver::~JackDriver()
 {
-    BOOST_VERIFY(jack_deactivate(m_jackClient) == 0);
+    check("jack_deactivate", jack_deactivate(m_jackClient));
+
     delete [] m_inputBuffers;
     delete [] m_outputBuffers;
 
     for (size_t i=0; i < numInputs(); i++) {
-        BOOST_VERIFY(jack_port_unregister(m_jackClient, m_jackInputPorts[i]) == 0);
+        check("jack_port_unregister", jack_port_unregister(m_jackClient, m_jackInputPorts[i]));
     }
     delete [] m_jackInputPorts;
 
     for (size_t i=0; i < numOutputs(); i++) {
-        BOOST_VERIFY(jack_port_unregister(m_jackClient, m_jackOutputPorts[i]) == 0);
+        check("jack_port_unregister", jack_port_unregister(m_jackClient, m_jackOutputPorts[i]));
     }
     delete [] m_jackOutputPorts;
 
-    BOOST_VERIFY(jack_client_close(m_jackClient) == 0);
+    check("jack_client_close", jack_client_close(m_jackClient));
 }
 
 int JackDriver::sampleRateCallback(jack_nframes_t nframes, void* arg)
