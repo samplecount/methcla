@@ -46,6 +46,11 @@ public:
         return m_numFrames;
     }
 
+    size_t numSamples() const
+    {
+        return numChannels() * numFrames();
+    }
+
     Methcla_AudioSample* const* data()
     {
         return m_data;
