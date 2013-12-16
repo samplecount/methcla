@@ -18,6 +18,7 @@
 
 #include "Methcla/API.hpp"
 #include "Methcla/Audio/Engine.hpp"
+#include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/SynthDef.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Platform.hpp"
@@ -91,9 +92,46 @@ void Methcla::API::parseOptions(
     }
 }
 
+struct Methcla_AudioDriver
+{
+public:
+    Methcla_AudioDriver(Methcla::Audio::IO::Driver* driver)
+        : m_driver(driver)
+    {}
+
+    ~Methcla_AudioDriver()
+    {
+        delete m_driver;
+    }
+
+    Methcla::Audio::IO::Driver* driver()
+    {
+        return m_driver;
+    }
+
+private:
+    Methcla::Audio::IO::Driver * m_driver;
+};
+
+Methcla_AudioDriver* Methcla::API::wrapAudioDriver(Methcla::Audio::IO::Driver* driver)
+{
+    return new Methcla_AudioDriver(driver);
+}
+
+Methcla::Audio::IO::Driver::Options Methcla::API::convertAudioDriverOptions(const Methcla_AudioDriverOptions* options)
+{
+    Methcla::Audio::IO::Driver::Options result;
+    result.sampleRate = options->sample_rate;
+    result.numInputs = options->input_count;
+    result.numOutputs = options->output_count;
+    result.bufferSize = options->buffer_size;
+    return result;
+}
+
 struct Methcla_Engine
 {
-    Methcla_Engine(const Methcla_EngineOptions* inOptions)
+public:
+    Methcla_Engine(const Methcla_EngineOptions* options, Methcla_AudioDriver* driver=nullptr)
     {
         Methcla::Audio::Environment::Options engineOptions;
         Methcla::Audio::IO::Driver::Options driverOptions;
@@ -101,25 +139,60 @@ struct Methcla_Engine
         // Register sine plugin by default
         engineOptions.pluginLibraries.push_back(methcla_plugins_sine);
 
-        if (inOptions->options.size > 0)
-            Methcla::API::parseOptions(&inOptions->options, &engineOptions, &driverOptions);
+        if (options->options.size > 0)
+            Methcla::API::parseOptions(&options->options, &engineOptions, &driverOptions);
+
+        m_driver = std::unique_ptr<Methcla_AudioDriver>(
+            driver ? driver : new Methcla_AudioDriver(Methcla::Platform::defaultAudioDriver(driverOptions))
+            );
+        if (m_driver->driver() == nullptr)
+            throw std::runtime_error("Couldn't create default audio driver");
+        m_driver->driver()->setProcessCallback(processCallback, this);
+
+        engineOptions.sampleRate = m_driver->driver()->sampleRate();
+        engineOptions.blockSize = m_driver->driver()->bufferSize();
+        engineOptions.numHardwareInputChannels = m_driver->driver()->numInputs();
+        engineOptions.numHardwareOutputChannels = m_driver->driver()->numOutputs();
 
         using namespace std::placeholders;
-
-        m_engine = new Methcla::Audio::Engine(
-            std::bind(inOptions->log_handler.log_line, inOptions->log_handler.handle, _1, _2),
-            std::bind(inOptions->packet_handler.handle_packet, inOptions->packet_handler.handle, _1, _2, _3),
-            engineOptions,
-            driverOptions
-        );
+        m_env = std::unique_ptr<Methcla::Audio::Environment>(
+            new Methcla::Audio::Environment(
+                    std::bind(options->log_handler.log_line, options->log_handler.handle, _1, _2),
+                    std::bind(options->packet_handler.handle_packet, options->packet_handler.handle, _1, _2, _3),
+                    engineOptions
+                )
+            );
     }
+
+    const Methcla::Audio::Environment* env() const { return m_env.get(); }
+    Methcla::Audio::Environment* env() { return m_env.get(); }
+
+    const Methcla::Audio::IO::Driver* driver() const { return m_driver->driver(); }
+    Methcla::Audio::IO::Driver* driver() { return m_driver->driver(); }
+
+    void start() { driver()->start(); }
+    void stop() { driver()->stop(); }
 
     ~Methcla_Engine()
     {
-        delete m_engine;
+        stop();
     }
 
-    Methcla::Audio::Engine* m_engine;
+private:
+    static void processCallback(
+        void* data,
+        Methcla_Time currentTime,
+        size_t numFrames,
+        const Methcla_AudioSample* const* inputs,
+        Methcla_AudioSample* const* outputs
+        )
+    {
+        static_cast<Methcla_Engine*>(data)->m_env->process(currentTime, numFrames, inputs, outputs);
+    }
+
+private:
+    std::unique_ptr<Methcla::Audio::Environment> m_env;
+    std::unique_ptr<Methcla_AudioDriver>         m_driver;
 };
 
 #define METHCLA_ENGINE_TRY \
@@ -164,13 +237,38 @@ METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options)
 
 METHCLA_EXPORT Methcla_Error methcla_engine_new(const Methcla_EngineOptions* options, Methcla_Engine** engine)
 {
-    // cout << "Methcla_Engine_new" << endl;
-    if (engine == nullptr)
-        return kMethcla_ArgumentError;
     if (options == nullptr)
+        return kMethcla_ArgumentError;
+    if (engine == nullptr)
         return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
         *engine = new Methcla_Engine(options);
+    } METHCLA_ENGINE_CATCH;
+    return kMethcla_NoError;
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options)
+{
+    options->sample_rate = 0;
+    options->input_count = -1;
+    options->output_count = -1;
+    options->buffer_size = -1;
+}
+
+METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
+    const Methcla_EngineOptions* options,
+    Methcla_AudioDriver* driver,
+    Methcla_Engine** engine
+)
+{
+    if (options == nullptr)
+        return kMethcla_ArgumentError;
+    if (driver == nullptr)
+        return kMethcla_ArgumentError;
+    if (engine == nullptr)
+        return kMethcla_ArgumentError;
+    METHCLA_ENGINE_TRY {
+        *engine = new Methcla_Engine(options, driver);
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
@@ -224,7 +322,7 @@ METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
     if (engine == nullptr)
         return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
-        engine->m_engine->start();
+        engine->start();
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
@@ -235,14 +333,14 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
     if (engine == nullptr)
         return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
-        engine->m_engine->stop();
+        engine->stop();
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
 
 METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla_EngineLogFlags flags)
 {
-    engine->m_engine->env().setLogFlags(flags);
+    engine->env()->setLogFlags(flags);
 }
 
 METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time)
@@ -265,7 +363,7 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* en
 {
     if (engine == nullptr)
         return kMethcla_ArgumentError;
-    return engine->m_engine->driver()->currentTime();
+    return engine->driver()->currentTime();
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size)
@@ -277,7 +375,7 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const v
     if (size == 0)
         return kMethcla_ArgumentError;
     METHCLA_ENGINE_TRY {
-        engine->m_engine->env().send(packet, size);
+        engine->env()->send(packet, size);
     } METHCLA_ENGINE_CATCH;
     return kMethcla_NoError;
 }
@@ -294,6 +392,6 @@ METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(const Methcla_Engine*
         return kMethcla_ArgumentError;
     if (info == nullptr)
         return kMethcla_ArgumentError;
-    const Methcla_Host* host = static_cast<const Methcla_Host*>(engine->m_engine->env());
+    const Methcla_Host* host = static_cast<const Methcla_Host*>(*engine->env());
     return methcla_host_soundfile_open(host, path, mode, file, info);
 }

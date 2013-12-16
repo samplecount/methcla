@@ -17,8 +17,13 @@
 
 #include <methcla/engine.h>
 #include "Methcla/Audio/Engine.hpp"
+#include "Methcla/Audio/IO/Driver.hpp"
 
 namespace Methcla { namespace API {
+    Methcla_AudioDriver* wrapAudioDriver(Methcla::Audio::IO::Driver* driver);
+
+    Methcla::Audio::IO::Driver::Options convertAudioDriverOptions(const Methcla_AudioDriverOptions* options);
+
     void parseOptions(
         const Methcla_OSCPacket* packet,
         Methcla::Audio::Environment::Options* engineOptions,

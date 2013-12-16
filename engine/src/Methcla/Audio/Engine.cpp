@@ -1459,50 +1459,6 @@ static void methcla_api_world_perform_command(const Methcla_World* world, Methcl
     env->sendToWorker(perform_hostCommand, callbackData);
 }
 
-#if defined(METHCLA_USE_DUMMY_DRIVER)
-# include "Methcla/Audio/IO/DummyDriver.hpp"
-#endif
-
-Engine::Engine(LogHandler logHandler, PacketHandler packetHandler, const Environment::Options& engineOptions, const IO::Driver::Options& driverOptions)
-{
-    m_driver = Platform::defaultAudioDriver(driverOptions);
-    m_driver->setProcessCallback(processCallback, this);
-
-    Environment::Options options(engineOptions);
-    options.sampleRate = m_driver->sampleRate();
-    options.blockSize = m_driver->bufferSize();
-    options.numHardwareInputChannels = m_driver->numInputs();
-    options.numHardwareOutputChannels = m_driver->numOutputs();
-    m_env = new Environment(logHandler, packetHandler, options);
-}
-
-Engine::~Engine()
-{
-    stop();
-    delete m_env;
-    delete m_driver;
-}
-
-void Engine::start()
-{
-    driver()->start();
-}
-
-void Engine::stop()
-{
-    driver()->stop();
-}
-
-void Engine::processCallback(
-    void* data,
-    Methcla_Time currentTime,
-    size_t numFrames,
-    const sample_t* const* inputs,
-    sample_t* const* outputs)
-{
-    static_cast<Engine*>(data)->m_env->process(currentTime, numFrames, inputs, outputs);
-}
-
 Methcla_LogHandler Methcla::Platform::defaultLogHandler()
 {
     Methcla_LogHandler handler;

@@ -200,50 +200,6 @@ namespace Methcla { namespace Audio
         Methcla_Host        m_host;
         Methcla_World       m_world;
     };
-
-    class Engine
-    {
-    public:
-        Engine(LogHandler logHandler,
-               PacketHandler packetHandler,
-               const Environment::Options& engineOptions,
-               const IO::Driver::Options& driverOptions);
-        virtual ~Engine();
-
-        IO::Driver* driver()
-        {
-            return m_driver;
-        }
-        const IO::Driver* driver() const
-        {
-            return m_driver;
-        }
-
-        Environment& env()
-        {
-            return *m_env;
-        }
-        const Environment& env() const
-        {
-            return *m_env;
-        }
-
-        void start();
-        void stop();
-
-    private:
-        static void processCallback(
-            void* data,
-            Methcla_Time currentTime,
-            size_t numFrames,
-            const sample_t* const* inputs,
-            sample_t* const* outputs
-            );
-
-    private:
-        IO::Driver*     m_driver;
-        Environment*    m_env;
-    };
 } }
 
 #endif // METHCLA_AUDIO_ENGINE_HPP_INCLUDED

@@ -75,6 +75,24 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new(
     Methcla_Engine** engine
     );
 
+typedef struct Methcla_AudioDriverOptions
+{
+    double sample_rate;
+    int    input_count;
+    int    output_count;
+    int    buffer_size;
+} Methcla_AudioDriverOptions;
+
+typedef struct Methcla_AudioDriver Methcla_AudioDriver;
+
+METHCLA_EXPORT void methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options);
+
+METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
+    const Methcla_EngineOptions* options,
+    Methcla_AudioDriver* driver,
+    Methcla_Engine** engine
+    );
+
 //* Free the resources associated with engine.
 //
 //  Dereferencing engine after this function returns results in undefined behavior.

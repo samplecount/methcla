@@ -844,7 +844,7 @@ namespace Methcla
     class Engine : public EngineInterface
     {
     public:
-        Engine(const EngineOptions& inOptions=EngineOptions())
+        Engine(const EngineOptions& inOptions=EngineOptions(), Methcla_AudioDriver* driver=nullptr)
             : m_logHandler(inOptions.logHandler)
             , m_nodeIds(1, inOptions.maxNumNodes - 1)
             , m_audioBusIds(0, inOptions.maxNumAudioBuses)
@@ -861,7 +861,11 @@ namespace Methcla
             options.packet_handler.handle_packet = handlePacket;
             options.options.data = bundle->data();
             options.options.size = bundle->size();
-            detail::checkReturnCode(methcla_engine_new(&options, &m_engine));
+            detail::checkReturnCode(
+                driver == nullptr
+                    ? methcla_engine_new(&options, &m_engine)
+                    : methcla_engine_new_with_driver(&options, driver, &m_engine)
+            );
         }
 
         ~Engine()
