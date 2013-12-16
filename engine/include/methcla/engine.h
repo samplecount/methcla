@@ -53,9 +53,11 @@ typedef struct Methcla_EngineOptions Methcla_EngineOptions;
 
 struct Methcla_EngineOptions
 {
-    Methcla_LogHandler    log_handler;
-    Methcla_PacketHandler packet_handler;
-    Methcla_OSCPacket     options;
+    Methcla_LogHandler        log_handler;
+    Methcla_PacketHandler     packet_handler;
+    // Legacy options packed in an OSC packet.
+    // This will be deprecated soon.
+    Methcla_OSCPacket         options;
 };
 
 METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);

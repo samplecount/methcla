@@ -449,6 +449,8 @@ namespace Methcla
         }
     };
 
+    typedef std::function<void(Methcla_LogLevel, const char*)> LogHandler;
+
     class AudioDriverOptions
     {
     public:
@@ -458,6 +460,8 @@ namespace Methcla
     class EngineOptions
     {
     public:
+        LogHandler logHandler;
+
         size_t realtimeMemorySize = 1024*1024;
         size_t maxNumNodes = 1024;
         size_t maxNumAudioBuses = 1024;
@@ -841,7 +845,8 @@ namespace Methcla
     {
     public:
         Engine(const EngineOptions& inOptions=EngineOptions())
-            : m_nodeIds(1, inOptions.maxNumNodes - 1)
+            : m_logHandler(inOptions.logHandler)
+            , m_nodeIds(1, inOptions.maxNumNodes - 1)
             , m_audioBusIds(0, inOptions.maxNumAudioBuses)
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
@@ -849,6 +854,9 @@ namespace Methcla
             Methcla_EngineOptions options;
             methcla_engine_options_init(&options);
             auto bundle = serializeOptions(inOptions);
+            if (m_logHandler != nullptr)
+                options.log_handler.handle = this;
+                options.log_handler.log_line = logLineCallback;
             options.packet_handler.handle = this;
             options.packet_handler.handle_packet = handlePacket;
             options.options.data = bundle->data();
@@ -973,6 +981,11 @@ namespace Methcla
         }
 
     private:
+        static void logLineCallback(void* data, Methcla_LogLevel level, const char* message)
+        {
+            static_cast<Engine*>(data)->m_logHandler(level, message);
+        }
+
         static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
         {
             if (requestId == kMethcla_Notification)
@@ -1078,6 +1091,7 @@ namespace Methcla
         typedef std::list<NotificationHandler> NotificationHandlers;
 
         Methcla_Engine*         m_engine;
+        LogHandler              m_logHandler;
         NodeIdAllocator         m_nodeIds;
         AudioBusIdAllocator     m_audioBusIds;
         Methcla_RequestId       m_requestId;
