@@ -14,7 +14,11 @@ In the `engine` subdirectory execute
 
     ./stir update
 
-initially and each time the build files change.
+initially and each time the build files change. Also don't forget to
+
+    git submodule update --init --recursive
+
+after you pull from Methcla's repository.
 
 Note that for the examples bundled with methcla there's no need to call *stir* directly, that's taken care of by the respective platform specific build systems.
 
