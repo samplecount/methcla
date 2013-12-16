@@ -25,7 +25,7 @@ namespace thaddeus
     class Engine
     {
     public:
-        Engine();
+        Engine(Methcla::EngineOptions options, Methcla_AudioDriver* audioDriver=nullptr);
         ~Engine();
 
         void start();

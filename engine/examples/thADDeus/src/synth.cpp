@@ -14,14 +14,16 @@
 
 #include "synth.hpp"
 
-#include <methc.la/plugins/sine/sine.h>
+#include <methcla/plugins/sine.h>
 
 #include <cassert>
 
-thaddeus::Engine::Engine()
+thaddeus::Engine::Engine(Methcla::EngineOptions options, Methcla_AudioDriver* audioDriver)
 {
-    m_engine = new Methcla::Engine({ Methcla::Option::pluginLibrary(methcla_plugins_sine) });
+    options.addLibrary(methcla_plugins_sine);
+    m_engine = new Methcla::Engine(options, audioDriver);
     m_engine->start();
+    m_engine->setLogFlags(kMethcla_EngineLogDebug);
 }
 
 thaddeus::Engine::~Engine()
@@ -50,12 +52,20 @@ void thaddeus::Engine::startVoice(VoiceId voice, float x, float y)
     if (m_voices.find(voice) != m_voices.end()) {
         stopVoice(voice);
     }
+
     const float xFreq = mapFreq(x);
     const float yFreq = mapFreq(y);
-    const Methcla::SynthId synth_x = m_engine->synth(METHCLA_PLUGINS_SINE_URI, { xFreq });
-    const Methcla::SynthId synth_y = m_engine->synth(METHCLA_PLUGINS_SINE_URI, { yFreq });
-    m_engine->mapOutput(synth_x, 0, Methcla::AudioBusId(1));
-    m_engine->mapOutput(synth_y, 0, Methcla::AudioBusId(1));
+
+    Methcla::Request request(m_engine);
+    request.openBundle();
+        const Methcla::SynthId synth_x = request.synth(METHCLA_PLUGINS_SINE_URI, m_engine->root(), { xFreq, 1.0f });
+        const Methcla::SynthId synth_y = request.synth(METHCLA_PLUGINS_SINE_URI, m_engine->root(), { yFreq, 1.0f });
+        request.activate(synth_x);
+        request.activate(synth_y);
+        request.mapOutput(synth_x, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
+        request.mapOutput(synth_y, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
+    request.closeBundle();
+    request.send();
 //        std::cout << "Synth " << synth << " started: freq=" << ps.freq << " amp=" << ps.amp << std::endl;
     m_voices[voice] = std::make_tuple(synth_x, synth_y);
 }
@@ -63,19 +73,30 @@ void thaddeus::Engine::startVoice(VoiceId voice, float x, float y)
 void thaddeus::Engine::updateVoice(VoiceId voice, float x, float y)
 {
     auto it = m_voices.find(voice);
-    assert( it != m_voices.end() );
-    auto synths = it->second;
-    m_engine->set(std::get<0>(synths), 0, mapFreq(x));
-    m_engine->set(std::get<1>(synths), 0, mapFreq(y));
+    if (it != m_voices.end())
+    {
+        auto synths = it->second;
+        Methcla::Request request(m_engine);
+        request.openBundle();
+            request.set(std::get<0>(synths), 0, mapFreq(x));
+            request.set(std::get<1>(synths), 0, mapFreq(y));
+        request.closeBundle();
+        request.send();
+    }
 }
 
 void thaddeus::Engine::stopVoice(VoiceId voice)
 {
     auto it = m_voices.find(voice);
-    if (it != m_voices.end()) {
+    if (it != m_voices.end())
+    {
         auto synths = it->second;
-        m_engine->freeNode(std::get<0>(synths));
-        m_engine->freeNode(std::get<1>(synths));
+        Methcla::Request request(m_engine);
+        request.openBundle();
+            request.free(std::get<0>(synths));
+            request.free(std::get<1>(synths));
+        request.closeBundle();
+        request.send();
         m_voices.erase(it);
     }
 }
