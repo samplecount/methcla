@@ -408,12 +408,13 @@ mkRules options = do
               env = mkEnv target
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
+                         -- Currently -std=c++11 produces compile errors with libc++
+                         -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                          >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
                          -- Not detected by boost for PNaCl platform
                          -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
                          >>> append userIncludes ["platform/pepper"]
                          >>> stdlib_libcpp toolChain
-                         -- Currently -std=c++11 produces compile errors with libc++
                          >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
                          >>> NaCl.libppapi_cpp
                          >>> NaCl.libppapi
@@ -425,7 +426,6 @@ mkRules options = do
                                   ]
           phony "pnacl" $ need [libmethcla]
           let testBuildFlags =   buildFlags
-                             -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                              >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
                                                 , ("METHCLA_TEST_SOUNDFILE_API_LIB", Just "methcla_soundfile_api_dummy") ]
                              >>> append systemIncludes [externalLibrary "catch/single_include"]
