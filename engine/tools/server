@@ -1,0 +1,16 @@
+#!/bin/sh
+
+root="$1"
+sandbox="`pwd`/.cabal-sandbox"
+warp="$sandbox/bin/warp"
+
+if [ ! -d "$sandbox" ]; then
+    echo "`basename $0`: No cabal sandbox found at $sandbox"
+    exit 1
+fi
+
+if [ ! -e "$warp" ]; then
+    cabal install warp-static
+fi
+
+cd "$root" && exec $warp
