@@ -1,0 +1,422 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		53A834DB178EA856005E8D03 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A834DA178EA856005E8D03 /* UIKit.framework */; };
+		53A834DD178EA856005E8D03 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A834DC178EA856005E8D03 /* Foundation.framework */; };
+		53A834DF178EA856005E8D03 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A834DE178EA856005E8D03 /* CoreGraphics.framework */; };
+		53A834E5178EA856005E8D03 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 53A834E3178EA856005E8D03 /* InfoPlist.strings */; };
+		53A834E7178EA856005E8D03 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 53A834E6178EA856005E8D03 /* main.m */; };
+		53A834EB178EA856005E8D03 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53A834EA178EA856005E8D03 /* AppDelegate.m */; };
+		53A834ED178EA856005E8D03 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 53A834EC178EA856005E8D03 /* Default.png */; };
+		53A834EF178EA856005E8D03 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 53A834EE178EA856005E8D03 /* Default@2x.png */; };
+		53A834F1178EA856005E8D03 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 53A834F0178EA856005E8D03 /* Default-568h@2x.png */; };
+		53A834F4178EA856005E8D03 /* ViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 53A834F3178EA856005E8D03 /* ViewController.mm */; };
+		53A834F7178EA856005E8D03 /* ViewController_iPhone.xib in Resources */ = {isa = PBXBuildFile; fileRef = 53A834F5178EA856005E8D03 /* ViewController_iPhone.xib */; };
+		53A834FA178EA856005E8D03 /* ViewController_iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = 53A834F8178EA856005E8D03 /* ViewController_iPad.xib */; };
+		53A83504178EBA90005E8D03 /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53A83500178EBA90005E8D03 /* Engine.cpp */; };
+		53A83507178EBE08005E8D03 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53A83506178EBE08005E8D03 /* AudioToolbox.framework */; };
+		A57F07F3186071C0008122DE /* libmethcla.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A52066EB18606E7D002B6DD9 /* libmethcla.a */; };
+		A5C3A8A617FDACAC00AFFF45 /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = A5C3A8A517FDACAC00AFFF45 /* sounds */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A52066EA18606E7D002B6DD9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A5B265DF181687120088BD47 /* Methcla.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A5C3A8C318081AF200AFFF45;
+			remoteInfo = methcla;
+		};
+		A57F07F118607169008122DE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A5B265DF181687120088BD47 /* Methcla.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = A5C3A8C218081AF200AFFF45;
+			remoteInfo = methcla;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		533B360A17CCFCDC00E405AA /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		533B360D17CCFCDC00E405AA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		533B360E17CCFCDC00E405AA /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		533B360F17CCFCDC00E405AA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		533B362617CD0E3800E405AA /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/AudioToolbox.framework; sourceTree = DEVELOPER_DIR; };
+		533B363217CF9BCE00E405AA /* Jackmp.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Jackmp.framework; path = /System/Library/Frameworks/Jackmp.framework; sourceTree = "<absolute>"; };
+		53A834D7178EA856005E8D03 /* MethclaSampler.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MethclaSampler.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		53A834DA178EA856005E8D03 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		53A834DC178EA856005E8D03 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		53A834DE178EA856005E8D03 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		53A834E2178EA856005E8D03 /* MethclaSampler-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "MethclaSampler-Info.plist"; sourceTree = "<group>"; };
+		53A834E4178EA856005E8D03 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		53A834E6178EA856005E8D03 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		53A834E8178EA856005E8D03 /* MethclaSampler-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MethclaSampler-Prefix.pch"; sourceTree = "<group>"; };
+		53A834E9178EA856005E8D03 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		53A834EA178EA856005E8D03 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		53A834EC178EA856005E8D03 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		53A834EE178EA856005E8D03 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		53A834F0178EA856005E8D03 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		53A834F2178EA856005E8D03 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		53A834F3178EA856005E8D03 /* ViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ViewController.mm; sourceTree = "<group>"; };
+		53A834F6178EA856005E8D03 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPhone.xib; sourceTree = "<group>"; };
+		53A834F9178EA856005E8D03 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPad.xib; sourceTree = "<group>"; };
+		53A83500178EBA90005E8D03 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Engine.cpp; path = ../src/Engine.cpp; sourceTree = "<group>"; };
+		53A83501178EBA90005E8D03 /* Engine.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Engine.hpp; path = ../src/Engine.hpp; sourceTree = "<group>"; };
+		53A83506178EBE08005E8D03 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		A5B265DF181687120088BD47 /* Methcla.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Methcla.xcodeproj; path = ../../../platform/xcode/Methcla.xcodeproj; sourceTree = SOURCE_ROOT; };
+		A5C3A8A517FDACAC00AFFF45 /* sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; name = sounds; path = "sounds/7773__hoobtastic__acoustic-guitar/sounds"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		53A834D4178EA856005E8D03 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A57F07F3186071C0008122DE /* libmethcla.a in Frameworks */,
+				53A83507178EBE08005E8D03 /* AudioToolbox.framework in Frameworks */,
+				53A834DB178EA856005E8D03 /* UIKit.framework in Frameworks */,
+				53A834DD178EA856005E8D03 /* Foundation.framework in Frameworks */,
+				53A834DF178EA856005E8D03 /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		533B360C17CCFCDC00E405AA /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				533B360D17CCFCDC00E405AA /* AppKit.framework */,
+				533B360E17CCFCDC00E405AA /* CoreData.framework */,
+				533B360F17CCFCDC00E405AA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		533B362917CD0F4500E405AA /* src */ = {
+			isa = PBXGroup;
+			children = (
+				53A83500178EBA90005E8D03 /* Engine.cpp */,
+				53A83501178EBA90005E8D03 /* Engine.hpp */,
+			);
+			name = src;
+			sourceTree = "<group>";
+		};
+		53A834CE178EA856005E8D03 = {
+			isa = PBXGroup;
+			children = (
+				A5B265DF181687120088BD47 /* Methcla.xcodeproj */,
+				A5C3A8A517FDACAC00AFFF45 /* sounds */,
+				53A834E0178EA856005E8D03 /* MethclaSampler */,
+				533B362917CD0F4500E405AA /* src */,
+				53A834D9178EA856005E8D03 /* Frameworks */,
+				53A834D8178EA856005E8D03 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		53A834D8178EA856005E8D03 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				53A834D7178EA856005E8D03 /* MethclaSampler.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		53A834D9178EA856005E8D03 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				533B362617CD0E3800E405AA /* AudioToolbox.framework */,
+				53A83506178EBE08005E8D03 /* AudioToolbox.framework */,
+				53A834DA178EA856005E8D03 /* UIKit.framework */,
+				53A834DC178EA856005E8D03 /* Foundation.framework */,
+				53A834DE178EA856005E8D03 /* CoreGraphics.framework */,
+				533B360A17CCFCDC00E405AA /* Cocoa.framework */,
+				533B363217CF9BCE00E405AA /* Jackmp.framework */,
+				533B360C17CCFCDC00E405AA /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		53A834E0178EA856005E8D03 /* MethclaSampler */ = {
+			isa = PBXGroup;
+			children = (
+				53A834E9178EA856005E8D03 /* AppDelegate.h */,
+				53A834EA178EA856005E8D03 /* AppDelegate.m */,
+				53A834F2178EA856005E8D03 /* ViewController.h */,
+				53A834F3178EA856005E8D03 /* ViewController.mm */,
+				53A834F5178EA856005E8D03 /* ViewController_iPhone.xib */,
+				53A834F8178EA856005E8D03 /* ViewController_iPad.xib */,
+				53A834E1178EA856005E8D03 /* Supporting Files */,
+			);
+			path = MethclaSampler;
+			sourceTree = "<group>";
+		};
+		53A834E1178EA856005E8D03 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				53A834E2178EA856005E8D03 /* MethclaSampler-Info.plist */,
+				53A834E3178EA856005E8D03 /* InfoPlist.strings */,
+				53A834E6178EA856005E8D03 /* main.m */,
+				53A834E8178EA856005E8D03 /* MethclaSampler-Prefix.pch */,
+				53A834EC178EA856005E8D03 /* Default.png */,
+				53A834EE178EA856005E8D03 /* Default@2x.png */,
+				53A834F0178EA856005E8D03 /* Default-568h@2x.png */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		A52066E618606E7D002B6DD9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A52066EB18606E7D002B6DD9 /* libmethcla.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		53A834D6178EA856005E8D03 /* MethclaSampler */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53A834FD178EA856005E8D03 /* Build configuration list for PBXNativeTarget "MethclaSampler" */;
+			buildPhases = (
+				53A834D3178EA856005E8D03 /* Sources */,
+				53A834D4178EA856005E8D03 /* Frameworks */,
+				53A834D5178EA856005E8D03 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A57F07F218607169008122DE /* PBXTargetDependency */,
+			);
+			name = MethclaSampler;
+			productName = MethclaSampler;
+			productReference = 53A834D7178EA856005E8D03 /* MethclaSampler.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		53A834CF178EA856005E8D03 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+				ORGANIZATIONNAME = Samplecount;
+			};
+			buildConfigurationList = 53A834D2178EA856005E8D03 /* Build configuration list for PBXProject "MethclaSampler" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 53A834CE178EA856005E8D03;
+			productRefGroup = 53A834D8178EA856005E8D03 /* Products */;
+			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = A52066E618606E7D002B6DD9 /* Products */;
+					ProjectRef = A5B265DF181687120088BD47 /* Methcla.xcodeproj */;
+				},
+			);
+			projectRoot = "";
+			targets = (
+				53A834D6178EA856005E8D03 /* MethclaSampler */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		A52066EB18606E7D002B6DD9 /* libmethcla.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libmethcla.a;
+			remoteRef = A52066EA18606E7D002B6DD9 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXResourcesBuildPhase section */
+		53A834D5178EA856005E8D03 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53A834E5178EA856005E8D03 /* InfoPlist.strings in Resources */,
+				53A834ED178EA856005E8D03 /* Default.png in Resources */,
+				53A834EF178EA856005E8D03 /* Default@2x.png in Resources */,
+				53A834F1178EA856005E8D03 /* Default-568h@2x.png in Resources */,
+				53A834F7178EA856005E8D03 /* ViewController_iPhone.xib in Resources */,
+				53A834FA178EA856005E8D03 /* ViewController_iPad.xib in Resources */,
+				A5C3A8A617FDACAC00AFFF45 /* sounds in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		53A834D3178EA856005E8D03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53A834E7178EA856005E8D03 /* main.m in Sources */,
+				53A834EB178EA856005E8D03 /* AppDelegate.m in Sources */,
+				53A834F4178EA856005E8D03 /* ViewController.mm in Sources */,
+				53A83504178EBA90005E8D03 /* Engine.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A57F07F218607169008122DE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = methcla;
+			targetProxy = A57F07F118607169008122DE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		53A834E3178EA856005E8D03 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				53A834E4178EA856005E8D03 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		53A834F5178EA856005E8D03 /* ViewController_iPhone.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				53A834F6178EA856005E8D03 /* en */,
+			);
+			name = ViewController_iPhone.xib;
+			sourceTree = "<group>";
+		};
+		53A834F8178EA856005E8D03 /* ViewController_iPad.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				53A834F9178EA856005E8D03 /* en */,
+			);
+			name = ViewController_iPad.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		53A834FB178EA856005E8D03 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		53A834FC178EA856005E8D03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.1;
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		53A834FE178EA856005E8D03 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = armv7;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "MethclaSampler/MethclaSampler-Prefix.pch";
+				HEADER_SEARCH_PATHS = ../libs/tinydir;
+				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		53A834FF178EA856005E8D03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = armv7;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "MethclaSampler/MethclaSampler-Prefix.pch";
+				HEADER_SEARCH_PATHS = ../libs/tinydir;
+				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		53A834D2178EA856005E8D03 /* Build configuration list for PBXProject "MethclaSampler" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53A834FB178EA856005E8D03 /* Debug */,
+				53A834FC178EA856005E8D03 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53A834FD178EA856005E8D03 /* Build configuration list for PBXNativeTarget "MethclaSampler" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53A834FE178EA856005E8D03 /* Debug */,
+				53A834FF178EA856005E8D03 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 53A834CF178EA856005E8D03 /* Project object */;
+}

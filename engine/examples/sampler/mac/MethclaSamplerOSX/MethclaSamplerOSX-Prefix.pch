@@ -1,0 +1,7 @@
+//
+// Prefix header for all source files of the 'MethclaSamplerOSX' target in the 'MethclaSamplerOSX' project
+//
+
+#ifdef __OBJC__
+    #import <Cocoa/Cocoa.h>
+#endif
