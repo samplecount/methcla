@@ -421,6 +421,8 @@ namespace Methcla
         T m_value;
     };
 
+    typedef Methcla_LibraryFunction LibraryFunction;
+
     template <typename T> class Optional
     {
         bool m_isSet;
@@ -468,11 +470,11 @@ namespace Methcla
         size_t maxNumControlBuses = 4096;
         size_t sampleRate = 44100;
         size_t blockSize = 64;
-        std::list<Methcla_LibraryFunction> pluginLibraries;
+        std::list<LibraryFunction> pluginLibraries;
 
         AudioDriverOptions audioDriver;
 
-        EngineOptions& addLibrary(Methcla_LibraryFunction pluginLibrary)
+        EngineOptions& addLibrary(LibraryFunction pluginLibrary)
         {
             pluginLibraries.push_back(pluginLibrary);
             return *this;
@@ -827,7 +829,7 @@ namespace Methcla
         // Engine options
         for (auto f : options.pluginLibraries)
         {
-            BlobOption<Methcla_LibraryFunction>("/engine/option/plugin-library", f)
+            BlobOption<LibraryFunction>("/engine/option/plugin-library", f)
                 .put(*bundle);
         }
 
