@@ -905,6 +905,16 @@ namespace Methcla
             methcla_engine_set_log_flags(m_engine, flags);
         }
 
+        void logLine(Methcla_LogLevel level, const char* message)
+        {
+            methcla_engine_log_line(m_engine, level, message);
+        }
+
+        void logLine(Methcla_LogLevel level, const std::string& message)
+        {
+            logLine(level, message.c_str());
+        }
+
         NodeTreeStatistics getNodeTreeStatistics()
         {
             std::unique_ptr<Packet> packet = allocPacket();

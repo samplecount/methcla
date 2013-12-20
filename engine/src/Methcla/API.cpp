@@ -343,6 +343,11 @@ METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla
     engine->env()->setLogFlags(flags);
 }
 
+METHCLA_EXPORT void methcla_engine_log_line(Methcla_Engine* engine, Methcla_LogLevel level, const char* message)
+{
+    engine->env()->logLineNRT(level, message);
+}
+
 METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time)
 {
     static_assert(sizeof(uint64_t) == sizeof(Methcla_Time), "sizeof(uint64_t) != sizeof(Methcla_Time)");
