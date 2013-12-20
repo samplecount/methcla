@@ -463,6 +463,7 @@ namespace Methcla
     {
     public:
         LogHandler logHandler;
+        Methcla_EngineLogFlags logFlags = kMethcla_EngineLogDefault;
 
         size_t realtimeMemorySize = 1024*1024;
         size_t maxNumNodes = 1024;
@@ -868,6 +869,7 @@ namespace Methcla
                     ? methcla_engine_new(&options, &m_engine)
                     : methcla_engine_new_with_driver(&options, driver, &m_engine)
             );
+            methcla_engine_set_log_flags(m_engine, inOptions.logFlags);
         }
 
         ~Engine()
