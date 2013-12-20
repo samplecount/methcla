@@ -6,6 +6,8 @@
 //  Copyright (c) 2013 Samplecount. All rights reserved.
 //
 
+#include <methcla/plugins/pro/soundfile_api_extaudiofile.h>
+
 #import "ViewController.h"
 #import "Engine.hpp"
 
@@ -16,7 +18,7 @@ inline NSString* resourcePath(NSString* component)
 
 @interface ViewController ()
 {
-    Engine* engine;
+    Methcla::Examples::Sampler::Engine* engine;
 }
 @end
 
@@ -31,8 +33,10 @@ inline NSString* resourcePath(NSString* component)
 
     // Set up the sound engine
     try {
-        // Initialize and configure the audio session
-        engine = new Engine([resourcePath(@"sounds") UTF8String]);
+        Methcla::Examples::Sampler::Engine::Options options;
+        options.soundFileAPI = methcla_soundfile_api_extaudiofile;
+        options.soundDir = [resourcePath(@"sounds") UTF8String];
+        engine = new Methcla::Examples::Sampler::Engine(options);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
@@ -55,7 +59,7 @@ inline NSString* resourcePath(NSString* component)
 {
     for (UITouch* touch in touches) {
 	    const CGPoint pt = [self relativeLocation:touch inView:self.view];
-	    engine->startVoice(reinterpret_cast<intptr_t>(touch), engine->nextSound(), pt.x);
+	    engine->startVoice(reinterpret_cast<intptr_t>(touch), 0, pt.x);
     }
 }
 

@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 import           Control.Arrow ((>>>), second)
+import           Control.Exception as E
 import           Data.Char (toLower)
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
@@ -37,6 +38,13 @@ import qualified System.Environment as Env
 import           System.FilePath.Find
 
 {-import Debug.Trace-}
+
+lookupEnv :: String -> IO (Maybe String)
+lookupEnv name = do
+  e <- E.try $ Env.getEnv name :: IO (Either E.SomeException String)
+  case e of
+    Left _ -> return Nothing
+    Right value -> return $ Just value
 
 -- ====================================================================
 -- Library
@@ -280,7 +288,7 @@ commonRules = do
     phony "clean" $ removeFilesAfter shakeBuildDir ["//*"]
 
 copyTo :: FilePath -> FilePath -> Rules FilePath
-copyTo output input = do
+copyTo input output = do
   output ?=> \_ -> copyFile' input output
   return output
 
@@ -294,7 +302,7 @@ mkRules :: Options -> [([String], IO (Rules ()))]
 mkRules options = do
     let config = get buildConfig options
         mkEnv target = set buildPrefix
-                            (defaultBuildPrefix target (show config))
+                            (defaultBuildPrefix shakeBuildDir target (show config))
                             -- (mkBuildPrefix config (platformString $ get targetPlatform target))
                             defaultEnv
         platformAlias p = phony (platformString p) . need . (:[])
@@ -396,14 +404,17 @@ mkRules options = do
         )
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
+        libsndfile <- pkgConfig "sndfile"
+        freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
         return $ do
           let -- target = NaCl.target (NaCl.pepper 31)
               target = NaCl.target NaCl.canary
+              naclConfig = case config of
+                            Debug -> NaCl.Debug
+                            Release -> NaCl.Release
               toolChain = NaCl.toolChain
                             sdk
-                            (case config of
-                              Debug -> NaCl.Debug
-                              Release -> NaCl.Release)
+                            naclConfig
                             target
               env = mkEnv target
               buildFlags =   applyConfiguration config configurations
@@ -422,8 +433,7 @@ mkRules options = do
           libmethcla <- staticLibrary env target toolChain methcla $
                               SourceTree.flags buildFlags $ methclaSources target $
                                 SourceTree.files [
-                                    "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
-                                  ]
+                                    "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ]
           phony "pnacl" $ need [libmethcla]
           let testBuildFlags =   buildFlags
                              >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
@@ -445,30 +455,80 @@ mkRules options = do
           pnacl_test <- NaCl.finalize toolChain pnacl_test_bc (pnacl_test_bc `replaceExtension` "pexe")
           pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
                                         (pnacl_test `replaceExtension` "nmf")
-          pnacl_test' <- copyTo ("tests/pnacl" </> takeFileName pnacl_test) pnacl_test
-          pnacl_test_nmf' <- copyTo ("tests/pnacl" </> takeFileName pnacl_test_nmf) pnacl_test_nmf
+          pnacl_test' <- pnacl_test `copyTo` ("tests/pnacl" </> takeFileName pnacl_test)
+          pnacl_test_nmf' <- pnacl_test_nmf `copyTo` ("tests/pnacl" </> takeFileName pnacl_test_nmf)
           phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
 
           let examplesBuildFlags =   buildFlags
-                                 >>> append userIncludes ["examples/thADDeus/src"]
                                  >>> append systemIncludes ["include"]
                                  >>> append localLibraries [libmethcla]
-          pnacl_thaddeus_bc <- executable env target toolChain "methcla-thaddeus"
-                                $ SourceTree.flags examplesBuildFlags
-                                $ SourceTree.files [
-                                    "examples/thADDeus/pnacl/main.cpp"
-                                    , "examples/thADDeus/src/synth.cpp"
-                                    ]
-          pnacl_thaddeus_pexe <- NaCl.finalize
-                                  toolChain
-                                  pnacl_thaddeus_bc
-                                  (pnacl_thaddeus_bc
-                                    `replaceExtension` "pexe"
-                                    `replaceDirectory` "examples/thADDeus/pnacl")
-          pnacl_thaddeus_nmf <- NaCl.mk_nmf
-                                  [(NaCl.PNaCl, pnacl_thaddeus_pexe)]
-                                  (pnacl_thaddeus_pexe `replaceExtension` "nmf")
-          phonyFiles "pnacl-examples" [pnacl_thaddeus_pexe, pnacl_thaddeus_nmf]
+              examplesDir = shakeBuildDir </> "examples/pnacl"
+              mkExample output flags sources files = do
+                let outputDir = takeDirectory output
+                bc <- executable env target toolChain (takeFileName output)
+                        $ SourceTree.flags
+                          (examplesBuildFlags >>> flags)
+                        $ SourceTree.files sources
+                pexe <- NaCl.finalize
+                          toolChain
+                          bc
+                          (bc `replaceExtension` "pexe"
+                              `replaceDirectory` (outputDir </> show naclConfig))
+                nmf <- NaCl.mk_nmf
+                          [(NaCl.PNaCl, pexe)]
+                          (pexe `replaceExtension` "nmf")
+                files' <- mapM (\old -> old `copyTo` (old `replaceDirectory` outputDir))
+                               (["examples/common/common.js"] ++ files)
+                return $ [pexe, nmf] ++ files'
+
+          thaddeus <- mkExample ( examplesDir </> "thaddeus/methcla-thaddeus" )
+                                ( append userIncludes [ "examples/thADDeus/src" ] )
+                                [ "examples/thADDeus/pnacl/main.cpp"
+                                , "examples/thADDeus/src/synth.cpp"
+                                ]
+                                [ "examples/thADDeus/pnacl/index.html"
+                                , "examples/thADDeus/pnacl/manifest.json"
+                                , "examples/thADDeus/pnacl/thaddeus.js"
+                                ]
+          sampler <- mkExample  ( examplesDir </> "sampler/methcla-sampler" )
+                                ( append userIncludes   [ "examples/sampler/src" ]
+                                . append systemIncludes [ "examples/sampler/libs/tinydir" ]
+                                . libsndfile
+                                . NaCl.libnacl_io )
+                                [ "examples/sampler/pnacl/main.cpp"
+                                , "examples/sampler/src/Engine.cpp"
+                                , "plugins/soundfile_api_libsndfile.cpp"
+                                ]
+                                [ "examples/sampler/pnacl/index.html"
+                                , "examples/sampler/pnacl/manifest.json"
+                                , "examples/sampler/pnacl/example.js"
+                                ]
+
+          let freesounds = map (takeFileName.takeDirectory) [
+                  "http://freesound.org/people/adejabor/sounds/157965/"
+                , "http://freesound.org/people/NOISE.INC/sounds/45394/"
+                , "http://freesound.org/people/ThePriest909/sounds/209331/"
+                ]
+
+          (examplesDir </> "sampler/sounds/*") *> \output -> do
+            cmd "curl" [    "http://www.freesound.org/api/sounds/"
+                         ++ dropExtension (takeFileName output)
+                         ++ "/serve?api_key=" ++ freesoundApiKey
+                       , "-L", "-o", output ] :: Action ()
+
+          -- Install warp-static web server if needed
+          let server = ".cabal-sandbox/bin/warp"
+
+          server *> \_ -> do
+            cmd "cabal sandbox init" :: Action ()
+            cmd "cabal install -j warp-static" :: Action ()
+
+          phony "pnacl-examples" $ do
+            need [server]
+            need thaddeus
+            need $ sampler ++ map (combine (examplesDir </> "sampler/sounds"))
+                                  freesounds
+            cmd (Cwd examplesDir) server :: Action ()
         )
       , (["macosx-icecast", "macosx-icecast-example"], do -- macosx-icecast
             applyEnv <- toolChainFromEnvironment

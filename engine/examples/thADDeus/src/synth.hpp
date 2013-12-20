@@ -17,7 +17,6 @@
 
 #include <cstdint>
 #include <methcla/engine.hpp>
-#include <tuple>
 #include <unordered_map>
 
 namespace thaddeus
@@ -25,7 +24,7 @@ namespace thaddeus
     class Engine
     {
     public:
-        Engine(Methcla::EngineOptions options, Methcla_AudioDriver* audioDriver=nullptr);
+        Engine(Methcla::EngineOptions options=Methcla::EngineOptions(), Methcla_AudioDriver* audioDriver=nullptr);
         ~Engine();
 
         void start();
@@ -33,13 +32,13 @@ namespace thaddeus
 
         typedef intptr_t VoiceId;
 
-        void startVoice(VoiceId voice, float x, float y);
-        void updateVoice(VoiceId voice, float x, float y);
+        void startVoice(VoiceId voice, float freq, float amp);
+        void updateVoice(VoiceId voice, float freq, float amp);
         void stopVoice(VoiceId voice);
 
     private:
         Methcla::Engine* m_engine;
-        std::unordered_map<VoiceId,std::tuple<Methcla::SynthId,Methcla::SynthId>> m_voices;
+        std::unordered_map<VoiceId,Methcla::SynthId> m_voices;
     };
 }
 

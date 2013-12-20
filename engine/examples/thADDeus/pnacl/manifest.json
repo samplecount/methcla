@@ -3,9 +3,4 @@
   "manifest_version": 2,
   "description": "Methcla thADDeus example",
   "version": "0.1",
-  "app": {
-    "launch": {
-      "local_path": "index.html"
-    }
-  }
 }

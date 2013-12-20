@@ -46,4 +46,4 @@ Display the list of commandline options:
 
 [thADDeus](https://github.com/samplecount/methcla/tree/develop/engine/examples/thADDeus) is an example project that builds the engine for iOS and Android devices and provides a simple multitouch sine synthesizer.
 
-The [methcla-examples](https://github.com/samplecount/methcla-examples) repository currently contains a simple multitouch sampler application (it uses a streaming disk sampler for the Pro version of Methcla).
+The [sampler](https://github.com/samplecount/methcla/tree/develop/engine/examples/sampler) example is a simple multitouch sampler application (it uses a streaming disk sampler for the Pro version of Methcla).

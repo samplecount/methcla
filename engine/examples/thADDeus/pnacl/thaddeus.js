@@ -22,6 +22,11 @@ function updateStatus(opt_message) {
   }
 }
 
+function mapFreq(x)
+{
+  return (Math.exp(1-x) - 1) / (Math.exp(1) - 1) * 900 + 20;
+}
+
 function moduleDidLoad() {
   naclModule = document.getElementById('nacl_module');
   updateStatus('RUNNING');

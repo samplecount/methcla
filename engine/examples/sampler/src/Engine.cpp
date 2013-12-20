@@ -14,47 +14,58 @@
 
 #include "Engine.hpp"
 
-#include <methcla/common.h>
-#include <methcla/plugins/pro/soundfile_api_extaudiofile.h>
+#include <methcla/file.hpp>
 #include <methcla/plugins/pro/disksampler.h>
 #include <methcla/plugins/sampler.h>
 #include <methcla/plugins/node-control.h>
 #include <methcla/plugins/patch-cable.h>
 
-#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <tinydir.h>
+
+using namespace Methcla::Examples::Sampler;
 
 Sound::Sound(const Methcla::Engine& engine, const std::string& path)
     : m_path(path)
 {
-    Methcla_SoundFile* file;
-    Methcla_SoundFileInfo info;
-    Methcla_Error err = methcla_engine_soundfile_open(engine, m_path.c_str(), kMethcla_FileModeRead, &file, &info);
-    if (err != kMethcla_NoError) {
-        throw std::runtime_error("Opening sound file " + path + " failed");
-    }
-    file->close(file);
-    m_duration = (double)info.frames / (double)info.samplerate;
+    Methcla::SoundFile file(engine, path);
+    m_duration = (double)file.info().frames / (double)file.info().samplerate;
 }
 
 // Return a list of sounds in directory path.
-static std::vector<Sound> loadSounds(const Methcla::Engine& engine, const std::string& path)
+static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string& path)
 {
+    engine.logLine(kMethcla_LogDebug, std::string("Loading sounds from ") + path);
+
     std::vector<Sound> result;
 
     tinydir_dir dir;
-    tinydir_open(&dir, path.c_str());
+    int err = tinydir_open(&dir, path.c_str());
+    if (err != 0)
+    {
+        std::stringstream s;
+        s << "Couldn't open directory " << path
+          << ": " << strerror(errno);
+        throw std::runtime_error(s.str());
+    }
 
     while (dir.has_next)
     {
         tinydir_file file;
         tinydir_readfile(&dir, &file);
+        std::stringstream s;
+        s << "readfile: " << file.path << " " << file.name << " " << file.is_dir << " " << file.is_reg;
+        engine.logLine(kMethcla_LogDebug, s.str());
         if (!file.is_dir) {
             try {
+                engine.logLine(kMethcla_LogDebug, std::string("Loading sound ") + path + "/" + std::string(file.name));
                 result.push_back(Sound(engine, path + "/" + std::string(file.name)));
             } catch (std::exception& e) {
-                std::cerr << "Exception while registering sound " << file.name << ": " << e.what() << std::endl;
+                std::stringstream s;
+                s << "Exception while registering sound "
+                  << file.name << ": " << e.what();
+                engine.logLine(kMethcla_LogError, s.str());
             }
         }
         tinydir_next(&dir);
@@ -65,22 +76,23 @@ static std::vector<Sound> loadSounds(const Methcla::Engine& engine, const std::s
     return result;
 }
 
-Engine::Engine(const std::string& soundDir)
+Engine::Engine(Options inOptions)
     : m_engine(nullptr)
-    , m_nextSound(0)
 {
-    Methcla::EngineOptions options;
+    Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
-    options.addLibrary(methcla_soundfile_api_extaudiofile)
-           .addLibrary(methcla_plugins_sampler)
-           .addLibrary(methcla_plugins_disksampler)
+    options.addLibrary(methcla_plugins_sampler)
+//           .addLibrary(methcla_plugins_disksampler)
            .addLibrary(methcla_plugins_node_control)
            .addLibrary(methcla_plugins_patch_cable);
 
     // Create the engine with a set of plugins.
-    m_engine = new Methcla::Engine(options);
+    m_engine = new Methcla::Engine(options, inOptions.audioDriver);
 
-    m_sounds = loadSounds(*m_engine, soundDir);
+    if (!inOptions.soundDir.empty())
+        m_sounds = loadSounds(*m_engine, inOptions.soundDir);
+    for (auto file : inOptions.sounds)
+        m_sounds.push_back(Sound(*m_engine, file));
 
     // Start the engine.
     engine().start();
@@ -110,32 +122,12 @@ Engine::~Engine()
     delete m_engine;
 }
 
-size_t Engine::nextSound()
+size_t Engine::numSounds() const
 {
-    const size_t result = m_nextSound;
-    m_nextSound++;
-    if (m_nextSound >= m_sounds.size()) {
-        m_nextSound = 0;
-    }
-    return result;
+    return m_sounds.size();
 }
 
 static Methcla_Time kLatency = 0.1;
-
-template <typename T> T linmap(T outMin, T outMax, T inMin, T inMax, T x)
-{
-    return (x - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
-}
-
-template <typename T> T expmap(T outMin, T outMax, T inMin, T inMax, T x)
-{
-    return outMin * std::pow(outMax / outMin, (x - inMin) / (inMax - inMin));
-}
-
-template <typename T> T dbamp(T db)
-{
-    return std::pow(T(10), db/T(20));
-}
 
 static float mapRate(float value)
 {
@@ -147,12 +139,13 @@ static float mapRate(float value)
 #endif
 }
 
-void Engine::startVoice(VoiceId voice, size_t soundIndex, float param)
+void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 {
-    if (m_voices.find(voice) != m_voices.end()) {
+    if (m_voices.find(voice) != m_voices.end())
         stopVoice(voice);
-    }
-    if (soundIndex < m_sounds.size()) {
+
+    if (soundIndex < m_sounds.size())
+    {
         const Sound& sound = m_sounds[soundIndex];
         Methcla::Request request(engine());
         request.openBundle(Methcla::immediately);
@@ -163,11 +156,11 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float param)
             // Create synth and map outputs to buses
             const Methcla::SynthId synth = request.synth(
                 // Comment this line ...
-                METHCLA_PLUGINS_DISKSAMPLER_URI,
+                // METHCLA_PLUGINS_DISKSAMPLER_URI,
                 // ... and uncomment this one for memory-based playback.
-                // METHCLA_PLUGINS_SAMPLER_URI,
+                METHCLA_PLUGINS_SAMPLER_URI,
                 m_voiceGroup,
-                { dbamp(-12.f), mapRate(param) },
+                { amp, mapRate(rate) },
                 { Methcla::Value(sound.path())
                 , Methcla::Value(true) }
             );
@@ -186,43 +179,49 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float param)
             request.mapInput(envelope1, 0, bus1);
             request.mapOutput(envelope1, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
             request.whenDone(envelope1, Methcla::kNodeDoneFreeSelf|Methcla::kNodeDoneFreePreceeding);
-            request.activate(envelope1);
 
             auto envelope2 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
             request.mapInput(envelope2, 0, bus2);
             request.mapOutput(envelope2, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
             request.whenDone(envelope2, Methcla::kNodeDoneFreeSelf);
-            request.activate(envelope2);
 
             request.openBundle(engine().currentTime() + kLatency);
                 request.activate(synth);
+                request.activate(envelope1);
+                request.activate(envelope2);
             request.closeBundle();
         request.closeBundle();
 
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth, [](Methcla::NodeId nodeId){
-            std::cout << "Freed " << nodeId.id() << std::endl;
+        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth, [this](Methcla::NodeId nodeId){
+            std::stringstream s;
+            s << "Freed " << nodeId.id();
+            m_engine->logLine(kMethcla_LogDebug, s.str());
         }));
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1, [](Methcla::NodeId nodeId){
-            std::cout << "Freed " << nodeId.id() << std::endl;
+        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1, [this](Methcla::NodeId nodeId){
+            std::stringstream s;
+            s << "Freed " << nodeId.id();
+            m_engine->logLine(kMethcla_LogDebug, s.str());
         }));
         m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId nodeId){
-            std::cout << "Freed " << nodeId.id() << std::endl;
+            std::stringstream s;
+            s << "Freed " << nodeId.id();
+            m_engine->logLine(kMethcla_LogDebug, s.str());
             m_engine->audioBusId().free(bus1);
             m_engine->audioBusId().free(bus2);
         }));
 
         request.send();
 //        m_voices[voice] = synth;
-        std::cout << "Synth " << synth.id()
-                  << sound.path()
-                  << " duration=" << sound.duration()
-                  << " param=" << param
-                  << " rate=" << mapRate(param)
-                  << std::endl;
+        // std::cout << "Synth " << synth.id()
+        //           << sound.path()
+        //           << " duration=" << sound.duration()
+        //           << " param=" << param
+        //           << " rate=" << mapRate(param)
+        //           << std::endl;
     }
 }
 
-void Engine::updateVoice(VoiceId voice, float param)
+void Engine::updateVoice(VoiceId voice, float amp, float rate)
 {
 //    auto it = m_voices.find(voice);
 //    assert( it != m_voices.end() );

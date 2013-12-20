@@ -20,6 +20,8 @@
 #include <vector>
 #include <unordered_map>
 
+namespace Methcla { namespace Examples { namespace Sampler {
+
 class Sound
 {
 public:
@@ -40,25 +42,46 @@ private:
     float m_duration;
 };
 
+template <typename T> T linmap(T outMin, T outMax, T inMin, T inMax, T x)
+{
+    return (x - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+}
+
+template <typename T> T expmap(T outMin, T outMax, T inMin, T inMax, T x)
+{
+    return outMin * std::pow(outMax / outMin, (x - inMin) / (inMax - inMin));
+}
+
+template <typename T> T dbamp(T db)
+{
+    return std::pow(T(10), db/T(20));
+}
+
 class Engine
 {
 public:
-    Engine(const std::string& soundDir);
+    struct Options
+    {
+        Methcla::EngineOptions engineOptions;
+        Methcla_AudioDriver* audioDriver = nullptr;
+        std::vector<std::string> sounds;
+        std::string soundDir;
+    };
+
+    Engine(Options options);
     ~Engine();
 
     Engine(const Engine& other) = delete;
     Engine& operator=(const Engine& other) = delete;
 
-    // Return the index of the next sound to be played.
-    // Simply cycles through all available sounds.
-    size_t nextSound();
+    size_t numSounds() const;
 
     typedef intptr_t VoiceId;
 
     // Start a voice with a certain sound and amplitude.
-    void startVoice(VoiceId voice, size_t sound, float amp);
+    void startVoice(VoiceId voice, size_t sound, float amp=1.f, float rate=1.f);
     // Update a voice's amplitude while playing.
-    void updateVoice(VoiceId voice, float amp);
+    void updateVoice(VoiceId voice, float amp, float rate=1.f);
     // Stop a voice.
     void stopVoice(VoiceId voice);
 
@@ -68,10 +91,11 @@ private:
 private:
     std::vector<Sound>  m_sounds;
     Methcla::Engine*    m_engine;
-    size_t              m_nextSound;
     Methcla::GroupId    m_voiceGroup;
     std::vector<Methcla::SynthId> m_patchCables;
     std::unordered_map<VoiceId,Methcla::SynthId> m_voices;
 };
+
+} } }
 
 #endif // ENGINE_HPP_INCLUDED

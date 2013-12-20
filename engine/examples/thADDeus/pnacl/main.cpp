@@ -1,6 +1,16 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+// Copyright 2012-2013 Samplecount S.L.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "synth.hpp"
 
@@ -11,6 +21,7 @@
 #include "ppapi/cpp/instance.h"
 #include "ppapi/cpp/module.h"
 #include "ppapi/cpp/var.h"
+#include "ppapi/cpp/var_dictionary.h"
 
 #include <cmath>
 
@@ -72,35 +83,35 @@ bool ThaddeusInstance::Init(uint32_t argc,
     //     PostMessage(pp::Var(e.what()));
     // }
 
-    RequestInputEvents(PP_INPUTEVENT_CLASS_MOUSE);
+    // RequestInputEvents(PP_INPUTEVENT_CLASS_MOUSE);
 
     return true;
 }
 
 void ThaddeusInstance::HandleMessage(const pp::Var& var_message)
 {
-  // if (!var_message.is_string()) {
-  //   return;
-  // }
-  // std::string message = var_message.AsString();
-  // if (message == kPlaySoundId) {
-  //   audio_.StartPlayback();
-  // } else if (message == kStopSoundId) {
-  //   audio_.StopPlayback();
-  // } else if (message.find(kSetFrequencyId) == 0) {
-  //   // The argument to setFrequency is everything after the first ':'.
-  //   size_t sep_pos = message.find_first_of(kMessageArgumentSeparator);
-  //   if (sep_pos != std::string::npos) {
-  //     std::string string_arg = message.substr(sep_pos + 1);
-  //     // Got the argument value as a string: try to convert it to a number.
-  //     std::istringstream stream(string_arg);
-  //     double double_value;
-  //     if (stream >> double_value) {
-  //       SetFrequency(double_value);
-  //       return;
-  //     }
-  //   }
-  // }
+    if (var_message.is_dictionary())
+    {
+        pp::VarDictionary msg(var_message);
+        std::string type(msg.Get(pp::Var("type")).AsString());
+        int32_t voiceId(msg.Get(pp::Var("id")).AsInt());
+        if (type == "startVoice")
+        {
+            const double freq = msg.Get(pp::Var("freq")).AsDouble();
+            const double amp  = msg.Get(pp::Var("amp")).AsDouble();
+            m_engine->startVoice(voiceId, freq, amp);
+        }
+        else if (type == "updateVoice")
+        {
+            const double freq = msg.Get(pp::Var("freq")).AsDouble();
+            const double amp  = msg.Get(pp::Var("amp")).AsDouble();
+            m_engine->updateVoice(voiceId, freq, amp);
+        }
+        else if (type == "stopVoice")
+        {
+            m_engine->stopVoice(voiceId);
+        }
+    }
 }
 
 void ThaddeusInstance::DidChangeView(const pp::View& view)
