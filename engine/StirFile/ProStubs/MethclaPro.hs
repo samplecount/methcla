@@ -34,8 +34,12 @@ versionTags = []
 engineSources :: Target -> SourceTree BuildFlags
 engineSources = const SourceTree.empty
 
-pluginSources :: Target -> [(String, SourceTree BuildFlags)]
-pluginSources = const []
+pluginSources :: Target -> [SourceTree BuildFlags]
+pluginSources = const $ [
+    SourceTree.files [
+      "plugins/disksampler_stub.cpp"
+    ]
+  ]
 
 testSources :: Target -> SourceTree BuildFlags
 testSources = const SourceTree.empty

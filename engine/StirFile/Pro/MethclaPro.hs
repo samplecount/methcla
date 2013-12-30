@@ -40,15 +40,13 @@ engineSources _ = SourceTree.files [
     "src/Methcla/ProAPI.cpp"
   ]
 
-pluginSources :: Target -> [(String, SourceTree BuildFlags)]
+pluginSources :: Target -> [SourceTree BuildFlags]
 pluginSources target = [
-  ( "disksampler"
-  , SourceTree.files ["plugins/pro/disksampler.cpp"])
+    SourceTree.files ["plugins/pro/disksampler.cpp"])
   ]
   ++
   if isDarwin target
-    then [ ("soundfile_api_extaudiofile"
-         , SourceTree.files ["plugins/pro/soundfile_api_extaudiofile.cpp"])]
+    then [ SourceTree.files ["plugins/pro/soundfile_api_extaudiofile.cpp"] ]
     else []
 
 testSources :: Target -> SourceTree BuildFlags

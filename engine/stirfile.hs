@@ -163,7 +163,8 @@ methclaSources target platformSources =
           -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
           --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
-      , SourceTree.flags pluginBuildFlags $ SourceTree.list $ [pluginSources] ++ map snd (Pro.pluginSources target)
+      , SourceTree.flags pluginBuildFlags $ SourceTree.list $
+          [pluginSources] ++ Pro.pluginSources target
       ]
 
 methcla :: String
