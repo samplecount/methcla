@@ -40,10 +40,18 @@
 
 namespace Methcla
 {
-    inline static const char* version()
+    static inline const char* version()
     {
         return methcla_version();
     }
+
+    namespace Version
+    {
+        static inline bool isPro()
+        {
+            return methcla_version_is_pro();
+        }
+    };
 
     inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
     {
