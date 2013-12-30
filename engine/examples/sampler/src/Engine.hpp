@@ -91,6 +91,7 @@ private:
 private:
     std::vector<Sound>  m_sounds;
     Methcla::Engine*    m_engine;
+    std::string         m_samplerUri;
     Methcla::GroupId    m_voiceGroup;
     std::vector<Methcla::SynthId> m_patchCables;
     std::unordered_map<VoiceId,Methcla::SynthId> m_voices;

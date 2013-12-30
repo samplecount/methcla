@@ -78,13 +78,16 @@ static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string&
 
 Engine::Engine(Options inOptions)
     : m_engine(nullptr)
+    , m_samplerUri(Methcla::Version::isPro()
+                    ? METHCLA_PLUGINS_DISKSAMPLER_URI
+                    : METHCLA_PLUGINS_SAMPLER_URI)
 {
     Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
-    options.addLibrary(methcla_plugins_sampler)
-//           .addLibrary(methcla_plugins_disksampler)
-           .addLibrary(methcla_plugins_node_control)
-           .addLibrary(methcla_plugins_patch_cable);
+    options.addLibrary(methcla_plugins_node_control)
+           .addLibrary(methcla_plugins_patch_cable)
+           .addLibrary(methcla_plugins_sampler)
+           .addLibrary(methcla_plugins_disksampler);
 
     // Create the engine with a set of plugins.
     m_engine = new Methcla::Engine(options, inOptions.audioDriver);
@@ -155,10 +158,7 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 
             // Create synth and map outputs to buses
             const Methcla::SynthId synth = request.synth(
-                // Comment this line ...
-                // METHCLA_PLUGINS_DISKSAMPLER_URI,
-                // ... and uncomment this one for memory-based playback.
-                METHCLA_PLUGINS_SAMPLER_URI,
+                m_samplerUri.c_str(),
                 m_voiceGroup,
                 { amp, mapRate(rate) },
                 { Methcla::Value(sound.path())
