@@ -858,8 +858,10 @@ namespace Methcla
             methcla_engine_options_init(&options);
             auto bundle = serializeOptions(inOptions);
             if (m_logHandler != nullptr)
+            {
                 options.log_handler.handle = this;
                 options.log_handler.log_line = logLineCallback;
+            }
             options.packet_handler.handle = this;
             options.packet_handler.handle_packet = handlePacket;
             options.options.data = bundle->data();
@@ -1001,6 +1003,7 @@ namespace Methcla
     private:
         static void logLineCallback(void* data, Methcla_LogLevel level, const char* message)
         {
+            assert( data != nullptr );
             static_cast<Engine*>(data)->m_logHandler(level, message);
         }
 
