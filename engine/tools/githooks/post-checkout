@@ -1,0 +1,17 @@
+#!/bin/bash
+
+prev_rev="$1"
+next_rev="$2"
+is_branch_checkout="$3"
+
+if [ "$is_branch_checkout" -eq 1 ]; then
+  echo "Updating build environment ..."
+  if grep -q pro .git/HEAD; then
+      ( cd engine && ./stir update -fpro > /dev/null )
+  else
+      ( cd engine && ./stir update > /dev/null )
+  fi
+  echo "Removing build database ..."
+  rm -f engine/build/.database
+  echo "Done."
+fi
