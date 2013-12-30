@@ -21,8 +21,10 @@
 #include <methcla/file.h>
 #include <methcla/log.h>
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -30,6 +32,12 @@ extern "C" {
 
 //* Return library version string.
 const char* methcla_version();
+
+//* Return true if using the pro version of methcla.
+static inline bool methcla_version_is_pro()
+{
+    return strstr(methcla_version(), "pro") != NULL;
+}
 
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;

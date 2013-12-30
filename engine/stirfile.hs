@@ -169,12 +169,17 @@ methclaSources target platformSources =
 methcla :: String
 methcla = "methcla"
 
+methclaVersion :: String
+methclaVersion = showVersion $ Package.version {
+    versionTags = versionTags Package.version ++ Pro.versionTags
+  }
+
 versionHeader :: (FilePath, String)
 versionHeader = (shakeBuildDir </> "include/Methcla/Version.h", unlines [
     "#ifndef METHCLA_VERSION_H_INCLUDED"
   , "#define METHCLA_VERSION_H_INCLUDED"
   , ""
-  , "static const char* kMethclaVersion = \"" ++ showVersion (Package.version) ++ "\";"
+  , "static const char* kMethclaVersion = \"" ++ methclaVersion ++ "\";"
   , ""
   , "#endif /* METHCLA_VERSION_H_INCLUDED */"
   ])
@@ -641,7 +646,7 @@ main :: IO ()
 main = do
     let shakeOptions' = shakeOptions {
                         shakeFiles = shakeBuildDir ++ "/"
-                      , shakeVersion = showVersion Package.version
+                      , shakeVersion = methclaVersion
                       , shakeVerbosity = Normal }
         f xs ts = do
             let os = foldl (.) id xs $ defaultOptions
