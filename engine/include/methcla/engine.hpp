@@ -864,21 +864,26 @@ namespace Methcla
         {
             Methcla_EngineOptions options;
             methcla_engine_options_init(&options);
-            auto bundle = serializeOptions(inOptions);
+
             if (m_logHandler != nullptr)
             {
                 options.log_handler.handle = this;
                 options.log_handler.log_line = logLineCallback;
             }
+
             options.packet_handler.handle = this;
             options.packet_handler.handle_packet = handlePacket;
+
+            auto bundle = serializeOptions(inOptions);
             options.options.data = bundle->data();
             options.options.size = bundle->size();
+
             detail::checkReturnCode(
                 driver == nullptr
                     ? methcla_engine_new(&options, &m_engine)
                     : methcla_engine_new_with_driver(&options, driver, &m_engine)
             );
+
             methcla_engine_set_log_flags(m_engine, inOptions.logFlags);
         }
 
