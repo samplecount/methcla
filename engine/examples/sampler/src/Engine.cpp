@@ -78,9 +78,7 @@ static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string&
 
 Engine::Engine(Options inOptions)
     : m_engine(nullptr)
-    , m_samplerUri(Methcla::Version::isPro()
-                    ? METHCLA_PLUGINS_DISKSAMPLER_URI
-                    : METHCLA_PLUGINS_SAMPLER_URI)
+    , m_useDisk(false)
 {
     Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
@@ -130,11 +128,23 @@ size_t Engine::numSounds() const
     return m_sounds.size();
 }
 
+void Engine::useDisk(bool flag)
+{
+    if (flag && !Methcla::Version::isPro())
+    {
+        m_engine->logLine(kMethcla_LogError, "Disk streaming is only available in Methcla Pro!");
+    }
+    else
+    {
+        m_useDisk = flag;
+    }
+}
+
 static Methcla_Time kLatency = 0.1;
 
 static float mapRate(float value)
 {
-#if 1
+#if 0
     const float numOctaves = 4.f;
     return expmap(1.f/numOctaves, numOctaves, 0.f, 1.f, value);
 #else
@@ -158,7 +168,9 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 
             // Create synth and map outputs to buses
             const Methcla::SynthId synth = request.synth(
-                m_samplerUri.c_str(),
+                m_useDisk
+                    ? METHCLA_PLUGINS_DISKSAMPLER_URI
+                    : METHCLA_PLUGINS_SAMPLER_URI,
                 m_voiceGroup,
                 { amp, mapRate(rate) },
                 { Methcla::Value(sound.path())

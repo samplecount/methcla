@@ -52,6 +52,13 @@ function moduleDidLoad() {
   );
 }
 
+function useDisk(flag) {
+  common.naclModule.postMessage(
+    { type: 'useDisk'
+    , flag: flag }
+  );
+}
+
 function playSound(id) {
   common.naclModule.postMessage(
     { type: 'startVoice'
@@ -64,6 +71,8 @@ function playSound(id) {
 
 // Called by the common.js module.
 function attachListeners() {
+  document.getElementById('useMemorySampler').addEventListener('click', function () { useDisk(false) });
+  document.getElementById('useDiskSampler').addEventListener('click', function () { useDisk(true) });
   document.getElementById('playSound0').addEventListener('click', function () { playSound(0) });
   document.getElementById('playSound1').addEventListener('click', function () { playSound(1) });
   document.getElementById('playSound2').addEventListener('click', function () { playSound(2) });

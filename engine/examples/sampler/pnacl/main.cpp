@@ -272,23 +272,30 @@ void SamplerInstance::HandleMessage(const pp::Var& var_message)
         }
         else if (m_engine != nullptr)
         {
-            int32_t voiceId(msg.Get(pp::Var("id")).AsInt());
-            if (type == "startVoice")
+            if (type == "useDisk")
             {
-                const int32_t sound = msg.Get(pp::Var("sound")).AsInt();
-                const double amp    = msg.Get(pp::Var("amp")).AsDouble();
-                const double rate   = msg.Get(pp::Var("rate")).AsDouble();
-                m_engine->startVoice(voiceId, sound, amp, rate);
+                m_engine->useDisk(msg.Get(pp::Var("flag")).AsBool());
             }
-            else if (type == "updateVoice")
+            else
             {
-                const double amp  = msg.Get(pp::Var("amp")).AsDouble();
-                const double rate = msg.Get(pp::Var("rate")).AsDouble();
-                m_engine->updateVoice(voiceId, amp, rate);
-            }
-            else if (type == "stopVoice")
-            {
-                m_engine->stopVoice(voiceId);
+                int32_t voiceId(msg.Get(pp::Var("id")).AsInt());
+                if (type == "startVoice")
+                {
+                    const int32_t sound = msg.Get(pp::Var("sound")).AsInt();
+                    const double amp    = msg.Get(pp::Var("amp")).AsDouble();
+                    const double rate   = msg.Get(pp::Var("rate")).AsDouble();
+                    m_engine->startVoice(voiceId, sound, amp, rate);
+                }
+                else if (type == "updateVoice")
+                {
+                    const double amp  = msg.Get(pp::Var("amp")).AsDouble();
+                    const double rate = msg.Get(pp::Var("rate")).AsDouble();
+                    m_engine->updateVoice(voiceId, amp, rate);
+                }
+                else if (type == "stopVoice")
+                {
+                    m_engine->stopVoice(voiceId);
+                }
             }
         }
     }

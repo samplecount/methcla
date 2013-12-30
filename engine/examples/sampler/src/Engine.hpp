@@ -78,6 +78,8 @@ public:
 
     typedef intptr_t VoiceId;
 
+    void useDisk(bool flag);
+
     // Start a voice with a certain sound and amplitude.
     void startVoice(VoiceId voice, size_t sound, float amp=1.f, float rate=1.f);
     // Update a voice's amplitude while playing.
@@ -91,7 +93,7 @@ private:
 private:
     std::vector<Sound>  m_sounds;
     Methcla::Engine*    m_engine;
-    std::string         m_samplerUri;
+    bool                m_useDisk;
     Methcla::GroupId    m_voiceGroup;
     std::vector<Methcla::SynthId> m_patchCables;
     std::unordered_map<VoiceId,Methcla::SynthId> m_voices;
