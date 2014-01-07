@@ -21,6 +21,7 @@ module MethclaPro (
   , testBuildFlags
 ) where
 
+import           Methcla.Util (under)
 import           Shakefile.C (BuildFlags, Target, isTargetOS, linkerFlags, onlyIf)
 import           Shakefile.Label (append)
 import           Shakefile.SourceTree (SourceTree)
@@ -35,24 +36,23 @@ versionTags = ["pro"]
 isDarwin :: Target -> Bool
 isDarwin = isTargetOS (Just "apple") (Just "darwin10")
 
-engineSources :: Target -> SourceTree BuildFlags
-engineSources _ = SourceTree.files [
+engineSources :: FilePath -> Target -> SourceTree BuildFlags
+engineSources sourceDir _ = SourceTree.files $ under sourceDir [
     "src/Methcla/ProAPI.cpp"
   ]
 
-pluginSources :: Target -> [SourceTree BuildFlags]
-pluginSources target = [
-    SourceTree.files ["plugins/pro/disksampler.cpp"])
+pluginSources :: FilePath -> Target -> [SourceTree BuildFlags]
+pluginSources sourceDir target = [
+    SourceTree.files $ under sourceDir [ "plugins/pro/disksampler.cpp" ]
   ]
   ++
   if isDarwin target
-    then [ SourceTree.files ["plugins/pro/soundfile_api_extaudiofile.cpp"] ]
+    then [ SourceTree.files $ under sourceDir [ "plugins/pro/soundfile_api_extaudiofile.cpp" ] ]
     else []
 
-testSources :: Target -> SourceTree BuildFlags
-testSources _ = SourceTree.files [
-    "tests/methcla_pro_engine_tests.cpp"
-  ]
+testSources :: FilePath -> Target -> SourceTree BuildFlags
+testSources sourceDir _ = SourceTree.files $
+  under sourceDir [ "tests/methcla_pro_engine_tests.cpp" ]
 
 testBuildFlags :: Target -> BuildFlags -> BuildFlags
 testBuildFlags target =

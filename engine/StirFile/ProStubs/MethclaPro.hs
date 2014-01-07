@@ -21,6 +21,7 @@ module MethclaPro (
   , testBuildFlags
 ) where
 
+import           Methcla.Util (under)
 import           Shakefile.C (BuildFlags, Target)
 import           Shakefile.SourceTree (SourceTree)
 import qualified Shakefile.SourceTree as SourceTree
@@ -31,18 +32,18 @@ isPresent = False
 versionTags :: [String]
 versionTags = []
 
-engineSources :: Target -> SourceTree BuildFlags
-engineSources = const SourceTree.empty
+engineSources :: FilePath -> Target -> SourceTree BuildFlags
+engineSources _ _ = SourceTree.empty
 
-pluginSources :: Target -> [SourceTree BuildFlags]
-pluginSources = const $ [
-    SourceTree.files [
+pluginSources :: FilePath -> Target -> [SourceTree BuildFlags]
+pluginSources sourceDir _ = [
+    SourceTree.files $ under sourceDir [
       "plugins/disksampler_stub.cpp"
     ]
   ]
 
-testSources :: Target -> SourceTree BuildFlags
-testSources = const SourceTree.empty
+testSources :: FilePath -> Target -> SourceTree BuildFlags
+testSources _ _ = SourceTree.empty
 
 testBuildFlags :: Target -> BuildFlags -> BuildFlags
-testBuildFlags = const id
+testBuildFlags _ = id

@@ -21,19 +21,23 @@ module Methcla (
   , optionDescrs
   , version
   , Config(..)
+  , buildDir
   , commonRules
   , mkRules
+  , libmethclaPNaCl
 ) where
 
-import           Control.Arrow ((>>>), second)
+import           Control.Applicative ((<$>))
+import           Control.Arrow ((>>>), first, second)
 import           Control.Exception as E
 import           Data.Char (toLower)
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
+import           Methcla.Util (under)
 import qualified MethclaPro as Pro
 import qualified Paths_methcla_stirfile as Package
-import           Shakefile.C
+import           Shakefile.C hiding (under)
 import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.Host as Host
 import qualified Shakefile.C.NaCl as NaCl
@@ -66,14 +70,8 @@ externalLibraries = "external_libraries"
 externalLibrary :: FilePath -> FilePath
 externalLibrary = combine externalLibraries
 
-boostDir :: FilePath
-boostDir = externalLibrary "boost"
-
 -- boostBuildFlags :: BuildFlags -> BuildFlags
 -- boostBuildFlags = append systemIncludes [ boostDir ]
-
-tlsfDir :: FilePath
-tlsfDir = externalLibrary "tlsf"
 
 -- | Build flags common to all targets
 commonBuildFlags :: BuildFlags -> BuildFlags
@@ -86,37 +84,16 @@ commonBuildFlags = append compilerFlags [
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
   ]
 
-apiIncludes :: BuildFlags -> BuildFlags
-apiIncludes = append systemIncludes [
-    "include"
-  , "external_libraries/oscpp/include" ]
+apiIncludes :: FilePath -> BuildFlags -> BuildFlags
+apiIncludes sourceDir = append systemIncludes [ sourceDir </> "include" ]
 
-engineBuildFlags :: FilePath -> BuildFlags -> BuildFlags
-engineBuildFlags buildDir =
-    append userIncludes
-      ( -- Generated headers
-        [ buildDir </> "include" ]
-        -- Library headers
-     ++ [ "src" ]
-        -- External libraries
-     ++ [ externalLibraries ] )
-  . append systemIncludes
-       ( -- API headers
-         [ "include" ]
-         -- Boost
-      ++ [ boostDir ]
-         -- oscpp
-      ++ [ externalLibrary "oscpp/include" ]
-         -- TLSF
-      ++ [ tlsfDir ] )
+local_libmethcla :: FilePath -> FilePath -> BuildFlags -> BuildFlags
+local_libmethcla sourceDir libmethcla =
+    apiIncludes sourceDir
+  . append localLibraries [ libmethcla ]
 
-pluginBuildFlags :: BuildFlags -> BuildFlags
-pluginBuildFlags =
-    append systemIncludes [ "include", externalLibrary "oscpp/include" ]
-  . append compilerFlags [(Nothing, ["-O3"])]
-
-pluginSources :: SourceTree BuildFlags
-pluginSources = SourceTree.files [
+pluginSources :: FilePath -> SourceTree BuildFlags
+pluginSources sourceDir = SourceTree.files $ under sourceDir [
     "plugins/node-control.cpp"
   , "plugins/patch-cable.cpp"
   , "plugins/sampler.cpp"
@@ -129,9 +106,47 @@ pluginSources = SourceTree.files [
 --     (Nothing, [ "-O3", "-save-temps" ])
 --   ]
 
-methclaSources :: FilePath -> Target -> SourceTree BuildFlags -> SourceTree BuildFlags
-methclaSources buildDir target platformSources =
-    SourceTree.list [
+methcla :: String
+methcla = "methcla"
+
+version :: String
+version = showVersion $ Package.version {
+    versionTags = versionTags Package.version ++ Pro.versionTags
+  }
+
+mkVersionHeader :: FilePath -> Rules FilePath
+mkVersionHeader buildDir = do
+  let output = buildDir </> "include/Methcla/Version.h"
+  output *> \_ -> do
+    alwaysRerun
+    writeFileChanged output $ unlines [
+        "#ifndef METHCLA_VERSION_H_INCLUDED"
+      , "#define METHCLA_VERSION_H_INCLUDED"
+      , ""
+      , "static const char* kMethclaVersion = \"" ++ version ++ "\";"
+      , ""
+      , "#endif /* METHCLA_VERSION_H_INCLUDED */"
+      ]
+  return output
+
+methclaSources :: FilePath -> FilePath -> Target -> SourceTree BuildFlags -> Rules (SourceTree BuildFlags)
+methclaSources sourceDir buildDir target platformSources = do
+  let tlsfDir = sourceDir </> externalLibrary "tlsf"
+      boostDir = sourceDir </> externalLibrary "boost"
+      engineBuildFlags =
+          -- Library headers
+          apiIncludes sourceDir
+        . append userIncludes
+            [ buildDir </> "include"
+            , sourceDir </> "src"
+            , sourceDir </> externalLibraries ]
+        . append systemIncludes
+            [ boostDir, tlsfDir ]
+      pluginBuildFlags =
+          apiIncludes sourceDir
+        . append compilerFlags [(Nothing, ["-O3"])]
+  versionHeader <- mkVersionHeader buildDir
+  return $ SourceTree.list [
         -- sourceFlags boostBuildFlags [ SourceTree.files $
         --   under (boostDir </> "libs") [
         --     --   "date_time/src/gregorian/date_generators.cpp"
@@ -146,11 +161,11 @@ methclaSources buildDir target platformSources =
         -- TLSF
         SourceTree.files [ tlsfDir </> "tlsf.c" ]
         -- engine
-      , SourceTree.flags (engineBuildFlags buildDir) $
+      , SourceTree.flags engineBuildFlags $
           SourceTree.list [
               -- sourceFlags (append compilerFlags [ (Nothing, [ "-O0" ]) ])
               --   [ SourceTree.files [ "src/Methcla/Audio/Engine.cpp" ] ],
-              SourceTree.files
+              SourceTree.files $ under sourceDir
                 [ "src/Methcla/Audio/AudioBus.cpp"
                 , "src/Methcla/Audio/Engine.cpp"
                 , "src/Methcla/Audio/Group.cpp"
@@ -165,36 +180,18 @@ methclaSources buildDir target platformSources =
                 -- , "src/Methcla/Plugin/Loader.cpp"
                 , "src/Methcla/Utility/Semaphore.cpp"
                 ]
-            , SourceTree.filesWithDeps
-                [ ("src/Methcla/API.cpp", [ fst (versionHeader buildDir) ]) ]
+            , SourceTree.filesWithDeps $ map (first (combine sourceDir))
+                [ ("src/Methcla/API.cpp", [ versionHeader ]) ]
                 -- ++ [ "external_libraries/zix/ring.c" ] -- Unused ATM
               -- platform dependent
             , platformSources
-            , Pro.engineSources target
+            , Pro.engineSources sourceDir target
           -- , sourceTree_ (vectorBuildFlags . engineBuildFlags) $ sourceFiles $
           --     under "src" [ "Methcla/Audio/DSP.c" ]
         ]
       , SourceTree.flags pluginBuildFlags $ SourceTree.list $
-          [pluginSources] ++ Pro.pluginSources target
+          [pluginSources sourceDir] ++ Pro.pluginSources sourceDir target
       ]
-
-methcla :: String
-methcla = "methcla"
-
-version :: String
-version = showVersion $ Package.version {
-    versionTags = versionTags Package.version ++ Pro.versionTags
-  }
-
-versionHeader :: FilePath -> (FilePath, String)
-versionHeader buildDir = (buildDir </> "include/Methcla/Version.h", unlines [
-    "#ifndef METHCLA_VERSION_H_INCLUDED"
-  , "#define METHCLA_VERSION_H_INCLUDED"
-  , ""
-  , "static const char* kMethclaVersion = \"" ++ version ++ "\";"
-  , ""
-  , "#endif /* METHCLA_VERSION_H_INCLUDED */"
-  ])
 
 -- plugins :: Platform -> [Library]
 -- plugins platform = [
@@ -294,14 +291,6 @@ androidTargetPlatform = Android.platform 9
 mkBuildPrefix :: Show a => FilePath -> a -> FilePath -> FilePath
 mkBuildPrefix buildDir config target = buildDir </> map toLower (show config) </> target
 
-commonRules :: FilePath -> Rules ()
-commonRules buildDir = do
-  let header = versionHeader buildDir
-  fst header *> \file -> do
-    alwaysRerun
-    writeFileChanged file (snd header)
-  phony "clean" $ removeFilesAfter buildDir ["//*"]
-
 copyTo :: FilePath -> FilePath -> Rules FilePath
 copyTo input output = do
   output ?=> \_ -> copyFile' input output
@@ -313,13 +302,52 @@ phonyFiles target = phony target . need
 phonyFile :: String -> FilePath -> Rules ()
 phonyFile target input = phonyFiles target [input]
 
-mkRules :: FilePath -> Options -> [([String], IO (Rules ()))]
-mkRules buildDir options = do
+mkEnv :: FilePath -> Target -> Config -> Env
+mkEnv buildDir target config =
+  set buildPrefix
+      (defaultBuildPrefix buildDir target (show config))
+      -- (mkBuildPrefix config (platformString $ get targetPlatform target))
+      defaultEnv
+
+libmethclaPNaCl :: FilePath -> FilePath -> Target -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
+libmethclaPNaCl sourceDir buildDir target config = do
+  sdk <- Env.getEnv "NACL_SDK"
+  libsndfile <- pkgConfig "sndfile"
+  return $ do
+    let target = NaCl.target NaCl.canary
+        naclConfig = case config of
+                      Debug -> NaCl.Debug
+                      Release -> NaCl.Release
+        toolChain = NaCl.toolChain
+                      sdk
+                      naclConfig
+                      target
+        buildFlags =   applyConfiguration config configurations
+                   >>> commonBuildFlags
+                   -- Currently -std=c++11 produces compile errors with libc++
+                   -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
+                   >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
+                   -- Not detected by boost for PNaCl platform
+                   -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
+                   >>> append userIncludes [ sourceDir </> "platform/pepper" ]
+                   >>> stdlib_libcpp toolChain
+                   >>> append linkerFlags [ "--pnacl-exceptions=sjlj" ]
+    libmethcla <- staticLibrary (mkEnv buildDir target config) target toolChain methcla
+                    =<< SourceTree.flags buildFlags <$> methclaSources sourceDir buildDir target
+                          (SourceTree.files [
+                              sourceDir </> "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ])
+    return (libmethcla, local_libmethcla sourceDir libmethcla)
+
+buildDir :: FilePath
+buildDir = "build"
+
+commonRules :: Rules ()
+commonRules = phony "clean" $ removeFilesAfter buildDir ["//*"]
+
+mkRules :: Options -> [([String], IO (Rules ()))]
+mkRules options = do
     let config = get buildConfig options
-        mkEnv target = set buildPrefix
-                            (defaultBuildPrefix buildDir target (show config))
-                            -- (mkBuildPrefix config (platformString $ get targetPlatform target))
-                            defaultEnv
+        mkEnv' target = mkEnv buildDir target config
         platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
                                 . need . (:[])
@@ -330,7 +358,7 @@ mkRules buildDir options = do
                 >>> append userIncludes [ "platform/ios"
                                         , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility" ]
                 >>> stdlib_libcpp toolChain
-            iosSources target = methclaSources buildDir target $ SourceTree.files $
+            iosSources target = methclaSources "." buildDir target $ SourceTree.files $
                                 [ "platform/ios/Methcla/Audio/IO/RemoteIODriver.cpp"
                                 , externalLibrary "CoreAudioUtilityClasses/CoreAudio/PublicUtility/CAHostTimeBase.cpp" ]
                                 ++ if Pro.isPresent then [ "platform/ios/Methcla/ProAPI.cpp" ] else []
@@ -340,11 +368,11 @@ mkRules buildDir options = do
         return $ do
             iphoneosLibs <- mapTarget (flip OSX.target (OSX.iPhoneOS iOS_SDK)) [Arm Armv7, Arm Armv7s] $ \target -> do
                 let toolChain = applyEnv $ OSX.toolChain developer target
-                    env = mkEnv target
+                    env = mkEnv' target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags (iosSources target))
+                lib <- staticLibrary env target toolChain methcla =<< SourceTree.flags buildFlags <$> iosSources target
                 return lib
             iphoneosLib <- OSX.universalBinary
                             iphoneosLibs
@@ -355,11 +383,11 @@ mkRules buildDir options = do
                 let platform = OSX.iPhoneSimulator iOS_SDK
                     target = OSX.target (X86 I386) platform
                     toolChain = applyEnv $ OSX.toolChain developer target
-                    env = mkEnv target
+                    env = mkEnv' target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary env target toolChain methcla (SourceTree.flags buildFlags (iosSources target))
+                lib <- staticLibrary env target toolChain methcla =<< SourceTree.flags buildFlags <$> iosSources target
                 return lib
             let iphonesimulatorLib = mkBuildPrefix buildDir config "iphonesimulator" </> "libmethcla.a"
             iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
@@ -385,19 +413,18 @@ mkRules buildDir options = do
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
-                    libmethcla <- staticLibrary (mkEnv target) target toolChain methcla $
-                                    SourceTree.flags buildFlags $ methclaSources buildDir target $
-                                        SourceTree.files [
-                                          "platform/android/opensl_io.c",
-                                          "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
+                    libmethcla <- staticLibrary (mkEnv' target) target toolChain methcla
+                                    =<< SourceTree.flags buildFlags <$> methclaSources "." buildDir target
+                                          (SourceTree.files [
+                                            "platform/android/opensl_io.c",
+                                            "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ])
                     let testBuildFlags =
-                                       engineBuildFlags buildDir
-                                   >>> append systemIncludes [externalLibrary "catch/single_include"]
+                                       append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
                                    >>> append localLibraries [libmethcla]
                                    >>> append libraries ["android", "log", "OpenSLES"]
                                    >>> buildFlags
-                    libmethcla_tests <- sharedLibrary (mkEnv target) target toolChain
+                    libmethcla_tests <- sharedLibrary (mkEnv' target) target toolChain
                                   "methcla-tests"
                                   -- TODO: Build static library for native_app_glue to link against.
                                   $ SourceTree.flags testBuildFlags
@@ -431,7 +458,7 @@ mkRules buildDir options = do
                             sdk
                             naclConfig
                             target
-              env = mkEnv target
+              env = mkEnv' target
               buildFlags =   applyConfiguration config configurations
                          >>> commonBuildFlags
                          -- Currently -std=c++11 produces compile errors with libc++
@@ -445,10 +472,10 @@ mkRules buildDir options = do
                          >>> NaCl.libppapi_cpp
                          >>> NaCl.libppapi
                          >>> libpthread
-          libmethcla <- staticLibrary env target toolChain methcla $
-                              SourceTree.flags buildFlags $ methclaSources buildDir target $
-                                SourceTree.files [
-                                    "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ]
+          libmethcla <- staticLibrary env target toolChain methcla
+                          =<< SourceTree.flags buildFlags <$> methclaSources "." buildDir target
+                                (SourceTree.files [
+                                    "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ])
           phony "pnacl" $ need [libmethcla]
           let testBuildFlags =   buildFlags
                              >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
@@ -458,15 +485,16 @@ mkRules buildDir options = do
                              -- >>> NaCl.libnacl_io
                              >>> Pro.testBuildFlags target
           pnacl_test_bc <- executable env target toolChain "methcla-pnacl-tests"
-                            $ SourceTree.flags testBuildFlags
-                            $ methclaSources buildDir target $ SourceTree.list [
-                                SourceTree.files [
-                                    "src/Methcla/Audio/IO/DummyDriver.cpp"
-                                  , "tests/methcla_tests.cpp"
-                                  , "tests/methcla_engine_tests.cpp"
-                                  , "tests/test_runner_nacl.cpp"
-                                  ]
-                              , Pro.testSources target ]
+                            =<< SourceTree.flags testBuildFlags
+                                <$> methclaSources "." buildDir target
+                                      (SourceTree.list [
+                                        SourceTree.files [
+                                            "src/Methcla/Audio/IO/DummyDriver.cpp"
+                                          , "tests/methcla_tests.cpp"
+                                          , "tests/methcla_engine_tests.cpp"
+                                          , "tests/test_runner_nacl.cpp"
+                                          ]
+                                      , Pro.testSources "." target ])
           pnacl_test <- NaCl.finalize toolChain pnacl_test_bc (pnacl_test_bc `replaceExtension` "pexe")
           pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
                                         (pnacl_test `replaceExtension` "nmf")
@@ -475,8 +503,7 @@ mkRules buildDir options = do
           phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
 
           let examplesBuildFlags =   buildFlags
-                                 >>> append systemIncludes ["include"]
-                                 >>> append localLibraries [libmethcla]
+                                 >>> local_libmethcla "." libmethcla
               examplesDir = buildDir </> "examples/pnacl"
               mkExample output flags sources files = do
                 let outputDir = takeDirectory output
@@ -498,10 +525,12 @@ mkRules buildDir options = do
 
           thaddeus <- mkExample ( examplesDir </> "thaddeus/methcla-thaddeus" )
                                 ( append userIncludes [ "examples/thADDeus/src" ] )
-                                [ "examples/thADDeus/pnacl/main.cpp"
+                                [
+                                  "examples/thADDeus/pnacl/main.cpp"
                                 , "examples/thADDeus/src/synth.cpp"
                                 ]
-                                [ "examples/thADDeus/pnacl/index.html"
+                                [
+                                  "examples/thADDeus/pnacl/index.html"
                                 , "examples/thADDeus/pnacl/manifest.json"
                                 , "examples/thADDeus/pnacl/thaddeus.js"
                                 ]
@@ -510,11 +539,13 @@ mkRules buildDir options = do
                                 . append systemIncludes [ "examples/sampler/libs/tinydir" ]
                                 . libsndfile
                                 . NaCl.libnacl_io )
-                                [ "examples/sampler/pnacl/main.cpp"
+                                [
+                                  "examples/sampler/pnacl/main.cpp"
                                 , "examples/sampler/src/Engine.cpp"
                                 , "plugins/soundfile_api_libsndfile.cpp"
                                 ]
-                                [ "examples/sampler/pnacl/index.html"
+                                [
+                                  "examples/sampler/pnacl/index.html"
                                 , "examples/sampler/pnacl/manifest.json"
                                 , "examples/sampler/pnacl/example.js"
                                 ]
@@ -549,7 +580,7 @@ mkRules buildDir options = do
             applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             libshout <- pkgConfig "shout"
-            let env = mkEnv target
+            let env = mkEnv' target
                 liblame = append systemIncludes ["/usr/local/include"]
                         . append libraryPath ["/usr/local/lib"]
                         . append libraries ["mp3lame"]
@@ -562,17 +593,17 @@ mkRules buildDir options = do
             return $ do
                 lib <- staticLibrary env target toolChain
                             "methcla-icecast"
-                          $ SourceTree.flags buildFlags
-                          $ methclaSources buildDir target
-                          $ SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
+                          =<< SourceTree.flags buildFlags
+                                <$> methclaSources "." buildDir target
+                                      (SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"])
                 example <- executable env target toolChain
-                            "methcla-icecast-example"
-                            $ SourceTree.flags (    apiIncludes
+                            "methcla-icecast-example" $
+                              SourceTree.flags (    apiIncludes "."
                                                 >>> append userIncludes ["examples/thADDeus/src"]
                                                 >>> append localLibraries [lib]
                                                 >>> buildFlags )
-                            $ SourceTree.files [ "examples/icecast/main.cpp"
-                                               , "examples/thADDeus/src/synth.cpp" ]
+                                $ SourceTree.files [ "examples/icecast/main.cpp"
+                                                     , "examples/thADDeus/src/synth.cpp" ]
                 phony "icecast" $ need [lib]
                 phony "icecast-example" $ need [example]
             )
@@ -581,7 +612,7 @@ mkRules buildDir options = do
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             jackBuildFlags <- pkgConfig "jack"
             libsndfile <- pkgConfig "sndfile"
-            let env = mkEnv target
+            let env = mkEnv' target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append userIncludes ["platform/jack"]
@@ -590,10 +621,10 @@ mkRules buildDir options = do
                            >>> stdlib_libcpp toolChain
                            >>> libm
                 build f = f env target toolChain "methcla-jack"
-                            $ SourceTree.flags buildFlags
-                            $ methclaSources buildDir target $
-                                SourceTree.files [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp"
-                                                 , "plugins/soundfile_api_libsndfile.cpp" ]
+                            =<< SourceTree.flags buildFlags
+                                <$> methclaSources "." buildDir target
+                                      (SourceTree.files [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp"
+                                                       , "plugins/soundfile_api_libsndfile.cpp" ])
             return $ do
                 staticLib <- build staticLibrary
                 sharedLib <- build sharedLibrary
@@ -602,7 +633,7 @@ mkRules buildDir options = do
       , (["test", "clean-test"], do -- tests
             applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
-            let env = mkEnv target
+            let env = mkEnv' target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append systemIncludes [externalLibrary "catch/single_include"]
@@ -612,14 +643,15 @@ mkRules buildDir options = do
                            >>> Pro.testBuildFlags target
             return $ do
                 result <- executable env target toolChain "methcla-tests"
-                            $ SourceTree.flags buildFlags
-                            $ methclaSources buildDir target $ SourceTree.list [
-                                SourceTree.files [
-                                    "src/Methcla/Audio/IO/DummyDriver.cpp"
-                                  , "tests/methcla_tests.cpp"
-                                  , "tests/methcla_engine_tests.cpp"
-                                  , "tests/test_runner_console.cpp" ]
-                              , Pro.testSources target ]
+                            =<< SourceTree.flags buildFlags
+                                <$> methclaSources "." buildDir target
+                                      (SourceTree.list [
+                                        SourceTree.files [
+                                            "src/Methcla/Audio/IO/DummyDriver.cpp"
+                                          , "tests/methcla_tests.cpp"
+                                          , "tests/methcla_engine_tests.cpp"
+                                          , "tests/test_runner_console.cpp" ]
+                                      , Pro.testSources "." target ])
                 phony "test" $ do
                     need [result]
                     system' result []
@@ -634,7 +666,7 @@ mkRules buildDir options = do
             return $ do
                 tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
                     fs <- liftIO $ find
-                              (fileName /=? "typeof") (extension ==? ".hpp") (boostDir </> "boost")
+                              (fileName /=? "typeof") (extension ==? ".hpp") (externalLibrary "boost" </> "boost")
                         `and_` sources "include"
                         `and_` sources "platform"
                         `and_` sources "plugins"

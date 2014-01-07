@@ -15,13 +15,10 @@
 import           Development.Shake
 import qualified Methcla as Methcla
 
-buildDir :: FilePath
-buildDir = "build"
-
 main :: IO ()
 main = do
     let shakeOptions' = shakeOptions {
-                        shakeFiles = buildDir ++ "/"
+                        shakeFiles = Methcla.buildDir ++ "/"
                       , shakeVersion = Methcla.version }
         f xs ts = do
             let os = foldl (.) id xs $ Methcla.defaultOptions
@@ -29,6 +26,6 @@ main = do
                         $ sequence
                         $ map snd
                         $ filter (any (flip elem ts) . fst)
-                        $ Methcla.mkRules buildDir os
-            return $ Just $ Methcla.commonRules buildDir >> rules >> want ts
+                        $ Methcla.mkRules os
+            return $ Just $ Methcla.commonRules >> rules >> want ts
     shakeArgsWith shakeOptions' Methcla.optionDescrs f
