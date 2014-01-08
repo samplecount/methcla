@@ -325,17 +325,16 @@ libmethclaPNaCl sourceDir buildDir target config = do
         buildFlags =   applyConfiguration config configurations
                    >>> commonBuildFlags
                    -- Currently -std=c++11 produces compile errors with libc++
-                   -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                    >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
-                   -- Not detected by boost for PNaCl platform
-                   -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
                    >>> append userIncludes [ sourceDir </> "platform/pepper" ]
                    >>> stdlib_libcpp toolChain
                    >>> append linkerFlags [ "--pnacl-exceptions=sjlj" ]
+                   >>> libsndfile
     libmethcla <- staticLibrary (mkEnv buildDir target config) target toolChain methcla
                     =<< SourceTree.flags buildFlags <$> methclaSources sourceDir buildDir target
-                          (SourceTree.files [
-                              sourceDir </> "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ])
+                          (SourceTree.files $ under sourceDir [
+                              "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
+                            , "plugins/soundfile_api_libsndfile.cpp" ])
     return (libmethcla, local_libmethcla sourceDir libmethcla)
 
 buildDir :: FilePath
