@@ -623,7 +623,7 @@ mkRules options = do
                             =<< SourceTree.flags buildFlags
                                 <$> methclaSources "." buildDir target
                                       (SourceTree.files [ "platform/jack/Methcla/Audio/IO/JackDriver.cpp"
-                                                       , "plugins/soundfile_api_libsndfile.cpp" ])
+                                                        , "plugins/soundfile_api_libsndfile.cpp" ])
             return $ do
                 staticLib <- build staticLibrary
                 sharedLib <- build sharedLibrary
