@@ -28,18 +28,10 @@ Flag pro
 Library
   Hs-Source-Dirs: dist, StirFile
 
-  if flag(pro)
-    Hs-Source-Dirs:
-      StirFile/Pro
-  else
-    Hs-Source-Dirs:
-      StirFile/ProStubs
-
   Exposed-Modules:
     Methcla
 
   Other-Modules:
-    MethclaPro
     Paths_methcla_stirfile
 
   Ghc-Options: -Wall
@@ -56,6 +48,8 @@ Library
 Executable methcla-stirfile
   Main-Is: stirfile.hs
   Ghc-Options: -Wall -rtsopts -threaded
+  if flag(pro)
+    CPP-Options: -DMETHCLA_PRO
   Build-Depends:
       base >= 4 && < 5
     , directory
