@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 -- Copyright 2012-2013 Samplecount S.L.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,26 +14,21 @@
 
 import           Development.Shake
 import qualified Methcla as Methcla
-
-variant :: Methcla.Variant
-variant =
-#if defined(METHCLA_PRO)
-  Methcla.Pro
-#else
-  Methcla.Default
-#endif
+import qualified System.Directory as Dir
 
 main :: IO ()
 main = do
-    let shakeOptions' = shakeOptions {
-                        shakeFiles = Methcla.buildDir ++ "/"
-                      , shakeVersion = Methcla.version variant }
-        f xs ts = do
-            let os = foldl (.) id xs $ Methcla.defaultOptions
-            rules <- fmap sequence
-                        $ sequence
-                        $ map snd
-                        $ filter (any (flip elem ts) . fst)
-                        $ Methcla.mkRules variant os
-            return $ Just $ Methcla.commonRules >> rules >> want ts
-    shakeArgsWith shakeOptions' Methcla.optionDescrs f
+  isPro <- Dir.doesFileExist "../LICENSE-PRO"
+  let variant = if isPro then Methcla.Pro else Methcla.Default
+      shakeOptions' = shakeOptions {
+                      shakeFiles = Methcla.buildDir ++ "/"
+                    , shakeVersion = Methcla.version variant }
+      f xs ts = do
+          let os = foldl (.) id xs $ Methcla.defaultOptions
+          rules <- fmap sequence
+                      $ sequence
+                      $ map snd
+                      $ filter (any (flip elem ts) . fst)
+                      $ Methcla.mkRules variant os
+          return $ Just $ Methcla.commonRules >> rules >> want ts
+  shakeArgsWith shakeOptions' Methcla.optionDescrs f

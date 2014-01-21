@@ -20,11 +20,6 @@ Build-Type: Simple
 X-Stir-Package-Dirs: external_libraries/stir
 X-Stir-Sandbox: cabal
 
-Flag pro
-  Description: Whether to build the pro configuration
-  Default: False
-  Manual: True
-
 Library
   Hs-Source-Dirs: dist, StirFile
 
@@ -48,8 +43,6 @@ Library
 Executable methcla-stirfile
   Main-Is: stirfile.hs
   Ghc-Options: -Wall -rtsopts -threaded
-  if flag(pro)
-    CPP-Options: -DMETHCLA_PRO
   Build-Depends:
       base >= 4 && < 5
     , directory
