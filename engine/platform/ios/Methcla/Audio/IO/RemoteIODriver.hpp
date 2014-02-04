@@ -37,6 +37,8 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void start() override;
         virtual void stop() override;
 
+        AudioUnit audioUnit();
+
     private:
         static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
         static OSStatus InputCallback(void                         *inRefCon,
