@@ -140,7 +140,7 @@ void Engine::useDisk(bool flag)
     }
 }
 
-static Methcla_Time kLatency = 0.1;
+static Methcla_Time kLatency = 0.001;
 
 static float mapRate(float value)
 {
