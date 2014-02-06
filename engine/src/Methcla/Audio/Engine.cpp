@@ -957,6 +957,10 @@ void EnvironmentImpl::processScheduler(Methcla_EngineLogFlags logFlags, const Me
         Methcla_Time scheduleTime = m_scheduler.time();
         if (scheduleTime < nextTime)
         {
+#if DEBUG
+            if (scheduleTime < currentTime)
+                rt_log() << "Late " << scheduleTime << " " << currentTime << " " << nextTime;
+#endif // DEBUG
             ScheduledBundle bundle = m_scheduler.top();
             assert( methcla_time_from_uint64(bundle.m_bundle.time()) == scheduleTime );
             processBundle(logFlags, bundle.m_request, bundle.m_bundle, scheduleTime, currentTime);
