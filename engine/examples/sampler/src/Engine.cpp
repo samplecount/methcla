@@ -76,9 +76,15 @@ static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string&
     return result;
 }
 
+static const char* samplerPlugin(bool useDisk)
+{
+    return useDisk ? METHCLA_PLUGINS_DISKSAMPLER_URI
+                   : METHCLA_PLUGINS_SAMPLER_URI;
+}
+
 Engine::Engine(Options inOptions)
     : m_engine(nullptr)
-    , m_useDisk(false)
+    , m_useDisk(Methcla::Version::isPro())
 {
     Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
@@ -99,6 +105,8 @@ Engine::Engine(Options inOptions)
     engine().start();
 
     m_voiceGroup = engine().group(engine().root());
+
+    std::cout << "Using " << samplerPlugin(m_useDisk) << " for sample playback" << std::endl;
 
 //    for (auto bus : { 0, 1 })
 //    {
@@ -132,7 +140,7 @@ void Engine::useDisk(bool flag)
 {
     if (flag && !Methcla::Version::isPro())
     {
-        m_engine->logLine(kMethcla_LogError, "Disk streaming is only available in Methcla Pro!");
+        m_engine->logLine(kMethcla_LogWarn, "Disk streaming is only available in Methcla Pro!");
     }
     else
     {
@@ -168,9 +176,7 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 
             // Create synth and map outputs to buses
             const Methcla::SynthId synth = request.synth(
-                m_useDisk
-                    ? METHCLA_PLUGINS_DISKSAMPLER_URI
-                    : METHCLA_PLUGINS_SAMPLER_URI,
+                samplerPlugin(m_useDisk),
                 m_voiceGroup,
                 { amp, mapRate(rate) },
                 { Methcla::Value(sound.path())
