@@ -204,20 +204,9 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
             request.closeBundle();
         request.closeBundle();
 
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth, [this](Methcla::NodeId nodeId){
-            std::stringstream s;
-            s << "Freed " << nodeId.id();
-            m_engine->logLine(kMethcla_LogDebug, s.str());
-        }));
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1, [this](Methcla::NodeId nodeId){
-            std::stringstream s;
-            s << "Freed " << nodeId.id();
-            m_engine->logLine(kMethcla_LogDebug, s.str());
-        }));
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId nodeId){
-            std::stringstream s;
-            s << "Freed " << nodeId.id();
-            m_engine->logLine(kMethcla_LogDebug, s.str());
+        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth));
+        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1));
+        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId){
             m_engine->audioBusId().free(bus1);
             m_engine->audioBusId().free(bus2);
         }));
