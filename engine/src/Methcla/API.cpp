@@ -195,6 +195,11 @@ private:
     std::unique_ptr<Methcla_AudioDriver>         m_driver;
 };
 
+Methcla::Audio::IO::Driver* Methcla::API::getDriver(Methcla_Engine* engine)
+{
+    return engine->driver();
+}
+
 #define METHCLA_ENGINE_TRY \
     try
 
