@@ -174,7 +174,7 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
                 m_voiceGroup,
                 { amp, mapRate(rate) },
                 { Methcla::Value(sound.path())
-                , Methcla::Value(true) }
+                , Methcla::Value(false) }
             );
             request.mapOutput(synth, 0, bus1);
             request.mapOutput(synth, 1, bus2);
