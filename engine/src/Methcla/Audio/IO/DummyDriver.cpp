@@ -106,7 +106,7 @@ void DummyDriver::run()
 #endif
 }
 
-Methcla_Time DummyDriver::currentTime() const
+Methcla_Time DummyDriver::currentTime()
 {
     const uint64_t t64 = m_time.load();
     double result;

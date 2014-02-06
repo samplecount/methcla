@@ -135,7 +135,7 @@ METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time);
 METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time);
 
 //* Get the current time.
-METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* engine);
+METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine);
 
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size);

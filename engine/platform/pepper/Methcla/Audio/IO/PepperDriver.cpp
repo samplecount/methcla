@@ -112,7 +112,7 @@ void PepperDriver::stop()
     m_audio.StopPlayback();
 }
 
-Methcla_Time PepperDriver::currentTime() const
+Methcla_Time PepperDriver::currentTime()
 {
     const uint64_t frameCount = m_frameCount.load(std::memory_order_relaxed);
     return (double)frameCount * m_sampleRateRecip;

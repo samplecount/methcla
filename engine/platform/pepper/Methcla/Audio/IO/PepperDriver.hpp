@@ -35,7 +35,7 @@ namespace Methcla { namespace Audio { namespace IO
         virtual size_t numOutputs() const override;
         virtual size_t bufferSize() const override;
 
-        virtual Methcla_Time currentTime() const override;
+        virtual Methcla_Time currentTime() override;
 
         virtual void start() override;
         virtual void stop() override;

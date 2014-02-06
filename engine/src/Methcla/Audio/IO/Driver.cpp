@@ -24,7 +24,7 @@ void Driver::process(Methcla_Time currentTime, size_t numFrames, const sample_t*
         m_processCallback(m_processData, currentTime, numFrames, inputs, outputs);
 }
 
-Methcla_Time Driver::currentTime() const
+Methcla_Time Driver::currentTime()
 {
     return 0.;
 }

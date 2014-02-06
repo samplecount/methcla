@@ -26,7 +26,7 @@ namespace Methcla { namespace Audio
 
     class TimeInterface
     {
-        virtual Methcla_Time currentTime() const = 0;
+        virtual Methcla_Time currentTime() = 0;
     };
 
     template <typename A, typename B> void deinterleave(A* const* dst, const B* src, size_t numChannels, size_t numFrames)

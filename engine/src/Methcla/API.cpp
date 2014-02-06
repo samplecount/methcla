@@ -369,7 +369,7 @@ METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time)
     return result;
 }
 
-METHCLA_EXPORT Methcla_Time methcla_engine_current_time(const Methcla_Engine* engine)
+METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine)
 {
     if (engine == nullptr)
         return kMethcla_ArgumentError;

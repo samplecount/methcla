@@ -504,7 +504,7 @@ OSStatus RemoteIODriver::RenderCallback(
     return noErr;
 }
 
-Methcla_Time RemoteIODriver::currentTime() const
+Methcla_Time RemoteIODriver::currentTime()
 {
     return CAHostTimeBase::GetTheCurrentTime() * CAHostTimeBase::GetInverseFrequency();
 }

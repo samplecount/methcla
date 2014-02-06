@@ -42,7 +42,7 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void start() override;
         virtual void stop() override;
 
-        virtual Methcla_Time currentTime() const override;
+        virtual Methcla_Time currentTime() override;
 
     private:
         void run();
