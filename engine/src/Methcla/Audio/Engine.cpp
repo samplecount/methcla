@@ -552,6 +552,13 @@ void EnvironmentImpl::init(const Environment::Options& options)
 
 extern "C" {
 
+static void methcla_api_host_notify(const Methcla_Host* host, const void* packet, size_t size)
+{
+    assert(host);
+    assert(host->handle);
+    static_cast<Environment*>(host->handle)->notify(packet, size);
+}
+
 static void methcla_api_host_log_line(const Methcla_Host* host, Methcla_LogLevel level, const char* message)
 {
     assert(host);
@@ -698,6 +705,7 @@ Environment::Environment(
         methcla_api_host_register_soundfile_api,
         methcla_api_host_soundfile_open,
         methcla_api_host_perform_command,
+        methcla_api_host_notify,
         methcla_api_host_log_line
     };
 

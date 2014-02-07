@@ -239,6 +239,9 @@ struct Methcla_Host
     //* Schedule a command for execution in the realtime context.
     void (*perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
 
+    //* Send an OSC notification packet to the client.
+    void (*notify)(const Methcla_Host* host, const void* packet, size_t size);
+
     //* Log a message and a newline character.
     void (*log_line)(const Methcla_Host* host, Methcla_LogLevel level, const char* message);
 };
