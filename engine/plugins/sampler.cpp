@@ -131,7 +131,7 @@ static void set_buffer(const Methcla_World* world, void* data)
     methcla_world_free(world, msg);
 }
 
-static void load_sound_file(const Methcla_Host* host, void* data)
+static void load_sound_file(const Methcla_Host* context, void* data)
 {
     LoadMessage* msg = (LoadMessage*)data;
     assert( msg != nullptr );
@@ -140,7 +140,7 @@ static void load_sound_file(const Methcla_Host* host, void* data)
     Methcla_SoundFileInfo info;
     memset(&info, 0, sizeof(info));
 
-    Methcla_Error err = methcla_host_soundfile_open(host, msg->path, kMethcla_FileModeRead, &file, &info);
+    Methcla_Error err = methcla_host_soundfile_open(context, msg->path, kMethcla_FileModeRead, &file, &info);
 
     if (err == kMethcla_NoError)
     {
@@ -152,7 +152,7 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 
         if (msg->numFrames > 0)
         {
-            msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
+            msg->buffer = (float*)methcla_host_alloc(context, msg->numChannels * msg->numFrames * sizeof(float));
 
             // TODO: error handling
             if (msg->buffer != nullptr)
@@ -170,12 +170,12 @@ static void load_sound_file(const Methcla_Host* host, void* data)
         methcla_soundfile_close(file);
     }
 
-    methcla_host_perform_command(host, set_buffer, msg);
+    methcla_host_perform_command(context, set_buffer, msg);
 }
 
-static void free_buffer_cb(const Methcla_Host*, void* data)
+static void free_buffer_cb(const Methcla_Host* context, void* data)
 {
-    free(data);
+    methcla_host_free(context, data);
 }
 
 static void freeBuffer(const Methcla_World* world, Synth* self)
