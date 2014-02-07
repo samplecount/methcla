@@ -18,9 +18,9 @@
 #include "Methcla/Utility/Macros.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
 
 #if !defined(METHCLA_USE_BOOST_SHARED_PTR)
 #  if defined(__native_client__)
@@ -47,8 +47,11 @@ public:
     Alignment(size_t alignment)
         : m_alignment(std::max(alignment, sizeof(void*)))
     {
-        assert( (m_alignment & (m_alignment - 1)) == 0 /* Alignment must be a power of two */ );
+        if ((m_alignment & (m_alignment - 1)) != 0)
+            // Alignment must be a power of two
+            throw std::invalid_argument("Alignment must be a power of two");
     }
+
     Alignment(const Alignment&) = default;
 
     operator size_t () const
