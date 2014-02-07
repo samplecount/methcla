@@ -715,7 +715,9 @@ mkRules variant options = do
                 let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
                 phony installedSharedLib $
                   if isDarwin target
-                  then system' "install_name_tool" ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
+                  then do
+                    need [sharedLib]
+                    system' "install_name_tool" ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
                   else return ()
 
                 phony "desktop" $ need [staticLib, installedSharedLib]
