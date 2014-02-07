@@ -233,6 +233,15 @@ struct Methcla_Host
     //* Register sound file API.
     void (*register_soundfile_api)(const struct Methcla_Host* host, const Methcla_SoundFileAPI* api);
 
+    //* Allocate a block of memory
+    void* (*alloc)(const struct Methcla_Host* context, size_t size);
+
+    //* Allocate a block of aligned memory.
+    void* (*alloc_aligned)(const struct Methcla_Host* context, size_t alignment, size_t size);
+
+    //* Free a block of memory previously allocated by alloc or alloc_aligned.
+    void (*free)(const struct Methcla_Host* context, void* ptr);
+
     //* Open sound file.
     Methcla_Error (*soundfile_open)(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
 
@@ -257,6 +266,27 @@ static inline void methcla_host_register_soundfile_api(const Methcla_Host* host,
 {
     assert(host && host->register_soundfile_api && api);
     host->register_soundfile_api(host, api);
+}
+
+static inline void* methcla_host_alloc(const Methcla_Host* context, size_t size)
+{
+    assert(context);
+    assert(context->alloc);
+    return context->alloc(context, size);
+}
+
+static inline void* methcla_host_alloc_aligned(const Methcla_Host* context, size_t alignment, size_t size)
+{
+    assert(context);
+    assert(context->alloc_aligned);
+    return context->alloc_aligned(context, alignment, size);
+}
+
+static inline void methcla_host_free(const Methcla_Host* context, void* ptr)
+{
+    assert(context);
+    assert(context->free);
+    context->free(context, ptr);
 }
 
 static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)

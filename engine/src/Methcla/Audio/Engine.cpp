@@ -16,6 +16,7 @@
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Synth.hpp"
 #include "Methcla/Exception.hpp"
+#include "Methcla/Memory.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Platform.hpp"
 #include "Methcla/Utility/Macros.h"
@@ -580,6 +581,31 @@ static void methcla_api_host_register_soundfile_api(const Methcla_Host* host, co
     static_cast<Environment*>(host->handle)->registerSoundFileAPI(api);
 }
 
+static void* methcla_api_host_alloc(const Methcla_Host*, size_t size)
+{
+    try {
+        return Memory::alloc(size);
+    } catch (std::invalid_argument) {
+    } catch (std::bad_alloc) {
+    }
+    return nullptr;
+}
+
+static void* methcla_api_host_alloc_aligned(const Methcla_Host*, size_t alignment, size_t size)
+{
+    try {
+        return Memory::allocAligned(Memory::Alignment(alignment), size);
+    } catch (std::invalid_argument) {
+    } catch (std::bad_alloc) {
+    }
+    return nullptr;
+}
+
+static void methcla_api_host_free(const Methcla_Host*, void* ptr)
+{
+    Memory::free(ptr);
+}
+
 static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     assert(host && host->handle);
@@ -703,6 +729,9 @@ Environment::Environment(
         this,
         methcla_api_host_register_synthdef,
         methcla_api_host_register_soundfile_api,
+        methcla_api_host_alloc,
+        methcla_api_host_alloc_aligned,
+        methcla_api_host_free,
         methcla_api_host_soundfile_open,
         methcla_api_host_perform_command,
         methcla_api_host_notify,
