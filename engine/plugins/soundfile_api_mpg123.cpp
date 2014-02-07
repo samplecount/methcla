@@ -29,7 +29,7 @@ struct SoundFileHandle
     size_t            frameSize;
     Methcla_SoundFile soundFile;
 
-    struct Destruct
+    struct Destructor
     {
         void operator()(SoundFileHandle* handle)
         {
@@ -45,7 +45,7 @@ struct SoundFileHandle
         }
     };
 
-    typedef std::unique_ptr<SoundFileHandle,Destruct> Ref;
+    typedef std::unique_ptr<SoundFileHandle,Destructor> Ref;
 };
 
 extern "C"
@@ -62,8 +62,7 @@ extern "C"
 
 static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
 {
-    SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
-    SoundFileHandle::Destruct()(handle);
+    SoundFileHandle::Destructor()(static_cast<SoundFileHandle*>(file->handle));
     return kMethcla_NoError;
 }
 
