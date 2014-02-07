@@ -41,7 +41,8 @@ import qualified Shakefile.C.Android as Android
 import qualified Shakefile.C.Host as Host
 import qualified Shakefile.C.NaCl as NaCl
 import qualified Shakefile.C.OSX as OSX
-import           Shakefile.C.PkgConfig (pkgConfig)
+import           Shakefile.C.PkgConfig (pkgConfig, pkgConfigWithOptions)
+import qualified Shakefile.C.PkgConfig as PkgConfig
 import           Shakefile.Configuration
 import           Shakefile.Label
 import           Shakefile.SourceTree (SourceTree)
@@ -376,10 +377,10 @@ mkEnv buildDir target config =
       -- (mkBuildPrefix config (platformString $ get targetPlatform target))
       defaultEnv
 
-libmethclaPNaCl :: Variant -> FilePath -> FilePath -> Target -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
-libmethclaPNaCl variant sourceDir buildDir target config = do
+libmethclaPNaCl :: Variant -> FilePath -> FilePath -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
+libmethclaPNaCl variant sourceDir buildDir config = do
   sdk <- Env.getEnv "NACL_SDK"
-  libsndfile <- pkgConfig "sndfile"
+  libsndfile <- pkgConfigWithOptions (PkgConfig.Options { PkgConfig.static = True }) "sndfile"
   return $ do
     let target = NaCl.target NaCl.canary
         naclConfig = case config of
@@ -403,8 +404,13 @@ libmethclaPNaCl variant sourceDir buildDir target config = do
                     $ methclaSources variant sourceDir buildDir target versionHeader
                     $ SourceTree.files $ under sourceDir [
                         "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
-                      , "plugins/soundfile_api_libsndfile.cpp" ]
-    return (libmethcla, local_libmethcla sourceDir libmethcla)
+                      , "plugins/soundfile_api_libsndfile.cpp"
+                      , "plugins/soundfile_api_mpg123.cpp" ]
+    return (libmethcla,     local_libmethcla sourceDir libmethcla
+                        -- FIXME: How to select only linker flags?
+                        -- Maybe pkgConfig could return linker and other flags separately?
+                        >>> libsndfile
+                        >>> append libraries ["mpg123"])
 
 buildDir :: FilePath
 buildDir = "build"
@@ -525,14 +531,13 @@ mkRules variant options = do
         )
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
-        libsndfile <- pkgConfig "sndfile"
         freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
+        mkLibMethcla <- libmethclaPNaCl variant "." buildDir config
         return $ do
-          let -- target = NaCl.target (NaCl.pepper 31)
-              target = NaCl.target NaCl.canary
+          let target = NaCl.target NaCl.canary
               naclConfig = case config of
-                            Debug -> NaCl.Debug
-                            Release -> NaCl.Release
+                              Debug -> NaCl.Debug
+                              Release -> NaCl.Release
               toolChain = NaCl.toolChain
                             sdk
                             naclConfig
@@ -543,21 +548,11 @@ mkRules variant options = do
                          -- Currently -std=c++11 produces compile errors with libc++
                          -- -std=c++11 defines __STRICT_ANSI__ and then newlib doesn't export fileno (needed by catch)
                          >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
-                         -- Not detected by boost for PNaCl platform
-                         -- >>> append defines [("BOOST_HAS_PTHREADS", Nothing), ("METHCLA_USE_BOOST_THREAD", Just "1")]
-                         >>> append userIncludes ["platform/pepper"]
-                         >>> stdlib_libcpp toolChain
-                         >>> append linkerFlags ["--pnacl-exceptions=sjlj"]
                          >>> NaCl.libppapi_cpp
                          >>> NaCl.libppapi
                          >>> libpthread
-          versionHeader <- mkVersionHeader'
-          libmethcla <- staticLibrary env target toolChain methcla
-                        $ SourceTree.flags buildFlags
-                        $ methclaSources' target versionHeader
-                        $ SourceTree.files [
-                            "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp" ]
-          phony "pnacl" $ need [libmethcla]
+          (libmethcla_a, libmethcla) <- mkLibMethcla
+          phony "pnacl" $ need [libmethcla_a]
           let pnaclTestBuildFlags =
                     buildFlags
                 >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
@@ -566,9 +561,9 @@ mkRules variant options = do
                 -- >>> NaCl.libppapi_simple
                 -- >>> NaCl.libnacl_io
                 >>> testBuildFlags variant target
+                >>> libmethcla
           pnacl_test_bc <- executable env target toolChain "methcla-pnacl-tests"
                            $ SourceTree.flags pnaclTestBuildFlags
-                           $ methclaSources' target versionHeader
                            $ SourceTree.list [
                               SourceTree.files [
                                   "src/Methcla/Audio/IO/DummyDriver.cpp"
@@ -585,7 +580,7 @@ mkRules variant options = do
           phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
 
           let examplesBuildFlags =   buildFlags
-                                 >>> local_libmethcla "." libmethcla
+                                 >>> libmethcla
               examplesDir = buildDir </> "examples/pnacl"
               mkExample output flags sources files = do
                 let outputDir = takeDirectory output
@@ -619,12 +614,10 @@ mkRules variant options = do
           sampler <- mkExample  ( examplesDir </> "sampler/methcla-sampler" )
                                 ( append userIncludes   [ "examples/sampler/src" ]
                                 . append systemIncludes [ "examples/sampler/libs/tinydir" ]
-                                . libsndfile
                                 . NaCl.libnacl_io )
                                 [
                                   "examples/sampler/pnacl/main.cpp"
                                 , "examples/sampler/src/Engine.cpp"
-                                , "plugins/soundfile_api_libsndfile.cpp"
                                 ]
                                 [
                                   "examples/sampler/pnacl/index.html"
