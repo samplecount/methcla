@@ -27,6 +27,21 @@ struct SoundFileHandle
 {
     SNDFILE*          sndfile;
     Methcla_SoundFile soundFile;
+
+    struct Destructor
+    {
+        void operator()(SoundFileHandle* handle)
+        {
+            if (handle != nullptr)
+            {
+                if (handle->sndfile != nullptr)
+                    sf_close(handle->sndfile);
+                free(handle);
+            }
+        }
+    };
+
+    typedef std::unique_ptr<SoundFileHandle,Destructor> Ref;
 };
 
 extern "C" {
@@ -42,9 +57,7 @@ extern "C" {
 
 static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
 {
-    SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
-    sf_close(handle->sndfile);
-    free(handle);
+    SoundFileHandle::Destructor()(static_cast<SoundFileHandle*>(file->handle));
     return kMethcla_NoError;
 }
 
@@ -101,9 +114,10 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
         return kMethcla_ArgumentError;
 
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(std::malloc(sizeof(SoundFileHandle)));
-    if (handle == nullptr) {
+    if (handle == nullptr)
         return kMethcla_UnspecifiedError;
-    }
+
+    auto handleRef = SoundFileHandle::Ref(handle);
 
     SF_INFO sfinfo;
     handle->sndfile = sf_open(path, sfmode, &sfinfo);
@@ -120,13 +134,16 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
 
     *outFile = file;
 
-    if (info != nullptr) {
+    if (info != nullptr)
+    {
         info->frames = sfinfo.frames;
-        info->channels = std::abs(sfinfo.channels);
-        info->samplerate = std::abs(sfinfo.samplerate);
+        info->channels = sfinfo.channels;
+        info->samplerate = sfinfo.samplerate;
     }
 
     // METHCLA_PRINT_DEBUG("soundfile_open: %s %lld %u %u", path, info->frames, info->channels, info->samplerate);
+
+    handleRef.release();
 
     return kMethcla_NoError;
 }
