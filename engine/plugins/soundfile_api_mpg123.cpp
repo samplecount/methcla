@@ -84,7 +84,6 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* 
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
 
-    const size_t numChannels = 1;
     size_t numBytes = 0;
 
     int err = mpg123_read(
