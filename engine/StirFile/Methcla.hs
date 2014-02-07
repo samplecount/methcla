@@ -693,10 +693,12 @@ mkRules variant options = do
             applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
             libsndfile <- pkgConfig "sndfile"
+            libmpg123 <- pkgConfig "libmpg123"
             let env = mkEnv' target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> libsndfile
+                           >>> libmpg123
                            >>> stdlib_libcpp toolChain
                            >>> libm
                 build versionHeader f =
@@ -704,7 +706,10 @@ mkRules variant options = do
                     $ SourceTree.flags buildFlags
                     $ methclaSources' target versionHeader
                     $ SourceTree.list [ rtAudio "."
-                                      , SourceTree.files [ "plugins/soundfile_api_libsndfile.cpp" ] ]
+                                      , SourceTree.files [
+                                            "plugins/soundfile_api_libsndfile.cpp"
+                                          , "plugins/soundfile_api_mpg123.cpp"
+                                      ] ]
             return $ do
                 versionHeader <- mkVersionHeader'
 
