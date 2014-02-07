@@ -127,11 +127,28 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXLegacyTarget section */
+		A5177DF218A40407005E397B /* libmethcla */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = A5177DF318A40407005E397B /* Build configuration list for PBXLegacyTarget "libmethcla" */;
+			buildPhases = (
+			);
+			buildToolPath = /bin/sh;
+			dependencies = (
+			);
+			name = libmethcla;
+			passBuildSettingsInEnvironment = 1;
+			productName = libmethcla;
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		A54F268718A28104008A3940 /* MethclaSampler */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A54F269D18A28104008A3940 /* Build configuration list for PBXNativeTarget "MethclaSampler" */;
 			buildPhases = (
+				A5177DF118A40237005E397B /* ShellScript */,
 				A54F268418A28104008A3940 /* Sources */,
 				A54F268518A28104008A3940 /* Frameworks */,
 				A54F268618A28104008A3940 /* Resources */,
@@ -167,6 +184,7 @@
 			projectRoot = "";
 			targets = (
 				A54F268718A28104008A3940 /* MethclaSampler */,
+				A5177DF218A40407005E397B /* libmethcla */,
 			);
 		};
 /* End PBXProject section */
@@ -185,6 +203,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A5177DF118A40237005E397B /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd ../../..\n\ncase ACTION in\nclean) stir_action=clean ;;\n*) stir_action=desktop ;;\nesac\n\n./stir -j`sysctl -n hw.ncpu` -c \"$CONFIGURATION\" $stir_action\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A54F268418A28104008A3940 /* Sources */ = {
@@ -285,6 +319,38 @@
 			};
 			name = Release;
 		};
+		A5177DF418A40407005E397B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				DEBUGGING_SYMBOLS = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		A5177DF518A40407005E397B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 		A54F269E18A28104008A3940 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -358,6 +424,14 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A5177DF318A40407005E397B /* Build configuration list for PBXLegacyTarget "libmethcla" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5177DF418A40407005E397B /* Debug */,
+				A5177DF518A40407005E397B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		A54F269D18A28104008A3940 /* Build configuration list for PBXNativeTarget "MethclaSampler" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -365,6 +439,7 @@
 				A54F269F18A28104008A3940 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

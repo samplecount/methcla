@@ -26,9 +26,11 @@ static NSArray * openFiles()
     return result == NSOKButton ? [panel URLs] : nil;
 }
 
-static std::vector<unichar> keys = {
+static const std::vector<unichar> keys = {
     122,97,113,120,115,119,99,100,101,118,102,114,98,103,116,110,104,121,109,106,117,44,107,105,46,108,111,47,59,112
 };
+
+static const std::vector<float> rates = { 0.25, 0.5, 0.75, 0.9, 1.0, 1.1, 1.25, 1.5, 2 };
 
 static long keyToIndex(unichar key)
 {
@@ -56,6 +58,7 @@ static long keyToIndex(unichar key)
 @interface KeyboardView : NSView
 {
     Engine* engine;
+    float   rate;
 }
 - (void)setEngine:(Engine*)theEngine;
 @end
@@ -64,6 +67,7 @@ static long keyToIndex(unichar key)
 - (void)setEngine:(Engine*)theEngine
 {
     engine = theEngine;
+    rate = 1.f;
 }
 - (BOOL)acceptsFirstResponder
 {
@@ -75,11 +79,19 @@ static long keyToIndex(unichar key)
         NSString* chars = [theEvent charactersIgnoringModifiers];
         if ([chars length] == 1) {
             unichar key = [chars characterAtIndex:0];
-            long index = keyToIndex(key);
-//            NSLog(@"keyDown: key=%u index%d", key, index);
+            if (key >= 49 && key <= 57)
+            {
+                rate = rates[key-49];
+                std::cout << "Playback rate set to " << rate << std::endl;
+            }
+            else
+            {
+                long index = keyToIndex(key);
+//                NSLog(@"keyDown: key=%u index%d", key, index);
 //            std::cout << key << ",";
-            if (index >= 0) {
-                engine->startVoice(static_cast<intptr_t>(index), index, 0.2);
+                if (index >= 0) {
+                    engine->startVoice(static_cast<intptr_t>(index), index, 0.2, rate);
+                }
             }
         }
     }
@@ -130,7 +142,6 @@ inline NSString* resourcePath(NSString* component)
         // Initialize and configure the audio engine
 //        options.soundDir = [resourcePath(@"sounds") UTF8String];
         engine = new Engine(options);
-        engine->useDisk(true);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

@@ -152,12 +152,8 @@ static Methcla_Time kLatency = 0.001;
 
 static float mapRate(float value)
 {
-#if 0
     const float numOctaves = 4.f;
     return expmap(1.f/numOctaves, numOctaves, 0.f, 1.f, value);
-#else
-    return 1.f;
-#endif
 }
 
 void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
@@ -178,7 +174,7 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
             const Methcla::SynthId synth = request.synth(
                 samplerPlugin(m_useDisk),
                 m_voiceGroup,
-                { amp, mapRate(rate) },
+                { amp, rate },
                 { Methcla::Value(sound.path())
                 , Methcla::Value(false) }
             );
