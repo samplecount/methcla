@@ -10,6 +10,7 @@
 #import "Engine.hpp"
 
 #include <methcla/plugins/soundfile_api_libsndfile.h>
+#include <methcla/plugins/soundfile_api_mpg123.h>
 #include <vector>
 
 using namespace Methcla::Examples::Sampler;
@@ -20,7 +21,7 @@ static NSArray * openFiles()
     [panel setAllowsMultipleSelection:YES];
     [panel setCanChooseDirectories:NO];
     [panel setCanChooseFiles:YES];
-    [panel setAllowedFileTypes: [NSArray arrayWithObjects:@"wav",@"aiff",nil]];
+    [panel setAllowedFileTypes: [NSArray arrayWithObjects:@"aif",@"aiff",@"mp3",@"wav",nil]];
     [panel setFloatingPanel:YES];
     NSInteger result = [panel runModal];
     return result == NSOKButton ? [panel URLs] : nil;
@@ -129,6 +130,7 @@ inline NSString* resourcePath(NSString* component)
     Engine::Options options;
     options.engineOptions.audioDriver.bufferSize = 128;
     options.engineOptions.addLibrary(methcla_soundfile_api_libsndfile);
+    options.engineOptions.addLibrary(methcla_soundfile_api_mpg123);
 
     NSArray* sounds = openFiles();
     options.sounds.reserve([sounds count]);
