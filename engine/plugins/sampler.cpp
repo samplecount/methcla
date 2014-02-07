@@ -14,12 +14,15 @@
 
 #include <methcla/plugins/sampler.h>
 
-#include <iostream>
+#include <cmath>
 #include <oscpp/server.hpp>
-#include <unistd.h>
+
+namespace
+{
 
 typedef enum {
     kSampler_amp,
+    kSampler_rate,
     kSampler_output_0,
     kSampler_output_1,
     kSamplerPorts
@@ -31,18 +34,68 @@ typedef struct {
     size_t channels;
     size_t frames;
     bool loop;
-    size_t pos;
+    double phase;
 } Synth;
 
-extern "C" {
+struct Options
+{
+    const char* path;
+    bool loop;
+    size_t startFrame;
+    size_t numFrames;
+};
 
-static bool
+struct LoadMessage
+{
+    Synth* synth;
+    size_t numChannels;
+    int64_t startFrame;
+    int64_t numFrames;
+    float* buffer;
+    char* path;
+};
+
+// Declare callback with C linkage
+extern "C"
+{
+    static bool
+    port_descriptor( const Methcla_SynthOptions*,
+                     Methcla_PortCount,
+                     Methcla_PortDescriptor* );
+    static void
+    configure( const void*, size_t,
+               const void*, size_t,
+               Methcla_SynthOptions* );
+
+    static void
+    construct( const Methcla_World*,
+               const Methcla_SynthDef*,
+               const Methcla_SynthOptions*,
+               Methcla_Synth* );
+
+    static void
+    destroy( const Methcla_World*,
+             Methcla_Synth* );
+
+    static void
+    connect( Methcla_Synth*,
+             Methcla_PortCount,
+             void* );
+
+    static void
+    process( const Methcla_World*,
+             Methcla_Synth*,
+             size_t );
+}
+
+bool
 port_descriptor( const Methcla_SynthOptions* /* options */
                , Methcla_PortCount index
                , Methcla_PortDescriptor* port )
 {
     switch ((PortIndex)index) {
         case kSampler_amp:
+        case kSampler_rate:
             port->type = kMethcla_ControlPort;
             port->direction = kMethcla_Input;
             port->flags = kMethcla_PortFlags;
@@ -58,14 +111,6 @@ port_descriptor( const Methcla_SynthOptions* /* options */
     }
 }
 
-struct Options
-{
-    const char* path;
-    bool loop;
-    size_t startFrame;
-    size_t numFrames;
-};
-
 static void
 configure(const void* tags, size_t tags_size, const void* args, size_t args_size, Methcla_SynthOptions* outOptions)
 {
@@ -75,25 +120,10 @@ configure(const void* tags, size_t tags_size, const void* args, size_t args_size
     options->loop = argStream.atEnd() ? false : argStream.int32();
     options->startFrame = argStream.atEnd() ? 0 : std::max(0, argStream.int32());
     options->numFrames = argStream.atEnd() ? -1 : std::max(0, argStream.int32());
-    // std::cout << "Sampler: "
-    //           << options->path << " "
-    //           << options->loop << " "
-    //           << options->numFrames << "\n";
 }
-
-struct LoadMessage
-{
-    Synth* synth;
-    size_t numChannels;
-    int64_t startFrame;
-    int64_t numFrames;
-    float* buffer;
-    char* path;
-};
 
 static void set_buffer(const Methcla_World* world, void* data)
 {
-    // std::cout << "set_buffer\n";
     LoadMessage* msg = (LoadMessage*)data;
     msg->synth->buffer = msg->buffer;
     msg->synth->channels = msg->numChannels;
@@ -103,7 +133,6 @@ static void set_buffer(const Methcla_World* world, void* data)
 
 static void load_sound_file(const Methcla_Host* host, void* data)
 {
-//    std::cout << "load_sound_file\n";
     LoadMessage* msg = (LoadMessage*)data;
     assert( msg != nullptr );
 
@@ -124,7 +153,6 @@ static void load_sound_file(const Methcla_Host* host, void* data)
         if (msg->numFrames > 0)
         {
             msg->buffer = (float*)malloc(msg->numChannels * msg->numFrames * sizeof(float));
-            // std::cout << "load_sound_file: " << msg->path << " " << info.channels << " " << info.frames << "\n";
 
             // TODO: error handling
             if (msg->buffer != nullptr)
@@ -147,7 +175,6 @@ static void load_sound_file(const Methcla_Host* host, void* data)
 
 static void free_buffer_cb(const Methcla_Host*, void* data)
 {
-    // std::cout << "free_buffer\n";
     free(data);
 }
 
@@ -172,7 +199,7 @@ construct( const Methcla_World* world
     self->channels = 0;
     self->frames = 0;
     self->loop = options->loop;
-    self->pos = 0;
+    self->phase = 0.;
 
     LoadMessage* msg = (LoadMessage*)methcla_world_alloc(world, sizeof(LoadMessage) + strlen(options->path)+1);
     msg->synth = self;
@@ -200,91 +227,259 @@ connect( Methcla_Synth* synth
     ((Synth*)synth)->ports[index] = (float*)data;
 }
 
-static void
-process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
+static inline void
+process_no_interp(
+    const Methcla_World* world,
+    Synth* self,
+    size_t numFrames,
+    float amp,
+    float /* rate */,
+    const float* buffer,
+    float* out0,
+    float* out1 )
 {
-    Synth* self = (Synth*)synth;
+    size_t pos = (size_t)self->phase;
+    const size_t left = self->frames - pos;
+    const size_t channels = self->channels;
 
-    const float amp = *self->ports[kSampler_amp];
-    float* out0 = self->ports[kSampler_output_0];
-    float* out1 = self->ports[kSampler_output_1];
-
-    float* buffer = self->buffer;
-    if (buffer)
-    {
-        size_t pos = self->pos;
-        const size_t left = self->frames - pos;
-        const size_t channels = self->channels;
-
-        if (left >= numFrames) {
-            if (channels == 1) {
-                for (size_t k = 0; k < numFrames; k++) {
-                    out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
-                }
-            } else {
-                for (size_t k = 0; k < numFrames; k++) {
-                    const size_t j = (pos+k)*channels;
-                    out0[k] = amp * buffer[j];
-                    out1[k] = amp * buffer[j+1];
-                }
+    if (left >= numFrames) {
+        if (channels == 1) {
+            for (size_t k = 0; k < numFrames; k++) {
+                out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
             }
-            if (left == numFrames) {
-                if (self->loop) self->pos = 0;
-                else freeBuffer(world, self);
-            } else {
-                self->pos = pos + numFrames;
-            };
-        } else if (self->loop) {
-            size_t played = 0;
-            size_t toPlay = left;
-            while (played < numFrames) {
-                if (channels == 1) {
-                    for (size_t k = 0; k < toPlay; k++) {
-                        const size_t m = played+k;
-                        const size_t j = (pos+k)*channels;
-                        out0[m] = out1[m] = amp * buffer[j];
-                    }
-                } else {
-                    for (size_t k = 0; k < toPlay; k++) {
-                        const size_t m = played+k;
-                        const size_t j = (pos+k)*channels;
-                        out0[m] = amp * buffer[j];
-                        out1[m] = amp * buffer[j+1];
-                    }
-                }
-                played += toPlay;
-                pos += toPlay;
-                if (pos >= self->frames)
-                    pos = 0;
-                toPlay = std::min(numFrames - played, self->frames);
-            }
-            self->pos = pos;
         } else {
+            for (size_t k = 0; k < numFrames; k++) {
+                const size_t j = (pos+k)*channels;
+                out0[k] = amp * buffer[j];
+                out1[k] = amp * buffer[j+1];
+            }
+        }
+        if (left == numFrames) {
+            if (self->loop) self->phase = 0;
+            else freeBuffer(world, self);
+        } else {
+            self->phase = pos + numFrames;
+        };
+    } else if (self->loop) {
+        size_t played = 0;
+        size_t toPlay = left;
+        while (played < numFrames) {
             if (channels == 1) {
-                for (size_t k = 0; k < left; k++) {
+                for (size_t k = 0; k < toPlay; k++) {
+                    const size_t m = played+k;
                     const size_t j = (pos+k)*channels;
-                    out0[k] = out1[k] = amp * buffer[j];
+                    out0[m] = out1[m] = amp * buffer[j];
                 }
             } else {
-                for (size_t k = 0; k < left; k++) {
+                for (size_t k = 0; k < toPlay; k++) {
+                    const size_t m = played+k;
                     const size_t j = (pos+k)*channels;
-                    out0[k] = amp * buffer[j];
-                    out1[k] = amp * buffer[j+1];
+                    out0[m] = amp * buffer[j];
+                    out1[m] = amp * buffer[j+1];
                 }
             }
-            for (size_t k = left; k < numFrames; k++) {
+            played += toPlay;
+            pos += toPlay;
+            if (pos >= self->frames)
+                pos = 0;
+            toPlay = std::min(numFrames - played, self->frames);
+        }
+        self->phase = pos;
+    } else {
+        if (channels == 1) {
+            for (size_t k = 0; k < left; k++) {
+                const size_t j = (pos+k)*channels;
+                out0[k] = out1[k] = amp * buffer[j];
+            }
+        } else {
+            for (size_t k = 0; k < left; k++) {
+                const size_t j = (pos+k)*channels;
+                out0[k] = amp * buffer[j];
+                out1[k] = amp * buffer[j+1];
+            }
+        }
+        for (size_t k = left; k < numFrames; k++) {
+            out0[k] = out1[k] = 0.f;
+        }
+        freeBuffer(world, self);
+    }
+}
+
+static inline float hermite1(float x, float y0, float y1, float y2, float y3)
+{
+    // 4-point, 3rd-order Hermite (x-form)
+    const float c0 = y1;
+    const float c1 = 0.5f * (y2 - y0);
+    const float c2 = y0 - 2.5f * y1 + 2.f * y2 - 0.5f * y3;
+    const float c3 = 1.5f * (y1 - y2) + 0.5f * (y3 - y0);
+
+    return ((c3 * x + c2) * x + c1) * x + c0;
+}
+
+template <bool wrapInterp, bool wrapPhase> inline size_t resample(float* out0, float* out1, size_t numFrames, const float* buffer, size_t bufferChannels, size_t bufferFrames, size_t bufferEnd, float amp, float rate, double& phase)
+{
+    const size_t bufferChannel1 = 0;
+    const size_t bufferChannel2 = bufferChannels > 1 ? 1 : 0;
+    const double maxPhase = (double)bufferFrames;
+
+    size_t k;
+
+    for (k=0; k < numFrames; k++)
+    {
+        const double findex = std::floor(phase);
+        const size_t index = (size_t)findex;
+
+        const float* xm;
+        const float* x0;
+        const float* x1;
+        const float* x2;
+
+        if (index == 0)
+        {
+            if (wrapInterp)
+                xm = buffer + (bufferFrames - 1) * bufferChannels;
+            else
+                xm = buffer;
+        }
+        else
+        {
+            xm = buffer + (index - 1) * bufferChannels;
+        }
+
+        if (index < bufferEnd - 2)
+        {
+            x0 = buffer + index * bufferChannels;
+            x1 = x0 + bufferChannels;
+            x2 = x1 + bufferChannels;
+        }
+        else if (index < bufferEnd - 1)
+        {
+            x0 = buffer + index * bufferChannels;
+            x1 = x0 + bufferChannels;
+            if (wrapInterp)
+                x2 = buffer;
+            else
+                x2 = x1;
+        }
+        else if (index < bufferEnd)
+        {
+            x0 = buffer + index * bufferChannels;
+            if (wrapInterp)
+            {
+                x1 = buffer;
+                x2 = buffer + bufferChannels;
+            }
+            else
+            {
+                x1 = x0;
+                x2 = x0;
+            }
+        }
+        else
+        {
+            break;
+        }
+
+        const double x = phase - findex;
+
+        out0[k] = amp * hermite1(x, xm[bufferChannel1], x0[bufferChannel1], x1[bufferChannel1], x2[bufferChannel1]);
+        out1[k] = amp * hermite1(x, xm[bufferChannel2], x0[bufferChannel2], x1[bufferChannel2], x2[bufferChannel2]);
+
+        phase += rate;
+
+        if (wrapPhase && phase >= maxPhase)
+            phase -= maxPhase;
+    }
+
+    return k;
+}
+
+static inline void
+process_interp(
+    const Methcla_World* world,
+    Synth* self,
+    size_t numFrames,
+    float amp,
+    float rate,
+    const float* buffer,
+    float* out0,
+    float* out1 )
+{
+    const size_t bufferFrames = self->frames;
+    const size_t bufferChannels = self->channels;
+    double phase = self->phase;
+
+    if (self->loop)
+    {
+        size_t numFramesProduced = 0;
+
+        while (numFramesProduced < numFrames)
+        {
+            numFramesProduced += resample<true,true>(
+                out0 + numFramesProduced,
+                out1 + numFramesProduced,
+                numFrames - numFramesProduced,
+                buffer,
+                bufferChannels,
+                bufferFrames,
+                bufferFrames,
+                amp,
+                rate,
+                phase
+            );
+        }
+
+        assert(numFramesProduced == numFrames);
+    }
+    else
+    {
+        const size_t numFramesProduced = resample<false,false>(
+            out0,
+            out1,
+            numFrames,
+            buffer,
+            bufferChannels,
+            bufferFrames,
+            bufferFrames,
+            amp,
+            rate,
+            phase
+        );
+
+        if (numFramesProduced < numFrames)
+        {
+            for (size_t k = numFramesProduced; k < numFrames; k++)
+            {
                 out0[k] = out1[k] = 0.f;
             }
             freeBuffer(world, self);
         }
-    } else {
+    }
+
+    self->phase = phase;
+}
+
+static void
+process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
+{
+    Synth* self = (Synth*)synth;
+    float* out0 = self->ports[kSampler_output_0];
+    float* out1 = self->ports[kSampler_output_1];
+    const float* buffer = self->buffer;
+
+    if (buffer)
+    {
+        const float amp = *self->ports[kSampler_amp];
+        const float rate = *self->ports[kSampler_rate];
+        process_interp(world, self, numFrames, amp, rate, buffer, out0, out1);
+    }
+    else
+    {
         for (size_t k = 0; k < numFrames; k++) {
             out0[k] = out1[k] = 0.f;
         }
     }
 }
-
-} // extern "C"
 
 static const Methcla_SynthDef descriptor =
 {
@@ -301,6 +496,8 @@ static const Methcla_SynthDef descriptor =
 };
 
 static const Methcla_Library library = { NULL, NULL };
+
+} // namespace
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_sampler(const Methcla_Host* host, const char* /* bundlePath */)
 {
