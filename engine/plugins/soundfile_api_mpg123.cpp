@@ -13,15 +13,13 @@
 // limitations under the License.
 
 #include <methcla/plugins/soundfile_api_mpg123.h>
-// #include "Log.hpp"
+
+#include <mpg123.h>
 
 #include <algorithm>
 #include <memory>
-// #include <random>
-// 
-// #include <cassert>
+#include <cstdio>
 #include <cstdlib>
-#include <mpg123.h>
 
 struct SoundFileHandle
 {
@@ -69,7 +67,6 @@ static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
 static Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
-    // sf_count_t n = sf_seek(handle->sndfile, static_cast<sf_count_t>(numFrames), SEEK_SET);
     off_t n = mpg123_seek(handle->handle, static_cast<off_t>(std::max<int64_t>(0, numFrames)), SEEK_SET);
     return n >= 0 ? kMethcla_NoError : kMethcla_UnspecifiedError;
 }
