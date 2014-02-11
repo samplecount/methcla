@@ -122,17 +122,20 @@ void PepperDriver::processCallback(void* samples, uint32_t buffer_size, void* da
 {
     PepperDriver* driver = static_cast<PepperDriver*>(data);
 
-    assert(buffer_size >= driver->m_outputBuffer->numSamples());
+    assert(buffer_size >= driver->m_outputBuffer->numSamples() * sizeof(int16_t));
+
+    // NOTE: Always need to produce the number of frames requested from the browser.
+    const size_t numFrames = driver->m_outputBuffer->numFrames();
 
     driver->process(
         driver->currentTime(),
-        driver->m_outputBuffer->numFrames(),
+        numFrames,
         nullptr,
         driver->m_outputBuffer->data()
     );
 
     driver->m_frameCount.fetch_add(
-        driver->m_outputBuffer->numFrames(),
+        numFrames,
         std::memory_order_relaxed
     );
 
@@ -142,7 +145,7 @@ void PepperDriver::processCallback(void* samples, uint32_t buffer_size, void* da
         driver->m_outputBuffer->data(),
         Methcla_AudioSample(std::numeric_limits<int16_t>::max()),
         driver->m_outputBuffer->numChannels(),
-        driver->m_outputBuffer->numFrames()
+        numFrames
     );
 }
 
