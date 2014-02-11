@@ -105,12 +105,6 @@ testSources Pro sourceDir _ =
     "tests/methcla_pro_engine_tests.cpp"
   ]
 
-testBuildFlags :: Variant -> Target -> BuildFlags -> BuildFlags
-testBuildFlags Default _ = id
-testBuildFlags Pro target =
-  onlyIf (isDarwin target) $
-    append linkerFlags ["-framework", "AudioToolbox", "-framework", "CoreFoundation"]
-
 -- ====================================================================
 -- Library
 
@@ -133,6 +127,14 @@ commonBuildFlags = append compilerFlags [
   , (Nothing, ["-Werror=return-type"])
   , (Nothing, ["-fstrict-aliasing", "-Wstrict-aliasing"])
   ]
+
+testBuildFlags :: Target -> BuildFlags -> BuildFlags
+testBuildFlags target =
+    append userIncludes ["tests", "src"]
+  . (onlyIf (isDarwin target) $
+      append linkerFlags ["-framework", "AudioToolbox", "-framework", "CoreFoundation"])
+  . append systemIncludes
+      [ externalLibrary "boost" ]
 
 apiIncludes :: FilePath -> BuildFlags -> BuildFlags
 apiIncludes sourceDir = append systemIncludes [ sourceDir </> "include" ]
@@ -412,6 +414,9 @@ libmethclaPNaCl variant sourceDir buildDir config = do
                         >>> libsndfile
                         >>> append libraries ["mpg123"])
 
+localSourceDir :: FilePath
+localSourceDir = "."
+
 buildDir :: FilePath
 buildDir = "build"
 
@@ -426,7 +431,7 @@ mkRules variant options = do
         targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
                                 . need . (:[])
         mkVersionHeader' = mkVersionHeader variant buildDir
-        methclaSources' = methclaSources variant "." buildDir
+        methclaSources' = methclaSources variant localSourceDir buildDir
     [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
         let iOS_SDK = Version [6,1] []
             iosBuildFlags toolChain =
@@ -486,33 +491,35 @@ mkRules variant options = do
             applyEnv <- toolChainFromEnvironment
             ndk <- Env.getEnv "ANDROID_NDK"
             return $ do
+                versionHeader <- mkVersionHeader'
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
-                    let abi = Android.abiString (get targetArch target)
-                        toolChain = applyEnv $ Android.toolChain ndk GCC (Version [4,7] []) target
+                    let gccVersion = Version [4,8] []
+                        abi = Android.abiString (get targetArch target)
+                        toolChain = applyEnv $ Android.toolChain ndk GCC gccVersion target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/android"]
-                                   >>> Android.gnustl Static ndk target
+                                   >>> Android.gnustl gccVersion Static ndk target
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
-                    versionHeader <- mkVersionHeader'
                     libmethcla <- staticLibrary (mkEnv' target) target toolChain methcla
                                     $ SourceTree.flags buildFlags
                                     $ methclaSources' target versionHeader
                                     $ SourceTree.files [
                                         "platform/android/opensl_io.c",
                                         "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
-                    let testBuildFlags =
-                                       append systemIncludes [externalLibrary "catch/single_include"]
+                    let androidTestBuildFlags =
+                                       buildFlags
+                                   >>> append systemIncludes [externalLibrary "catch/single_include"]
                                    >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
-                                   >>> append localLibraries [libmethcla]
                                    >>> append libraries ["android", "log", "OpenSLES"]
-                                   >>> buildFlags
+                                   >>> local_libmethcla localSourceDir libmethcla
+                                   >>> testBuildFlags target
                     libmethcla_tests <- sharedLibrary (mkEnv' target) target toolChain
                                   "methcla-tests"
                                   -- TODO: Build static library for native_app_glue to link against.
-                                  $ SourceTree.flags testBuildFlags
+                                  $ SourceTree.flags androidTestBuildFlags
                                   $ SourceTree.append (Android.native_app_glue ndk)
                                                       (SourceTree.files [
                                                           "src/Methcla/Audio/IO/DummyDriver.cpp"
@@ -532,7 +539,7 @@ mkRules variant options = do
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
         freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
-        mkLibMethcla <- libmethclaPNaCl variant "." buildDir config
+        mkLibMethcla <- libmethclaPNaCl variant localSourceDir buildDir config
         return $ do
           let target = NaCl.target NaCl.canary
               naclConfig = case config of
@@ -560,7 +567,7 @@ mkRules variant options = do
                 >>> append systemIncludes [externalLibrary "catch/single_include"]
                 -- >>> NaCl.libppapi_simple
                 -- >>> NaCl.libnacl_io
-                >>> testBuildFlags variant target
+                >>> testBuildFlags target
                 >>> libmethcla
           pnacl_test_bc <- executable env target toolChain "methcla-pnacl-tests"
                            $ SourceTree.flags pnaclTestBuildFlags
@@ -571,7 +578,7 @@ mkRules variant options = do
                                 , "tests/methcla_engine_tests.cpp"
                                 , "tests/test_runner_nacl.cpp"
                                 ]
-                              , testSources variant "." target ]
+                              , testSources variant localSourceDir target ]
           pnacl_test <- NaCl.finalize toolChain pnacl_test_bc (pnacl_test_bc `replaceExtension` "pexe")
           pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
                                         (pnacl_test `replaceExtension` "nmf")
@@ -673,7 +680,7 @@ mkRules variant options = do
                        $ SourceTree.files ["platform/icecast/Methcla/Audio/IO/IcecastDriver.cpp"]
                 example <- executable env target toolChain
                             "methcla-icecast-example" $
-                              SourceTree.flags (    apiIncludes "."
+                              SourceTree.flags (    apiIncludes localSourceDir
                                                 >>> append userIncludes ["examples/thADDeus/src"]
                                                 >>> append localLibraries [lib]
                                                 >>> buildFlags )
@@ -698,7 +705,7 @@ mkRules variant options = do
                   f env target toolChain "methcla"
                     $ SourceTree.flags buildFlags
                     $ methclaSources' target versionHeader
-                    $ SourceTree.list [ rtAudio "."
+                    $ SourceTree.list [ rtAudio localSourceDir
                                       , SourceTree.files [
                                             "plugins/soundfile_api_libsndfile.cpp"
                                           , "plugins/soundfile_api_mpg123.cpp"
@@ -730,7 +737,7 @@ mkRules variant options = do
                            >>> stdlib_libcpp toolChain
                            >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
-                           >>> testBuildFlags variant target
+                           >>> testBuildFlags target
             return $ do
                 versionHeader <- mkVersionHeader'
                 result <- executable env target toolChain "methcla-tests"
@@ -742,7 +749,7 @@ mkRules variant options = do
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp"
                                   , "tests/test_runner_console.cpp" ]
-                              , testSources variant "." target ]
+                              , testSources variant localSourceDir target ]
                 phony "test" $ do
                     need [result]
                     system' result []
