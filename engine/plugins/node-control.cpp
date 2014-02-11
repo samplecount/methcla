@@ -104,6 +104,7 @@ public:
         {
             case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
             case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
+            default: throw std::runtime_error("Invalid port index");
         }
     }
 };
