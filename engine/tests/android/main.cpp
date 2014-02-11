@@ -6,7 +6,8 @@
 #include <android_native_app_glue.h>
 
 #include <cstring>
-#include <memory>
+#include <sstream>
+#include <string>
 #include <thread>
 #include <unistd.h>
 
@@ -24,29 +25,20 @@ extern const char* __progname;
 
 static void run_tests()
 {
+    const std::string progname(__progname);
     const int logLevel = ANDROID_LOG_INFO;
 
-    // Create a default config object
-    Catch::Config config;
+    __android_log_print(logLevel, progname.c_str(), "Running unit tests ...");
 
     // Configure CATCH to send all its output to a stringstream
-    std::ostringstream oss;
-    config.setStreamBuf(oss.rdbuf());
+    std::stringstream oss;
+    Catch::Ptr<Catch::Config> config = new Catch::Config();
+    config->setStreamBuf(oss.rdbuf());
+    Catch::Runner runner(config);
+    const int result = runner.runTests().assertions.failed;
 
-    std::unique_ptr<char[]> progname(new char[strlen(__progname)+1]);
-    strcpy(progname.get(), __progname);
-    const size_t argc = 1;
-    char* const argv[] = { progname.get() };
-
-    __android_log_print(logLevel, progname.get(), "Running unit tests ...");
-
-    // Forward on to CATCH's main, but using our custom config.
-    // CATCH will still parse the command line and set the config
-    // object up further
-    int result = Catch::Main(argc, argv, config);
-
-    __android_log_print(logLevel, progname.get(), "%s", oss.str().c_str());
-    __android_log_print(logLevel, progname.get(), "Unit tests returned %d", result);
+    __android_log_print(logLevel, progname.c_str(), "%s", oss.str().c_str());
+    __android_log_print(logLevel, progname.c_str(), "Unit tests returned %d", result);
 }
 
 extern "C" void android_main(struct android_app* state)
