@@ -16,15 +16,19 @@
 #define METHCLA_AUDIO_IO_OPENSLESDRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
+#include "Methcla/Audio/MultiChannelBuffer.hpp"
 #include "Methcla/Audio.hpp"
+
 #include "opensl_io.h"
+
+#include <atomic>
 
 namespace Methcla { namespace Audio { namespace IO
 {
     class OpenSLESDriver : public Driver
     {
     public:
-        OpenSLESDriver();
+        OpenSLESDriver(Options options);
         virtual ~OpenSLESDriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }
@@ -35,6 +39,8 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void start() override;
         virtual void stop() override;
 
+        virtual Methcla_Time currentTime() override;
+
     private:
         static void processCallback(
             void* context, int sample_rate, int buffer_frames,
@@ -42,13 +48,15 @@ namespace Methcla { namespace Audio { namespace IO
             int output_channels, short* output_buffer);
 
     private:
-        OPENSL_STREAM*  m_stream;
-        double          m_sampleRate;
-        size_t          m_numInputs;
-        size_t          m_numOutputs;
-        size_t          m_bufferSize;
-        sample_t**      m_inputBuffers;
-        sample_t**      m_outputBuffers;
+        OPENSL_STREAM*          m_stream;
+        double                  m_sampleRate;
+        size_t                  m_numInputs;
+        size_t                  m_numOutputs;
+        size_t                  m_bufferSize;
+        MultiChannelBuffer      m_inputBuffer;
+        MultiChannelBuffer      m_outputBuffer;
+        std::atomic<uint64_t>   m_frameCount;
+        double                  m_sampleRateRecip;
     };
 }; }; };
 

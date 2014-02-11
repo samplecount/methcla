@@ -40,6 +40,17 @@ namespace Methcla { namespace Audio
         }
     }
 
+    template <typename A, typename B> void deinterleave(A* const* dst, const B* src, A scale, size_t numChannels, size_t numFrames)
+    {
+        for (size_t c=0; c < numChannels; c++)
+        {
+            for (size_t i=0; i < numFrames; i++)
+            {
+                dst[c][i] = scale * static_cast<A>(src[i*numChannels+c]);
+            }
+        }
+    }
+
     template <typename A, typename B> void interleave(A* dst, const B* const* src, size_t numChannels, size_t numFrames)
     {
         for (size_t c=0; c < numChannels; c++)

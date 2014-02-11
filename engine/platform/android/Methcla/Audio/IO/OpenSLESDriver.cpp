@@ -14,7 +14,7 @@
 
 #include "Methcla/Audio/IO/OpenSLESDriver.hpp"
 #include "Methcla/Memory.hpp"
-#include "opensl_io.h"
+#include "Methcla/Platform.hpp"
 
 #include <android/log.h>
 #include <cassert>
@@ -27,14 +27,17 @@
 
 using namespace Methcla::Audio::IO;
 
-OpenSLESDriver::OpenSLESDriver()
-    : m_stream(nullptr)
-    , m_sampleRate(44100)
-    , m_numInputs(0)
-    , m_numOutputs(2)
-    , m_bufferSize(512)
-    , m_inputBuffers(nullptr)
-    , m_outputBuffers(nullptr)
+OpenSLESDriver::OpenSLESDriver(Options options)
+    : Driver(options)
+    , m_stream(nullptr)
+    , m_sampleRate(options.sampleRate > 0 ? options.sampleRate : 44100)
+    , m_numInputs(options.numInputs == -1 ? 2 : options.numInputs)
+    , m_numOutputs(options.numOutputs == -1 ? 2 : options.numOutputs)
+    , m_bufferSize(options.bufferSize > 0 ? options.bufferSize : 64)
+    , m_inputBuffer(m_numInputs, m_bufferSize)
+    , m_outputBuffer(m_numOutputs, m_bufferSize)
+    , m_frameCount(0)
+    , m_sampleRateRecip(1./m_sampleRate)
 {
     m_stream = opensl_open(
         (int)m_sampleRate,
@@ -44,12 +47,8 @@ OpenSLESDriver::OpenSLESDriver()
         processCallback,
         this
     );
-    if (m_stream == nullptr) {
+    if (m_stream == nullptr)
         throw std::runtime_error("OpenSLESDriver: Couldn't open audio stream");
-    }
-
-    m_inputBuffers = makeBuffers(m_numInputs, m_bufferSize);
-    m_outputBuffers = makeBuffers(m_numOutputs, m_bufferSize);
 }
 
 OpenSLESDriver::~OpenSLESDriver()
@@ -70,53 +69,91 @@ void OpenSLESDriver::stop()
         opensl_pause(m_stream);
 }
 
+Methcla_Time OpenSLESDriver::currentTime()
+{
+    const uint64_t frameCount = m_frameCount.load(std::memory_order_relaxed);
+    return (double)frameCount * m_sampleRateRecip;
+}
+
 void OpenSLESDriver::processCallback(
     void* context, int sample_rate, int buffer_frames,
     int input_channels, const short* input_buffer,
     int output_channels, short* output_buffer)
 {
-    OpenSLESDriver* self = static_cast<OpenSLESDriver*>(context);
+    OpenSLESDriver* driver = static_cast<OpenSLESDriver*>(context);
 
-    const size_t numInputs = self->m_numInputs;
-    const size_t numOutputs = self->m_numOutputs;
-    const size_t numFrames = (size_t)buffer_frames;
+    // const size_t numInputs = self->m_numInputs;
+    // const size_t numOutputs = self->m_numOutputs;
+    // const size_t numFrames = (size_t)buffer_frames;
 
-    assert( self->m_sampleRate == (double)sample_rate );
-    assert( numInputs == (size_t)input_channels );
-    assert( numOutputs == (size_t)output_channels );
-    assert( buffer_frames >= 0 && self->m_bufferSize <= (size_t)buffer_frames );
+    assert( driver->m_sampleRate == (double)sample_rate );
+    assert( driver->m_inputBuffer.numChannels() == (size_t)input_channels );
+    assert( driver->m_outputBuffer.numChannels() == (size_t)output_channels );
+    assert( buffer_frames >= 0 && (size_t)buffer_frames <= driver->bufferSize() );
+    static_assert(sizeof(short) == sizeof(int16_t), "OOPS");
 
-    sample_t** inputBuffers = self->m_inputBuffers;
-    sample_t** outputBuffers = self->m_outputBuffers;
+    // sample_t** inputBuffers = self->m_inputBuffers;
+    // sample_t** outputBuffers = self->m_outputBuffer;
+    // 
+    // // Deinterleave and convert input
+    // for (size_t curChan = 0; curChan < numInputs; curChan++) {
+    //     for (size_t curFrame = 0; curFrame < numFrames; curFrame++) {
+    //         inputBuffers[curChan][curFrame] = input_buffer[curFrame * numInputs + curChan] / 32768.f;
+    //     }
+    // }
 
-    // Deinterleave and convert input
-    for (size_t curChan = 0; curChan < numInputs; curChan++) {
-        for (size_t curFrame = 0; curFrame < numFrames; curFrame++) {
-            inputBuffers[curChan][curFrame] = input_buffer[curFrame * numInputs + curChan] / 32768.f;
-        }
-    }
+    // assert(buffer_size >= driver->m_outputBuffer->numSamples());
 
-    // Run DSP graph
-    try {
-        self->process(numFrames, inputBuffers, outputBuffers);
-    } catch (std::exception& e) {
-        LOGW(e.what());
-    }
-#ifndef NDEBUG
-    catch (...) {
-        LOGW("Unknown exception caught");
-    }
-#endif
+    Methcla::Audio::deinterleave(
+        driver->m_inputBuffer.data(),
+        static_cast<const int16_t*>(input_buffer),
+        1.f/(float)Methcla_AudioSample(std::numeric_limits<int16_t>::max()),
+        driver->m_inputBuffer.numChannels(),
+        buffer_frames
+    );
 
-    // Convert and interleave output
-    for (size_t curChan = 0; curChan < numOutputs; curChan++) {
-        for (size_t curFrame = 0; curFrame < numFrames; curFrame++) {
-            output_buffer[curFrame * numOutputs + curChan] = outputBuffers[curChan][curFrame] * 32767.f;
-        }
-    }
+    driver->process(
+        driver->currentTime(),
+        buffer_frames,
+        driver->m_inputBuffer.data(),
+        driver->m_outputBuffer.data()
+    );
+
+    driver->m_frameCount.fetch_add(
+        buffer_frames,
+        std::memory_order_relaxed
+    );
+
+    // Interleave and scale
+    Methcla::Audio::interleave(
+        static_cast<int16_t*>(output_buffer),
+        driver->m_outputBuffer.data(),
+        Methcla_AudioSample(std::numeric_limits<int16_t>::max()),
+        driver->m_outputBuffer.numChannels(),
+        buffer_frames
+    );
+
+//     // Run DSP graph
+//     try {
+//         self->process(numFrames, inputBuffers, outputBuffers);
+//     } catch (std::exception& e) {
+//         LOGW(e.what());
+//     }
+// #ifndef NDEBUG
+//     catch (...) {
+//         LOGW("Unknown exception caught");
+//     }
+// #endif
+
+    // // Convert and interleave output
+    // for (size_t curChan = 0; curChan < numOutputs; curChan++) {
+    //     for (size_t curFrame = 0; curFrame < numFrames; curFrame++) {
+    //         output_buffer[curFrame * numOutputs + curChan] = outputBuffers[curChan][curFrame] * 32767.f;
+    //     }
+    // }
 }
 
-Driver* Methcla::Audio::IO::Options()
+Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {
-    return new OpenSLESDriver();
+    return new OpenSLESDriver(options);
 }
