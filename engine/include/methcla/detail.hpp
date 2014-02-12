@@ -15,8 +15,9 @@
 #ifndef METHCLA_DETAIL_HPP_INCLUDED
 #define METHCLA_DETAIL_HPP_INCLUDED
 
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace Methcla
 {
@@ -51,17 +52,26 @@ namespace Methcla
             T m_id;
         };
 
-        inline static void throwError(Methcla_Error err, const char* msg)
+        inline static void throwError(Methcla_Error err)
         {
-            if (err != kMethcla_NoError)
+            if (methcla_is_error(err))
             {
-                if (err == kMethcla_ArgumentError) {
+                if (methcla_error_has_code(err, kMethcla_ArgumentError)) {
+                    std::string msg(methcla_error_message(err));
+                    methcla_error_free(err);
                     throw std::invalid_argument(msg);
-                } else if (err == kMethcla_LogicError) {
+                } else if (methcla_error_has_code(err, kMethcla_LogicError)) {
+                    std::string msg(methcla_error_message(err));
+                    methcla_error_free(err);
                     throw std::logic_error(msg);
-                } else if (err == kMethcla_MemoryError) {
+                } else if (methcla_error_has_code(err, kMethcla_MemoryError)) {
+                    methcla_error_free(err);
                     throw std::bad_alloc();
                 } else {
+                    std::string msg(  methcla_error_message(err)
+                                    ? methcla_error_message(err)
+                                    : methcla_error_code_description(methcla_error_code(err)));
+                    methcla_error_free(err);
                     throw std::runtime_error(msg);
                 }
             }
@@ -69,7 +79,7 @@ namespace Methcla
 
         inline static void checkReturnCode(Methcla_Error err)
         {
-            throwError(err, methcla_error_message(err));
+            throwError(err);
         }
 
         template <typename T> T combineFlags(T a, T b)

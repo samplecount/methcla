@@ -616,25 +616,37 @@ static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, c
     auto& apis = static_cast<Environment*>(host->handle)->soundFileAPIs();
 
     if (apis.empty())
-        return kMethcla_UnsupportedFileTypeError;
+    {
+        return methcla_error_new_with_message(
+            kMethcla_UnsupportedFileTypeError,
+            "No registered sound file APIs"
+        );
+    }
 
     // Open sound file with first API that doesn't return an error.
     for (auto it=apis.begin(); it != apis.end(); it++)
     {
         Methcla_Error result = (*it)->open(*it, path, mode, file, info);
-        if (result == kMethcla_NoError)
+        if (methcla_is_ok(result))
         {
             assert(file != nullptr);
             return result;
         }
-        else if (   result != kMethcla_UnsupportedFileTypeError
-                 && result != kMethcla_UnsupportedDataFormatError)
+        else if (!(   methcla_error_has_code(result, kMethcla_UnsupportedFileTypeError)
+                   || methcla_error_has_code(result, kMethcla_UnsupportedDataFormatError)))
         {
             return result;
         }
+        else
+        {
+            methcla_error_free(result);
+        }
     }
 
-    return kMethcla_UnsupportedFileTypeError;
+    return methcla_error_new_with_message(
+        kMethcla_UnsupportedFileTypeError,
+        "File type not supported by any of the registered APIs"
+    );
 }
 
 static double methcla_api_world_samplerate(const Methcla_World* world)
@@ -1038,12 +1050,12 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* re
     }
 }
 
-static void throwError(Methcla_Error code, const std::string& msg)
+static void throwError(Methcla_ErrorCode code, const std::string& msg)
 {
     throw Error(code, msg);
 }
 
-static void throwErrorWith(Methcla_Error code, std::function<void(std::stringstream&)> func)
+static void throwErrorWith(Methcla_ErrorCode code, std::function<void(std::stringstream&)> func)
 {
     std::stringstream stream;
     func(stream);

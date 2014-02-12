@@ -205,15 +205,17 @@ Methcla::Audio::IO::Driver* Methcla::API::getDriver(Methcla_Engine* engine)
 
 #define METHCLA_ENGINE_CATCH \
     catch (Methcla::Error& e) { \
-        return e.errorCode(); \
+        return e; \
     } catch (std::bad_alloc) { \
-        return kMethcla_MemoryError; \
-    } catch (std::invalid_argument) { \
-        return kMethcla_ArgumentError; \
-    } catch (std::logic_error) { \
-        return kMethcla_LogicError; \
+        return methcla_error_new(kMethcla_MemoryError); \
+    } catch (std::invalid_argument& e) { \
+        return methcla_error_new_with_message(kMethcla_ArgumentError, e.what()); \
+    } catch (std::logic_error& e) { \
+        return methcla_error_new_with_message(kMethcla_LogicError, e.what()); \
+    } catch (std::exception& e) { \
+        return methcla_error_new_with_message(kMethcla_UnspecifiedError, e.what()); \
     } catch (...) { \
-        return kMethcla_UnspecifiedError; \
+        return methcla_error_new(kMethcla_UnspecifiedError); \
     }
 
 const char* methcla_version()
@@ -243,13 +245,13 @@ METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options)
 METHCLA_EXPORT Methcla_Error methcla_engine_new(const Methcla_EngineOptions* options, Methcla_Engine** engine)
 {
     if (options == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_ENGINE_TRY {
         *engine = new Methcla_Engine(options);
     } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 METHCLA_EXPORT void methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options)
@@ -267,15 +269,15 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
 )
 {
     if (options == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (driver == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_ENGINE_TRY {
         *engine = new Methcla_Engine(options, driver);
     } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
@@ -287,60 +289,26 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
     } catch(...) { }
 }
 
-METHCLA_EXPORT const char* methcla_error_message(Methcla_Error error)
-{
-    switch (error)
-    {
-        case kMethcla_NoError: return "No error";
-
-        /* Generic error codes */
-        case kMethcla_UnspecifiedError: return "Unspecified error";
-        case kMethcla_LogicError: return "Logic error";
-        case kMethcla_ArgumentError: return "Invalid argument";
-        case kMethcla_MemoryError: return "Out of memory";
-        case kMethcla_UnimplementedError: return "Operation not implemented";
-        case kMethcla_SystemError: return "Generic operating system error";
-
-        /* Engine errors */
-        case kMethcla_SynthDefNotFoundError: return "SynthDef not found";
-        case kMethcla_NodeIdError: return "Invalid node id";
-        case kMethcla_NodeTypeError: return "Invalid node type";
-
-        /* File errors */
-        case kMethcla_FileNotFoundError: return "File not found";
-        case kMethcla_FileExistsError: return "File already exists";
-        case kMethcla_PermissionsError: return "Insufficient file permissions";
-        case kMethcla_UnsupportedFileTypeError: return "Unsupported file type";
-        case kMethcla_UnsupportedDataFormatError: return "Unsupported data format";
-        case kMethcla_InvalidFileError: return "Malformed file contents";
-
-        /* Audio driver errors */
-        case kMethcla_DeviceUnavailableError: return "Audio device not available";
-    }
-
-    return "Unknown Methcla_Error code";
-}
-
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
 {
     // cout << "Methcla_Engine_start" << endl;
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_ENGINE_TRY {
         engine->start();
     } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
 {
     // cout << "Methcla_Engine_stop" << endl;
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_ENGINE_TRY {
         engine->stop();
     } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine* engine, Methcla_EngineLogFlags flags)
@@ -371,37 +339,93 @@ METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time)
 
 METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine)
 {
-    if (engine == nullptr)
-        return kMethcla_ArgumentError;
-    return engine->driver()->currentTime();
+    return engine == nullptr ? 0. : engine->driver()->currentTime();
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine, const void* packet, size_t size)
 {
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (packet == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (size == 0)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_ENGINE_TRY {
         engine->env()->send(packet, size);
     } METHCLA_ENGINE_CATCH;
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(const Methcla_Engine* engine, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     if (engine == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (path == nullptr || *path == '\0')
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (mode < kMethcla_FileModeRead || mode > kMethcla_FileModeWrite)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (file == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (info == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     const Methcla_Host* host = static_cast<const Methcla_Host*>(*engine->env());
     return methcla_host_soundfile_open(host, path, mode, file, info);
+}
+
+METHCLA_EXPORT const char* methcla_error_code_description(Methcla_ErrorCode code)
+{
+    switch (code)
+    {
+        case kMethcla_NoError: return "No error";
+
+        /* Generic error codes */
+        case kMethcla_UnspecifiedError: return "Unspecified error";
+        case kMethcla_LogicError: return "Logic error";
+        case kMethcla_ArgumentError: return "Invalid argument";
+        case kMethcla_MemoryError: return "Out of memory";
+        case kMethcla_UnimplementedError: return "Operation not implemented";
+        case kMethcla_SystemError: return "Generic operating system error";
+
+        /* Engine errors */
+        case kMethcla_SynthDefNotFoundError: return "SynthDef not found";
+        case kMethcla_NodeIdError: return "Invalid node id";
+        case kMethcla_NodeTypeError: return "Invalid node type";
+
+        /* File errors */
+        case kMethcla_FileNotFoundError: return "File not found";
+        case kMethcla_FileExistsError: return "File already exists";
+        case kMethcla_PermissionsError: return "Insufficient file permissions";
+        case kMethcla_UnsupportedFileTypeError: return "Unsupported file type";
+        case kMethcla_UnsupportedDataFormatError: return "Unsupported data format";
+        case kMethcla_InvalidFileError: return "Malformed file contents";
+
+        /* Audio driver errors */
+        case kMethcla_DeviceUnavailableError: return "Audio device not available";
+    }
+
+    return "Invalid Methcla_ErrorCode value";
+}
+
+METHCLA_EXPORT Methcla_Error methcla_error_new(Methcla_ErrorCode code)
+{
+    Methcla_Error result;
+    result.error_code = code;
+    result.error_message = nullptr;
+    return result;
+}
+
+//* Create a new Methcla_Error with a specific error code and message.
+METHCLA_EXPORT Methcla_Error methcla_error_new_with_message(Methcla_ErrorCode code, const char* message)
+{
+    Methcla_Error result;
+    result.error_code = code;
+    result.error_message = strdup(message);
+    return result;
+}
+
+//* Free the resources associated with a Methcla_Error.
+METHCLA_EXPORT void methcla_error_free(Methcla_Error error)
+{
+    if (error.error_message != nullptr)
+        free(error.error_message);
 }

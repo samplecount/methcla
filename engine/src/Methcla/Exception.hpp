@@ -27,28 +27,42 @@ class Exception : public virtual std::exception
 
 class Error : public Exception
 {
-public:
-    Error(Methcla_Error code, const std::string& description="")
-        : m_code(code)
-        , m_description(description)
-    { }
+    Methcla_ErrorCode   m_code;
+    std::string         m_message;
 
-    Methcla_Error errorCode() const noexcept
+public:
+    Error(Methcla_ErrorCode code, const std::string& message="")
+        : m_code(code)
+        , m_message(message)
+    {}
+
+    Methcla_ErrorCode errorCode() const noexcept
     {
         return m_code;
     }
 
+    const char* errorMessage() const noexcept
+    {
+        return m_message.empty()
+                ? methcla_error_code_description(m_code)
+                : m_message.c_str();
+    }
+
     const char* what() const noexcept override
     {
-        return m_description.empty() ? methcla_error_message(m_code) : m_description.c_str();
+        return errorMessage();
+    }
+
+    operator Methcla_Error() const
+    {
+        return methcla_error_new_with_message(
+            errorCode(),
+            m_message.empty() ? nullptr : m_message.c_str()
+        );
     }
 
     static Error unspecified() { return Error(kMethcla_UnspecifiedError); }
     static Error memory() { return Error(kMethcla_MemoryError); }
-
-private:
-    Methcla_Error   m_code;
-    std::string     m_description;
 };
 }
 

@@ -142,7 +142,7 @@ static void load_sound_file(const Methcla_Host* context, void* data)
 
     Methcla_Error err = methcla_host_soundfile_open(context, msg->path, kMethcla_FileModeRead, &file, &info);
 
-    if (err == kMethcla_NoError)
+    if (methcla_is_ok(err))
     {
         msg->startFrame = std::min(std::max(int64_t(0), msg->startFrame), info.frames);
         msg->numFrames = msg->numFrames < 0
@@ -168,6 +168,10 @@ static void load_sound_file(const Methcla_Host* context, void* data)
         }
 
         methcla_soundfile_close(file);
+    }
+    else
+    {
+        methcla_error_free(err);
     }
 
     methcla_host_perform_command(context, set_buffer, msg);

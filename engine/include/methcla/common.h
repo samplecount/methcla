@@ -17,6 +17,7 @@
 #ifndef METHCLA_COMMON_H_INCLUDED
 #define METHCLA_COMMON_H_INCLUDED
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #if defined(__cplusplus)
@@ -89,31 +90,55 @@ typedef enum
 
     /* Audio driver errors */
     kMethcla_DeviceUnavailableError = 3000,
+} Methcla_ErrorCode;
+
+METHCLA_EXPORT const char* methcla_error_code_description(Methcla_ErrorCode code);
+
+typedef struct Methcla_Error
+{
+    Methcla_ErrorCode error_code;
+    char*             error_message;
 } Methcla_Error;
 
-//* Return a descriptive error message associated with a given error code.
-METHCLA_EXPORT const char* methcla_error_message(Methcla_Error error);
-
-typedef struct Methcla_SystemError Methcla_SystemError;
-
-struct Methcla_SystemError
+static inline bool methcla_is_ok(const Methcla_Error error)
 {
-    void* handle;
-    const char* (*description)(const Methcla_SystemError* error);
-    void (*destroy)(const Methcla_SystemError* error);
-};
-
-static inline const char* methcla_system_error_description(const Methcla_SystemError* error)
-{
-    if (error && error->description)
-        return error->description(error);
-    return "Unknown system error";
+    return error.error_code == kMethcla_NoError;
 }
 
-static inline void methcla_system_error_destroy(const Methcla_SystemError* error)
+static inline bool methcla_is_error(const Methcla_Error error)
 {
-    if (error && error->destroy)
-        error->destroy(error);
+    return error.error_code != kMethcla_NoError;
+}
+
+static inline bool methcla_error_has_code(const Methcla_Error error, Methcla_ErrorCode code)
+{
+    return error.error_code == code;
+}
+
+static inline Methcla_ErrorCode methcla_error_code(const Methcla_Error error)
+{
+    return error.error_code;
+}
+
+static inline const char* methcla_error_message(const Methcla_Error error)
+{
+    return error.error_message;
+}
+
+//* Create a new Methcla_Error with a specific error code.
+//  The error message is set to NULL.
+METHCLA_EXPORT Methcla_Error methcla_error_new(Methcla_ErrorCode code);
+
+//* Create a new Methcla_Error with a specific error code and message.
+METHCLA_EXPORT Methcla_Error methcla_error_new_with_message(Methcla_ErrorCode code, const char* message);
+
+//* Free the resources associated with a Methcla_Error.
+METHCLA_EXPORT void methcla_error_free(Methcla_Error error);
+
+//* Return a Methcla_Error indicating that no error has occurred.
+static inline Methcla_Error methcla_no_error()
+{
+    return methcla_error_new(kMethcla_NoError);
 }
 
 //* Audio sample type

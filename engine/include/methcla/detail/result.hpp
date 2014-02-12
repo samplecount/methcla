@@ -30,6 +30,14 @@ namespace Methcla
     {
         class ResultBase
         {
+            std::condition_variable m_cond_var;
+
+        protected:
+            std::mutex              m_mutex;
+            bool                    m_cond;
+            Methcla_ErrorCode       m_error;
+            std::string             m_errorMessage;
+
         public:
             ResultBase()
                 : m_cond(false)
@@ -44,7 +52,7 @@ namespace Methcla
                 if (msg == "/error")
                 {
                     auto args(msg.args());
-                    Methcla_Error errorCode = Methcla_Error(args.int32());
+                    Methcla_ErrorCode errorCode = static_cast<Methcla_ErrorCode>(args.int32());
                     const char* errorMessage = args.string();
                     setError(errorCode, errorMessage);
                 }
@@ -70,11 +78,11 @@ namespace Methcla
                     m_cond_var.wait(lock);
                 }
                 if (m_error != kMethcla_NoError) {
-                    throwError(m_error, m_errorMessage.c_str());
+                    throwError(methcla_error_new_with_message(m_error, m_errorMessage.c_str()));
                 }
             }
 
-            void setError(Methcla_Error error, const char* message)
+            void setError(Methcla_ErrorCode error, const char* message)
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
                 if (m_cond)
@@ -89,18 +97,12 @@ namespace Methcla
                 }
                 notify();
             }
-
-            std::mutex              m_mutex;
-            std::condition_variable m_cond_var;
-            bool                    m_cond;
-            Methcla_Error           m_error;
-            std::string             m_errorMessage;
         };
 
         template <class T> class Result : public ResultBase
         {
         public:
-            void set(Methcla_Error error, const char* message)
+            void set(Methcla_ErrorCode error, const char* message)
             {
                 setError(error, message);
             }
@@ -136,7 +138,7 @@ namespace Methcla
         template <> class Result<void> : public ResultBase
         {
         public:
-            void set(Methcla_Error error, const char* message)
+            void set(Methcla_ErrorCode error, const char* message)
             {
                 setError(error, message);
             }

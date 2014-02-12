@@ -32,13 +32,20 @@ TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
     methcla_engine_options_init(&options);
     Methcla_Engine* engine = nullptr;
     Methcla_Error result;
+
     result = methcla_engine_new(&options, &engine);
-    REQUIRE(result == kMethcla_NoError);
+    REQUIRE(methcla_is_ok(result));
     REQUIRE(engine);
+    methcla_error_free(result);
+
     result = methcla_engine_start(engine);
-    REQUIRE(result == kMethcla_NoError);
+    REQUIRE(methcla_is_ok(result));
+    methcla_error_free(result);
+
     result = methcla_engine_stop(engine);
-    REQUIRE(result == kMethcla_NoError);
+    REQUIRE(methcla_is_ok(result));
+    methcla_error_free(result);
+
     methcla_engine_free(engine);
 }
 

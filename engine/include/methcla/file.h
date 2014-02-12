@@ -75,35 +75,26 @@ struct Methcla_SoundFileAPI
 {
     void* handle;
     Methcla_Error (*open)(const Methcla_SoundFileAPI* api, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
-    const Methcla_SystemError* (*last_system_error)(const Methcla_SoundFileAPI* api);
 };
-
-static inline const Methcla_SystemError* methcla_soundfile_last_system_error(const Methcla_SoundFileAPI* api)
-{
-    if (api && api->last_system_error)
-        return api->last_system_error(api);
-    return NULL;
-}
 
 static inline Methcla_Error methcla_soundfile_close(Methcla_SoundFile* file)
 {
     if ((file == NULL) || (file->close == NULL))
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     return file->close(file);
 }
 
 static inline Methcla_Error methcla_soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
 {
     if ((file == NULL) || (file->seek == NULL))
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     return file->seek(file, numFrames);
 }
 
 static inline Methcla_Error methcla_soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
 {
-    if ((file == NULL) || (file->tell == NULL) ||
-        (numFrames == NULL))
-        return kMethcla_ArgumentError;
+    if ((file == NULL) || (file->tell == NULL) || (numFrames == NULL))
+        return methcla_error_new(kMethcla_ArgumentError);
     return file->tell(file, numFrames);
 }
 
@@ -111,7 +102,7 @@ static inline Methcla_Error methcla_soundfile_read_float(Methcla_SoundFile* file
 {
     if ((file == NULL) || (file->read_float == NULL) ||
         (buffer == NULL) || (outNumFrames == NULL))
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     return file->read_float(file, buffer, numFrames, outNumFrames);
 }
 
@@ -119,7 +110,7 @@ static inline Methcla_Error methcla_soundfile_write_float(Methcla_SoundFile* fil
 {
     if ((file == NULL) || (file->write_float == NULL) ||
         (buffer == NULL) || (outNumFrames == NULL))
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     return file->write_float(file, buffer, numFrames, outNumFrames);
 }
 
