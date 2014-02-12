@@ -60,9 +60,6 @@ public:
             m_message.empty() ? nullptr : m_message.c_str()
         );
     }
-
-    static Error unspecified() { return Error(kMethcla_UnspecifiedError); }
-    static Error memory() { return Error(kMethcla_MemoryError); }
 };
 }
 
