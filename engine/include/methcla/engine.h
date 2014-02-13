@@ -20,6 +20,7 @@
 #include <methcla/common.h>
 #include <methcla/file.h>
 #include <methcla/log.h>
+#include <methcla/plugin.h>
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,6 +39,24 @@ static inline bool methcla_version_is_pro()
 {
     return strstr(methcla_version(), "pro") != NULL;
 }
+
+//* Common audio driver options.
+typedef struct Methcla_AudioDriverOptions
+{
+    int sample_rate;
+    int num_inputs;
+    int num_outputs;
+    int buffer_size;
+} Methcla_AudioDriverOptions;
+
+//* Abstract audio driver type.
+typedef struct Methcla_AudioDriver Methcla_AudioDriver;
+
+//* Initialize audio options.
+METHCLA_EXPORT void methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options);
+
+//* Return default audio driver for this platform.
+METHCLA_EXPORT Methcla_Error methcla_default_audio_driver(const Methcla_AudioDriverOptions* options, Methcla_AudioDriver** outDriver);
 
 //* An integral type for uniquely identifying requests sent to the engine.
 typedef int32_t Methcla_RequestId;
@@ -61,11 +80,18 @@ typedef struct Methcla_EngineOptions Methcla_EngineOptions;
 
 struct Methcla_EngineOptions
 {
-    Methcla_LogHandler        log_handler;
-    Methcla_PacketHandler     packet_handler;
-    // Legacy options packed in an OSC packet.
-    // This will be deprecated soon.
-    Methcla_OSCPacket         options;
+    Methcla_LogHandler          log_handler;
+    Methcla_PacketHandler       packet_handler;
+
+    size_t                      sample_rate;
+    size_t                      block_size;
+
+    size_t                      realtime_memory_size;
+    size_t                      max_num_nodes;
+    size_t                      max_num_audio_buses;
+
+    //* NULL terminated array of plugin library functions.
+    Methcla_LibraryFunction*    plugin_libraries;
 };
 
 METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);
@@ -73,28 +99,7 @@ METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);
 //* Abstract type for the sound engine.
 typedef struct Methcla_Engine Methcla_Engine;
 
-//* Create a new engine with the given packet handling closure and options.
-// @handler Packet handler (may be NULL).
-// @handler_data Pointer passed to the packet handler callback.
-// @options OSC packet with engine options (may be NULL).
-// @engine Output parameter for the newly created engine.
-METHCLA_EXPORT Methcla_Error methcla_engine_new(
-    const Methcla_EngineOptions* options,
-    Methcla_Engine** engine
-    );
-
-typedef struct Methcla_AudioDriverOptions
-{
-    double sample_rate;
-    int    input_count;
-    int    output_count;
-    int    buffer_size;
-} Methcla_AudioDriverOptions;
-
-typedef struct Methcla_AudioDriver Methcla_AudioDriver;
-
-METHCLA_EXPORT void methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options);
-
+//* Create a new engine with the given options and an audio driver.
 METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
     const Methcla_EngineOptions* options,
     Methcla_AudioDriver* driver,

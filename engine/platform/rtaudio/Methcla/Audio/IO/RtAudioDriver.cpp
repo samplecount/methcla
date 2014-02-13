@@ -177,7 +177,7 @@ Methcla_AudioDriver* methcla_platform_rtaudio_driver_new(
 {
     return Methcla::API::wrapAudioDriver(
         new Methcla::Audio::IO::RtAudioDriver(
-                Methcla::API::convertAudioDriverOptions(options)
+                Methcla::API::convertOptions(options)
             )
         );
 }

@@ -28,25 +28,12 @@ METHCLA_WITHOUT_WARNINGS_END
 
 TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
 {
-    Methcla_EngineOptions options;
-    methcla_engine_options_init(&options);
-    Methcla_Engine* engine = nullptr;
-    Methcla_Error result;
-
-    result = methcla_engine_new(&options, &engine);
-    REQUIRE(methcla_is_ok(result));
-    REQUIRE(engine);
-    methcla_error_free(result);
-
-    result = methcla_engine_start(engine);
-    REQUIRE(methcla_is_ok(result));
-    methcla_error_free(result);
-
-    result = methcla_engine_stop(engine);
-    REQUIRE(methcla_is_ok(result));
-    methcla_error_free(result);
-
-    methcla_engine_free(engine);
+    std::unique_ptr<Methcla::Engine> engine;
+    REQUIRE_NOTHROW(
+        engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine())
+    );
+    REQUIRE_NOTHROW(engine->start());
+    REQUIRE_NOTHROW(engine->stop());
 }
 
 TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn't crash the engine.")

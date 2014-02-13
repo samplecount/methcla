@@ -162,7 +162,7 @@ Methcla_AudioDriver* methcla_platform_pepper_audio_driver_new(
 {
     return Methcla::API::wrapAudioDriver(
         new Methcla::Audio::IO::PepperDriver(
-            Methcla::API::convertAudioDriverOptions(options),
+            Methcla::API::convertOptions(options),
             instance
             )
         );

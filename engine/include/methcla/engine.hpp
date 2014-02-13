@@ -379,56 +379,6 @@ namespace Methcla
         std::string m_string;
     };
 
-    class Option
-    {
-    public:
-        virtual ~Option() { }
-        virtual void put(OSCPP::Client::Packet& packet) const = 0;
-    };
-
-    class ValueOption : public Option
-    {
-    public:
-        ValueOption(const char* key, Value value)
-            : m_key(key)
-            , m_value(value)
-        { }
-
-        virtual void put(OSCPP::Client::Packet& packet) const override
-        {
-            packet.openMessage(m_key.c_str(), 1);
-            m_value.put(packet);
-            packet.closeMessage();
-        }
-
-    private:
-        std::string m_key;
-        Value       m_value;
-    };
-
-    template <typename T> class BlobOption : public Option
-    {
-        static_assert(std::is_pod<T>::value, "Value type must be POD");
-
-    public:
-        BlobOption(const char* key, const T& value)
-            : m_key(key)
-            , m_value(value)
-        { }
-
-        virtual void put(OSCPP::Client::Packet& packet) const override
-        {
-            packet
-                .openMessage(m_key.c_str(), 1)
-                .blob(OSCPP::Blob(&m_value, sizeof(m_value)))
-                .closeMessage();
-        }
-
-    private:
-        std::string m_key;
-        T m_value;
-    };
-
     typedef Methcla_LibraryFunction LibraryFunction;
 
     template <typename T> class Optional
@@ -446,14 +396,19 @@ namespace Methcla
         { }
         Optional(const Optional& other) = default;
 
-        operator bool() const
+        bool isSet() const
         {
             return m_isSet;
         }
 
+        const T& value(const T& def) const
+        {
+            return isSet() ? m_value : def;
+        }
+
         const T& value() const
         {
-            if (!m_isSet)
+            if (!isSet())
                 throw std::logic_error("Optional value unset");
             return m_value;
         }
@@ -464,11 +419,28 @@ namespace Methcla
     class AudioDriverOptions
     {
     public:
+        Optional<size_t> sampleRate;
+        Optional<size_t> numInputs;
+        Optional<size_t> numOutputs;
         Optional<size_t> bufferSize;
+
+        operator Methcla_AudioDriverOptions() const
+        {
+            Methcla_AudioDriverOptions result;
+            methcla_audio_driver_options_init(&result);
+            result.sample_rate = sampleRate.value(-1);
+            result.num_inputs = numInputs.value(-1);
+            result.num_outputs = numOutputs.value(-1);
+            result.buffer_size = bufferSize.value(-1);
+            return result;
+        }
     };
 
     class EngineOptions
     {
+        Methcla_EngineOptions                m_options;
+        std::vector<Methcla_LibraryFunction> m_pluginLibraries;
+
     public:
         LogHandler logHandler;
         Methcla_EngineLogFlags logFlags = kMethcla_EngineLogDefault;
@@ -487,6 +459,24 @@ namespace Methcla
         {
             pluginLibraries.push_back(pluginLibrary);
             return *this;
+        }
+
+        Methcla_EngineOptions& options()
+        {
+            methcla_engine_options_init(&m_options);
+
+            m_options.sample_rate = sampleRate;
+            m_options.block_size = blockSize;
+            m_options.realtime_memory_size = realtimeMemorySize;
+            m_options.max_num_nodes = maxNumNodes;
+            m_options.max_num_audio_buses = maxNumAudioBuses;
+
+            m_pluginLibraries.assign(pluginLibraries.begin(), pluginLibraries.end());
+            m_pluginLibraries.push_back(nullptr);
+
+            m_options.plugin_libraries = m_pluginLibraries.data();
+
+            return m_options;
         }
     };
 
@@ -522,8 +512,6 @@ namespace Methcla
         inline void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
         inline void set(NodeId node, size_t index, double value);
         inline void free(NodeId node);
-
-        inline static std::unique_ptr<OSCPP::Client::Packet> serializeOptions(const EngineOptions& options);
     };
 
     class Request
@@ -816,54 +804,17 @@ namespace Methcla
         request.send();
     }
 
-    std::unique_ptr<OSCPP::Client::Packet> EngineInterface::serializeOptions(const EngineOptions& options)
-    {
-        auto bundle = std::unique_ptr<OSCPP::Client::Packet>(new OSCPP::Client::DynamicPacket(8192));
-
-        bundle->openBundle(1);
-
-        ValueOption("/engine/option/realtimeMemorySize", Value(static_cast<int>(options.realtimeMemorySize)))
-            .put(*bundle);
-        ValueOption("/engine/option/maxNumNodes", Value(static_cast<int>(options.maxNumNodes)))
-            .put(*bundle);
-        ValueOption("/engine/option/maxNumAudioBuses", Value(static_cast<int>(options.maxNumAudioBuses)))
-            .put(*bundle);
-        ValueOption("/engine/option/maxNumControlBuses", Value(static_cast<int>(options.maxNumControlBuses)))
-            .put(*bundle);
-        ValueOption("/engine/option/sampleRate", Value(static_cast<int>(options.sampleRate)))
-            .put(*bundle);
-        ValueOption("/engine/option/blockSize", Value(static_cast<int>(options.blockSize)))
-            .put(*bundle);
-
-        // Engine options
-        for (auto f : options.pluginLibraries)
-        {
-            BlobOption<LibraryFunction>("/engine/option/plugin-library", f)
-                .put(*bundle);
-        }
-
-        // Driver options
-        if (options.audioDriver.bufferSize)
-            ValueOption("/engine/option/driver/buffer-size", Value(static_cast<int>(options.audioDriver.bufferSize.value())))
-                .put(*bundle);
-
-        bundle->closeBundle();
-
-        return bundle;
-    }
-
     class Engine : public EngineInterface
     {
     public:
-        Engine(const EngineOptions& inOptions=EngineOptions(), Methcla_AudioDriver* driver=nullptr)
+        Engine(EngineOptions inOptions=EngineOptions(), Methcla_AudioDriver* driver=nullptr)
             : m_logHandler(inOptions.logHandler)
             , m_nodeIds(1, inOptions.maxNumNodes - 1)
             , m_audioBusIds(0, inOptions.maxNumAudioBuses)
             , m_requestId(kMethcla_Notification+1)
             , m_packets(8192)
         {
-            Methcla_EngineOptions options;
-            methcla_engine_options_init(&options);
+            Methcla_EngineOptions& options = inOptions.options();
 
             if (m_logHandler != nullptr)
             {
@@ -874,14 +825,13 @@ namespace Methcla
             options.packet_handler.handle = this;
             options.packet_handler.handle_packet = handlePacket;
 
-            auto bundle = serializeOptions(inOptions);
-            options.options.data = bundle->data();
-            options.options.size = bundle->size();
+            if (driver == nullptr) {
+                Methcla_AudioDriverOptions driverOptions(inOptions.audioDriver);
+                detail::checkReturnCode(methcla_default_audio_driver(&driverOptions, &driver));
+            }
 
             detail::checkReturnCode(
-                driver == nullptr
-                    ? methcla_engine_new(&options, &m_engine)
-                    : methcla_engine_new_with_driver(&options, driver, &m_engine)
+                methcla_engine_new_with_driver(&options, driver, &m_engine)
             );
 
             methcla_engine_set_log_flags(m_engine, inOptions.logFlags);

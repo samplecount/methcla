@@ -20,17 +20,11 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 
 namespace Methcla { namespace API {
+    Methcla::Audio::IO::Driver::Options convertOptions(const Methcla_AudioDriverOptions* options);
+    Methcla::Audio::Environment::Options convertOptions(const Methcla_EngineOptions* options);
+
     Methcla_AudioDriver* wrapAudioDriver(Methcla::Audio::IO::Driver* driver);
-
-    Methcla::Audio::IO::Driver::Options convertAudioDriverOptions(const Methcla_AudioDriverOptions* options);
-
     Methcla::Audio::IO::Driver* getDriver(Methcla_Engine* engine);
-
-    void parseOptions(
-        const Methcla_OSCPacket* packet,
-        Methcla::Audio::Environment::Options* engineOptions,
-        Methcla::Audio::IO::Driver::Options* driverOptions
-    );
 } }
 
 #endif // METHCLA_API_HPP_INCLUDED
