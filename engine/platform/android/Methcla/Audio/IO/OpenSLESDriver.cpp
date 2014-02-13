@@ -18,6 +18,7 @@
 
 #include <android/log.h>
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 
 #define LOGI(...) \
@@ -31,7 +32,7 @@ OpenSLESDriver::OpenSLESDriver(Options options)
     : Driver(options)
     , m_stream(nullptr)
     , m_sampleRate(options.sampleRate > 0 ? options.sampleRate : 44100)
-    , m_numInputs(options.numInputs == -1 ? 2 : options.numInputs)
+    , m_numInputs(options.numInputs == -1 ? 1 : options.numInputs)
     , m_numOutputs(options.numOutputs == -1 ? 2 : options.numOutputs)
     , m_bufferSize(options.bufferSize > 0 ? options.bufferSize : 64)
     , m_inputBuffer(m_numInputs, m_bufferSize)
@@ -47,8 +48,17 @@ OpenSLESDriver::OpenSLESDriver(Options options)
         processCallback,
         this
     );
+
     if (m_stream == nullptr)
-        throw std::runtime_error("OpenSLESDriver: Couldn't open audio stream");
+    {
+        std::stringstream s;
+        s << "OpenSLESDriver: Couldn't open audio stream with parameters: "
+          << "sampleRate=" << m_sampleRate << " "
+          << "numInputs=" << m_numInputs << " "
+          << "numOutputs=" << m_numOutputs << " "
+          << "bufferSize=" << m_bufferSize;
+        throw std::runtime_error(s.str());
+    }
 }
 
 OpenSLESDriver::~OpenSLESDriver()
