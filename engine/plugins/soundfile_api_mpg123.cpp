@@ -44,6 +44,14 @@ struct SoundFileHandle
     };
 
     typedef std::unique_ptr<SoundFileHandle,Destructor> Ref;
+
+    Methcla_Error error(Methcla_ErrorCode code=kMethcla_UnspecifiedError)
+    {
+        return methcla_error_new_with_message(
+            code,
+            mpg123_strerror(handle)
+        );
+    }
 };
 
 extern "C"
@@ -53,31 +61,28 @@ extern "C"
     static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
     static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*, size_t, size_t*);
     static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*, Methcla_FileMode, Methcla_SoundFile**, Methcla_SoundFileInfo*);
-    static const Methcla_SystemError* soundfile_last_system_error(const Methcla_SoundFileAPI*);
-    static const char* soundfile_system_error_description(const Methcla_SystemError*);
-    static void soundfile_system_error_destroy(const Methcla_SystemError*);
 } // extern "C"
 
 static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
 {
     SoundFileHandle::Destructor()(static_cast<SoundFileHandle*>(file->handle));
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 static Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
     off_t n = mpg123_seek(handle->handle, static_cast<off_t>(std::max<int64_t>(0, numFrames)), SEEK_SET);
-    return n >= 0 ? kMethcla_NoError : kMethcla_UnspecifiedError;
+    return n >= 0 ? methcla_no_error() : handle->error();
 }
 
 static Methcla_Error soundfile_tell(const Methcla_SoundFile* file, int64_t* numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
     off_t n = mpg123_tell(handle->handle);
-    if (n < 0) return kMethcla_UnspecifiedError;
+    if (n < 0) return handle->error();
     *numFrames = static_cast<int64_t>(n);
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer, size_t inNumFrames, size_t* outNumFrames)
@@ -96,52 +101,52 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* 
     if (err == MPG123_DONE)
     {
         *outNumFrames = 0;
-        return kMethcla_NoError;
+        return methcla_no_error();
     }
     else if (err != MPG123_OK)
     {
-        return kMethcla_UnspecifiedError;
+        return handle->error();
     }
 
     *outNumFrames = numBytes / handle->frameSize;
 
-    return kMethcla_NoError;
+    return methcla_no_error();
 }
 
 static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Methcla_FileMode mode, Methcla_SoundFile** outFile, Methcla_SoundFileInfo* info)
 {
     if (path == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (outFile == nullptr)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
     if (mode != kMethcla_FileModeRead)
-        return kMethcla_ArgumentError;
+        return methcla_error_new(kMethcla_ArgumentError);
 
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(std::malloc(sizeof(SoundFileHandle)));
     if (handle == nullptr)
-        return kMethcla_MemoryError;
+        return methcla_error_new(kMethcla_MemoryError);
 
     auto handleRef = SoundFileHandle::Ref(handle);
 
     int err;
     handle->handle = mpg123_new(nullptr, &err);
     if (handle->handle == nullptr)
-        return kMethcla_MemoryError;
+        return methcla_error_new(kMethcla_MemoryError);
 
     if (mpg123_param(handle->handle, MPG123_ADD_FLAGS, MPG123_FORCE_FLOAT, 0.) != MPG123_OK)
-        return kMethcla_UnspecifiedError;
+        return handle->error();
 
     if (mpg123_open(handle->handle, path) != MPG123_OK)
-        return kMethcla_UnspecifiedError;
+        return handle->error();
 
     long rate;
     int channels, encoding;
 
     if (mpg123_getformat(handle->handle, &rate, &channels, &encoding) != MPG123_OK)
-        return kMethcla_UnspecifiedError;
+        return handle->error();
 
     if (encoding != MPG123_ENC_FLOAT_32)
-        return kMethcla_UnsupportedDataFormatError;
+        return methcla_error_new(kMethcla_UnsupportedDataFormatError);
 
     handle->frameSize = channels * sizeof(float);
 
@@ -171,22 +176,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
 
     handleRef.release();
 
-    return kMethcla_NoError;
-}
-
-static const char* soundfile_system_error_description(const Methcla_SystemError*)
-{
-    return "Unknown system error (ExtAudioFile)";
-}
-
-static void soundfile_system_error_destroy(const Methcla_SystemError* error)
-{
-    delete error;
-}
-
-static const Methcla_SystemError* soundfile_last_system_error(const Methcla_SoundFileAPI*)
-{
-    return nullptr;
+    return methcla_no_error();
 }
 
 static void methcla_mpg123_library_destroy(const Methcla_Library*)
@@ -196,8 +186,7 @@ static void methcla_mpg123_library_destroy(const Methcla_Library*)
 
 static const Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {
     nullptr,
-    soundfile_open,
-    soundfile_last_system_error
+    soundfile_open
 };
 
 static const Methcla_Library kLibrary_mpg123 =
