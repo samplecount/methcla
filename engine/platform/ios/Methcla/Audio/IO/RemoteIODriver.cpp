@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "Methcla/API.hpp"
 #include "Methcla/Audio/IO/RemoteIODriver.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
 #include "Methcla/Platform.hpp"
 
 #include <methcla/common.h>
+#include <methcla/platform/ios.h>
 
 #include <AudioToolbox/AudioToolbox.h>
 #include "CAHostTimeBase.h"
@@ -112,32 +114,39 @@ static void initStreamFormat(AudioStreamBasicDescription& desc, Float64 sampleRa
     desc.mBytesPerPacket = desc.mFramesPerPacket * desc.mBytesPerFrame;
 }
 
-RemoteIODriver::RemoteIODriver(Options options)
+RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
     : Driver(options)
     , m_numInputs(options.numInputs >= 0 ? options.numInputs : 2)
     , m_numOutputs(options.numOutputs >= 0 ? options.numOutputs : 2)
     , m_inputBuffers(nullptr)
     , m_outputBuffers(nullptr)
 {
-    // Initialize and configure the audio session
-    METHCLA_THROW_IF_ERROR(
-        AudioSessionInitialize(NULL, NULL, InterruptionCallback, this)
-      , "couldn't initialize audio session");
+    // TODO: Use AVAudioSession instead of AudioSessionServices (deprecated in 7.0)
 
-    UInt32 audioCategory = kAudioSessionCategory_PlayAndRecord;
-    METHCLA_THROW_IF_ERROR(
-        AudioSessionSetProperty(
-            kAudioSessionProperty_AudioCategory
-          , sizeof(audioCategory)
-          , &audioCategory)
-      , "couldn't set audio category");
-    //METHCLA_THROW_IF_ERROR(AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self), "couldn't set property listener");
+    if (initializeAudioSession)
+    {
+        // Initialize and configure the audio session
+        METHCLA_THROW_IF_ERROR(
+            AudioSessionInitialize(NULL, NULL, InterruptionCallback, this)
+          , "couldn't initialize audio session");
 
-    // NOTE: This needs to be called *before* trying to determine the
-    //       number of input/output channels.
-    METHCLA_THROW_IF_ERROR(
-        AudioSessionSetActive(true)
-      , "couldn't activate audio session");
+        UInt32 audioCategory = m_numInputs > 0
+                                ? kAudioSessionCategory_PlayAndRecord
+                                : kAudioSessionCategory_MediaPlayback;
+        METHCLA_THROW_IF_ERROR(
+            AudioSessionSetProperty(
+                kAudioSessionProperty_AudioCategory
+              , sizeof(audioCategory)
+              , &audioCategory)
+          , "couldn't set audio category");
+        //METHCLA_THROW_IF_ERROR(AudioSessionAddPropertyListener(kAudioSessionProperty_AudioRouteChange, propListener, self), "couldn't set property listener");
+
+        // NOTE: This needs to be called *before* trying to determine the
+        //       number of input/output channels.
+        METHCLA_THROW_IF_ERROR(
+            AudioSessionSetActive(true)
+          , "couldn't activate audio session");
+    }
 
     Float64 hwSampleRate;
     UInt32 outSize = sizeof(hwSampleRate);
@@ -401,13 +410,14 @@ void RemoteIODriver::InterruptionCallback(void *inClientData, UInt32 inInterrupt
 {
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inClientData);
 
-    if (inInterruption == kAudioSessionEndInterruption) {
+    if (inInterruption == kAudioSessionEndInterruption)
+    {
         // make sure we are again the active session
         METHCLA_THROW_IF_ERROR(AudioSessionSetActive(true), "couldn't set audio session active");
         self->start();
     }
-
-    if (inInterruption == kAudioSessionBeginInterruption) {
+    else if (inInterruption == kAudioSessionBeginInterruption)
+    {
         self->stop();
     }
 }
@@ -516,5 +526,17 @@ AudioUnit RemoteIODriver::audioUnit()
 
 Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {
-    return new RemoteIODriver(options);
+    return new RemoteIODriver(options, true);
+}
+
+METHCLA_EXPORT Methcla_AudioDriver* methcla_remoteio_driver_new(
+    const Methcla_AudioDriverOptions* options
+    )
+{
+    return Methcla::API::wrapAudioDriver(
+        new RemoteIODriver(
+            Methcla::API::convertOptions(options),
+            false
+        )
+    );
 }
