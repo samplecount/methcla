@@ -15,9 +15,11 @@
 #ifndef METHCLA_PLUGIN_HPP_INCLUDED
 #define METHCLA_PLUGIN_HPP_INCLUDED
 
+#include <methcla/log.hpp>
 #include <methcla/plugin.h>
 #include <oscpp/server.hpp>
 
+#include <functional>
 #include <cstring>
 
 // NOTE: This API is unstable and subject to change!
@@ -68,6 +70,12 @@ namespace Methcla { namespace Plugin {
             methcla_world_perform_command(m_world, perform, data);
         }
 
+        LogStream log(Methcla_LogLevel logLevel=kMethcla_LogInfo)
+        {
+            using namespace std::placeholders;
+            return LogStream(std::bind(m_world->log_line, m_world, _1, _2), logLevel);
+        }
+
         void synthRetain(Synth* synth) const
         {
             methcla_world_synth_retain(m_world, synth);
@@ -81,6 +89,22 @@ namespace Methcla { namespace Plugin {
         void synthDone(Synth* synth) const
         {
             methcla_world_synth_done(m_world, synth);
+        }
+    };
+
+    class HostContext
+    {
+        const Methcla_Host* m_context;
+
+    public:
+        HostContext(const Methcla_Host* context)
+            : m_context(context)
+        {}
+
+        LogStream log(Methcla_LogLevel logLevel=kMethcla_LogInfo)
+        {
+            using namespace std::placeholders;
+            return LogStream(std::bind(m_context->log_line, m_context, _1, _2), logLevel);
         }
     };
 

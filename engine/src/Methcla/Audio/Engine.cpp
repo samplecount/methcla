@@ -22,6 +22,8 @@
 #include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
+#include <methcla/log.hpp>
+
 METHCLA_WITHOUT_WARNINGS_BEGIN
 # include <boost/heap/priority_queue.hpp>
 METHCLA_WITHOUT_WARNINGS_END
@@ -219,36 +221,6 @@ public:
     {
         assert(!isEmpty());
         m_queue.pop();
-    }
-};
-
-class LogStream
-{
-    std::function<void(Methcla_LogLevel,const char*)> m_callback;
-    Methcla_LogLevel                                  m_level;
-    std::shared_ptr<std::stringstream>                m_stream;
-
-public:
-    LogStream(std::function<void(Methcla_LogLevel,const char*)> callback, Methcla_LogLevel currentLevel, Methcla_LogLevel messageLevel)
-        : m_callback(messageLevel <= currentLevel ? callback : nullptr)
-        , m_level(messageLevel)
-        , m_stream(m_callback == nullptr ? nullptr : std::unique_ptr<std::stringstream>(new std::stringstream))
-    {}
-
-    LogStream(const LogStream&) = default;
-    LogStream(LogStream&&) = default;
-
-    ~LogStream()
-    {
-        if (m_callback)
-            m_callback(m_level, m_stream->str().c_str());
-    }
-
-    template <class T> LogStream& operator<<(const T& x)
-    {
-        if (m_callback)
-            *m_stream << x;
-        return *this;
     }
 };
 
@@ -460,33 +432,47 @@ public:
     LogStream rt_log(Methcla_LogLevel level)
     {
         using namespace std::placeholders;
-        Methcla_LogLevel logLevel =
+        const Methcla_LogLevel currentLogLevel =
             m_logFlags.load() & kMethcla_EngineLogDebug
                 ? kMethcla_LogDebug
                 : kMethcla_LogWarn;
-        return LogStream(std::bind(&EnvironmentImpl::logLineRT, this, _1, _2), logLevel, level);
+        return LogStream(
+            std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
+            level,
+            currentLogLevel
+        );
     }
 
     LogStream rt_log()
     {
         using namespace std::placeholders;
-        return LogStream(std::bind(&EnvironmentImpl::logLineRT, this, _1, _2), kMethcla_LogDebug, kMethcla_LogDebug);
+        return LogStream(
+            std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
+            kMethcla_LogDebug
+        );
     }
 
     LogStream nrt_log(Methcla_LogLevel level)
     {
         using namespace std::placeholders;
-        Methcla_LogLevel logLevel =
+        const Methcla_LogLevel currentLogLevel =
             m_logFlags.load() & kMethcla_EngineLogDebug
                 ? kMethcla_LogDebug
                 : kMethcla_LogWarn;
-        return LogStream(std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2), logLevel, level);
+        return LogStream(
+            std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
+            level,
+            currentLogLevel
+        );
     }
 
     LogStream nrt_log()
     {
         using namespace std::placeholders;
-        return LogStream(std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2), kMethcla_LogDebug, kMethcla_LogDebug);
+        return LogStream(
+            std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
+            kMethcla_LogDebug
+        );
     }
 };
 
