@@ -143,6 +143,13 @@ namespace Methcla
             return m_info;
         }
 
+        void close()
+        {
+            ensureInitialized();
+            detail::checkReturnCode(methcla_soundfile_close(m_file));
+            m_file = nullptr;
+        }
+
         void seek(int64_t numFrames)
         {
             ensureInitialized();
