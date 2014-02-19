@@ -15,9 +15,12 @@
 #ifndef METHCLA_FILE_HPP_INCLUDED
 #define METHCLA_FILE_HPP_INCLUDED
 
+#include <methcla/detail.hpp>
 #include <methcla/engine.hpp>
 #include <methcla/file.h>
 #include <methcla/plugin.h>
+
+#include <stdexcept>
 
 namespace Methcla
 {
@@ -58,16 +61,21 @@ namespace Methcla
         Methcla_SoundFile* m_file;
         SoundFileInfo      m_info;
 
+        inline void ensureInitialized() const
+        {
+            if (!m_file)
+                throw std::logic_error("SoundFile has not been initialized");
+        }
+
     public:
         SoundFile()
             : m_file(nullptr)
-        {
-        }
+        {}
 
         SoundFile(Methcla_SoundFile* file, const Methcla_SoundFileInfo& info)
             : m_file(file)
             , m_info(info)
-        { }
+        {}
 
         SoundFile(const Engine& engine, const std::string& path)
         {
@@ -114,11 +122,13 @@ namespace Methcla
 
         void seek(int64_t numFrames)
         {
+            ensureInitialized();
             detail::checkReturnCode(methcla_soundfile_seek(m_file, numFrames));
         }
 
         int64_t tell()
         {
+            ensureInitialized();
             int64_t numFrames;
             detail::checkReturnCode(methcla_soundfile_tell(m_file, &numFrames));
             return numFrames;
@@ -126,6 +136,7 @@ namespace Methcla
 
         size_t read(float* buffer, size_t numFrames)
         {
+            ensureInitialized();
             size_t outNumFrames;
             detail::checkReturnCode(methcla_soundfile_read_float(m_file, buffer, numFrames, &outNumFrames));
             return outNumFrames;
@@ -133,6 +144,7 @@ namespace Methcla
 
         size_t write(const float* buffer, size_t numFrames)
         {
+            ensureInitialized();
             size_t outNumFrames;
             detail::checkReturnCode(methcla_soundfile_write_float(m_file, buffer, numFrames, &outNumFrames));
             return outNumFrames;
