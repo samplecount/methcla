@@ -129,8 +129,8 @@ inline NSString* resourcePath(NSString* component)
 {
     Engine::Options options;
     options.engineOptions.audioDriver.bufferSize = 128;
-    options.engineOptions.addLibrary(methcla_soundfile_api_libsndfile);
     options.engineOptions.addLibrary(methcla_soundfile_api_mpg123);
+    options.engineOptions.addLibrary(methcla_soundfile_api_libsndfile);
 
     NSArray* sounds = openFiles();
     options.sounds.reserve([sounds count]);
