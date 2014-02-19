@@ -48,10 +48,6 @@ public:
     {
     }
 
-    void activate(const World<DoneAfter>&)
-    {
-    }
-
     void process(const World<DoneAfter>& world, size_t numFrames)
     {
         if (!m_done)
@@ -141,8 +137,6 @@ public:
     {
         m_ports[port] = static_cast<float*>(data);
     }
-
-    void activate(const World<ASREnvelope>&) {}
 
     void process(const World<ASREnvelope>& world, size_t numFrames)
     {
