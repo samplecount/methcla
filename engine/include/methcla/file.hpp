@@ -107,12 +107,30 @@ namespace Methcla
             );
         }
 
+        // SoundFile is moveable
+        SoundFile(SoundFile&& other)
+            : m_file(std::move(other.m_file))
+            , m_info(std::move(other.m_info))
+        {
+            other.m_file = nullptr;
+        }
+
+        SoundFile& operator=(SoundFile&& other)
+        {
+            m_file = std::move(other.m_file);
+            m_info = std::move(other.m_info);
+            other.m_file = nullptr;
+            return *this;
+        }
+
+        // SoundFile is not copyable
         SoundFile(const SoundFile&) = delete;
         SoundFile& operator=(const SoundFile&) = delete;
 
         ~SoundFile()
         {
-            detail::checkReturnCode(methcla_soundfile_close(m_file));
+            if (m_file != nullptr)
+                methcla_soundfile_close(m_file);
         }
 
         const SoundFileInfo& info() const
