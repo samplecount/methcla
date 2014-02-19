@@ -213,6 +213,7 @@ methclaSources variant sourceDir buildDir target versionHeader platformSources =
               SourceTree.files $ under sourceDir
                 [ "src/Methcla/Audio/AudioBus.cpp"
                 , "src/Methcla/Audio/Engine.cpp"
+                , "src/Methcla/Audio/EngineImpl.cpp"
                 , "src/Methcla/Audio/Group.cpp"
                 , "src/Methcla/Audio/IO/Driver.cpp"
                 , "src/Methcla/Audio/Node.cpp"
