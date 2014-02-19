@@ -133,6 +133,11 @@ namespace Methcla
                 methcla_soundfile_close(m_file);
         }
 
+        operator bool() const
+        {
+            return m_file != nullptr;
+        }
+
         const SoundFileInfo& info() const
         {
             return m_info;
