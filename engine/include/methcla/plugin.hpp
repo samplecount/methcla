@@ -189,17 +189,57 @@ namespace Methcla { namespace Plugin {
         }
     };
 
-    template <class Synth, class Options, class PortDescriptor> class SynthClass
+    namespace detail
+    {
+        template <class Synth, bool Condition>
+        class IfSynthDefHasActivate
+        {
+        public:
+            static inline void exec(const Methcla_World*, Synth*) { }
+        };
+
+        template <class Synth>
+        class IfSynthDefHasActivate<Synth, true>
+        {
+        public:
+            static inline void exec(const Methcla_World* context, Synth* synth)
+                { synth->activate(World<Synth>(context)); }
+        };
+
+        template <class Synth, bool Condition>
+        class IfSynthDefHasCleanup
+        {
+        public:
+            static inline void exec(const Methcla_World*, Synth*) { }
+        };
+
+        template <class Synth>
+        class IfSynthDefHasCleanup<Synth, true>
+        {
+        public:
+            static inline void exec(const Methcla_World* context, Synth* synth)
+                { synth->cleanup(World<Synth>(context)); }
+        };
+    } // namespace detail
+
+    enum SynthDefFlags
+    {
+        kSynthDefDefaultFlags = 0x00,
+        kSynthDefHasActivate  = 0x01,
+        kSynthDefHasCleanup   = 0x02
+    };
+
+    template <class Synth, class Options, class PortDescriptor, SynthDefFlags Flags=kSynthDefDefaultFlags> class SynthDef
     {
         static void
-        construct( const Methcla_World* world
+        construct( const Methcla_World* context
                  , const Methcla_SynthDef* synthDef
                  , const Methcla_SynthOptions* options
                  , Methcla_Synth* synth )
         {
-            assert(world != nullptr);
+            assert(context != nullptr);
             assert(options != nullptr);
-            new (synth) Synth(World<Synth>(world), synthDef, *static_cast<const typename Options::Type*>(options));
+            new (synth) Synth(World<Synth>(context), synthDef, *static_cast<const typename Options::Type*>(options));
         }
 
         static void
@@ -211,27 +251,36 @@ namespace Methcla { namespace Plugin {
         }
 
         static void
-        activate(const Methcla_World* world, Methcla_Synth* synth)
+        activate(const Methcla_World* context, Methcla_Synth* synth)
         {
-            static_cast<Synth*>(synth)->activate(World<Synth>(world));
+            detail::IfSynthDefHasActivate<
+                Synth,
+                (Flags & kSynthDefHasActivate) == kSynthDefHasActivate
+            >::exec(context, static_cast<Synth*>(synth));
         }
 
         static void
-        process(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames)
+        process(const Methcla_World* context, Methcla_Synth* synth, size_t numFrames)
         {
-            static_cast<Synth*>(synth)->process(World<Synth>(world), numFrames);
+            static_cast<Synth*>(synth)->process(World<Synth>(context), numFrames);
         }
 
         static void
-        destroy(const Methcla_World*, Methcla_Synth* synth)
+        destroy(const Methcla_World* context, Methcla_Synth* synth)
         {
+            // Call cleanup method
+            detail::IfSynthDefHasActivate<
+                Synth,
+                (Flags & kSynthDefHasCleanup) == kSynthDefHasCleanup
+            >::exec(context, static_cast<Synth*>(synth));
+            // Call destructor
             static_cast<Synth*>(synth)->~Synth();
         }
 
     public:
         void operator()(const Methcla_Host* host, const char* uri)
         {
-            static const Methcla_SynthDef kClass =
+            static const Methcla_SynthDef kSynthDef =
             {
                 uri,
                 sizeof(Synth),
@@ -244,12 +293,13 @@ namespace Methcla { namespace Plugin {
                 process,
                 destroy
             };
-            methcla_host_register_synthdef(host, &kClass);
+            methcla_host_register_synthdef(host, &kSynthDef);
         }
     };
 
-    template <class Synth, class Options, class Ports> using StaticSynthClass
-        = SynthClass<Synth, StaticSynthOptions<Options,Ports>, Ports>;
+    template <class Synth, class Options, class Ports, SynthDefFlags Flags=kSynthDefDefaultFlags>
+        using StaticSynthClass
+        = SynthDef<Synth, StaticSynthOptions<Options,Ports>, Ports, Flags>;
 } }
 
 #endif // METHCLA_PLUGIN_HPP_INCLUDED
