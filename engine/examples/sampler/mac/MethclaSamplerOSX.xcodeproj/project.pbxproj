@@ -216,7 +216,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd ../../..\n\ncase ACTION in\nclean) stir_action=clean ;;\n*) stir_action=desktop ;;\nesac\n\n./stir -j`sysctl -n hw.ncpu` -c \"$CONFIGURATION\" $stir_action\n";
+			shellScript = "# Pull PATH from environment\n[ -f \"$HOME/.profile\" ] && . \"$HOME/.profile\"\n[ -f \"$HOME/.bash_ogin\" ] && . \"$HOME/.bash_login\"\n\ncd ../../..\n\ncase ACTION in\nclean) stir_action=clean ;;\n*) stir_action=desktop ;;\nesac\n\n./stir -j`sysctl -n hw.ncpu` -c \"$CONFIGURATION\" $stir_action\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -431,6 +431,7 @@
 				A5177DF518A40407005E397B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		A54F269D18A28104008A3940 /* Build configuration list for PBXNativeTarget "MethclaSampler" */ = {
 			isa = XCConfigurationList;
