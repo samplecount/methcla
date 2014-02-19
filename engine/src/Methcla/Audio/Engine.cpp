@@ -176,18 +176,6 @@ static void methcla_api_world_log_line(const Methcla_World* world, Methcla_LogLe
     static_cast<Environment*>(world->handle)->logLineRT(level, message);
 }
 
-static void methcla_api_world_synth_retain(const Methcla_World*, Methcla_Synth* synth)
-{
-    assert(synth);
-    Synth::fromSynth(synth)->retain();
-}
-
-static void methcla_api_world_synth_release(const Methcla_World*, Methcla_Synth* synth)
-{
-    assert(synth);
-    Synth::fromSynth(synth)->release();
-}
-
 static void methcla_api_world_synth_done(const Methcla_World*, Methcla_Synth* synth)
 {
     assert(synth != nullptr);
@@ -234,8 +222,6 @@ Environment::Environment(
         methcla_api_world_free,
         methcla_api_world_perform_command,
         methcla_api_world_log_line,
-        methcla_api_world_synth_retain,
-        methcla_api_world_synth_release,
         methcla_api_world_synth_done
     };
 

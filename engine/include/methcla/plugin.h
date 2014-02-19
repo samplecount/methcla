@@ -72,10 +72,6 @@ struct Methcla_World
     //* Log a message and a newline character.
     void (*log_line)(const Methcla_World* world, Methcla_LogLevel level, const char* message);
 
-    //* Manipulate synth reference counts.
-    void (*synth_retain)(const struct Methcla_World* world, Methcla_Synth* synth);
-    void (*synth_release)(const struct Methcla_World* world, Methcla_Synth* synth);
-
     //* Free synth.
     void (*synth_done)(const struct Methcla_World* world, Methcla_Synth* synth);
 };
@@ -130,22 +126,6 @@ static inline void methcla_world_log_line(const Methcla_World* world, Methcla_Lo
     assert(world->log_line);
     assert(message);
     world->log_line(world, level, message);
-}
-
-static inline void methcla_world_synth_retain(const Methcla_World* world, Methcla_Synth* synth)
-{
-    assert(world);
-    assert(world->synth_retain);
-    assert(synth);
-    world->synth_retain(world, synth);
-}
-
-static inline void methcla_world_synth_release(const Methcla_World* world, Methcla_Synth* synth)
-{
-    assert(world);
-    assert(world->synth_release);
-    assert(synth);
-    world->synth_release(world, synth);
 }
 
 static inline void methcla_world_synth_done(const Methcla_World* world, Methcla_Synth* synth)
