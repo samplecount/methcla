@@ -62,7 +62,7 @@ public:
     }
 };
 
-StaticSynthClass<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterClass;
+StaticSynthDef<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterDef;
 
 // LinearEnvelope
 
@@ -194,7 +194,7 @@ public:
     }
 };
 
-StaticSynthClass<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeClass;
+StaticSynthDef<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeDef;
 
 // Library
 
@@ -202,7 +202,7 @@ static const Methcla_Library library = { NULL, NULL };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla_Host* host, const char* /* bundlePath */)
 {
-    kDoneAfterClass(host, METHCLA_PLUGINS_DONE_AFTER_URI);
-    kASREnvelopeClass(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);
+    kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
+    kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);
     return &library;
 }

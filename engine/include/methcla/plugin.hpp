@@ -298,7 +298,7 @@ namespace Methcla { namespace Plugin {
     };
 
     template <class Synth, class Options, class Ports, SynthDefFlags Flags=kSynthDefDefaultFlags>
-        using StaticSynthClass
+        using StaticSynthDef
         = SynthDef<Synth, StaticSynthOptions<Options,Ports>, Ports, Flags>;
 } }
 
