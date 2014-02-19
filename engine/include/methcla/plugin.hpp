@@ -28,67 +28,67 @@ namespace Methcla { namespace Plugin {
 
     template <class Synth> class World
     {
-        const Methcla_World* m_world;
+        const Methcla_World* m_context;
 
     public:
-        World(const Methcla_World* world)
-            : m_world(world)
+        World(const Methcla_World* context)
+            : m_context(context)
         { }
 
         double sampleRate() const
         {
-            return methcla_world_samplerate(m_world);
+            return methcla_world_samplerate(m_context);
         }
 
         size_t blockSize() const
         {
-            return methcla_world_block_size(m_world);
+            return methcla_world_block_size(m_context);
         }
 
         Methcla_Time currentTime() const
         {
-            return methcla_world_current_time(m_world);
+            return methcla_world_current_time(m_context);
         }
 
         void* alloc(size_t size) const
         {
-            return methcla_world_alloc(m_world, size);
+            return methcla_world_alloc(m_context, size);
         }
 
         void* allocAligned(size_t alignment, size_t size) const
         {
-            return methcla_world_alloc_aligned(m_world, alignment, size);
+            return methcla_world_alloc_aligned(m_context, alignment, size);
         }
 
         void free(void* ptr)
         {
-            methcla_world_free(m_world, ptr);
+            methcla_world_free(m_context, ptr);
         }
 
         void performCommand(Methcla_HostPerformFunction perform, void* data)
         {
-            methcla_world_perform_command(m_world, perform, data);
+            methcla_world_perform_command(m_context, perform, data);
         }
 
         LogStream log(Methcla_LogLevel logLevel=kMethcla_LogInfo)
         {
             using namespace std::placeholders;
-            return LogStream(std::bind(m_world->log_line, m_world, _1, _2), logLevel);
+            return LogStream(std::bind(m_context->log_line, m_context, _1, _2), logLevel);
         }
 
         void synthRetain(Synth* synth) const
         {
-            methcla_world_synth_retain(m_world, synth);
+            methcla_world_synth_retain(m_context, synth);
         }
 
         void synthRelease(Synth* synth) const
         {
-            methcla_world_synth_release(m_world, synth);
+            methcla_world_synth_release(m_context, synth);
         }
 
         void synthDone(Synth* synth) const
         {
-            methcla_world_synth_done(m_world, synth);
+            methcla_world_synth_done(m_context, synth);
         }
     };
 
