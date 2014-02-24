@@ -61,7 +61,7 @@ public:
         : m_lock(s_mutex)
     { }
 
-    template <typename T> Log& operator<<(const T& x)
+    template <typename T> Log& operator<<(const T& /* x */)
     {
         // std::cout << x << std::endl;
         return *this;
