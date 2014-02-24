@@ -645,6 +645,41 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             sendToWorker<CommandNodeTreeStatistics>(requestId, stats);
         }
+        else if (msg == "/engine/realtime-memory/statistics")
+        {
+            class CommandRealtimeMemoryStatistics
+            {
+            public:
+                CommandRealtimeMemoryStatistics(Methcla_RequestId requestId, const RTMemoryManager::Statistics& stats)
+                    : m_requestId(requestId)
+                    , m_stats(stats)
+                {
+                }
+
+                void perform(Environment* env)
+                {
+                    static const char* address = "/engine/realtime-memory/statistics";
+                    OSCPP::Client::DynamicPacket packet(
+                        OSCPP::Size::message(address, 2)
+                      + OSCPP::Size::int32(2)
+                    );
+                    packet.openMessage(address, 2);
+                    packet.int32(m_stats.freeNumBytes);
+                    packet.int32(m_stats.usedNumBytes);
+                    packet.closeMessage();
+                    env->reply(m_requestId, packet);
+                    env->sendFromWorker(perform_rt_free, this);
+                }
+
+            private:
+                Methcla_RequestId           m_requestId;
+                RTMemoryManager::Statistics m_stats;
+            };
+
+            const Methcla_RequestId requestId = args.int32();
+            RTMemoryManager::Statistics stats(rtMem().statistics());
+            sendToWorker<CommandRealtimeMemoryStatistics>(requestId, stats);
+        }
     }
     catch (std::exception& e)
     {

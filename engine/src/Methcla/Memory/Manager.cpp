@@ -31,9 +31,11 @@ RTMemoryManager::RTMemoryManager(size_t poolSize)
     : m_memory(nullptr)
     , m_pool(nullptr)
 {
-    m_memory = Memory::alloc(poolSize);
-    m_pool = tlsf_create(m_memory, poolSize);
-    if (m_pool == nullptr) {
+    const size_t allocSize = tlsf_overhead() + poolSize;
+    m_memory = Memory::alloc(allocSize);
+    m_pool = tlsf_create(m_memory, allocSize);
+    if (m_pool == nullptr)
+    {
         Memory::free(m_memory);
         throw std::bad_alloc();
     }
@@ -84,4 +86,24 @@ void RTMemoryManager::free(void* ptr) noexcept
     if (ptr != nullptr)
         tlsf_free(m_pool, ptr);
 #endif
+}
+
+static void collectStatistics(void* /* ptr */, size_t size, int used, void* user)
+{
+    auto stats = static_cast<RTMemoryManager::Statistics*>(user);
+    if (used)
+        stats->usedNumBytes += size;
+    else
+        stats->freeNumBytes += size;
+}
+
+RTMemoryManager::Statistics RTMemoryManager::statistics() const
+{
+    Statistics stats;
+    stats.freeNumBytes = 0;
+    stats.usedNumBytes = 0;
+#if !METHCLA_NO_RT_MEMORY
+    tlsf_walk_heap(m_pool, collectStatistics, &stats);
+#endif
+    return stats;
 }

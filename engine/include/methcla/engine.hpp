@@ -183,6 +183,27 @@ namespace Methcla
     {
         size_t numGroups;
         size_t numSynths;
+
+        NodeTreeStatistics()
+            : numGroups(0)
+            , numSynths(0)
+        {}
+    };
+
+    struct RealtimeMemoryStatistics
+    {
+        size_t freeNumBytes;
+        size_t usedNumBytes;
+
+        RealtimeMemoryStatistics()
+            : freeNumBytes(0)
+            , usedNumBytes(0)
+        {}
+
+        size_t totalNumBytes() const
+        {
+            return freeNumBytes + usedNumBytes;
+        }
     };
 
     template <class Id, typename T> class ResourceIdAllocator
@@ -882,26 +903,6 @@ namespace Methcla
             logLine(level, message.c_str());
         }
 
-        NodeTreeStatistics getNodeTreeStatistics()
-        {
-            std::unique_ptr<Packet> packet = allocPacket();
-            Methcla_RequestId requestId = getRequestId();
-            packet->packet()
-                .openMessage("/node/tree/statistics", 1)
-                .int32(requestId)
-                .closeMessage();
-            detail::Result<NodeTreeStatistics> result;
-            withRequest(requestId, packet->packet(), [&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                result.checkResponse("/node/tree/statistics", response);
-                OSCPP::Server::ArgStream args(response.args());
-                NodeTreeStatistics value;
-                value.numGroups = args.int32();
-                value.numSynths = args.int32();
-                result.set(value);
-            });
-            return result.get();
-        }
-
         NodeIdAllocator& nodeIdAllocator() override
         {
             return m_nodeIds;
@@ -961,6 +962,48 @@ namespace Methcla
                 }
                 return false;
             };
+        }
+
+        NodeTreeStatistics getNodeTreeStatistics()
+        {
+            const char* request = "/node/tree/statistics";
+            const Methcla_RequestId requestId = getRequestId();
+            std::unique_ptr<Packet> packet = allocPacket();
+            packet->packet()
+                .openMessage(request, 1)
+                .int32(requestId)
+                .closeMessage();
+            detail::Result<NodeTreeStatistics> result;
+            withRequest(requestId, packet->packet(), [&request,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
+                result.checkResponse(request, response);
+                OSCPP::Server::ArgStream args(response.args());
+                NodeTreeStatistics value;
+                value.numGroups = args.int32();
+                value.numSynths = args.int32();
+                result.set(value);
+            });
+            return result.get();
+        }
+
+        RealtimeMemoryStatistics getRealtimeMemoryStatistics()
+        {
+            const char* request = "/engine/realtime-memory/statistics";
+            const Methcla_RequestId requestId = getRequestId();
+            auto packet = allocPacket();
+            packet->packet()
+                .openMessage(request, 1)
+                .int32(requestId)
+                .closeMessage();
+            detail::Result<RealtimeMemoryStatistics> result;
+            withRequest(requestId, packet->packet(), [&request,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
+                result.checkResponse(request, response);
+                OSCPP::Server::ArgStream args(response.args());
+                RealtimeMemoryStatistics value;
+                value.freeNumBytes = args.int32();
+                value.usedNumBytes = args.int32();
+                result.set(value);
+            });
+            return result.get();
         }
 
     private:

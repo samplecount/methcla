@@ -100,6 +100,14 @@ public:
     //* Free memory allocated by this allocator.
     void free(void* ptr) noexcept override;
 
+    struct Statistics
+    {
+        size_t freeNumBytes;
+        size_t usedNumBytes;
+    };
+
+    Statistics statistics() const;
+
 private:
     void*       m_memory;
     tlsf_pool   m_pool;
