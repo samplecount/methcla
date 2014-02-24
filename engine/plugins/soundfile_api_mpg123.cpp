@@ -139,6 +139,11 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
     if (mpg123_open(handle->handle, path) != MPG123_OK)
         return handle->error();
 
+    // Check number of frames in file here because mpg123_open doesn't return an error for an invalid mp3 file
+    const off_t frames = mpg123_length(handle->handle);
+    if (frames < 0)
+        return methcla_error_new(kMethcla_UnsupportedFileTypeError);
+
     long rate;
     int channels, encoding;
 
@@ -148,11 +153,11 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
     if (encoding != MPG123_ENC_FLOAT_32)
         return methcla_error_new(kMethcla_UnsupportedDataFormatError);
 
-    handle->frameSize = channels * sizeof(float);
-
     // Ensure that output format doesn't change (it could, if we allowed it).
     mpg123_format_none(handle->handle);
     mpg123_format(handle->handle, rate, channels, encoding);
+
+    handle->frameSize = channels * sizeof(float);
 
     Methcla_SoundFile* file = &handle->soundFile;
     memset(file, 0, sizeof(*file));
@@ -166,8 +171,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
 
     if (info != nullptr)
     {
-        off_t frames = mpg123_length(handle->handle);
-        info->frames = frames >= 0 ? frames : -1;
+        info->frames = frames;
         info->channels = channels;
         info->samplerate = rate;
     }
