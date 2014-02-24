@@ -36,6 +36,158 @@ using namespace Methcla;
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
 
+static void throwError(Methcla_ErrorCode code, const std::string& msg)
+{
+    throw Error(code, msg);
+}
+
+static void throwErrorWith(Methcla_ErrorCode code, std::function<void(std::stringstream&)> func)
+{
+    std::stringstream stream;
+    func(stream);
+    throwError(code, stream.str());
+}
+
+template <class T> const char* nodeTypeName()
+{
+    return "node";
+}
+
+template <> const char* nodeTypeName<Group>()
+{
+    return "group";
+}
+
+template <> const char* nodeTypeName<Synth>()
+{
+    return "synth";
+}
+
+static inline bool isValidNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
+{
+    return nodeId >= 0 && (size_t)nodeId < nodes.size();
+}
+
+static inline bool isUsedNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
+{
+    return isValidNodeId(nodes, nodeId) && nodes[nodeId] != nullptr;
+}
+
+static inline void checkNodeIdIsValid(const std::vector<Node*>& nodes, NodeId nodeId)
+{
+    if (!isValidNodeId(nodes, nodeId))
+    {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+            s << "Node id " << nodeId << " out of range";
+        });
+    }
+}
+
+static inline void checkNodeIdIsFree(const std::vector<Node*>& nodes, NodeId nodeId)
+{
+    checkNodeIdIsValid(nodes, nodeId);
+
+    if (nodes[nodeId] != nullptr)
+    {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+            s << "Node id " << nodeId << " already in use";
+        });
+    }
+}
+
+static inline void addNode(std::vector<Node*>& nodes, Node* node)
+{
+    NodeId nodeId(node->id());
+    checkNodeIdIsFree(nodes, nodeId);
+    nodes[nodeId] = node;
+}
+
+static inline Node* lookupNode(std::vector<Node*>& nodes, const char* prefix, NodeId nodeId)
+{
+    checkNodeIdIsValid(nodes, nodeId);
+
+    Node* node = nodes[nodeId];
+
+    if (node == nullptr)
+    {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+            s << prefix << " " << nodeId << " not found";
+        });
+    }
+
+    return node;
+}
+
+template <class T> T* lookupNodeAs(std::vector<Node*>& nodes, const char* prefix, NodeId nodeId)
+{
+    Node* node = lookupNode(nodes, prefix, nodeId);
+
+    T* result = dynamic_cast<T*>(node);
+
+    if (result == nullptr)
+    {
+        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+            s << nodeId << " is not a " << nodeTypeName<T>();
+        });
+    }
+
+    return result;
+}
+
+static inline void addNodeToTarget(Node* target, Node* node, Methcla_NodePlacement nodePlacement)
+{
+    switch (nodePlacement)
+    {
+        case kMethcla_NodePlacementHeadOfGroup:
+            {
+                Group* group = dynamic_cast<Group*>(target);
+                if (group != nullptr)
+                {
+                    group->addToHead(node);
+                }
+                else
+                {
+                    throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                        s << "Target node " << target->id() << " is not a group";
+                    });
+                }
+            }
+            break;
+        case kMethcla_NodePlacementTailOfGroup:
+            {
+                Group* group = dynamic_cast<Group*>(target);
+                if (group != nullptr)
+                {
+                    group->addToTail(node);
+                }
+                else
+                {
+                    throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
+                        s << "Target node " << target->id() << " is not a group";
+                    });
+                }
+            }
+            break;
+        case kMethcla_NodePlacementBeforeNode:
+            if (target->parent() == nullptr)
+            {
+                throwError(kMethcla_NodeIdError, "Cannot place node before root node");
+            }
+            target->parent()->addBefore(target, node);
+            break;
+        case kMethcla_NodePlacementAfterNode:
+            if (target->parent() == nullptr)
+            {
+                throwError(kMethcla_NodeIdError, "Cannot place node after root node");
+            }
+            target->parent()->addAfter(target, node);
+            break;
+        default:
+            throwError(kMethcla_ArgumentError, "Invalid node placement specification");
+    }
+    assert(node->parent() != nullptr);
+}
+
 void Methcla::Audio::perform_nrt_free(Environment*, void* data)
 {
     Methcla::Memory::free(data);
@@ -63,7 +215,7 @@ EnvironmentImpl::EnvironmentImpl(
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_currentTime(0)
-    , m_nodes(options.maxNumNodes)
+    , m_nodes(options.maxNumNodes, nullptr)
     , m_logFlags(kMethcla_EngineLogDefault)
 {
     assert( m_logFlags.is_lock_free() );
@@ -96,13 +248,14 @@ EnvironmentImpl::EnvironmentImpl(
 
 EnvironmentImpl::~EnvironmentImpl()
 {
+    m_rootNode->free();
 }
 
 void EnvironmentImpl::init(const Environment::Options& options)
 {
     // Create root group
     m_rootNode = Group::construct(*m_owner, NodeId(0));
-    m_nodes.insert(m_rootNode->id(), m_rootNode);
+    addNode(m_nodes, m_rootNode);
     // Load plugins
     m_plugins.loadPlugins(*m_owner, options.pluginLibraries);
 }
@@ -244,91 +397,6 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags logFlags, Request* re
     }
 }
 
-static void throwError(Methcla_ErrorCode code, const std::string& msg)
-{
-    throw Error(code, msg);
-}
-
-static void throwErrorWith(Methcla_ErrorCode code, std::function<void(std::stringstream&)> func)
-{
-    std::stringstream stream;
-    func(stream);
-    throwError(code, stream.str());
-}
-
-template <class T> const char* nodeTypeName()
-{
-    return "<unknown>";
-}
-
-template <> const char* nodeTypeName<Group>()
-{
-    return "group";
-}
-
-template <> const char* nodeTypeName<Synth>()
-{
-    return "synth";
-}
-
-Node* lookupNode(EnvironmentImpl* env, const char* prefix, NodeId nodeId)
-{
-    Node* node = env->m_nodes.lookup(nodeId).get();
-
-    if (node == nullptr)
-        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-            s << prefix << " " << nodeId << " not found";
-        });
-
-    return node;
-}
-
-template <class T> T* lookupNodeAs(EnvironmentImpl* env, const char* prefix, NodeId nodeId)
-{
-    Node* node = lookupNode(env, prefix, nodeId);
-
-    T* result = dynamic_cast<T*>(node);
-    if (result == nullptr)
-        throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-            s << nodeId << " is not a " << nodeTypeName<T>();
-        });
-
-    return result;
-}
-
-static void addNodeToTarget(Node* target, Node* node, Methcla_NodePlacement nodePlacement)
-{
-    switch (nodePlacement)
-    {
-        case kMethcla_NodePlacementHeadOfGroup:
-            if (!target->isGroup())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Target node " << target->id() << " is not a group";
-                });
-            dynamic_cast<Group*>(target)->addToHead(node);
-            break;
-        case kMethcla_NodePlacementTailOfGroup:
-            if (!target->isGroup())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Target node " << target->id() << " is not a group";
-                });
-            dynamic_cast<Group*>(target)->addToTail(node);
-            break;
-        case kMethcla_NodePlacementBeforeNode:
-            if (target->parent() == nullptr)
-                throwError(kMethcla_NodeIdError, "Cannot place node before root node");
-            target->parent()->addBefore(target, node);
-            break;
-        case kMethcla_NodePlacementAfterNode:
-            if (target->parent() == nullptr)
-                throwError(kMethcla_NodeIdError, "Cannot place node after root node");
-            target->parent()->addAfter(target, node);
-            break;
-        default:
-            throwError(kMethcla_ArgumentError, "Invalid node placement specification");
-    }
-}
-
 void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, Methcla_Time scheduleTime, Methcla_Time currentTime)
 {
     using namespace std::placeholders;
@@ -344,42 +412,30 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
         if (msg == "/group/new")
         {
             NodeId nodeId = NodeId(args.int32());
+            checkNodeIdIsFree(m_nodes, nodeId);
+
             NodeId targetId = NodeId(args.int32());
             Methcla_NodePlacement nodePlacement = Methcla_NodePlacement(args.int32());
 
-            auto target = m_nodes.lookup(targetId);
-            if (target == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Target node " << targetId << " not found";
-                });
+            Node* target = lookupNode(m_nodes, "Target node", targetId);
 
-            auto group = Group::construct(*m_owner, nodeId);
-            addNodeToTarget(target.get(), group.get(), nodePlacement);
-
-            m_nodes.insert(group->id(), group);
+            Group* group = Group::construct(*m_owner, nodeId);
+            addNode(m_nodes, group);
+            addNodeToTarget(target, group, nodePlacement);
         }
         else if (msg == "/group/freeAll")
         {
             NodeId nodeId = NodeId(args.int32());
-
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (node == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Group " << nodeId << " not found";
-                });
-            else if (!node->isGroup())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " is not a group";
-                });
-
-            Group* group =  dynamic_cast<Group*>(node);
-
+            Group* group = lookupNodeAs<Group>(m_nodes, "Group", nodeId);
             group->freeAll();
         }
         else if (msg == "/synth/new")
         {
             const char* defName = args.string();
+
             NodeId nodeId = NodeId(args.int32());
+            checkNodeIdIsFree(m_nodes, nodeId);
+
             NodeId targetId = NodeId(args.int32());
             Methcla_NodePlacement nodePlacement = Methcla_NodePlacement(args.int32());
 
@@ -392,24 +448,19 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             // }
             auto synthArgs = args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
 
-            auto target = m_nodes.lookup(targetId);
-            if (target == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Target node " << targetId << " not found";
-                });
+            Node* target = lookupNode(m_nodes, "Target node", targetId);
 
             try
             {
-                ResourceRef<Synth> synth = Synth::construct(
+                Synth* synth = Synth::construct(
                     *m_owner,
                     nodeId,
                     *def,
                     synthControls,
                     synthArgs);
 
-                addNodeToTarget(target.get(), synth.get(), nodePlacement);
-
-                m_nodes.insert(synth->id(), synth);
+                addNode(m_nodes, synth);
+                addNodeToTarget(target, synth, nodePlacement);
             }
             catch (OSCPP::UnderrunError&)
             {
@@ -427,16 +478,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
         else if (msg == "/synth/activate")
         {
             NodeId nodeId = NodeId(args.int32());
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (node == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Synth " << nodeId << " not found";
-                });
-            else if (!node->isSynth())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " is not a synth";
-                });
-            Synth* synth = dynamic_cast<Synth*>(node);
+            Synth* synth = lookupNodeAs<Synth>(m_nodes, "Synth", nodeId);
             // TODO: Use sample rate estimate from driver
             const double sampleOffset = std::max(0., (scheduleTime - currentTime) * m_owner->sampleRate());
             synth->activate(sampleOffset);
@@ -450,26 +492,20 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioInputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
+            {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio bus id " << busId << " out of range";
                 });
+            }
 
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (node == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Synth " << nodeId << " not found";
-                });
-            else if (!node->isSynth())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " is not a synth";
-                });
-
-            Synth* synth = dynamic_cast<Synth*>(node);
+            Synth* synth = lookupNodeAs<Synth>(m_nodes, "Synth", nodeId);
 
             if ((index < 0) || (index >= (int32_t)synth->numAudioInputs()))
+            {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio input index " << index << " out of range for synth " << nodeId;
                 });
+            }
 
             synth->mapInput(index, AudioBusId(busId), flags);
         }
@@ -482,25 +518,20 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
 
             if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioOutputs.size())
                           || ((size_t)busId > m_internalAudioBuses.size()))
+            {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio bus id " << busId << " out of range";
                 });
+            }
 
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (node == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Synth " << nodeId << " not found";
-                });
-            else if (!node->isSynth())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " is not a synth";
-                });
+            Synth* synth = lookupNodeAs<Synth>(m_nodes, "Synth", nodeId);
 
-            Synth* synth = dynamic_cast<Synth*>(node);
             if ((index < 0) || (index >= (int32_t)synth->numAudioOutputs()))
+            {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Audio output index " << index << " out of range for synth " << nodeId;
                 });
+            }
 
             synth->mapOutput(index, AudioBusId(busId), flags);
         }
@@ -508,25 +539,22 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
         {
             NodeId nodeId = NodeId(args.int32());
             Methcla_NodeDoneFlags flags = Methcla_NodeDoneFlags(args.int32());
-            Synth* synth = lookupNodeAs<Synth>(this, "Synth", nodeId);
+            Synth* synth = lookupNodeAs<Synth>(m_nodes, "Synth", nodeId);
             synth->setDoneFlags(flags);
         }
         else if (msg == "/node/free")
         {
             NodeId nodeId = NodeId(args.int32());
+            Node* node = lookupNode(m_nodes, "Node", nodeId);
 
-            // Check node id validity
-            if (!m_nodes.contains(nodeId))
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " not found";
-                });
-            else if (nodeId == m_rootNode->id())
+            if (node == m_rootNode)
+            {
                 throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                     s << "Cannot free root node " << nodeId;
                 });
+            }
 
-            // Drop node reference
-            freeNode(nodeId);
+            node->free();
         }
         else if (msg == "/node/set")
         {
@@ -534,22 +562,14 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             int32_t index = args.int32();
             float value = args.float32();
 
-            Node* node = m_nodes.lookup(nodeId).get();
-            if (node == nullptr)
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " not found";
-                });
-            else if (!node->isSynth())
-                throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
-                    s << "Node " << nodeId << " is not a synth";
-                });
-
-            Synth* synth = dynamic_cast<Synth*>(node);
+            Synth* synth = lookupNodeAs<Synth>(m_nodes, "Synth", nodeId);
 
             if ((index < 0) || (index >= (int32_t)synth->numControlInputs()))
+            {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "Control input index " << index << " out of range for synth " << nodeId;
                 });
+            }
 
             synth->controlInput(index) = value;
         }
@@ -621,7 +641,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             Methcla_RequestId requestId = args.int32();
 
             CommandNodeTreeStatistics::Statistics stats =
-                CommandNodeTreeStatistics::collectStatistics(rootNode().get());
+                CommandNodeTreeStatistics::collectStatistics(rootNode());
 
             sendToWorker<CommandNodeTreeStatistics>(requestId, stats);
         }

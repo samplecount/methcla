@@ -27,18 +27,7 @@ public:
     const Node* last() const { return m_last; }
     Node* last() { return m_last; }
 
-protected:
-    Group(Environment& env, NodeId nodeId);
-    ~Group();
-
-    virtual void doProcess(size_t numFrames) override;
-
-    friend class Node;
-
-    void remove(Node* node);
-
-public:
-    static ResourceRef<Group> construct(Environment& env, NodeId nodeId);
+    static Group* construct(Environment& env, NodeId nodeId);
 
     virtual bool isGroup() const override { return true; }
 
@@ -50,6 +39,16 @@ public:
     void addAfter(Node* target, Node* node);
 
     void freeAll();
+
+private:
+    Group(Environment& env, NodeId nodeId);
+    ~Group();
+
+    virtual void doProcess(size_t numFrames) override;
+
+private:
+    friend class Node;
+    void remove(Node* node);
 
 private:
     Node* m_first;

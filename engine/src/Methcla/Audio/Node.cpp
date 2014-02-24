@@ -19,7 +19,8 @@
 using namespace Methcla::Audio;
 
 Node::Node(Environment& env, NodeId nodeId)
-    : Resource(env, nodeId)
+    : m_env(env)
+    , m_id(nodeId)
     , m_parent(nullptr)
     , m_prev(nullptr)
     , m_next(nullptr)
@@ -29,11 +30,6 @@ Node::Node(Environment& env, NodeId nodeId)
 }
 
 Node::~Node()
-{
-    unlink();
-}
-
-void Node::unlink()
 {
     if (m_parent)
     {
@@ -49,7 +45,7 @@ void Node::process(size_t numFrames)
 {
     if (m_done)
     {
-        env().freeNode(id());
+        free();
     }
     else
     {
@@ -60,6 +56,8 @@ void Node::process(size_t numFrames)
 void Node::free()
 {
     Environment* pEnv = &env();
+    // Send /node/ended notification
+    pEnv->nodeEnded(id());
     this->~Node();
     pEnv->rtMem().free(this);
 }
@@ -80,7 +78,7 @@ void Node::setDone()
 
     if (flags & kMethcla_NodeDoneFreeParent)
     {
-        if (m_parent != nullptr)
+        if (m_parent != nullptr && m_parent != env().rootNode())
             setDoneFreeSelf(m_parent);
     }
     else if (flags & kMethcla_NodeDoneFreeAllSiblings)

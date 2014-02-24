@@ -245,7 +245,7 @@ Environment::operator const Methcla_Host* () const
     return &m_host;
 }
 
-ResourceRef<Group> Environment::rootNode()
+Group* Environment::rootNode()
 {
     return m_impl->rootNode();
 }
@@ -342,9 +342,9 @@ void Environment::logLineNRT(Methcla_LogLevel level, const char* message)
     m_impl->logLineNRT(level, message);
 }
 
-void Environment::freeNode(NodeId nodeId)
+void Environment::nodeEnded(NodeId nodeId)
 {
-    m_impl->freeNode(nodeId);
+    m_impl->nodeEnded(nodeId);
 }
 
 void Environment::reply(Methcla_RequestId requestId, const void* packet, size_t size)

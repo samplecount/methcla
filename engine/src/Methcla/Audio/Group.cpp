@@ -29,9 +29,9 @@ Group::~Group()
     freeAll();
 }
 
-ResourceRef<Group> Group::construct(Environment& env, NodeId nodeId)
+Group* Group::construct(Environment& env, NodeId nodeId)
 {
-    return ResourceRef<Group>(new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId));
+    return new (env.rtMem().alloc(sizeof(Group))) Group(env, nodeId);
 }
 
 void Group::doProcess(size_t numFrames)
@@ -39,7 +39,7 @@ void Group::doProcess(size_t numFrames)
     Node* node = m_first;
     while (node != nullptr)
     {
-        // Store pointer to next node because current node might be destroyed after process.
+        // Store pointer to next node because current node might be destroyed by done action after process.
         Node* nextNode = node->m_next;
         node->process(numFrames);
         node = nextNode;
@@ -166,9 +166,12 @@ bool Group::isEmpty() const
 
 void Group::freeAll()
 {
-    while (!isEmpty())
+    Node* node = m_first;
+    while (node != nullptr)
     {
-        Node* node = m_first;
-        env().freeNode(node->id());
+        // Store pointer to next node because current node might be destroyed by done action after process.
+        Node* nextNode = node->m_next;
+        node->free();
+        node = nextNode;
     }
 }

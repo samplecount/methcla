@@ -106,7 +106,7 @@ namespace Methcla { namespace Audio
         operator const Methcla_World* () const;
 
         //* Return the root group node.
-        ResourceRef<Group> rootNode();
+        Group* rootNode();
 
         double sampleRate() const { return m_sampleRate; }
         size_t blockSize() const { return m_blockSize; }
@@ -176,11 +176,6 @@ namespace Methcla { namespace Audio
         // Context: NRT
         void logLineNRT(Methcla_LogLevel level, const char* message);
 
-        //* Free a node.
-        //
-        // Context: RT
-        void freeNode(NodeId nodeId);
-
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size);
         //* Context: NRT
@@ -192,6 +187,14 @@ namespace Methcla { namespace Audio
         void notify(const void* packet, size_t size);
         //* Context: NRT
         void notify(const OSCPP::Client::Packet& packet);
+
+    private:
+        friend class Node;
+
+        //* A node has ended.
+        //
+        // Context: RT
+        void nodeEnded(NodeId nodeId);
 
     private:
         EnvironmentImpl*    m_impl;

@@ -70,7 +70,7 @@ Synth::~Synth()
     m_synthDef.destroy(env(), m_synth);
 }
 
-ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
+Synth* Synth::construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
     // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
     assert( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t)) );
@@ -129,27 +129,23 @@ ResourceRef<Synth> Synth::construct(Environment& env, NodeId nodeId, const Synth
     char* mem = env.rtMem().allocOf<char>(allocSize);
 
     // Instantiate synth
-    auto synth = ResourceRef<Synth>(
-        new (mem) Synth( env
-                       , nodeId
-                       , synthDef
-                       , numControlInputs
-                       , numControlOutputs
-                       , numAudioInputs
-                       , numAudioOutputs
-                       , reinterpret_cast<Methcla_Synth*>(mem + sizeof(Synth))
-                       , reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset)
-                       , reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset)
-                       , reinterpret_cast<sample_t*>(mem + controlBufferOffset)
-                       , reinterpret_cast<sample_t*>(mem + audioBufferOffset)
-                       )
-    );
+    Synth* synth =
+        new (mem) Synth(
+            env,
+            nodeId,
+            synthDef,
+            numControlInputs,
+            numControlOutputs,
+            numAudioInputs,
+            numAudioOutputs,
+            reinterpret_cast<Methcla_Synth*>(mem + sizeof(Synth)),
+            reinterpret_cast<AudioInputConnection*>(mem + audioInputOffset),
+            reinterpret_cast<AudioOutputConnection*>(mem + audioOutputOffset),
+            reinterpret_cast<sample_t*>(mem + controlBufferOffset),
+            reinterpret_cast<sample_t*>(mem + audioBufferOffset)
+        );
 
     // Construct synth
-    // NOTE: It's important that a reference (ResourceRef) to the Synth object
-    //       exists before the plugin's construct method is called. The plugin might
-    //       call methcla_world_resource_release and we might be left with a
-    //       dangling pointer.
     synth->construct(synthOptions);
 
     // Connect ports

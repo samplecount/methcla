@@ -15,9 +15,6 @@
 #ifndef METHCLA_AUDIO_NODE_HPP_INCLUDED
 #define METHCLA_AUDIO_NODE_HPP_INCLUDED
 
-#include "Methcla/Audio/Resource.hpp"
-#include "Methcla/Memory/Manager.hpp"
-
 #include <methcla/types.h>
 
 #include <boost/serialization/strong_typedef.hpp>
@@ -25,17 +22,25 @@
 
 namespace Methcla { namespace Audio {
 
-    BOOST_STRONG_TYPEDEF(uint32_t, NodeId);
+    BOOST_STRONG_TYPEDEF(int32_t, NodeId);
     // const NodeId InvalidNodeId = -1;
 
     class Environment;
     class Group;
 
-    class Node : public Resource<NodeId>
+    class Node
     {
     public:
         Node(const Node&) = delete;
+        Node(Node&&) = delete;
         Node& operator=(const Node&) = delete;
+
+        //* Access environment.
+        const Environment& env() const { return m_env; }
+        Environment& env() { return m_env; }
+
+        //* Return unique id.
+        NodeId id() const { return m_id; }
 
         //* Return true if this node is a group.
         virtual bool isGroup() const { return false; }
@@ -55,9 +60,6 @@ namespace Methcla { namespace Audio {
         // Process a number of frames.
         void process(size_t numFrames);
 
-        // Remove node from parent.
-        void unlink();
-
         Methcla_NodeDoneFlags doneFlags() const
         {
             return m_doneFlags;
@@ -70,24 +72,27 @@ namespace Methcla { namespace Audio {
 
         void setDone();
 
+        //* Free a node.
+        void free();
+
     protected:
         Node(Environment& env, NodeId nodeId);
-        ~Node();
-
-        //* Free a node.
-        virtual void free() override;
+        virtual ~Node();
 
         virtual void doProcess(size_t numFrames);
 
     protected:
         friend class Group;
 
-        Group*  m_parent;
-        Node*   m_prev;
-        Node*   m_next;
+        Environment&            m_env;
+        NodeId                  m_id;
 
-        Methcla_NodeDoneFlags m_doneFlags;
-        bool                  m_done;
+        Group*                  m_parent;
+        Node*                   m_prev;
+        Node*                   m_next;
+
+        Methcla_NodeDoneFlags   m_doneFlags;
+        bool                    m_done;
     };
 } }
 

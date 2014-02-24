@@ -34,6 +34,7 @@ METHCLA_WITHOUT_WARNINGS_END
 #include <cassert>
 #include <functional>
 #include <memory>
+#include <vector>
 
 // OSC request with reference counting.
 namespace Methcla { namespace Audio {
@@ -255,16 +256,16 @@ public:
     std::vector<Memory::shared_ptr<ExternalAudioBus>>   m_externalAudioOutputs;
     std::vector<Memory::shared_ptr<AudioBus>>           m_internalAudioBuses;
 
-    Epoch                                           m_epoch;
-    Methcla_Time                                    m_currentTime;
+    Epoch                                               m_epoch;
+    Methcla_Time                                        m_currentTime;
 
-    ResourceMap<NodeId,Node>                        m_nodes;
-    ResourceRef<Group>                              m_rootNode;
+    std::vector<Node*>                                  m_nodes;
+    Group*                                              m_rootNode;
 
-    SynthDefMap                                     m_synthDefs;
-    std::list<const Methcla_SoundFileAPI*>          m_soundFileAPIs;
+    SynthDefMap                                         m_synthDefs;
+    std::list<const Methcla_SoundFileAPI*>              m_soundFileAPIs;
 
-    std::atomic<int>                                m_logFlags;
+    std::atomic<int>                                    m_logFlags;
 
     EnvironmentImpl(Environment* owner, LogHandler logHandler, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
     ~EnvironmentImpl();
@@ -272,7 +273,7 @@ public:
     // Initialization that has to take place after constructor returns
     void init(const Environment::Options& options);
 
-    ResourceRef<Group> rootNode()
+    Group* rootNode()
     {
         return m_rootNode;
     }
@@ -330,36 +331,51 @@ public:
         sendFromWorker(perform_perform<T>, command);
     }
 
-    //* Context: RT
-    void freeNode(NodeId nodeId)
+    class Notification
     {
-        class CommandNotifyNodeEnded
+    public:
+        void perform(Environment* env)
         {
-            NodeId m_nodeId;
+            notify(env);
+            env->sendFromWorker(perform_rt_free, this);
+        }
 
-        public:
-            CommandNotifyNodeEnded(NodeId nodeId)
-                : m_nodeId(nodeId)
-            {}
+    private:
+        virtual void notify(Environment* env) = 0;
+    };
 
-            void perform(Environment* env)
-            {
-                static const char* address = "/node/ended";
-                OSCPP::Client::DynamicPacket packet(
-                    OSCPP::Size::message(address, 1)
-                  + OSCPP::Size::int32(1)
-                );
-                packet.openMessage(address, 1);
-                packet.int32(m_nodeId);
-                packet.closeMessage();
-                env->notify(packet);
-                env->sendFromWorker(perform_rt_free, this);
-            }
-        };
+    class NodeEndedNotification : public Notification
+    {
+        NodeId m_nodeId;
 
-        m_nodes.lookup(nodeId)->unlink();
-        m_nodes.remove(nodeId);
-        sendToWorker<CommandNotifyNodeEnded>(nodeId);
+    public:
+        NodeEndedNotification(NodeId nodeId)
+            : m_nodeId(nodeId)
+        {}
+
+    private:
+        void notify(Environment* env) override
+        {
+            static const char* address = "/node/ended";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 1)
+              + OSCPP::Size::int32(1)
+            );
+            packet.openMessage(address, 1);
+            packet.int32(m_nodeId);
+            packet.closeMessage();
+            env->notify(packet);
+        }
+    };
+
+    //* Context: RT
+    void nodeEnded(NodeId nodeId)
+    {
+        if (nodeId >= 0 && (size_t)nodeId < m_nodes.size())
+        {
+            m_nodes[nodeId] = nullptr;
+            sendToWorker<NodeEndedNotification>(nodeId);
+        }
     }
 
     //* Context: NRT
