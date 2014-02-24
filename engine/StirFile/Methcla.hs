@@ -734,7 +734,6 @@ mkRules variant options = do
             let env = mkEnv' target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
-                           >>> append systemIncludes [externalLibrary "catch/single_include"]
                            >>> stdlib_libcpp toolChain
                            >>> Host.onlyOn [Host.Linux] libpthread
                            >>> libm
@@ -749,7 +748,8 @@ mkRules variant options = do
                                     "src/Methcla/Audio/IO/DummyDriver.cpp"
                                   , "tests/methcla_tests.cpp"
                                   , "tests/methcla_engine_tests.cpp"
-                                  , "tests/test_runner_console.cpp" ]
+                                  , "tests/test_runner_console.cpp"
+                                  , externalLibrary "gtest/gtest-all.cc" ]
                               , testSources variant localSourceDir target ]
                 phony "test" $ do
                     need [result]

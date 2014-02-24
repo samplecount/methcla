@@ -14,12 +14,10 @@
 
 #include "Methcla/Utility/Macros.h"
 
-METHCLA_WITHOUT_WARNINGS_BEGIN
-# define CATCH_CONFIG_RUNNER
-# include <catch.hpp>
-METHCLA_WITHOUT_WARNINGS_END
+#include "gtest/gtest.h"
 
-int main(int argc, char* const argv[])
+int main(int argc, char** argv)
 {
-    return Catch::Session().run(argc, argv);
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

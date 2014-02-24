@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Methcla/Utility/Macros.h"
 #include "methcla_tests.hpp"
-
-METHCLA_WITHOUT_WARNINGS_BEGIN
-# include <catch.hpp>
-METHCLA_WITHOUT_WARNINGS_END
 
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
+#include "gtest/gtest.h"
+
 #include <atomic>
+#include <iostream>
 #include <mutex>
 #include <thread>
 
@@ -55,7 +53,7 @@ namespace test_Methcla_Utility_Worker
 
 namespace Methcla { namespace Test {
 
-// Accesses to Catch log need to be synchronized.
+// Synchronize logging
 class Log
 {
 public:
@@ -65,7 +63,7 @@ public:
 
     template <typename T> Log& operator<<(const T& x)
     {
-        INFO(x);
+        // std::cout << x << std::endl;
         return *this;
     }
 
@@ -77,7 +75,7 @@ private:
 std::mutex Log::s_mutex;
 } }
 
-TEST_CASE("Methcla/Utility/Semaphore/constructor", "Test constructor.")
+TEST(Methcla_Utility_Semaphore, Constructor)
 {
     for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
         Methcla::Utility::Semaphore sem(n);
@@ -88,11 +86,11 @@ TEST_CASE("Methcla/Utility/Semaphore/constructor", "Test constructor.")
             count++;
         }
 
-        REQUIRE(count == n);
+        EXPECT_EQ(count, n);
     }
 }
 
-TEST_CASE("Methcla/Utility/Semaphore/post", "Test post/wait.")
+TEST(Methcla_Utility_Semaphore, Post_wait)
 {
     for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
         Methcla::Utility::Semaphore sem;
@@ -107,12 +105,12 @@ TEST_CASE("Methcla/Utility/Semaphore/post", "Test post/wait.")
         for (size_t i=0; i < n; i++) {
             sem.wait();
         }
-        REQUIRE(count.load() == n);
+        EXPECT_EQ(count.load(), n);
         thread.join();
     }
 }
 
-TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
+TEST(Methcla_Utility_Worker, Queue_overflow_should_throw)
 {
     using test_Methcla_Utility_Worker::Command;
 
@@ -124,7 +122,7 @@ TEST_CASE("Methcla/Utility/Worker", "Check for queue overflow.")
         worker.sendToWorker(Command());
     }
 
-    REQUIRE_THROWS(worker.sendToWorker(Command()));
+    ASSERT_ANY_THROW(worker.sendToWorker(Command()));
 }
 
 namespace test_Methcla_Utility_WorkerThread
@@ -144,7 +142,7 @@ namespace test_Methcla_Utility_WorkerThread
     };
 };
 
-TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a worker thread are executed.")
+TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
 {
     using test_Methcla_Utility_WorkerThread::Command;
 
@@ -171,6 +169,6 @@ TEST_CASE("Methcla/Utility/WorkerThread", "Check that all commands pushed to a w
             Methcla::Test::Log() << "WAIT " << i << " " << count.load();
         }
 
-        REQUIRE(count.load() == worker.maxCapacity());
+        EXPECT_EQ(count.load(), worker.maxCapacity());
     }
 }

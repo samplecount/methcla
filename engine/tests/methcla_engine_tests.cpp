@@ -12,31 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "methcla_tests.hpp"
+
 #include <methcla/engine.h>
 #include <methcla/engine.hpp>
 #include <methcla/plugins/node-control.h>
 #include <methcla/plugins/sine.h>
 
-#include "Methcla/Utility/Macros.h"
-#include "methcla_tests.hpp"
+#include "gtest/gtest.h"
 
 using namespace Methcla::Tests;
 
-METHCLA_WITHOUT_WARNINGS_BEGIN
-#include <catch.hpp>
-METHCLA_WITHOUT_WARNINGS_END
-
-TEST_CASE("methcla/engine/creation", "Test engine creation and tear down.")
+TEST(Methcla_Engine, Creation_and_destruction)
 {
     std::unique_ptr<Methcla::Engine> engine;
-    REQUIRE_NOTHROW(
+    ASSERT_NO_THROW(
         engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine())
     );
-    REQUIRE_NOTHROW(engine->start());
-    REQUIRE_NOTHROW(engine->stop());
+    ASSERT_NO_THROW(engine->start());
+    ASSERT_NO_THROW(engine->stop());
 }
 
-TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn't crash the engine.")
+TEST(Methcla_Engine, Freeing_invalid_node_id_should_not_crash)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine()
@@ -45,11 +42,9 @@ TEST_CASE("methcla/engine/node/free_crash", "Freeing an invalid node id shouldn'
     engine->start();
     engine->free(-1);
     sleepFor(0.25);
-
-    REQUIRE(true);
 }
 
-TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
+TEST(Methcla_Request, Should_not_be_able_to_add_message_to_closed_request_bundle)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine()
@@ -57,10 +52,10 @@ TEST_CASE("Shouldn't be able to add message to closed request bundle", "[api]")
     Methcla::Request request(*engine);
     request.openBundle(0.);
     request.closeBundle();
-    REQUIRE_THROWS( request.group(engine->root()) );
+    ASSERT_ANY_THROW( request.group(engine->root()) );
 }
 
-TEST_CASE("Node tree should only contain root node after startup", "[engine]")
+TEST(Methcla_Engine, Node_tree_should_contain_only_root_node_after_startup)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine(Methcla::EngineOptions().addLibrary(methcla_plugins_sine))
@@ -72,11 +67,11 @@ TEST_CASE("Node tree should only contain root node after startup", "[engine]")
     // request.closeBundle();
     // REQUIRE_THROWS( request.group(engine->root()) );
     const Methcla::NodeTreeStatistics stats = engine->getNodeTreeStatistics();
-    REQUIRE( stats.numGroups == 1 );
-    REQUIRE( stats.numSynths == 0 );
+    EXPECT_EQ( stats.numGroups, 1ul );
+    EXPECT_EQ( stats.numSynths, 0ul );
 }
 
-TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
+TEST(Methcla_Engine, kMethcla_NodeDoneFlags_should_free_the_specified_nodes)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine(
@@ -100,9 +95,9 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
         request.send();
     }
 
-    REQUIRE( engine->getNodeTreeStatistics().numSynths == 1 );
+    EXPECT_EQ( engine->getNodeTreeStatistics().numSynths, 1ul );
     sleepFor(0.1);
-    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
+    ASSERT_EQ( engine->getNodeTreeStatistics().numSynths, 0ul );
 
     // kNodeDoneFreePreceeding
     {
@@ -117,9 +112,9 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
         request.send();
     }
 
-    REQUIRE( engine->getNodeTreeStatistics().numSynths == 2 );
+    EXPECT_EQ( engine->getNodeTreeStatistics().numSynths, 2ul );
     sleepFor(0.15);
-    CHECK( engine->getNodeTreeStatistics().numSynths == 1 );
+    ASSERT_EQ( engine->getNodeTreeStatistics().numSynths, 1ul );
 
     // kNodeDoneFreePreceeding|kNodeDoneFreeFollowing
     {
@@ -135,9 +130,9 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
         request.send();
     }
 
-    REQUIRE( engine->getNodeTreeStatistics().numSynths == 3 );
+    EXPECT_EQ( engine->getNodeTreeStatistics().numSynths, 3ul );
     sleepFor(0.15);
-    CHECK( engine->getNodeTreeStatistics().numSynths == 1 );
+    ASSERT_EQ( engine->getNodeTreeStatistics().numSynths, 1ul );
 
     // kNodeDoneFreePreceeding|kNodeDoneFreeSelf|kNodeDoneFreeFollowing
     {
@@ -153,12 +148,12 @@ TEST_CASE("kMethcla_NodeDoneFlags should free the specified nodes", "[engine]")
         request.send();
     }
 
-    REQUIRE( engine->getNodeTreeStatistics().numSynths == 3 );
+    EXPECT_EQ( engine->getNodeTreeStatistics().numSynths, 3ul );
     sleepFor(0.15);
-    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
+    ASSERT_EQ( engine->getNodeTreeStatistics().numSynths, 0ul );
 }
 
-TEST_CASE("/node/ended notification", "[engine]")
+TEST(Methcla_Engine, Node_ended_notification)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
         new Methcla::Engine(
@@ -184,8 +179,8 @@ TEST_CASE("/node/ended notification", "[engine]")
         request.send();
     }
 
-    REQUIRE( engine->getNodeTreeStatistics().numSynths == 1 );
+    EXPECT_EQ( engine->getNodeTreeStatistics().numSynths, 1ul );
     sleepFor(0.1);
-    CHECK( engine->getNodeTreeStatistics().numSynths == 0 );
-    CHECK( engine->nodeIdAllocator().getStatistics().allocated() == 0 );
+    ASSERT_EQ( engine->getNodeTreeStatistics().numSynths, 0ul );
+    ASSERT_EQ( engine->nodeIdAllocator().getStatistics().allocated(), 0ul );
 }
