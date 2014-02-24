@@ -172,3 +172,21 @@ TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
         EXPECT_EQ(count.load(), worker.maxCapacity());
     }
 }
+
+#include "Methcla/Memory/Manager.hpp"
+
+TEST(Methcla_Memory_Manager, Alloc_free_should_be_noop)
+{
+    const size_t memSize = 8192;
+    const size_t allocSize = 33;
+    auto mem = new Methcla::Memory::RTMemoryManager(memSize);
+    for (size_t i=0; i < memSize/allocSize; i++)
+    {
+        void* ptr = mem->alloc(allocSize);
+        ASSERT_TRUE( ptr != nullptr );
+        mem->free(ptr);
+    }
+    Methcla::Memory::RTMemoryManager::Statistics stats(mem->statistics());
+    ASSERT_EQ(stats.freeNumBytes, memSize);
+    ASSERT_EQ(stats.usedNumBytes, 0u);
+}
