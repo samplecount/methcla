@@ -238,13 +238,23 @@ public:
 
     ~WorkerThread()
     {
-        m_continue.store(false, std::memory_order_relaxed);
-        // Signal *all* threads
-        for (size_t i=0; i < m_threads.size(); i++) {
-            m_sem.post();
+        stop();
+    }
+
+    void stop() override
+    {
+        if (m_continue.load(std::memory_order_relaxed))
+        {
+            m_continue.store(false, std::memory_order_relaxed);
+            // Signal *all* threads
+            for (size_t i=0; i < m_threads.size(); i++) {
+                m_sem.post();
+            }
+            // Wait for threads to exit
+            for (auto& t : m_threads) { t.join(); }
+            // Clear array of threads
+            m_threads.clear();
         }
-        // Wait for threads to exit
-        for (auto& t : m_threads) { t.join(); }
     }
 
 private:

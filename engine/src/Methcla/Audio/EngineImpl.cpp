@@ -249,6 +249,10 @@ EnvironmentImpl::EnvironmentImpl(
 EnvironmentImpl::~EnvironmentImpl()
 {
     m_rootNode->free();
+    // Stop worker thread(s). Note that relying on the destructor here doesn't
+    // cut it, because asynchronous commands in the worker thread queue might
+    // reference a partially destroyed Environment.
+    m_worker->stop();
 }
 
 void EnvironmentImpl::init(const Environment::Options& options)

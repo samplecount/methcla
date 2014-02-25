@@ -20,8 +20,12 @@ namespace Methcla { namespace Utility {
     {
     public:
         virtual ~WorkerInterface() { }
+
+        virtual void stop() { };
+
         virtual void sendToWorker(const Command& cmd) = 0;
         virtual void sendFromWorker(const Command& cmd) = 0;
+
         virtual void perform() = 0;
     };
 } }
