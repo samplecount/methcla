@@ -15,6 +15,7 @@
 #ifndef METHCLA_FILE_HPP_INCLUDED
 #define METHCLA_FILE_HPP_INCLUDED
 
+#include <methcla/common.h>
 #include <methcla/detail.hpp>
 #include <methcla/engine.hpp>
 #include <methcla/file.h>
