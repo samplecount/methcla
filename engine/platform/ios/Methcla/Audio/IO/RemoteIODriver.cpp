@@ -288,6 +288,11 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
     }
 #endif // !TARGET_IPHONE_SIMULATOR
 
+    // Buffer size might be up to 4096 when lock screen activates [1].
+    //
+    // [1] https://developer.apple.com/library/ios/documentation/AudioUnit/Reference/AudioUnitPropertiesReference/Reference/reference.html#//apple_ref/c/econst/kAudioUnitProperty_MaximumFramesPerSlice
+
+    if (m_numInputs > 0)
     {
         // Retrieve actual buffer size.
         UInt32 maxFPS;
@@ -301,6 +306,10 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
               , &outSize)
           , "couldn't get AudioUnit buffer size");
         m_bufferSize = maxFPS;
+    }
+    else
+    {
+        m_bufferSize = 4096;
     }
 
     // Set input format
