@@ -76,16 +76,6 @@ namespace Methcla { namespace Plugin {
             return LogStream(std::bind(m_context->log_line, m_context, _1, _2), logLevel);
         }
 
-        void synthRetain(Synth* synth) const
-        {
-            methcla_world_synth_retain(m_context, synth);
-        }
-
-        void synthRelease(Synth* synth) const
-        {
-            methcla_world_synth_release(m_context, synth);
-        }
-
         void synthDone(Synth* synth) const
         {
             methcla_world_synth_done(m_context, synth);
