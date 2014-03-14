@@ -172,7 +172,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cp -LR ../../include \"${BUILT_PRODUCTS_DIR}/\"";
+			shellScript = "rsync -Lr ../../include/ \"${BUILT_PRODUCTS_DIR}/\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
