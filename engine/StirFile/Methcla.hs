@@ -380,10 +380,11 @@ mkEnv buildDir target config =
       -- (mkBuildPrefix config (platformString $ get targetPlatform target))
       defaultEnv
 
-libmethclaPNaCl :: Variant -> FilePath -> FilePath -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
-libmethclaPNaCl variant sourceDir buildDir config = do
-  sdk <- Env.getEnv "NACL_SDK"
-  libsndfile <- pkgConfigWithOptions (PkgConfig.Options { PkgConfig.static = True }) "sndfile"
+libmethclaPNaCl :: Variant -> FilePath -> FilePath -> FilePath -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
+libmethclaPNaCl variant sdk sourceDir buildDir config = do
+  libsndfile <- pkgConfigWithOptions
+                  (PkgConfig.defaultOptions { PkgConfig.static = True })
+                  "sndfile"
   return $ do
     let target = NaCl.target NaCl.canary
         naclConfig = case config of
@@ -540,7 +541,7 @@ mkRules variant options = do
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
         freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
-        mkLibMethcla <- libmethclaPNaCl variant localSourceDir buildDir config
+        mkLibMethcla <- libmethclaPNaCl variant sdk localSourceDir buildDir config
         return $ do
           let target = NaCl.target NaCl.canary
               naclConfig = case config of
