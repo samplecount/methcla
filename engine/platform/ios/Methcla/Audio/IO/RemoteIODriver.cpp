@@ -538,7 +538,7 @@ Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
     return new RemoteIODriver(options, true);
 }
 
-METHCLA_EXPORT Methcla_AudioDriver* methcla_remoteio_driver_new(
+METHCLA_EXPORT Methcla_AudioDriver* methcla_platform_ios_remoteio_driver_new(
     const Methcla_AudioDriverOptions* options
     )
 {
