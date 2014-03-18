@@ -158,7 +158,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
+			shellPath = "/bin/sh -x";
 			shellScript = "cp \"../../build/${CONFIGURATION}/${PLATFORM_NAME}/libmethcla.a\" \"${BUILT_PRODUCTS_DIR}/\"";
 		};
 		A5C3A926180840BF00AFFF45 /* ShellScript */ = {
@@ -171,8 +171,8 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "rsync -Lr ../../include/ \"${BUILT_PRODUCTS_DIR}/\"";
+			shellPath = "/bin/sh -x";
+			shellScript = "rsync -Lr ../../include \"${BUILT_PRODUCTS_DIR}/\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
