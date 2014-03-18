@@ -468,7 +468,7 @@ namespace Methcla
 
         size_t realtimeMemorySize = 1024*1024;
         size_t maxNumNodes = 1024;
-        size_t maxNumAudioBuses = 1024;
+        size_t maxNumAudioBuses = 128;
         size_t maxNumControlBuses = 4096;
         size_t sampleRate = 44100;
         size_t blockSize = 64;
