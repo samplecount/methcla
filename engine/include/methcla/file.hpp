@@ -51,9 +51,9 @@ namespace Methcla
             return channels * frames;
         }
 
-        template <typename T> T duration() const
+        double duration() const
         {
-            return (T)frames/(T)samplerate;
+            return (double)frames/(double)samplerate;
         }
     };
 
