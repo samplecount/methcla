@@ -179,6 +179,7 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
           , &hwBufferDuration)
       , "couldn't get hardware I/O buffer duration");
 
+#if 0
     // Check whether input is available
     UInt32 inputAvailable;
     outSize = sizeof(inputAvailable);
@@ -206,7 +207,7 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
 
     // Number of hardware outputs
     UInt32 hwNumOutputs;
-    outSize = sizeof(m_numOutputs);
+    outSize = sizeof(hwNumOutputs);
     METHCLA_THROW_IF_ERROR(
         AudioSessionGetProperty(
             kAudioSessionProperty_CurrentHardwareOutputNumberChannels
@@ -214,6 +215,7 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
           , &hwNumOutputs)
      ,  "couldn't determine number of hardware output channels");
     m_numOutputs = hwNumOutputs;
+#endif
 
     // Float32 preferredBufferSize = .005;
     // METHCLA_THROW_IF_ERROR(
