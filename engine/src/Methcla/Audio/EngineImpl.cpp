@@ -494,11 +494,16 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             int32_t busId = AudioBusId(args.int32());
             Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
 
-            if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioInputs.size())
-                          || ((size_t)busId > m_internalAudioBuses.size()))
+            if ((flags & kMethcla_BusMappingExternal) && (busId < 0 || (size_t)busId >= m_externalAudioOutputs.size()))
             {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
-                    s << "Audio bus id " << busId << " out of range";
+                    s << "External audio bus id " << busId << " out of range";
+                });
+            }
+            else if ((flags & kMethcla_BusMappingInternal) && (busId < 0 || (size_t)busId >= m_internalAudioBuses.size()))
+            {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Internal audio bus id " << busId << " out of range";
                 });
             }
 
@@ -520,11 +525,16 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             int32_t busId = args.int32();
             Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
 
-            if (busId < 0 || ((flags & kMethcla_BusMappingExternal) && (size_t)busId > m_externalAudioOutputs.size())
-                          || ((size_t)busId > m_internalAudioBuses.size()))
+            if ((flags & kMethcla_BusMappingExternal) && (busId < 0 || (size_t)busId >= m_externalAudioOutputs.size()))
             {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
-                    s << "Audio bus id " << busId << " out of range";
+                    s << "External audio bus id " << busId << " out of range";
+                });
+            }
+            else if ((flags & kMethcla_BusMappingInternal) && (busId < 0 || (size_t)busId >= m_internalAudioBuses.size()))
+            {
+                throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
+                    s << "Internal audio bus id " << busId << " out of range";
                 });
             }
 
