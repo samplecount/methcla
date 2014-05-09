@@ -833,6 +833,7 @@ namespace Methcla
             , m_nodeIds(1, inOptions.maxNumNodes - 1)
             , m_audioBusIds(0, inOptions.maxNumAudioBuses)
             , m_requestId(kMethcla_Notification+1)
+            , m_notificationHandlerId(0)
             , m_packets(8192)
         {
             Methcla_EngineOptions& options = inOptions.options();
@@ -924,11 +925,21 @@ namespace Methcla
         }
 
         typedef std::function<bool(const OSCPP::Server::Message&)> NotificationHandler;
+        typedef uint64_t NotificationHandlerId;
 
-        void addNotificationHandler(NotificationHandler handler)
+        NotificationHandlerId addNotificationHandler(NotificationHandler handler)
         {
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
-            m_notificationHandlers.push_back(handler);
+            NotificationHandlerId handlerId = m_notificationHandlerId;
+            m_notificationHandlers[handlerId] = handler;
+            m_notificationHandlerId++;
+            return handlerId;
+        }
+
+        void removeNotificationHandler(NotificationHandlerId handlerId)
+        {
+            std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
+            m_notificationHandlers.erase(handlerId);
         }
 
         NotificationHandler freeNodeIdHandler(NodeId nodeId)
@@ -1028,10 +1039,10 @@ namespace Methcla
 
             // Broadcast notification to handlers
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
-            for (auto it=m_notificationHandlers.begin(); it != m_notificationHandlers.end(); it++)
+            for (auto it=m_notificationHandlers.begin(); it != m_notificationHandlers.end();)
             {
-                if ((*it)(message))
-                    it = m_notificationHandlers.erase(it);
+                if (it->second(message)) it = m_notificationHandlers.erase(it);
+                else it++;
             }
         }
 
@@ -1115,7 +1126,7 @@ namespace Methcla
 
     private:
         typedef std::unordered_map<Methcla_RequestId,ResponseHandler> ResponseHandlers;
-        typedef std::list<NotificationHandler> NotificationHandlers;
+        typedef std::unordered_map<NotificationHandlerId,NotificationHandler> NotificationHandlers;
 
         Methcla_Engine*         m_engine;
         LogHandler              m_logHandler;
@@ -1126,6 +1137,7 @@ namespace Methcla
         ResponseHandlers        m_responseHandlers;
         std::mutex              m_responseHandlersMutex;
         NotificationHandlers    m_notificationHandlers;
+        NotificationHandlerId   m_notificationHandlerId;
         std::mutex              m_notificationHandlersMutex;
         PacketPool              m_packets;
     };
