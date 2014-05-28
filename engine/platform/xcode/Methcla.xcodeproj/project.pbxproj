@@ -253,7 +253,6 @@
 				DSTROOT = /tmp/Methcla.dst;
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../build/$(CONFIGURATION)/$(PLATFORM_NAME)";
 				OTHER_LDFLAGS = "-lmethcla";
-				PRIVATE_HEADERS_FOLDER_PATH = include;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PUBLIC_HEADERS_FOLDER_PATH = include;
 				SKIP_INSTALL = YES;
@@ -266,7 +265,6 @@
 				DSTROOT = /tmp/Methcla.dst;
 				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../build/$(CONFIGURATION)/$(PLATFORM_NAME)";
 				OTHER_LDFLAGS = "-lmethcla";
-				PRIVATE_HEADERS_FOLDER_PATH = include;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PUBLIC_HEADERS_FOLDER_PATH = include;
 				SKIP_INSTALL = YES;
