@@ -435,7 +435,7 @@ mkRules variant options = do
         mkVersionHeader' = mkVersionHeader variant buildDir
         methclaSources' = methclaSources variant localSourceDir buildDir
     [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
-        let iOS_SDK = Version [6,1] []
+        let iOS_SDK = Version [7,1] []
             iosBuildFlags toolChain =
                     OSX.iphoneos_version_min (Version [5,0] [])
                 >>> append userIncludes [ "platform/ios"
