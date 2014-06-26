@@ -35,6 +35,11 @@
 
 #undef BOOST_LOCKFREE_GNUC_VERSION
 
+// Use std::atomic on native client
+#if defined(__native_client__)
+#undef BOOST_LOCKFREE_NO_HDR_ATOMIC
+#endif
+
 #if defined(BOOST_LOCKFREE_NO_HDR_ATOMIC)
 #include <boost/atomic.hpp>
 #else
