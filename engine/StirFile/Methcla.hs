@@ -495,13 +495,15 @@ mkRules variant options = do
             return $ do
                 versionHeader <- mkVersionHeader'
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
-                    let gccVersion = Version [4,8] []
+                    let compiler = (LLVM, Version [3,4] [])
+                        -- compiler = (GCC, Version [4,8] [])
                         abi = Android.abiString (get targetArch target)
-                        toolChain = applyEnv $ Android.toolChain ndk GCC gccVersion target
+                        toolChain = applyEnv $ Android.toolChain ndk (fst compiler) (snd compiler) target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/android"]
-                                   >>> Android.gnustl gccVersion Static ndk target
+                                   >>> Android.libcxx Static ndk target
+                                   -- >>> Android.gnustl (snd compiler) Static ndk target
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
