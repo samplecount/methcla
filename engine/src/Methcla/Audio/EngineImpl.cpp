@@ -494,7 +494,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags logFlags, const OSCP
             int32_t busId = AudioBusId(args.int32());
             Methcla_BusMappingFlags flags = Methcla_BusMappingFlags(args.int32());
 
-            if ((flags & kMethcla_BusMappingExternal) && (busId < 0 || (size_t)busId >= m_externalAudioOutputs.size()))
+            if ((flags & kMethcla_BusMappingExternal) && (busId < 0 || (size_t)busId >= m_externalAudioInputs.size()))
             {
                 throwErrorWith(kMethcla_ArgumentError, [&](std::stringstream& s) {
                     s << "External audio bus id " << busId << " out of range";
