@@ -20,6 +20,7 @@
 #include <memory>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 struct SoundFileHandle
 {

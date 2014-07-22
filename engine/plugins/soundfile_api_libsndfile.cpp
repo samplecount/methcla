@@ -21,6 +21,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
 #include <sndfile.h>
 
 namespace
