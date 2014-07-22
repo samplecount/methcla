@@ -37,9 +37,13 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
     if (size == 0)
         throw std::invalid_argument("size must be greater than zero");
     void* ptr;
-#if defined(__ANDROID__) || defined(__native_client__) || defined(__MINGW32__)
+#if defined(__ANDROID__) || defined(__native_client__)
     // Alignment is always power of to
     ptr = memalign(align, size);
+    if (ptr == nullptr)
+        throw std::bad_alloc();
+#elif defined(__MINGW32__)
+    ptr = _aligned_malloc(size, align);
     if (ptr == nullptr)
         throw std::bad_alloc();
 #else
