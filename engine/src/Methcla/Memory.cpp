@@ -18,8 +18,8 @@
 #include <memory>
 #include <stdexcept>
 
-#if defined(__ANDROID__) || defined(__native_client__)
-#  include <malloc.h>
+#if defined(__ANDROID__) || defined(__native_client__) || defined(__MINGW32__)
+# include <malloc.h>
 #endif
 
 void* Methcla::Memory::alloc(size_t size)
@@ -37,7 +37,8 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
     if (size == 0)
         throw std::invalid_argument("size must be greater than zero");
     void* ptr;
-#if defined(__ANDROID__) || defined(__native_client__)
+#if defined(__ANDROID__) || defined(__native_client__) || defined(__MINGW32__)
+    // Alignment is always power of to
     ptr = memalign(align, size);
     if (ptr == nullptr)
         throw std::bad_alloc();
