@@ -293,7 +293,7 @@ configurations = [
   , ( Debug,
         append compilerFlags [
             (Nothing, ["-O0", "-gdwarf-2"])
-          , (Nothing, ["-fstack-protector", "-Wstack-protector"])
+          -- , (Nothing, ["-fstack-protector", "-Wstack-protector"])
           ]
       . append defines [("DEBUG", Just "1")]
     )
