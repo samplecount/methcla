@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-  #if defined(BUILDING_DLL)
+  #if 1 // defined(BUILDING_DLL)
     #if defined(__GNUC__) || defined(__clang__)
       #define METHCLA_VISIBLE __attribute__ ((dllexport))
     #else
