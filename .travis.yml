@@ -12,4 +12,4 @@ install:
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
   - cd engine && ./stir update --force-reinstalls && ./stir test
-env: CC=clang TOOLCHAIN_VARIANT=clang
+env: CC=clang-3.4 TOOLCHAIN_VARIANT=clang
