@@ -10,4 +10,4 @@
 # cd $cwd
 
 git clone https://github.com/rsmmr/install-clang
-( cd install-clang && ./install-clang -a libcxxabi -j `nproc` /opt/llvm )
+( cd install-clang && sudo ./install-clang -a libcxxabi -j `nproc` /opt/llvm )
