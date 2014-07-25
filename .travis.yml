@@ -11,4 +11,4 @@ install:
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
   - cd engine && ./stir update --force-reinstalls && ./stir test
-env: PATH=/opt/llvm/bin CC=clang TOOLCHAIN_VARIANT=clang
+env: PATH=/opt/llvm/bin:$PATH CC=clang TOOLCHAIN_VARIANT=clang
