@@ -111,7 +111,7 @@ public:
         {
             for (size_t i=0; i < numChannels; i++)
             {
-                Methcla::Memory::free(buffers[i]);
+                Methcla::Memory::freeAligned(buffers[i]);
             }
             Memory::free(buffers);
         }

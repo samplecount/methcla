@@ -76,8 +76,6 @@ public:
     {
         // Allocate memory for packet and data block
         char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
-        if (mem == nullptr)
-            throw std::bad_alloc();
 
         m_refs = reinterpret_cast<RefCount*>(mem);
         *m_refs = 1;

@@ -119,14 +119,17 @@ static const Alignment kSIMDAlignment(16);
 // @throw std::bad_alloc
 void* alloc(size_t size);
 
+//* Free memory allocated by `alloc`.
+void free(void* ptr) noexcept;
+
 //* Allocate aligned memory of `size` bytes.
 //
 // @throw std::invalid_argument
 // @throw std::bad_alloc
 void* allocAligned(Alignment align, size_t size);
 
-//* Free memory allocated by this allocator.
-void free(void* ptr) noexcept;
+//* Free memory allocated by `allocAligned`.
+void freeAligned(void* ptr) noexcept;
 
 //* Allocate memory for `n` elements of type `T`.
 //

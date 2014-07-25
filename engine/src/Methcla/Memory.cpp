@@ -14,6 +14,7 @@
 
 #include "Methcla/Memory.hpp"
 
+#include <cassert>
 #include <cstdlib>
 #include <memory>
 #include <stdexcept>
@@ -26,35 +27,49 @@ void* Methcla::Memory::alloc(size_t size)
 {
     if (size == 0)
         throw std::invalid_argument("size must be greater than zero");
-    void* ptr = std::malloc(size);
-    if (ptr == nullptr)
-        throw std::bad_alloc();
-    return ptr;
-}
 
-void* Methcla::Memory::allocAligned(Alignment align, size_t size)
-{
-    if (size == 0)
-        throw std::invalid_argument("size must be greater than zero");
-    void* ptr;
-#if defined(__ANDROID__) || defined(__native_client__)
-    // Alignment is always power of to
-    ptr = memalign(align, size);
+    void* ptr = std::malloc(size);
+
     if (ptr == nullptr)
         throw std::bad_alloc();
-#elif defined(__MINGW32__)
-    ptr = _aligned_malloc(size, align);
-    if (ptr == nullptr)
-        throw std::bad_alloc();
-#else
-    int err = posix_memalign(&ptr, align, size);
-    if (err != 0)
-        throw std::bad_alloc();
-#endif
+
     return ptr;
 }
 
 void Methcla::Memory::free(void* ptr) noexcept
 {
     std::free(ptr);
+}
+
+void* Methcla::Memory::allocAligned(Alignment align, size_t size)
+{
+    if (size == 0)
+        throw std::invalid_argument("size must be greater than zero");
+
+    void* ptr = nullptr;
+
+#if defined(__ANDROID__) || defined(__native_client__)
+    ptr = memalign(align, size);
+#elif defined(__MINGW32__)
+    ptr = _aligned_malloc(size, align);
+#else
+    int err = posix_memalign(&ptr, align, size);
+    if (err != 0) ptr = nullptr;
+#endif
+
+    if (ptr == nullptr)
+        throw std::bad_alloc();
+
+    assert(align.isAligned(ptr));
+
+    return ptr;
+}
+
+void Methcla::Memory::freeAligned(void* ptr) noexcept
+{
+#if defined(__MINGW32__)
+    _aligned_free(ptr);
+#else
+    Methcla::Memory::free(ptr);
+#endif
 }

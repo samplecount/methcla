@@ -41,5 +41,5 @@ InternalAudioBus::InternalAudioBus(size_t numFrames, Epoch epoch)
 
 InternalAudioBus::~InternalAudioBus()
 {
-    Methcla::Memory::free(data());
+    Methcla::Memory::freeAligned(data());
 }

@@ -64,6 +64,11 @@ static void* methcla_api_host_alloc(const Methcla_Host*, size_t size)
     return nullptr;
 }
 
+static void methcla_api_host_free(const Methcla_Host*, void* ptr)
+{
+    Memory::free(ptr);
+}
+
 static void* methcla_api_host_alloc_aligned(const Methcla_Host*, size_t alignment, size_t size)
 {
     try {
@@ -74,9 +79,9 @@ static void* methcla_api_host_alloc_aligned(const Methcla_Host*, size_t alignmen
     return nullptr;
 }
 
-static void methcla_api_host_free(const Methcla_Host*, void* ptr)
+static void methcla_api_host_free_aligned(const Methcla_Host*, void* ptr)
 {
-    Memory::free(ptr);
+    Memory::freeAligned(ptr);
 }
 
 static Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
@@ -152,6 +157,12 @@ static void* methcla_api_world_alloc(const Methcla_World* world, size_t size)
     return nullptr;
 }
 
+static void methcla_api_world_free(const Methcla_World* world, void* ptr)
+{
+    assert(world && world->handle);
+    return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
+}
+
 static void* methcla_api_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
 {
     assert(world && world->handle);
@@ -163,10 +174,10 @@ static void* methcla_api_world_alloc_aligned(const Methcla_World* world, size_t 
     return nullptr;
 }
 
-static void methcla_api_world_free(const Methcla_World* world, void* ptr)
+static void methcla_api_world_free_aligned(const Methcla_World* world, void* ptr)
 {
     assert(world && world->handle);
-    return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
+    return static_cast<Environment*>(world->handle)->rtMem().freeAligned(ptr);
 }
 
 static void methcla_api_world_log_line(const Methcla_World* world, Methcla_LogLevel level, const char* message)
@@ -203,8 +214,9 @@ Environment::Environment(
         methcla_api_host_register_synthdef,
         methcla_api_host_register_soundfile_api,
         methcla_api_host_alloc,
-        methcla_api_host_alloc_aligned,
         methcla_api_host_free,
+        methcla_api_host_alloc_aligned,
+        methcla_api_host_free_aligned,
         methcla_api_host_soundfile_open,
         methcla_api_host_perform_command,
         methcla_api_host_notify,
@@ -218,8 +230,9 @@ Environment::Environment(
         methcla_api_world_block_size,
         methcla_api_world_current_time,
         methcla_api_world_alloc,
-        methcla_api_world_alloc_aligned,
         methcla_api_world_free,
+        methcla_api_world_alloc_aligned,
+        methcla_api_world_free_aligned,
         methcla_api_world_perform_command,
         methcla_api_world_log_line,
         methcla_api_world_synth_done

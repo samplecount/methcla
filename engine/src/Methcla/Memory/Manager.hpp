@@ -35,14 +35,17 @@ public:
     // @throw std::bad_alloc
     virtual void* alloc(size_t size) = 0;
 
+    //* Free memory allocated by `alloc`.
+    virtual void free(void* ptr) noexcept = 0;
+
     //* Allocate aligned memory of `size` bytes.
     //
     // @throw std::invalid_argument
     // @throw std::bad_alloc
     virtual void* allocAligned(Alignment align, size_t size) = 0;
 
-    //* Free memory allocated by this allocator.
-    virtual void free(void* ptr) noexcept = 0;
+    //* Free memory allocated by `allocAligned`.
+    virtual void freeAligned(void* ptr) noexcept = 0;
 
     //* Allocate memory for `n` elements of type `T`.
     //
@@ -85,20 +88,10 @@ public:
     RTMemoryManager(size_t size);
     ~RTMemoryManager();
 
-    //* Allocate memory of `size` bytes.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
     void* alloc(size_t size) override;
-
-    //* Allocate aligned memory of `size` bytes.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
-    void* allocAligned(Alignment align, size_t size) override;
-
-    //* Free memory allocated by this allocator.
     void free(void* ptr) noexcept override;
+    void* allocAligned(Alignment align, size_t size) override;
+    void freeAligned(void* ptr) noexcept override;
 
     struct Statistics
     {

@@ -64,6 +64,16 @@ void* RTMemoryManager::alloc(size_t size)
 #endif
 }
 
+void RTMemoryManager::free(void* ptr) noexcept
+{
+#if METHCLA_NO_RT_MEMORY
+    Methcla::Memory::free(ptr);
+#else
+    if (ptr != nullptr)
+        tlsf_free(m_pool, ptr);
+#endif
+}
+
 void* RTMemoryManager::allocAligned(Alignment align, size_t size)
 {
 #if METHCLA_NO_RT_MEMORY
@@ -78,10 +88,10 @@ void* RTMemoryManager::allocAligned(Alignment align, size_t size)
 #endif
 }
 
-void RTMemoryManager::free(void* ptr) noexcept
+void RTMemoryManager::freeAligned(void* ptr) noexcept
 {
 #if METHCLA_NO_RT_MEMORY
-    Methcla::Memory::free(ptr);
+    Methcla::Memory::freeAligned(ptr);
 #else
     if (ptr != nullptr)
         tlsf_free(m_pool, ptr);
