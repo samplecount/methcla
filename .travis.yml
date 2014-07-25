@@ -8,6 +8,7 @@ before_install:
 install:
   # - cabal install hsc2hs cabal-dev
   # - cd engine && cabal install --only-dependencies --enable-tests
+  - sh ./engine/tools/travis-ci-install.sh
   - cabal install split
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
