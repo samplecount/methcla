@@ -192,7 +192,7 @@ public:
 
     size_t maxCapacity() const
     {
-        return m_queueSize - 1;
+        return m_queueSize;
     }
 
     void sendToWorker(const Command& cmd) override
