@@ -147,7 +147,7 @@ static inline ZixStatus
 zix_sem_init(ZixSem* sem, unsigned initial)
 {
 	sem->sem = CreateSemaphore(NULL, initial, LONG_MAX, NULL);
-	return (sem->sem) ? ZIX_STATUS_ERROR : ZIX_STATUS_SUCCESS;
+	return (sem->sem == NULL) ? ZIX_STATUS_ERROR : ZIX_STATUS_SUCCESS;
 }
 
 static inline void
