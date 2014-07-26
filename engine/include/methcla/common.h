@@ -32,19 +32,23 @@ extern "C" {
 
 #if defined _WIN32 || defined __CYGWIN__
 #    if defined(BUILDING_DLL)
-#        define METHCLA_VISIBLE __declspec(dllexport)
+#        define METHCLA_VISIBILITY __declspec(dllexport)
 #    else
-#        define METHCLA_VISIBLE __declspec(dllimport)
+#        if __GNUC__
+#            define METHCLA_VISIBILITY
+#        else
+#            define METHCLA_VISIBILITY __declspec(dllimport)
+#        endif
 #    endif
 #else
 #    if (__GNUC__ >= 4) || (defined(__clang__) && (__clang_major__ >= 4))
-#        define METHCLA_VISIBLE __attribute__ ((visibility ("default")))
+#        define METHCLA_VISIBILITY __attribute__ ((visibility ("default")))
 #    else
-#        define METHCLA_VISIBLE
+#        define METHCLA_VISIBILITY
 #    endif
 #endif
 
-#define METHCLA_EXPORT METHCLA_C_LINKAGE METHCLA_VISIBLE
+#define METHCLA_EXPORT METHCLA_C_LINKAGE METHCLA_VISIBILITY
 
 //* Time in seconds.
 typedef double Methcla_Time;
