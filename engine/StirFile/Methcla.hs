@@ -701,6 +701,7 @@ mkRules variant options = do
             let env = mkEnv' target
                 buildFlags =   applyConfiguration config configurations
                            >>> commonBuildFlags
+                           >>> append defines [("BUILDING_DLL", Nothing)]
                            >>> libsndfile
                            >>> libmpg123
                            >>> stdlib_libcpp toolChain
@@ -717,19 +718,15 @@ mkRules variant options = do
             return $ do
                 versionHeader <- mkVersionHeader'
 
-                staticLib <- build versionHeader staticLibrary
+                -- staticLib <- build versionHeader staticLibrary
                 sharedLib <- build versionHeader sharedLibrary
 
-                -- Quick hack for setting install path of shared library
-                let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
-                phony installedSharedLib $
+                phony "desktop" $ do
+                  need [sharedLib]
                   if isDarwin target
-                  then do
-                    need [sharedLib]
-                    system' "install_name_tool" ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
-                  else return ()
-
-                phony "desktop" $ need [staticLib, installedSharedLib]
+	              -- Quick hack for setting install path of shared library
+		      then system' "install_name_tool" ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
+		      else return ()
         )
       , (["test", "clean-test"], do -- tests
             applyEnv <- toolChainFromEnvironment
