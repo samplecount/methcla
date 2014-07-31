@@ -285,15 +285,15 @@ configurations :: [Configuration Config BuildFlags]
 configurations = [
     ( Release,
         append compilerFlags [
-          (Nothing, ["-Os", "-gdwarf-2"])
+          (Nothing, ["-Os", "-g"])
         , (Nothing, ["-fvisibility=hidden"])
         ]
       . append defines [("NDEBUG", Nothing)]
     )
   , ( Debug,
         append compilerFlags [
-            (Nothing, ["-O0", "-gdwarf-2"])
-          -- , (Nothing, ["-fstack-protector", "-Wstack-protector"])
+            (Nothing, ["-O0", "-g"])
+          , (Nothing, ["-fstack-protector", "-Wstack-protector"])
           ]
       . append defines [("DEBUG", Just "1")]
     )
