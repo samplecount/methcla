@@ -35,8 +35,8 @@
 
 #undef BOOST_LOCKFREE_GNUC_VERSION
 
-// Use std::atomic on native client
-#if defined(__native_client__) || defined(__ANDROID__)
+// Use std::atomic on Android and PNaCl
+#if defined(__pnacl__) || defined(__ANDROID__)
 #undef BOOST_LOCKFREE_NO_HDR_ATOMIC
 #endif
 
