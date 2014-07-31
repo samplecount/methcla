@@ -409,12 +409,15 @@ libmethclaPNaCl variant sdk sourceDir buildDir config = do
                     $ SourceTree.files $ under sourceDir [
                         "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
                       , "plugins/soundfile_api_libsndfile.cpp"
-                      , "plugins/soundfile_api_mpg123.cpp" ]
+                      -- , "plugins/soundfile_api_mpg123.cpp"
+                      ]
     return (libmethcla,     local_libmethcla sourceDir libmethcla
                         -- FIXME: How to select only linker flags?
                         -- Maybe pkgConfig could return linker and other flags separately?
+                        -- TODO: Apply libsndfile to empty BuildFlags and append resulting libraries and linker flags here.
                         >>> libsndfile
-                        >>> append libraries ["mpg123"])
+                        -- >>> append libraries ["mpg123"]
+                        )
 
 localSourceDir :: FilePath
 localSourceDir = "."
