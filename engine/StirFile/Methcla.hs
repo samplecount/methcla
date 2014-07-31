@@ -501,12 +501,12 @@ mkRules variant options = do
                     let compiler = (LLVM, Version [3,4] [])
                         -- compiler = (GCC, Version [4,8] [])
                         abi = Android.abiString (get targetArch target)
-                        toolChain = applyEnv $ Android.toolChain ndk (fst compiler) (snd compiler) target
+                        toolChain = applyEnv $ Android.toolChain ndk compiler target
                         buildFlags =   applyConfiguration config configurations
                                    >>> commonBuildFlags
                                    >>> append userIncludes ["platform/android"]
+                                   -- >>> Android.gnustl gccVersion Static ndk target
                                    >>> Android.libcxx Static ndk target
-                                   -- >>> Android.gnustl (snd compiler) Static ndk target
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
@@ -533,11 +533,11 @@ mkRules variant options = do
                                                         , "tests/methcla_tests.cpp"
                                                         , "tests/android/main.cpp" ])
 
-                    let installPath = "libs/android" </> abi </> takeFileName libmethcla
+                    let installPath = buildDir </> map toLower (show config) </> "android" </> abi </> takeFileName libmethcla
                     installPath ?=> \_ -> copyFile' libmethcla installPath
                     targetAlias target installPath
 
-                    let testInstallPath = "tests/android/libs" </> Android.abiString (get targetArch target) </> takeFileName libmethcla_tests
+                    let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
                     testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
                     return (installPath, testInstallPath)
                 phony "android" $ need $ map fst libs
