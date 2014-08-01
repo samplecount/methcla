@@ -274,6 +274,9 @@ rtAudio sourceDir =
 
 data Config = Debug | Release deriving (Eq, Show)
 
+instance ToBuildPrefix Config where
+  toBuildPrefix = map toLower . show
+
 parseConfig :: String -> Either String Config
 parseConfig x =
     case map toLower x of
@@ -373,7 +376,7 @@ phonyFile target input = phonyFiles target [input]
 mkBuildPrefix :: FilePath -> Config -> String -> FilePath
 mkBuildPrefix buildDir config platform =
       buildDir
-  </> map toLower (show config)
+  </> toBuildPrefix config
   </> platform
 
 platformBuildPrefix :: FilePath -> Config -> Platform -> FilePath
