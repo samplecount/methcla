@@ -539,7 +539,9 @@ mkRules variant options = do
                                                         , "tests/methcla_tests.cpp"
                                                         , "tests/android/main.cpp" ])
 
-                    let installPath = buildDir </> map toLower (show config) </> "android" </> abi </> takeFileName libmethcla
+                    let installPath = mkBuildPrefix buildDir config "android"
+                                        </> abi
+                                        </> takeFileName libmethcla
                     installPath ?=> \_ -> copyFile' libmethcla installPath
                     targetAlias target installPath
 
