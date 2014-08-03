@@ -76,7 +76,7 @@ isPro :: Variant -> Bool
 isPro Pro = True
 isPro _   = False
 
-engineSources :: Variant -> FilePath -> Target -> SourceTree BuildFlags
+engineSources :: Variant -> FilePath -> Target -> SourceTree Action BuildFlags
 engineSources Default _ _ =
   SourceTree.empty
 engineSources Pro sourceDir _ =
@@ -84,7 +84,7 @@ engineSources Pro sourceDir _ =
     "src/Methcla/ProAPI.cpp"
   ]
 
-pluginSources :: Variant -> FilePath -> Target -> SourceTree BuildFlags
+pluginSources :: Variant -> FilePath -> Target -> SourceTree Action BuildFlags
 pluginSources Default sourceDir _ =
   SourceTree.files $ under sourceDir [
     "plugins/disksampler_stub.cpp"
@@ -97,7 +97,7 @@ pluginSources Pro sourceDir target =
             $ SourceTree.files [ sourceDir </> "plugins/pro/soundfile_api_extaudiofile.cpp" ] ]
        else []
 
-testSources :: Variant -> FilePath -> Target -> SourceTree BuildFlags
+testSources :: Variant -> FilePath -> Target -> SourceTree Action BuildFlags
 testSources Default _ _ =
   SourceTree.empty
 testSources Pro sourceDir _ =
@@ -172,7 +172,7 @@ mkVersionHeader variant buildDir = do
       ]
   return $ VersionHeader output
 
-methclaSources :: Variant -> FilePath -> FilePath -> Target -> VersionHeader -> SourceTree BuildFlags -> SourceTree BuildFlags
+methclaSources :: Variant -> FilePath -> FilePath -> Target -> VersionHeader -> SourceTree Action BuildFlags -> SourceTree Action BuildFlags
 methclaSources variant sourceDir buildDir target versionHeader platformSources =
   let tlsfDir = sourceDir </> externalLibrary "tlsf"
       boostDir = sourceDir </> externalLibrary "boost"
@@ -250,7 +250,7 @@ methclaSources variant sourceDir buildDir target versionHeader platformSources =
 -- ====================================================================
 -- Additional libraries
 
-rtAudio :: FilePath -> SourceTree BuildFlags
+rtAudio :: FilePath -> SourceTree Action BuildFlags
 rtAudio sourceDir =
   SourceTree.flags flags $ SourceTree.files $ [
       platformDir </> "Methcla/Audio/IO/RtAudioDriver.cpp"
@@ -384,44 +384,53 @@ targetBuildPrefix :: FilePath -> Config -> Target -> FilePath
 targetBuildPrefix buildDir config target =
   mkBuildPrefix buildDir config (toBuildPrefix target)
 
-libmethclaPNaCl :: Variant -> FilePath -> FilePath -> FilePath -> Config -> IO (Rules (FilePath, BuildFlags -> BuildFlags))
-libmethclaPNaCl variant sdk sourceDir buildDir config = do
-  libsndfile <- pkgConfigWithOptions
-                  (PkgConfig.defaultOptions { PkgConfig.static = True })
-                  "sndfile"
-  return $ do
-    let target = NaCl.target NaCl.canary
-        naclConfig = case config of
-                      Debug -> NaCl.Debug
-                      Release -> NaCl.Release
-        toolChain = NaCl.toolChain
-                      sdk
-                      naclConfig
-                      target
-        buildFlags =   applyConfiguration config configurations
-                   >>> commonBuildFlags
-                   -- Currently -std=c++11 produces compile errors with libc++
-                   >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
-                   >>> append userIncludes [ sourceDir </> "platform/pepper" ]
-                   >>> stdlib_libcpp toolChain
-                   >>> append linkerFlags [ "--pnacl-exceptions=sjlj" ]
-                   >>> libsndfile
-    versionHeader <- mkVersionHeader variant buildDir
-    libmethcla <- staticLibrary toolChain (targetBuildPrefix buildDir config target </> "libmethcla")
-                    $ SourceTree.flags buildFlags
-                    $ methclaSources variant sourceDir buildDir target versionHeader
-                    $ SourceTree.files $ under sourceDir [
-                        "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
-                      , "plugins/soundfile_api_libsndfile.cpp"
-                      -- , "plugins/soundfile_api_mpg123.cpp"
-                      ]
-    return (libmethcla,     local_libmethcla sourceDir libmethcla
-                        -- FIXME: How to select only linker flags?
-                        -- Maybe pkgConfig could return linker and other flags separately?
-                        -- TODO: Apply libsndfile to empty BuildFlags and append resulting libraries and linker flags here.
-                        >>> libsndfile
-                        -- >>> append libraries ["mpg123"]
-                        )
+libmethclaPNaCl :: Variant
+                -> FilePath
+                -> FilePath
+                -> FilePath
+                -> Config
+                -> PkgConfig.Options
+                -> Rules (FilePath, Action (BuildFlags -> BuildFlags))
+libmethclaPNaCl variant sdk sourceDir buildDir config pkgConfigOptions = do
+  let target = NaCl.target NaCl.canary
+      naclConfig = case config of
+                    Debug -> NaCl.Debug
+                    Release -> NaCl.Release
+      toolChain = NaCl.toolChain
+                    sdk
+                    naclConfig
+                    target
+      pkgConfig_libsndfile = pkgConfigWithOptions
+                              (pkgConfigOptions { PkgConfig.static = True })
+                              "sndfile"
+      buildFlags = do
+        libsndfile <- pkgConfig_libsndfile
+        return $     applyConfiguration config configurations
+                 >>> commonBuildFlags
+                 -- Currently -std=c++11 produces compile errors with libc++
+                 >>> append compilerFlags [(Just Cpp, ["-std=gnu++11"])]
+                 >>> append userIncludes [ sourceDir </> "platform/pepper" ]
+                 >>> stdlib_libcpp toolChain
+                 >>> append linkerFlags [ "--pnacl-exceptions=sjlj" ]
+                 >>> libsndfile
+  versionHeader <- mkVersionHeader variant buildDir
+  libmethcla <- staticLibrary toolChain (targetBuildPrefix buildDir config target </> "libmethcla")
+                  $ SourceTree.flagsM buildFlags
+                  $ methclaSources variant sourceDir buildDir target versionHeader
+                  $ SourceTree.files $ under sourceDir [
+                      "platform/pepper/Methcla/Audio/IO/PepperDriver.cpp"
+                    , "plugins/soundfile_api_libsndfile.cpp"
+                    -- , "plugins/soundfile_api_mpg123.cpp"
+                    ]
+  return (libmethcla, do
+    libsndfile <- pkgConfig_libsndfile
+    return $ local_libmethcla sourceDir libmethcla
+              -- FIXME: How to select only linker flags?
+              -- Maybe pkgConfig could return linker and other flags separately?
+              -- TODO: Apply libsndfile to empty BuildFlags and append resulting libraries and linker flags here.
+              >>> libsndfile
+              -- >>> append libraries ["mpg123"]
+    )
 
 localSourceDir :: FilePath
 localSourceDir = "."
@@ -550,7 +559,6 @@ mkRules variant options = do
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
         freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
-        mkLibMethcla <- libmethclaPNaCl variant sdk localSourceDir buildDir config
         return $ do
           let target = NaCl.target NaCl.canary
               naclConfig = case config of
@@ -569,19 +577,20 @@ mkRules variant options = do
                          >>> NaCl.libppapi_cpp
                          >>> NaCl.libppapi
                          >>> libpthread
-          (libmethcla_a, libmethcla) <- mkLibMethcla
+          (libmethcla_a, get_libmethcla) <- libmethclaPNaCl variant sdk localSourceDir buildDir config PkgConfig.defaultOptions
           phony "pnacl" $ need [libmethcla_a]
-          let pnaclTestBuildFlags =
-                    buildFlags
-                >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
+          let pnaclTestBuildFlags = do
+                libmethcla <- get_libmethcla
+                return $     buildFlags
+                         >>> append defines [ ("METHCLA_TEST_SOUNDFILE_API_HEADER", Just "<methcla/plugins/soundfile_api_dummy.h>")
                                    , ("METHCLA_TEST_SOUNDFILE_API_LIB", Just "methcla_soundfile_api_dummy") ]
-                >>> append systemIncludes [externalLibrary "catch/single_include"]
-                -- >>> NaCl.libppapi_simple
-                -- >>> NaCl.libnacl_io
-                >>> testBuildFlags target
-                >>> libmethcla
+                         >>> append systemIncludes [externalLibrary "catch/single_include"]
+                         -- >>> NaCl.libppapi_simple
+                         -- >>> NaCl.libnacl_io
+                         >>> testBuildFlags target
+                         >>> libmethcla
           pnacl_test_bc <- executable toolChain (buildPrefix </> "methcla-pnacl-tests")
-                           $ SourceTree.flags pnaclTestBuildFlags
+                           $ SourceTree.flagsM pnaclTestBuildFlags
                            $ SourceTree.list [
                               SourceTree.files [
                                   "src/Methcla/Audio/IO/DummyDriver.cpp"
@@ -597,14 +606,14 @@ mkRules variant options = do
           pnacl_test_nmf' <- pnacl_test_nmf `copyTo` ("tests/pnacl" </> takeFileName pnacl_test_nmf)
           phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
 
-          let examplesBuildFlags =   buildFlags
-                                 >>> libmethcla
+          let examplesBuildFlags flags = do
+                libmethcla <- get_libmethcla
+                return $ buildFlags >>> libmethcla >>> flags
               examplesDir = buildDir </> "examples/pnacl"
               mkExample output flags sources files = do
                 let outputDir = takeDirectory output
                 bc <- executable toolChain (buildPrefix </> takeFileName output)
-                        $ SourceTree.flags
-                          (examplesBuildFlags >>> flags)
+                        $ SourceTree.flagsM (examplesBuildFlags flags)
                         $ SourceTree.files sources
                 pexe <- NaCl.finalize
                           toolChain
@@ -672,9 +681,10 @@ mkRules variant options = do
       , (["desktop"], do
             applyEnv <- toolChainFromEnvironment
             (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
-            libsndfile <- pkgConfig "sndfile"
-            libmpg123 <- pkgConfig "libmpg123"
-            let buildFlags =   applyConfiguration config configurations
+            let buildFlags = do
+                  libsndfile <- pkgConfig "sndfile"
+                  libmpg123 <- pkgConfig "libmpg123"
+                  return $     applyConfiguration config configurations
                            >>> commonBuildFlags
                            >>> append defines [("BUILDING_DLL", Nothing)]
                            >>> libsndfile
@@ -683,7 +693,7 @@ mkRules variant options = do
                            >>> libm
                 build versionHeader f =
                   f toolChain (targetBuildPrefix' target </> "libmethcla")
-                    $ SourceTree.flags buildFlags
+                    $ SourceTree.flagsM buildFlags
                     $ methclaSources' target versionHeader
                     $ SourceTree.list [ rtAudio localSourceDir
                                       , SourceTree.files [
