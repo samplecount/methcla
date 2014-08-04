@@ -703,9 +703,13 @@ mkRules variant options = do
                 phony "desktop" $ do
                   need [sharedLib]
                   if isDarwin target
-	              -- Quick hack for setting install path of shared library
-		      then system' "install_name_tool" ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
-		      else return ()
+                  then do
+                    need [sharedLib]
+                    command_ [] "install_name_tool"
+                                ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
+                  else return ()
+
+                phony "desktop" $ need [staticLib, sharedLib]
         )
       , (["test", "clean-test"], do -- tests
             applyEnv <- toolChainFromEnvironment
@@ -731,7 +735,7 @@ mkRules variant options = do
                               , testSources variant localSourceDir target ]
                 phony "test" $ do
                     need [result]
-                    system' result []
+                    command_ [] result []
                 phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
         )
       , (["tags"], do -- tags
@@ -750,7 +754,7 @@ mkRules variant options = do
                         `and_` sources "src"
                     need fs
                     writeFileLines tagFiles fs
-                    system' "ctags" $
+                    command_ [] "ctags" $
                         (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
                      ++ ["-f", output]
                      ++ ["-L", tagFiles]
