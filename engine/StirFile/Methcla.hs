@@ -414,7 +414,7 @@ libmethclaPNaCl variant sdk sourceDir buildDir config pkgConfigOptions = do
                  >>> append linkerFlags [ "--pnacl-exceptions=sjlj" ]
                  >>> libsndfile
   versionHeader <- mkVersionHeader variant buildDir
-  libmethcla <- staticLibrary toolChain (targetBuildPrefix buildDir config target </> "libmethcla")
+  libmethcla <- staticLibrary toolChain (targetBuildPrefix buildDir config target </> "libmethcla.a")
                   $ SourceTree.flagsM buildFlags
                   $ methclaSources variant sourceDir buildDir target versionHeader
                   $ SourceTree.files $ under sourceDir [
@@ -474,7 +474,7 @@ mkRules variant options = do
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla")
+                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
                         $ SourceTree.flags buildFlags
                         $ iosSources target versionHeader
                 return lib
@@ -490,7 +490,7 @@ mkRules variant options = do
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
                                >>> iosBuildFlags toolChain
-                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla")
+                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
                         $ SourceTree.flags buildFlags
                         $ iosSources target versionHeader
                 return lib
@@ -522,7 +522,7 @@ mkRules variant options = do
                                    >>> rtti True
                                    >>> exceptions True
                                    >>> execStack False
-                    libmethcla <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla")
+                    libmethcla <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
                                     $ SourceTree.flags buildFlags
                                     $ methclaSources' target versionHeader
                                     $ SourceTree.files [
@@ -535,7 +535,7 @@ mkRules variant options = do
                                    >>> append libraries ["android", "log", "OpenSLES"]
                                    >>> local_libmethcla localSourceDir libmethcla
                                    >>> testBuildFlags target
-                    libmethcla_tests <- sharedLibrary toolChain (targetBuildPrefix' target </> "libmethcla-tests")
+                    libmethcla_tests <- sharedLibrary toolChain (targetBuildPrefix' target </> "libmethcla-tests.so")
                                   -- TODO: Build static library for native_app_glue to link against.
                                   $ SourceTree.flags androidTestBuildFlags
                                   $ SourceTree.append (Android.native_app_glue ndk)
@@ -589,7 +589,7 @@ mkRules variant options = do
                          -- >>> NaCl.libnacl_io
                          >>> testBuildFlags target
                          >>> libmethcla
-          pnacl_test_bc <- executable toolChain (buildPrefix </> "methcla-pnacl-tests")
+          pnacl_test_bc <- executable toolChain (buildPrefix </> "methcla-pnacl-tests.bc")
                            $ SourceTree.flagsM pnaclTestBuildFlags
                            $ SourceTree.list [
                               SourceTree.files [
@@ -612,7 +612,7 @@ mkRules variant options = do
               examplesDir = buildDir </> "examples/pnacl"
               mkExample output flags sources files = do
                 let outputDir = takeDirectory output
-                bc <- executable toolChain (buildPrefix </> takeFileName output)
+                bc <- executable toolChain (buildPrefix </> takeFileName output <.> "bc")
                         $ SourceTree.flagsM (examplesBuildFlags flags)
                         $ SourceTree.files sources
                 pexe <- NaCl.finalize
@@ -691,8 +691,8 @@ mkRules variant options = do
                            >>> libmpg123
                            >>> stdlib_libcpp toolChain
                            >>> libm
-                build versionHeader f =
-                  f toolChain (targetBuildPrefix' target </> "libmethcla")
+                build versionHeader f ext =
+                  f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
                     $ SourceTree.flagsM buildFlags
                     $ methclaSources' target versionHeader
                     $ SourceTree.list [ rtAudio localSourceDir
@@ -703,8 +703,8 @@ mkRules variant options = do
             return $ do
                 versionHeader <- mkVersionHeader'
 
-                -- staticLib <- build versionHeader staticLibrary
-                sharedLib <- build versionHeader sharedLibrary
+                staticLib <- build versionHeader staticLibrary "a"
+                sharedLib <- build versionHeader sharedLibrary Host.sharedLibraryExtension
 
                 phony "desktop" $ do
                   need [sharedLib]
@@ -724,7 +724,7 @@ mkRules variant options = do
                            >>> testBuildFlags target
             return $ do
                 versionHeader <- mkVersionHeader'
-                result <- executable toolChain (targetBuildPrefix' target </> "methcla-tests")
+                result <- executable toolChain (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
                           $ SourceTree.flags buildFlags
                           $ methclaSources' target versionHeader
                           $ SourceTree.list [
