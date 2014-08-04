@@ -359,17 +359,6 @@ mapTarget mkTarget archs f = mapM (f . mkTarget) archs
 androidTargetPlatform :: Platform
 androidTargetPlatform = Android.platform 9
 
-copyTo :: FilePath -> FilePath -> Rules FilePath
-copyTo input output = do
-  output ?=> \_ -> copyFile' input output
-  return output
-
-phonyFiles :: String -> [FilePath] -> Rules ()
-phonyFiles target = phony target . need
-
-phonyFile :: String -> FilePath -> Rules ()
-phonyFile target input = phonyFiles target [input]
-
 mkBuildPrefix :: FilePath -> Config -> String -> FilePath
 mkBuildPrefix buildDir config platform =
       buildDir
@@ -599,12 +588,16 @@ mkRules variant options = do
                                 , "tests/test_runner_nacl.cpp"
                                 ]
                               , testSources variant localSourceDir target ]
-          pnacl_test <- NaCl.finalize toolChain pnacl_test_bc (pnacl_test_bc `replaceExtension` "pexe")
-          pnacl_test_nmf <- NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
-                                        (pnacl_test `replaceExtension` "nmf")
-          pnacl_test' <- pnacl_test `copyTo` ("tests/pnacl" </> takeFileName pnacl_test)
-          pnacl_test_nmf' <- pnacl_test_nmf `copyTo` ("tests/pnacl" </> takeFileName pnacl_test_nmf)
-          phonyFiles "pnacl-test" [pnacl_test', pnacl_test_nmf']
+          let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
+          pnacl_test *> NaCl.finalize toolChain pnacl_test_bc
+          let pnacl_test_nmf = pnacl_test `replaceExtension` "nmf"
+          pnacl_test_nmf *> NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
+
+          let pnacl_test' = "tests/pnacl" </> takeFileName pnacl_test
+          pnacl_test' *> copyFile' pnacl_test
+          let pnacl_test_nmf' = "tests/pnacl" </> takeFileName pnacl_test_nmf
+          pnacl_test_nmf' *> copyFile' pnacl_test_nmf
+          phony "pnacl-test" $ need [pnacl_test', pnacl_test_nmf']
 
           let examplesBuildFlags flags = do
                 libmethcla <- get_libmethcla
@@ -615,17 +608,16 @@ mkRules variant options = do
                 bc <- executable toolChain (buildPrefix </> takeFileName output <.> "bc")
                         $ SourceTree.flagsM (examplesBuildFlags flags)
                         $ SourceTree.files sources
-                pexe <- NaCl.finalize
-                          toolChain
-                          bc
-                          (bc `replaceExtension` "pexe"
-                              `replaceDirectory` (outputDir </> show naclConfig))
-                nmf <- NaCl.mk_nmf
-                          [(NaCl.PNaCl, pexe)]
-                          (pexe `replaceExtension` "nmf")
-                files' <- mapM (\old -> old `copyTo` (old `replaceDirectory` outputDir))
-                               (["examples/common/common.js"] ++ files)
-                return $ [pexe, nmf] ++ files'
+                let pexe = bc `replaceExtension` "pexe"
+                              `replaceDirectory` (outputDir </> show naclConfig)
+                pexe *> NaCl.finalize toolChain bc
+                let nmf = pexe `replaceExtension` "nmf"
+                nmf *> NaCl.mk_nmf [(NaCl.PNaCl, pexe)]
+                let allFiles = ["examples/common/common.js"] ++ files
+                    allFiles' = map (`replaceDirectory` outputDir) allFiles
+                mapM_ (\(old, new) -> new *> copyFile' old) (zip allFiles allFiles')
+
+                return $ [pexe, nmf] ++ allFiles'
 
           thaddeus <- mkExample ( examplesDir </> "thaddeus/methcla-thaddeus" )
                                 ( append userIncludes [ "examples/thADDeus/src" ] )
