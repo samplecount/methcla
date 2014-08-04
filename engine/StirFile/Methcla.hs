@@ -547,7 +547,6 @@ mkRules variant options = do
         )
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
         sdk <- Env.getEnv "NACL_SDK"
-        freesoundApiKey <- Env.getEnv "FREESOUND_API_KEY"
         return $ do
           let target = NaCl.target NaCl.canary
               naclConfig = case config of
@@ -651,6 +650,9 @@ mkRules variant options = do
                 ]
 
           (examplesDir </> "sampler/sounds/*") *> \output -> do
+            freesoundApiKey <- getEnvWithDefault
+                                (error "Environment variable FREESOUND_API_KEY undefined")
+                                "FREESOUND_API_KEY"
             cmd "curl" [    "http://www.freesound.org/api/sounds/"
                          ++ dropExtension (takeFileName output)
                          ++ "/serve?api_key=" ++ freesoundApiKey
