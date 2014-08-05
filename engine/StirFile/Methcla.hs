@@ -22,8 +22,6 @@ module Methcla (
   , optionDescrs
   , version
   , Config(..)
-  , buildDir
-  , commonRules
   , mkRules
   , libmethclaPNaCl
 ) where
@@ -429,22 +427,20 @@ libmethclaPNaCl variant sdk sourceDir buildDir config pkgConfigOptions = do
 localSourceDir :: FilePath
 localSourceDir = "."
 
-buildDir :: FilePath
-buildDir = "build"
-
-commonRules :: Variant -> FilePath -> Rules ()
-commonRules variant buildDir = do
-  _ <- versionHeaderRule variant buildDir
-  phony "clean" $ removeFilesAfter buildDir ["//*"]
-
-mkRules :: Variant -> Options -> [([String], IO (Rules ()))]
-mkRules variant options = do
-    let config = get buildConfig options
-        targetBuildPrefix' target = targetBuildPrefix buildDir config target
-        targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
-                                . need . (:[])
-        methclaSources' target = methclaSources variant localSourceDir buildDir target (mkVersionHeader buildDir)
-    [ (["iphoneos", "iphonesimulator", "iphone-universal"], do
+mkRules :: Variant -> FilePath -> Options -> IO (Rules ())
+mkRules variant buildDir options = do
+  let config = get buildConfig options
+      targetBuildPrefix' target = targetBuildPrefix buildDir config target
+      targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
+                              . need . (:[])
+      methclaSources' target = methclaSources variant localSourceDir buildDir target (mkVersionHeader buildDir)
+  fmap sequence_ $ sequence [
+      -- Common rules
+      return $ do
+        _ <- versionHeaderRule variant buildDir
+        phony "clean" $ removeFilesAfter buildDir ["//*"]
+    , -- iOS
+      do
         let iOS_SDK = Version [7,1] []
             iosBuildFlags toolChain =
                     OSX.iphoneos_version_min (Version [5,0] [])
@@ -460,94 +456,94 @@ mkRules variant options = do
         applyEnv <- toolChainFromEnvironment
         developer <- OSX.getDeveloperPath
         return $ do
-            let iphoneosPlatform = OSX.iPhoneOS iOS_SDK
-            iphoneosLibs <- mapTarget (flip OSX.target iphoneosPlatform) [Arm Armv7, Arm Armv7s] $ \target -> do
-                let toolChain = applyEnv $ OSX.toolChain developer target
+          let iphoneosPlatform = OSX.iPhoneOS iOS_SDK
+          iphoneosLibs <- mapTarget (flip OSX.target iphoneosPlatform) [Arm Armv7, Arm Armv7s] $ \target -> do
+              let toolChain = applyEnv $ OSX.toolChain developer target
+                  buildFlags =   applyConfiguration config configurations
+                             >>> commonBuildFlags
+                             >>> iosBuildFlags toolChain
+              lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
+                      $ SourceTree.flags buildFlags
+                      $ iosSources target
+              return lib
+          iphoneosLib <- OSX.universalBinary
+                          iphoneosLibs
+                          (platformBuildPrefix buildDir config iphoneosPlatform </> "libmethcla.a")
+          phony "iphoneos" (need [iphoneosLib])
+
+          let iphonesimulatorPlatform = OSX.iPhoneSimulator iOS_SDK
+          iphonesimulatorLibI386 <- do
+              let target = OSX.target (X86 I386) iphonesimulatorPlatform
+                  toolChain = applyEnv $ OSX.toolChain developer target
+                  buildFlags =   applyConfiguration config configurations
+                             >>> commonBuildFlags
+                             >>> iosBuildFlags toolChain
+              lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
+                      $ SourceTree.flags buildFlags
+                      $ iosSources target
+              return lib
+          let iphonesimulatorLib = platformBuildPrefix buildDir config iphonesimulatorPlatform </> "libmethcla.a"
+          iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
+          phony "iphonesimulator" (need [iphonesimulatorLib])
+
+          let universalTarget = "iphone-universal"
+          universalLib <- OSX.universalBinary
+                              (iphoneosLibs ++ [iphonesimulatorLib])
+                              (mkBuildPrefix buildDir config universalTarget </> "libmethcla.a")
+          phony universalTarget (need [universalLib])
+    , -- Android
+      do
+        applyEnv <- toolChainFromEnvironment
+        ndk <- getEnv_ "ANDROID_NDK"
+        return $ do
+            libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
+                let compiler = (LLVM, Version [3,4] [])
+                    -- compiler = (GCC, Version [4,8] [])
+                    abi = Android.abiString (get targetArch target)
+                    toolChain = applyEnv $ Android.toolChain ndk compiler target
                     buildFlags =   applyConfiguration config configurations
                                >>> commonBuildFlags
-                               >>> iosBuildFlags toolChain
-                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
-                        $ SourceTree.flags buildFlags
-                        $ iosSources target
-                return lib
-            iphoneosLib <- OSX.universalBinary
-                            iphoneosLibs
-                            (platformBuildPrefix buildDir config iphoneosPlatform </> "libmethcla.a")
-            phony "iphoneos" (need [iphoneosLib])
+                               >>> append userIncludes ["platform/android"]
+                               -- >>> Android.gnustl gccVersion Static ndk target
+                               >>> Android.libcxx Static ndk target
+                               >>> rtti True
+                               >>> exceptions True
+                               >>> execStack False
+                libmethcla <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
+                                $ SourceTree.flags buildFlags
+                                $ methclaSources' target
+                                $ SourceTree.files [
+                                    "platform/android/opensl_io.c",
+                                    "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
+                let androidTestBuildFlags =
+                                   buildFlags
+                               >>> append systemIncludes [externalLibrary "catch/single_include"]
+                               >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
+                               >>> append libraries ["android", "log", "OpenSLES"]
+                               >>> local_libmethcla localSourceDir libmethcla
+                               >>> testBuildFlags target
+                libmethcla_tests <- sharedLibrary toolChain (targetBuildPrefix' target </> "libmethcla-tests.so")
+                              -- TODO: Build static library for native_app_glue to link against.
+                              $ SourceTree.flags androidTestBuildFlags
+                              $ SourceTree.append (Android.native_app_glue ndk)
+                                                  (SourceTree.files [
+                                                      "src/Methcla/Audio/IO/DummyDriver.cpp"
+                                                    , "tests/methcla_tests.cpp"
+                                                    , "tests/android/main.cpp" ])
 
-            let iphonesimulatorPlatform = OSX.iPhoneSimulator iOS_SDK
-            iphonesimulatorLibI386 <- do
-                let target = OSX.target (X86 I386) iphonesimulatorPlatform
-                    toolChain = applyEnv $ OSX.toolChain developer target
-                    buildFlags =   applyConfiguration config configurations
-                               >>> commonBuildFlags
-                               >>> iosBuildFlags toolChain
-                lib <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
-                        $ SourceTree.flags buildFlags
-                        $ iosSources target
-                return lib
-            let iphonesimulatorLib = platformBuildPrefix buildDir config iphonesimulatorPlatform </> "libmethcla.a"
-            iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
-            phony "iphonesimulator" (need [iphonesimulatorLib])
+                let installPath = mkBuildPrefix buildDir config "android"
+                                    </> abi
+                                    </> takeFileName libmethcla
+                installPath ?=> \_ -> copyFile' libmethcla installPath
+                targetAlias target installPath
 
-            let universalTarget = "iphone-universal"
-            universalLib <- OSX.universalBinary
-                                (iphoneosLibs ++ [iphonesimulatorLib])
-                                (mkBuildPrefix buildDir config universalTarget </> "libmethcla.a")
-            phony universalTarget (need [universalLib])
-        )
-      , (["android", "android-tests"], do
-            applyEnv <- toolChainFromEnvironment
-            ndk <- getEnv_ "ANDROID_NDK"
-            return $ do
-                libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
-                    let compiler = (LLVM, Version [3,4] [])
-                        -- compiler = (GCC, Version [4,8] [])
-                        abi = Android.abiString (get targetArch target)
-                        toolChain = applyEnv $ Android.toolChain ndk compiler target
-                        buildFlags =   applyConfiguration config configurations
-                                   >>> commonBuildFlags
-                                   >>> append userIncludes ["platform/android"]
-                                   -- >>> Android.gnustl gccVersion Static ndk target
-                                   >>> Android.libcxx Static ndk target
-                                   >>> rtti True
-                                   >>> exceptions True
-                                   >>> execStack False
-                    libmethcla <- staticLibrary toolChain (targetBuildPrefix' target </> "libmethcla.a")
-                                    $ SourceTree.flags buildFlags
-                                    $ methclaSources' target
-                                    $ SourceTree.files [
-                                        "platform/android/opensl_io.c",
-                                        "platform/android/Methcla/Audio/IO/OpenSLESDriver.cpp" ]
-                    let androidTestBuildFlags =
-                                       buildFlags
-                                   >>> append systemIncludes [externalLibrary "catch/single_include"]
-                                   >>> append linkerFlags ["-Wl,-soname,libmethcla-tests.so"]
-                                   >>> append libraries ["android", "log", "OpenSLES"]
-                                   >>> local_libmethcla localSourceDir libmethcla
-                                   >>> testBuildFlags target
-                    libmethcla_tests <- sharedLibrary toolChain (targetBuildPrefix' target </> "libmethcla-tests.so")
-                                  -- TODO: Build static library for native_app_glue to link against.
-                                  $ SourceTree.flags androidTestBuildFlags
-                                  $ SourceTree.append (Android.native_app_glue ndk)
-                                                      (SourceTree.files [
-                                                          "src/Methcla/Audio/IO/DummyDriver.cpp"
-                                                        , "tests/methcla_tests.cpp"
-                                                        , "tests/android/main.cpp" ])
-
-                    let installPath = mkBuildPrefix buildDir config "android"
-                                        </> abi
-                                        </> takeFileName libmethcla
-                    installPath ?=> \_ -> copyFile' libmethcla installPath
-                    targetAlias target installPath
-
-                    let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
-                    testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
-                    return (installPath, testInstallPath)
-                phony "android" $ need $ map fst libs
-                phony "android-tests" $ need $ map snd libs
-        )
-      , (["pnacl", "pnacl-test", "pnacl-examples"], do
+                let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
+                testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
+                return (installPath, testInstallPath)
+            phony "android" $ need $ map fst libs
+            phony "android-tests" $ need $ map snd libs
+    , -- Pepper/PNaCl
+      do
         sdk <- getEnv_ "NACL_SDK"
         return $ do
           let target = NaCl.target NaCl.canary
@@ -673,89 +669,88 @@ mkRules variant options = do
             need $ sampler ++ map (combine (examplesDir </> "sampler/sounds"))
                                   freesounds
             cmd (Cwd examplesDir) server :: Action ()
-        )
-      , (["desktop"], do
-            applyEnv <- toolChainFromEnvironment
-            (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
-            let buildFlags = do
-                  libsndfile <- pkgConfig "sndfile"
-                  libmpg123 <- pkgConfig "libmpg123"
-                  return $     applyConfiguration config configurations
-                           >>> commonBuildFlags
-                           >>> append defines [("BUILDING_DLL", Nothing)]
-                           >>> libsndfile
-                           >>> libmpg123
-                           >>> stdlib_libcpp toolChain
-                           >>> libm
-                build f ext =
-                  f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
-                    $ SourceTree.flagsM buildFlags
+    , -- Desktop
+      do
+        applyEnv <- toolChainFromEnvironment
+        (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
+        let buildFlags = do
+              libsndfile <- pkgConfig "sndfile"
+              libmpg123 <- pkgConfig "libmpg123"
+              return $     applyConfiguration config configurations
+                       >>> commonBuildFlags
+                       >>> libsndfile
+                       >>> libmpg123
+                       >>> stdlib_libcpp toolChain
+                       >>> libm
+            build f ext =
+              f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
+                $ SourceTree.flagsM buildFlags
+                $ methclaSources' target
+                $ SourceTree.list [ rtAudio localSourceDir
+                                  , SourceTree.files [
+                                        "plugins/soundfile_api_libsndfile.cpp"
+                                      , "plugins/soundfile_api_mpg123.cpp"
+                                  ] ]
+        return $ do
+          staticLib <- build staticLibrary "a"
+          sharedLib <- build sharedLibrary Host.sharedLibraryExtension
+
+          -- Quick hack for setting install path of shared library
+          let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
+          phony installedSharedLib $
+            if isDarwin target
+            then do
+              need [sharedLib]
+              command_ [] "install_name_tool"
+                          ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
+            else return ()
+
+          phony "desktop" $ need [staticLib, installedSharedLib]
+    ,  -- tests
+      do
+        applyEnv <- toolChainFromEnvironment
+        (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
+        let buildFlags =   applyConfiguration config configurations
+                       >>> commonBuildFlags
+                       >>> stdlib_libcpp toolChain
+                       >>> Host.onlyOn [Host.Linux] libpthread
+                       >>> libm
+                       >>> testBuildFlags target
+        return $ do
+          result <- executable toolChain (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
+                    $ SourceTree.flags buildFlags
                     $ methclaSources' target
-                    $ SourceTree.list [ rtAudio localSourceDir
-                                      , SourceTree.files [
-                                            "plugins/soundfile_api_libsndfile.cpp"
-                                          , "plugins/soundfile_api_mpg123.cpp"
-                                      ] ]
-            return $ do
-                staticLib <- build staticLibrary "a"
-                sharedLib <- build sharedLibrary Host.sharedLibraryExtension
-
-                phony "desktop" $ do
-                  need [sharedLib]
-                  if isDarwin target
-                  then do
-                    need [sharedLib]
-                    command_ [] "install_name_tool"
-                                ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
-                  else return ()
-
-                phony "desktop" $ need [staticLib, sharedLib]
-        )
-      , (["test", "clean-test"], do -- tests
-            applyEnv <- toolChainFromEnvironment
-            (target, toolChain) <- fmap (second applyEnv) Host.getDefaultToolChain
-            let buildFlags =   applyConfiguration config configurations
-                           >>> commonBuildFlags
-                           >>> stdlib_libcpp toolChain
-                           >>> Host.onlyOn [Host.Linux] libpthread
-                           >>> libm
-                           >>> testBuildFlags target
-            return $ do
-                result <- executable toolChain (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
-                          $ SourceTree.flags buildFlags
-                          $ methclaSources' target
-                          $ SourceTree.list [
-                                SourceTree.files [
-                                    "src/Methcla/Audio/IO/DummyDriver.cpp"
-                                  , "tests/methcla_tests.cpp"
-                                  , "tests/methcla_engine_tests.cpp"
-                                  , "tests/test_runner_console.cpp"
-                                  , externalLibrary "gtest/gtest-all.cc" ]
-                              , testSources variant localSourceDir target ]
-                phony "test" $ do
-                    need [result]
-                    command_ [] result []
-                phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
-        )
-      , (["tags"], do -- tags
-            let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
-                files clause dir = find always clause dir
-                sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
-                tagFile = "tags"
-                tagFiles = "tagfiles"
-            return $ do
-                tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
-                    fs <- liftIO $ find
-                              (fileName /=? "typeof") (extension ==? ".hpp") (externalLibrary "boost" </> "boost")
-                        `and_` sources "include"
-                        `and_` sources "platform"
-                        `and_` sources "plugins"
-                        `and_` sources "src"
-                    need fs
-                    writeFileLines tagFiles fs
-                    command_ [] "ctags" $
-                        (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
-                     ++ ["-f", output]
-                     ++ ["-L", tagFiles]
-        )
-        ]
+                    $ SourceTree.list [
+                          SourceTree.files [
+                              "src/Methcla/Audio/IO/DummyDriver.cpp"
+                            , "tests/methcla_tests.cpp"
+                            , "tests/methcla_engine_tests.cpp"
+                            , "tests/test_runner_console.cpp"
+                            , externalLibrary "gtest/gtest-all.cc" ]
+                        , testSources variant localSourceDir target ]
+          phony "test" $ do
+              need [result]
+              command_ [] result []
+          phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
+    , --tags
+      do
+        return $ do
+          let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
+              files clause dir = find always clause dir
+              sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
+              tagFile = "tags"
+              tagFiles = "tagfiles"
+          tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
+              fs <- liftIO $ find
+                        (fileName /=? "typeof") (extension ==? ".hpp") (externalLibrary "boost" </> "boost")
+                  `and_` sources "include"
+                  `and_` sources "platform"
+                  `and_` sources "plugins"
+                  `and_` sources "src"
+              need fs
+              writeFileLines tagFiles fs
+              command_ [] "ctags" $
+                  (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
+               ++ ["-f", output]
+               ++ ["-L", tagFiles]
+      ]

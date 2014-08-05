@@ -20,15 +20,12 @@ main :: IO ()
 main = do
   isPro <- Dir.doesFileExist "../LICENSE-PRO"
   let variant = if isPro then Methcla.Pro else Methcla.Default
+      buildDir = "build"
       shakeOptions' = shakeOptions {
-                      shakeFiles = Methcla.buildDir ++ "/"
+                      shakeFiles = buildDir ++ "/"
                     , shakeVersion = Methcla.version variant }
       f xs ts = do
           let os = foldl (.) id xs $ Methcla.defaultOptions
-          rules <- fmap sequence
-                      $ sequence
-                      $ map snd
-                      -- $ filter (any (flip elem ts) . fst)
-                      $ Methcla.mkRules variant os
-          return $ Just $ Methcla.commonRules variant Methcla.buildDir >> rules >> want ts
+          rules <- Methcla.mkRules variant buildDir os
+          return $ Just $ rules >> want ts
   shakeArgsWith shakeOptions' Methcla.optionDescrs f
