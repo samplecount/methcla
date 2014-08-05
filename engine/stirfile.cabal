@@ -37,8 +37,8 @@ Library
     , directory
     , filemanip
     , filepath
-    , shake >= 0.10
-    , stir
+    , shake >= 0.12
+    , stir >= 0.4
 
 Executable methcla-stirfile
   Main-Is: stirfile.hs
