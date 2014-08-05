@@ -28,7 +28,7 @@ main = do
           rules <- fmap sequence
                       $ sequence
                       $ map snd
-                      $ filter (any (flip elem ts) . fst)
+                      -- $ filter (any (flip elem ts) . fst)
                       $ Methcla.mkRules variant os
-          return $ Just $ Methcla.commonRules >> rules >> want ts
+          return $ Just $ Methcla.commonRules variant Methcla.buildDir >> rules >> want ts
   shakeArgsWith shakeOptions' Methcla.optionDescrs f
