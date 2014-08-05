@@ -353,9 +353,6 @@ execStack on =
   . append linkerFlags ["-Wl,-z," ++ no ++ "execstack"]
   where no = if on then "" else "no"
 
-withTarget :: Monad m => (Arch -> Target) -> [Arch] -> (Target -> m ()) -> m ()
-withTarget mkTarget archs f = mapM_ (f . mkTarget) archs
-
 mapTarget :: Monad m => (Arch -> Target) -> [Arch] -> (Target -> m a) -> m [a]
 mapTarget mkTarget archs f = mapM (f . mkTarget) archs
 
@@ -437,7 +434,6 @@ mkRules :: Variant -> Options -> [([String], IO (Rules ()))]
 mkRules variant options = do
     let config = get buildConfig options
         targetBuildPrefix' target = targetBuildPrefix buildDir config target
-        platformAlias p = phony (platformString p) . need . (:[])
         targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
                                 . need . (:[])
         mkVersionHeader' = mkVersionHeader variant buildDir
