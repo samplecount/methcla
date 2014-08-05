@@ -64,6 +64,9 @@ lookupEnv name = do
     Left _ -> return Nothing
     Right value -> return $ Just value
 
+getEnv_ :: String -> IO String
+getEnv_ = fmap (maybe "" id) . lookupEnv
+
 isDarwin :: Target -> Bool
 isDarwin = isTargetOS (Just "apple") (Just "darwin10")
 
@@ -495,7 +498,7 @@ mkRules variant options = do
         )
       , (["android", "android-tests"], do
             applyEnv <- toolChainFromEnvironment
-            ndk <- Env.getEnv "ANDROID_NDK"
+            ndk <- getEnv_ "ANDROID_NDK"
             return $ do
                 versionHeader <- mkVersionHeader'
                 libs <- mapTarget (flip Android.target androidTargetPlatform) [Arm Armv5, Arm Armv7] $ \target -> do
@@ -546,7 +549,7 @@ mkRules variant options = do
                 phony "android-tests" $ need $ map snd libs
         )
       , (["pnacl", "pnacl-test", "pnacl-examples"], do
-        sdk <- Env.getEnv "NACL_SDK"
+        sdk <- getEnv_ "NACL_SDK"
         return $ do
           let target = NaCl.target NaCl.canary
               naclConfig = case config of
