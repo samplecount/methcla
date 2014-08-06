@@ -25,6 +25,8 @@ Library
 
   Exposed-Modules:
     Methcla
+    Methcla.Config
+    Methcla.FromConfig
 
   Other-Modules:
     Paths_methcla_stirfile
@@ -39,6 +41,7 @@ Library
     , filepath
     , shake >= 0.12
     , stir >= 0.4
+    , unordered-containers
 
 Executable methcla-stirfile
   Main-Is: stirfile.hs
