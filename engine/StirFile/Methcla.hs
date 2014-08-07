@@ -214,7 +214,7 @@ mkRules variant buildDir options = do
       let iphoneosPlatform = OSX.iPhoneOS iOS_SDK
       iphoneosLibs <- mapTarget (flip OSX.target iphoneosPlatform) [Arm Armv7, Arm Armv7s] $ \target -> do
           let toolChain = applyEnv $ OSX.toolChain developer target
-          staticLibrary' toolChain
+          staticLibrary toolChain
             (targetBuildPrefix' target </> "libmethcla.a")
             (FromConfig.buildFlags getConfig)
             (getSources variant getConfig)
@@ -227,7 +227,7 @@ mkRules variant buildDir options = do
       iphonesimulatorLibI386 <- do
           let target = OSX.target (X86 I386) iphonesimulatorPlatform
               toolChain = applyEnv $ OSX.toolChain developer target
-          staticLibrary' toolChain
+          staticLibrary toolChain
             (targetBuildPrefix' target </> "libmethcla.a")
             (FromConfig.buildFlags getConfig)
             (getSources variant getConfig)
@@ -251,12 +251,12 @@ mkRules variant buildDir options = do
             toolChain = applyEnv $ Android.toolChain ndk compiler target
             buildFlags =     FromConfig.buildFlags getConfig
                          >-> pure (Android.libcxx Static ndk target)
-        libmethcla <- staticLibrary' toolChain
+        libmethcla <- staticLibrary toolChain
                         (targetBuildPrefix' target </> "libmethcla.a")
                         buildFlags
                         (getSources variant getConfig)
 
-        libmethcla_tests <- sharedLibrary' toolChain
+        libmethcla_tests <- sharedLibrary toolChain
                               (targetBuildPrefix' target </> "libmethcla-tests.so")
                               (buildFlags >-> pure (append localLibraries [libmethcla]))
                               (getSources variant getConfigTests)
@@ -284,14 +284,14 @@ mkRules variant buildDir options = do
                         target
           buildPrefix = targetBuildPrefix' target
           getConfig = getConfigFrom "config/pepper.cfg"
-      libmethcla <- staticLibrary' toolChain
+      libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
                       (FromConfig.buildFlags getConfig)
                       (getSources variant getConfig)
       phony "pnacl" $ need [libmethcla]
 
       let getConfigTests = getConfigFrom "config/pepper_tests.cfg"
-      pnacl_test_bc <- executable' toolChain
+      pnacl_test_bc <- executable toolChain
                         (buildPrefix </> "methcla-pnacl-tests.bc")
                         (FromConfig.buildFlags getConfigTests
                           >-> pure (append localLibraries [libmethcla]))
@@ -388,8 +388,8 @@ mkRules variant buildDir options = do
             f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
               (FromConfig.buildFlags getConfig)
               (getSources variant getConfig)
-      staticLib <- build staticLibrary' "a"
-      sharedLib <- build sharedLibrary' Host.sharedLibraryExtension
+      staticLib <- build staticLibrary "a"
+      sharedLib <- build sharedLibrary Host.sharedLibraryExtension
 
       -- Quick hack for setting install path of shared library
       let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
@@ -406,7 +406,7 @@ mkRules variant buildDir options = do
     do
       let (target, toolChain) = hostToolChain
           getConfig = getConfigFrom "config/host_tests.cfg"
-      result <- executable' toolChain
+      result <- executable toolChain
                   (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
                   (FromConfig.buildFlags getConfig)
                   (getSources variant getConfig)
