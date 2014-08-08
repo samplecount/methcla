@@ -27,7 +27,7 @@ main = do
                       shakeFiles = addTrailingPathSeparator buildDir
                     , shakeVersion = Methcla.version variant }
       f xs ts = do
-          let os = foldl (.) id xs $ Methcla.defaultOptions
-          rules <- Methcla.mkRules variant sourceDir buildDir os
+          let options = foldl (.) id xs $ Methcla.defaultOptions
+          rules <- Methcla.mkRules variant sourceDir buildDir options Nothing
           return $ Just $ rules >> want ts
   shakeArgsWith shakeOptions' Methcla.optionDescrs f

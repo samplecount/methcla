@@ -164,14 +164,6 @@ mkObjectsDir path = takeDirectory path </> map tr (takeFileName path) ++ "_obj"
     where tr '.' = '_'
           tr x   = x
 
-buildFlagsFromConfig :: (String -> Action (Maybe String)) -> Action (BuildFlags -> BuildFlags)
-buildFlagsFromConfig cfg = BuildFlags.fromConfig cfg >-> PkgConfig.fromConfig cfg
-
-getSources :: Variant -> (String -> Action (Maybe String)) -> Action [FilePath]
-getSources variant cfg = do
-  need =<< Config.getList cfg ["Sources.deps", if isPro variant then "Sources.pro.deps" else "Sources.default.deps"]
-  Config.getList cfg ["Sources", if isPro variant then "Sources.pro" else "Sources.default"]
-
 configureBuild :: FilePath -> FilePath -> Config -> Rules ()
 configureBuild sourceDir buildDir config = do
   (buildDir </> "config/build.cfg") *> \out -> do
@@ -188,8 +180,8 @@ withCurrentDirectory dir action = do
   setCurrentDirectory dir
   action `finally` setCurrentDirectory oldwd
 
-libmethclaPepper :: Variant -> Config -> FilePath -> FilePath -> Rules (BuildFlags -> BuildFlags)
-libmethclaPepper variant config sourceDir buildDir = do
+libmethclaPepper :: Variant -> Config -> FilePath -> FilePath -> Maybe PkgConfig.Options -> Rules (Action (BuildFlags -> BuildFlags))
+libmethclaPepper variant config sourceDir buildDir pkgConfigOptions = do
   let target = NaCl.target NaCl.canary
       result = targetBuildPrefix buildDir config target </> "libmethcla.a"
   result *> \_ -> do
@@ -200,13 +192,19 @@ libmethclaPepper variant config sourceDir buildDir = do
                         shakeFiles = addTrailingPathSeparator (takeDirectory result)
                       , shakeVersion = version variant }
       cwd <- getCurrentDirectory
-      rules <- mkRules variant "." (cwd </> buildDir) (set buildConfig config defaultOptions)
+      rules <- mkRules variant
+                       "."
+                       (cwd </> buildDir)
+                       (set buildConfig config defaultOptions)
+                       pkgConfigOptions
       withCurrentDirectory sourceDir $ shake options $ rules >> want [cwd </> result]
-  return $ append systemIncludes [sourceDir </> "include"]
-         . append localLibraries [result]
+  return $ pure ( append systemIncludes [sourceDir </> "include"]
+                 . append localLibraries [result])
+           -- FIXME: Read this from config file
+           >-> PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile"
 
-mkRules :: Variant -> FilePath -> FilePath -> Options -> IO (Rules ())
-mkRules variant sourceDir buildDir options = do
+mkRules :: Variant -> FilePath -> FilePath -> Options -> Maybe PkgConfig.Options -> IO (Rules ())
+mkRules variant sourceDir buildDir options pkgConfigOptions = do
   let config = get buildConfig options
       targetBuildPrefix' target = targetBuildPrefix buildDir config target
       targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
@@ -225,10 +223,22 @@ mkRules variant sourceDir buildDir options = do
     configureBuild sourceDir buildDir config
 
     getConfigFrom <- Config.withConfig [buildDir </> "config/build.cfg"]
+    let getBuildFlags cfg =
+              BuildFlags.fromConfig cfg
+          >-> PkgConfig.fromConfigWithOptions
+                (maybe PkgConfig.defaultOptions id pkgConfigOptions) cfg
+        getSources cfg = do
+          need =<< Config.getList cfg [ "Sources.deps"
+                                      , if isPro variant
+                                        then "Sources.pro.deps"
+                                        else "Sources.default.deps"]
+          Config.getList cfg [ "Sources"
+                             , if isPro variant
+                               then "Sources.pro"
+                               else "Sources.default"]
+
 
     phony "clean" $ removeFilesAfter buildDir ["//*"]
-
-    phony "update" $ liftIO $ putStrLn "Updated!"
 
     -- iOS
     do
@@ -240,8 +250,8 @@ mkRules variant sourceDir buildDir options = do
           let toolChain = applyEnv $ OSX.toolChain developer target
           staticLibrary toolChain
             (targetBuildPrefix' target </> "libmethcla.a")
-            (buildFlagsFromConfig getConfig)
-            (getSources variant getConfig)
+            (getBuildFlags getConfig)
+            (getSources getConfig)
       iphoneosLib <- OSX.universalBinary
                       iphoneosLibs
                       (platformBuildPrefix buildDir config iphoneosPlatform </> "libmethcla.a")
@@ -253,8 +263,8 @@ mkRules variant sourceDir buildDir options = do
               toolChain = applyEnv $ OSX.toolChain developer target
           staticLibrary toolChain
             (targetBuildPrefix' target </> "libmethcla.a")
-            (buildFlagsFromConfig getConfig)
-            (getSources variant getConfig)
+            (getBuildFlags getConfig)
+            (getSources getConfig)
       let iphonesimulatorLib = platformBuildPrefix buildDir config iphonesimulatorPlatform </> "libmethcla.a"
       iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
       phony "iphonesimulator" (need [iphonesimulatorLib])
@@ -273,17 +283,17 @@ mkRules variant sourceDir buildDir options = do
         let compiler = (LLVM, Version [3,4] [])
             abi = Android.abiString (get targetArch target)
             toolChain = applyEnv $ Android.toolChain ndk compiler target
-            buildFlags =     buildFlagsFromConfig getConfig
+            buildFlags =     getBuildFlags getConfig
                          >-> pure (Android.libcxx Static ndk target)
         libmethcla <- staticLibrary toolChain
                         (targetBuildPrefix' target </> "libmethcla.a")
                         buildFlags
-                        (getSources variant getConfig)
+                        (getSources getConfig)
 
         libmethcla_tests <- sharedLibrary toolChain
                               (targetBuildPrefix' target </> "libmethcla-tests.so")
                               (buildFlags >-> pure (append localLibraries [libmethcla]))
-                              (getSources variant getConfigTests)
+                              (getSources getConfigTests)
 
         let installPath = mkBuildPrefix buildDir config "android"
                             </> abi
@@ -310,16 +320,16 @@ mkRules variant sourceDir buildDir options = do
           getConfig = getConfigFrom $ sourceDir </> "config/pepper.cfg"
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
-                      (buildFlagsFromConfig getConfig)
-                      (getSources variant getConfig)
+                      (getBuildFlags getConfig)
+                      (getSources getConfig)
       phony "pnacl" $ need [libmethcla]
 
       let getConfigTests = getConfigFrom $ sourceDir </> "config/pepper_tests.cfg"
       pnacl_test_bc <- executable toolChain
                         (buildPrefix </> "methcla-pnacl-tests.bc")
-                        (buildFlagsFromConfig getConfigTests
+                        (getBuildFlags getConfigTests
                           >-> pure (append localLibraries [libmethcla]))
-                        (getSources variant getConfigTests)
+                        (getSources getConfigTests)
       let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
       pnacl_test *> NaCl.finalize toolChain pnacl_test_bc
       let pnacl_test_nmf = pnacl_test `replaceExtension` "nmf"
@@ -410,8 +420,8 @@ mkRules variant sourceDir buildDir options = do
           getConfig = getConfigFrom $ sourceDir </> "config/desktop.cfg"
           build f ext =
             f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
-              (buildFlagsFromConfig getConfig)
-              (getSources variant getConfig)
+              (getBuildFlags getConfig)
+              (getSources getConfig)
       staticLib <- build staticLibrary "a"
       sharedLib <- build sharedLibrary Host.sharedLibraryExtension
 
@@ -432,8 +442,8 @@ mkRules variant sourceDir buildDir options = do
           getConfig = getConfigFrom $ sourceDir </> "config/host_tests.cfg"
       result <- executable toolChain
                   (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
-                  (buildFlagsFromConfig getConfig)
-                  (getSources variant getConfig)
+                  (getBuildFlags getConfig)
+                  (getSources getConfig)
       phony "host-tests" $ need [result]
       phony "test" $ do
           need [result]
