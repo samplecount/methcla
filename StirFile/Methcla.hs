@@ -218,6 +218,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
   return $ do
     -- Common rules
+    phony "clean" $ removeFilesAfter buildDir ["//*"]
+
     _ <- versionHeaderRule variant buildDir
 
     configureBuild sourceDir buildDir config
@@ -236,9 +238,6 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                              , if isPro variant
                                then "Sources.pro"
                                else "Sources.default"]
-
-
-    phony "clean" $ removeFilesAfter buildDir ["//*"]
 
     -- iOS
     do
