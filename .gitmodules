@@ -1,13 +1,13 @@
 [submodule "engine/external_libraries/tlsf"]
-	path = engine/external_libraries/tlsf
+	path = external_libraries/tlsf
 	url = https://github.com/samplecount/tlsf.git
 [submodule "engine/external_libraries/oscpp"]
-	path = engine/external_libraries/oscpp
+	path = external_libraries/oscpp
 	url = https://github.com/kaoskorobase/oscpp.git
         branch = master
         ignore = untracked
 [submodule "engine/external_libraries/stir"]
-	path = engine/external_libraries/stir
+	path = external_libraries/stir
 	url = https://github.com/samplecount/stir.git
         branch = master
         ignore = untracked

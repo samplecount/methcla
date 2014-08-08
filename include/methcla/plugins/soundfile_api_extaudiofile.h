@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <methcla/plugins/pro/disksampler.h>
+#ifndef METHCLA_SOUNDFILEAPI_EXTAUDIOFILE_H_INCLUDED
+#define METHCLA_SOUNDFILEAPI_EXTAUDIOFILE_H_INCLUDED
 
-namespace
-{
-    const Methcla_Library library = { NULL, NULL };
-};
+#include <methcla/file.h>
+#include <methcla/plugin.h>
 
-METHCLA_EXPORT const Methcla_Library* methcla_plugins_disksampler(const Methcla_Host*, const char*)
-{
-    return &library;
-}
+METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_extaudiofile(const Methcla_Host*, const char*);
+
+#endif // METHCLA_SOUNDFILEAPI_EXTAUDIOFILE_H_INCLUDED

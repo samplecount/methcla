@@ -1,5 +1,0 @@
-./packages/bindings-mescaline
-./packages/bindings-sc3
-./packages/hsc3-process
-./packages/hsc3-server
-Cabal
