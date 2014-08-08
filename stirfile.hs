@@ -13,6 +13,7 @@
 -- limitations under the License.
 
 import           Development.Shake
+import           Development.Shake.FilePath
 import qualified Methcla as Methcla
 import qualified System.Directory as Dir
 
@@ -20,12 +21,13 @@ main :: IO ()
 main = do
   isPro <- Dir.doesFileExist "../LICENSE-PRO"
   let variant = if isPro then Methcla.Pro else Methcla.Default
+      sourceDir = "."
       buildDir = "build"
       shakeOptions' = shakeOptions {
-                      shakeFiles = buildDir ++ "/"
+                      shakeFiles = addTrailingPathSeparator buildDir
                     , shakeVersion = Methcla.version variant }
       f xs ts = do
           let os = foldl (.) id xs $ Methcla.defaultOptions
-          rules <- Methcla.mkRules variant buildDir os
+          rules <- Methcla.mkRules variant sourceDir buildDir os
           return $ Just $ rules >> want ts
   shakeArgsWith shakeOptions' Methcla.optionDescrs f
