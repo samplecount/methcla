@@ -44,7 +44,6 @@ import qualified Shakefile.C.NaCl as NaCl
 import qualified Shakefile.C.OSX as OSX
 import qualified Shakefile.C.PkgConfig as PkgConfig
 import qualified Shakefile.C.ToolChain as ToolChain
-import qualified Shakefile.C.Util as Util
 import qualified Shakefile.Config as Config
 import           Shakefile.Label
 import           System.Console.GetOpt
@@ -163,11 +162,6 @@ targetBuildPrefix buildDir config target =
 
 (>->) :: Monad m => m (a -> b) -> m (b -> c) -> m (a -> c)
 (>->) = liftM2 (>>>)
-
-mkObjectsDir :: FilePath -> FilePath
-mkObjectsDir path = takeDirectory path </> map tr (takeFileName path) ++ "_obj"
-    where tr '.' = '_'
-          tr x   = x
 
 configureBuild :: FilePath -> FilePath -> Config -> Rules ()
 configureBuild sourceDir buildDir config = do
