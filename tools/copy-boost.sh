@@ -13,15 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-src_dirs="include platform src tests"
-out_dir="./external_libraries/boost"
-
 if [ -z "$1" ]; then
-    echo "Usage: `basename $0` BOOST_SOURCE_DIR"
+    echo "Usage: `basename $0` BOOST_SOURCE_DIR [OUT_DIR SOURCE_DIRS...]"
     exit 1
 fi
 
-boost_src="$1"
+boost_src="$1" ; shift
+
+if [ -z "$1" ]; then
+  src_dirs="include platform plugins src tests"
+  out_dir="./external_libraries/boost"
+else
+  out_dir="$1" ; shift
+  src_dirs="$@"
+fi
+
 bcp="${boost_src}/dist/bin/bcp"
 
 if [ ! -x "$bcp" ]; then
@@ -29,7 +35,7 @@ if [ ! -x "$bcp" ]; then
 fi
 
 mkdir -p "$out_dir"
-"$bcp" --boost="$boost_src" --scan `find $src_dirs -name '*.hpp' -o -name '*.cpp'` "$out_dir"
+"$bcp" --boost="$boost_src" --scan `find $src_dirs -name '*.h*' -o -name '*.cpp'` "$out_dir"
 
 rm -f "$out_dir/Jamroot"
 
