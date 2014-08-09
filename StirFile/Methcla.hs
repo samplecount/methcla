@@ -23,7 +23,8 @@ module Methcla (
   , version
   , Config(..)
   , mkRules
-  , libmethclaPepper
+  , LibraryTarget(..)
+  , libmethcla
 ) where
 
 import           Control.Applicative hiding ((*>))
@@ -71,9 +72,6 @@ getEnv' name =
   getEnvWithDefault
     (error $ "Environment variable " ++ name ++ " is undefined")
     name
-
-isDarwin :: Target -> Bool
-isDarwin = isTargetOS (Just "apple") (Just "darwin10")
 
 -- ====================================================================
 -- Library variants
@@ -187,10 +185,27 @@ withCurrentDirectory dir action = do
   setCurrentDirectory dir
   action `finally` setCurrentDirectory oldwd
 
-libmethclaPepper :: Variant -> Config -> FilePath -> FilePath -> Maybe PkgConfig.Options -> Rules (Action (BuildFlags -> BuildFlags))
-libmethclaPepper variant config sourceDir buildDir pkgConfigOptions = do
-  let target = NaCl.target NaCl.canary
-      result = targetBuildPrefix buildDir config target </> "libmethcla.a"
+data LibraryTarget =
+    Lib_Pepper
+  | Lib_Android Arch
+  | Lib_iOS
+  deriving (Eq, Show)
+
+libmethcla :: LibraryTarget -> Variant -> Config -> FilePath -> FilePath -> Maybe PkgConfig.Options -> Rules (Action (BuildFlags -> BuildFlags))
+libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
+  let result =
+        case libTarget of
+          Lib_Pepper ->
+            targetBuildPrefix buildDir config NaCl.target
+              </> "libmethcla.a"
+          Lib_iOS ->
+            mkBuildPrefix buildDir config "iphone-universal"
+              </> "libmethcla.a"
+          Lib_Android arch ->
+            mkBuildPrefix buildDir config "android"
+              </> Android.abiString arch
+              </> "libmethcla.a"
+          -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
   result *> \_ -> do
     currentShakeOptions <- getShakeOptions
     alwaysRerun
@@ -221,8 +236,6 @@ mkRules :: Variant -> FilePath -> FilePath -> Options -> Maybe PkgConfig.Options
 mkRules variant sourceDir buildDir options pkgConfigOptions = do
   let config = get buildConfig options
       targetBuildPrefix' target = targetBuildPrefix buildDir config target
-      targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
-                              . need . (:[])
 
   -- Common rules
   phony "clean" $ removeFilesAfter buildDir ["//*"]
@@ -249,32 +262,36 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
   -- iOS
   do
-    let iOS_SDK = Version [7,1] []
+    let sdkVersion = OSX.sdkVersion 7 1
         getConfig = getConfigFrom $ sourceDir </> "config/ios.cfg"
 
-    let iphoneosPlatform = OSX.iPhoneOS iOS_SDK
-    iphoneosLibs <- mapTarget (flip OSX.target iphoneosPlatform) [Arm Armv7, Arm Armv7s] $ \target -> do
+    iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s] $ \target -> do
         staticLibrary
-          (OSX.toolChain <$> liftIO OSX.getDeveloperPath <*> pure target
+          (OSX.toolChain
+            <$> liftIO OSX.getDeveloperPath
+            <*> pure sdkVersion
+            <*> pure target
            >>= ToolChain.applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
     iphoneosLib <- OSX.universalBinary
                     iphoneosLibs
-                    (platformBuildPrefix buildDir config iphoneosPlatform </> "libmethcla.a")
+                    (platformBuildPrefix buildDir config OSX.iPhoneOS </> "libmethcla.a")
     phony "iphoneos" (need [iphoneosLib])
 
-    let iphonesimulatorPlatform = OSX.iPhoneSimulator iOS_SDK
     iphonesimulatorLibI386 <- do
-        let target = OSX.target (X86 I386) iphonesimulatorPlatform
+        let target = OSX.target OSX.iPhoneSimulator (X86 I386)
         staticLibrary
-          (OSX.toolChain <$> liftIO OSX.getDeveloperPath <*> pure target
+          (OSX.toolChain
+            <$> liftIO OSX.getDeveloperPath
+            <*> pure sdkVersion
+            <*> pure target
            >>= ToolChain.applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
-    let iphonesimulatorLib = platformBuildPrefix buildDir config iphonesimulatorPlatform </> "libmethcla.a"
+    let iphonesimulatorLib = platformBuildPrefix buildDir config OSX.iPhoneSimulator </> "libmethcla.a"
     iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
     phony "iphonesimulator" (need [iphonesimulatorLib])
 
@@ -288,12 +305,13 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let getConfig = getConfigFrom $ sourceDir </> "config/android.cfg"
         getConfigTests = getConfigFrom $ sourceDir </> "config/android_tests.cfg"
 
-    libs <- mapTarget (flip Android.target (Android.platform 9)) [Arm Armv5, Arm Armv7] $ \target -> do
+    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7] $ \target -> do
       let compiler = (LLVM, Version [3,4] [])
           abi = Android.abiString (get targetArch target)
           ndk = getEnv' "ANDROID_NDK"
           toolChain = Android.toolChain
                         <$> ndk
+                        <*> pure (Android.apiVersion 9)
                         <*> pure compiler
                         <*> pure target
           buildFlags =     getBuildFlags getConfig
@@ -312,7 +330,6 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                           </> abi
                           </> takeFileName libmethcla
       installPath ?=> \_ -> copyFile' libmethcla installPath
-      targetAlias target installPath
 
       let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
       testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
@@ -321,12 +338,13 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony "android-tests" $ need $ map snd libs
   -- Pepper/PNaCl
   do
-    let target = NaCl.target NaCl.canary
+    let target = NaCl.target
         naclConfig = case config of
                         Debug -> NaCl.Debug
                         Release -> NaCl.Release
         toolChain = NaCl.toolChain
                       <$> getEnv' "NACL_SDK"
+                      <*> pure NaCl.canary
                       <*> pure naclConfig
                       <*> pure target
         buildPrefix = targetBuildPrefix' target
@@ -440,12 +458,12 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     -- Quick hack for setting install path of shared library
     let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
     phony installedSharedLib $
-      if isDarwin target
-      then do
-        need [sharedLib]
-        command_ [] "install_name_tool"
-                    ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
-      else return ()
+      case get targetOS target of
+        OSX -> do
+          need [sharedLib]
+          command_ [] "install_name_tool"
+                      ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
+        _ -> return ()
 
     phony "desktop" $ need [staticLib, installedSharedLib]
   -- tests
