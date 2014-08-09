@@ -48,7 +48,7 @@ import qualified Shakefile.Config as Config
 import           Shakefile.Label
 import           System.Console.GetOpt
 import           System.Directory hiding (executable)
-import qualified System.Environment as Env
+-- import qualified System.Environment as Env
 import           System.FilePath.Find
 
 {-import Debug.Trace-}
