@@ -22,13 +22,8 @@
 #include <cstdint>
 #include <stdexcept>
 
-#if !defined(METHCLA_USE_BOOST_SHARED_PTR)
-#  if defined(__native_client__)
-#    define METHCLA_USE_BOOST_SHARED_PTR 1
-# else
-#    define METHCLA_USE_BOOST_SHARED_PTR 0
-# endif
-#endif
+// METHCLA_USE_BOOST_SHARED_PTR was needed for PNaCl,
+// probably not needed anymore.
 
 #if METHCLA_USE_BOOST_SHARED_PTR
 METHCLA_WITHOUT_WARNINGS_BEGIN
