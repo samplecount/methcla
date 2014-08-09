@@ -28,6 +28,6 @@ main = do
                     , shakeVersion = Methcla.version variant }
       f xs ts = do
           let options = foldl (.) id xs $ Methcla.defaultOptions
-          rules <- Methcla.mkRules variant sourceDir buildDir options Nothing
+              rules = Methcla.mkRules variant sourceDir buildDir options Nothing
           return $ Just $ rules >> want ts
   shakeArgsWith shakeOptions' Methcla.optionDescrs f
