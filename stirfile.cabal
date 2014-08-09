@@ -33,13 +33,10 @@ Library
 
   Build-Depends:
       base >= 4 && < 5
-    , containers
     , directory
     , filemanip
-    , filepath
-    , shake >= 0.12
+    , shake >= 0.13
     , stir >= 0.4
-    , unordered-containers
 
 Executable methcla-stirfile
   Main-Is: stirfile.hs
@@ -47,7 +44,6 @@ Executable methcla-stirfile
   Build-Depends:
       base >= 4 && < 5
     , directory
-    , filemanip
-    , shake >= 0.10
+    , shake >= 0.13
     , stir
     , methcla-stirfile
