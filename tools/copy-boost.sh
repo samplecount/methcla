@@ -14,18 +14,20 @@
 # limitations under the License.
 
 if [ -z "$1" ]; then
-    echo "Usage: `basename $0` BOOST_SOURCE_DIR [OUT_DIR SOURCE_DIRS...]"
+    echo "Usage: `basename $0` BOOST_SOURCE_DIR [OUT_DIR MODULES...]"
     exit 1
 fi
 
 boost_src="$1" ; shift
 
 if [ -z "$1" ]; then
-  src_dirs="include platform plugins src tests"
   out_dir="./external_libraries/boost"
+  # src_dirs="include platform plugins src tests"
+  modules="atomic assert heap lockfree serialization utility"
 else
   out_dir="$1" ; shift
-  src_dirs="$@"
+  # src_dirs="$@"
+  modules="$@"
 fi
 
 bcp="${boost_src}/dist/bin/bcp"
@@ -35,14 +37,11 @@ if [ ! -x "$bcp" ]; then
 fi
 
 mkdir -p "$out_dir"
-"$bcp" --boost="$boost_src" --scan `find $src_dirs -name '*.h*' -o -name '*.cpp'` "$out_dir"
+# "$bcp" --boost="$boost_src" --scan `find $src_dirs -name '*.h*' -o -name '*.cpp'` "$out_dir"
+"$bcp" --boost="$boost_src" $modules "$out_dir"
 
-rm -f "$out_dir/Jamroot"
-
+rm -rf "$out_dir/Jamroot"
 rm -rf `find "$out_dir" -name doc -type d`
-rm -rf `find "$out_dir" -name build -type d`
-
-rm -rf "$out_dir/libs/filesystem/v2/example" \
-       "$out_dir/libs/filesystem/v2/test" \
-       "$out_dir/libs/filesystem/v3/example" \
-       "$out_dir/libs/filesystem/v3/test"
+rm -rf `find "$out_dir/libs" -name build -type d`
+rm -rf `find "$out_dir/libs" -name test -type d`
+rm -rf `find "$out_dir/libs" -name example -type d`
