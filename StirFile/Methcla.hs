@@ -301,7 +301,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
     libs <- mapTarget Android.target [Arm Armv5, Arm Armv7] $ \target -> do
       let compiler = (LLVM, Version [3,4] [])
-          abi = Android.abiString (get targetArch target)
+          abi = Android.abiString (targetArch target)
           ndk = getEnv' "ANDROID_NDK"
           toolChain = Android.toolChain
                         <$> ndk
@@ -452,7 +452,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     -- Quick hack for setting install path of shared library
     let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
     phony installedSharedLib $
-      case get targetOS target of
+      case targetOS target of
         OSX -> do
           need [sharedLib]
           command_ [] "install_name_tool"
