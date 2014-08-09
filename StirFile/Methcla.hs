@@ -202,6 +202,8 @@ libmethclaPepper variant config sourceDir buildDir pkgConfigOptions = do
                       , shakeVersion = version variant
                       , shakeAbbreviations = [
                           (fullBuildDir, buildDir) ]
+                      , shakeReport = map (combine fullBuildDir . takeFileName)
+                                          (shakeReport currentShakeOptions)
                       }
           rules = mkRules variant
                      ""
