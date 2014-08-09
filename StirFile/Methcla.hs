@@ -195,13 +195,17 @@ libmethclaPepper variant config sourceDir buildDir pkgConfigOptions = do
     currentShakeOptions <- getShakeOptions
     alwaysRerun
     liftIO $ do
-      let options = currentShakeOptions {
-                        shakeFiles = addTrailingPathSeparator (takeDirectory result)
-                      , shakeVersion = version variant }
       cwd <- getCurrentDirectory
+      let fullBuildDir = cwd </> buildDir
+          options = currentShakeOptions {
+                        shakeFiles = addTrailingPathSeparator (takeDirectory result)
+                      , shakeVersion = version variant
+                      , shakeAbbreviations = [
+                          (fullBuildDir, buildDir) ]
+                      }
       rules <- mkRules variant
                        "."
-                       (cwd </> buildDir)
+                       fullBuildDir
                        (set buildConfig config defaultOptions)
                        pkgConfigOptions
       withCurrentDirectory sourceDir $ shake options $ rules >> want [cwd </> result]
