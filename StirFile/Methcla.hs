@@ -42,6 +42,7 @@ import qualified Shakefile.C.Host as Host
 import qualified Shakefile.C.NaCl as NaCl
 import qualified Shakefile.C.OSX as OSX
 import qualified Shakefile.C.PkgConfig as PkgConfig
+import qualified Shakefile.C.ToolChain as ToolChain
 import qualified Shakefile.C.Util as Util
 import qualified Shakefile.Config as Config
 import           Shakefile.Label
@@ -55,15 +56,21 @@ import           System.FilePath.Find
 -- ====================================================================
 -- Utilities
 
-lookupEnv :: String -> IO (Maybe String)
-lookupEnv name = do
-  e <- E.try $ Env.getEnv name :: IO (Either E.SomeException String)
-  case e of
-    Left _ -> return Nothing
-    Right value -> return $ Just value
+-- lookupEnv :: String -> IO (Maybe String)
+-- lookupEnv name = do
+--   e <- E.try $ Env.getEnv name :: IO (Either E.SomeException String)
+--   case e of
+--     Left _ -> return Nothing
+--     Right value -> return $ Just value
+--
+-- getEnv_ :: String -> IO String
+-- getEnv_ = fmap (maybe "" id) . lookupEnv
 
-getEnv_ :: String -> IO String
-getEnv_ = fmap (maybe "" id) . lookupEnv
+getEnv' :: String -> Action String
+getEnv' name =
+  getEnvWithDefault
+    (error $ "Environment variable " ++ name ++ " is undefined")
+    name
 
 isDarwin :: Target -> Bool
 isDarwin = isTargetOS (Just "apple") (Just "darwin10")
@@ -210,11 +217,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       targetAlias target = phony (platformString (get targetPlatform target) ++ "-" ++ archString (get targetArch target))
                               . need . (:[])
 
-  applyEnv <- toolChainFromEnvironment
-  developer <- OSX.getDeveloperPath
-  ndk <- getEnv_ "ANDROID_NDK"
-  sdk <- getEnv_ "NACL_SDK"
-  hostToolChain <- fmap (second applyEnv) Host.getDefaultToolChain
+  hostToolChain <- fmap (second ToolChain.applyEnv) Host.getDefaultToolChain
 
   return $ do
     -- Common rules
@@ -246,8 +249,9 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
       let iphoneosPlatform = OSX.iPhoneOS iOS_SDK
       iphoneosLibs <- mapTarget (flip OSX.target iphoneosPlatform) [Arm Armv7, Arm Armv7s] $ \target -> do
-          let toolChain = applyEnv $ OSX.toolChain developer target
-          staticLibrary toolChain
+          staticLibrary
+            (OSX.toolChain <$> liftIO OSX.getDeveloperPath <*> pure target
+             >>= ToolChain.applyEnv)
             (targetBuildPrefix' target </> "libmethcla.a")
             (getBuildFlags getConfig)
             (getSources getConfig)
@@ -259,8 +263,9 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       let iphonesimulatorPlatform = OSX.iPhoneSimulator iOS_SDK
       iphonesimulatorLibI386 <- do
           let target = OSX.target (X86 I386) iphonesimulatorPlatform
-              toolChain = applyEnv $ OSX.toolChain developer target
-          staticLibrary toolChain
+          staticLibrary
+            (OSX.toolChain <$> liftIO OSX.getDeveloperPath <*> pure target
+             >>= ToolChain.applyEnv)
             (targetBuildPrefix' target </> "libmethcla.a")
             (getBuildFlags getConfig)
             (getSources getConfig)
@@ -281,9 +286,13 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       libs <- mapTarget (flip Android.target (Android.platform 9)) [Arm Armv5, Arm Armv7] $ \target -> do
         let compiler = (LLVM, Version [3,4] [])
             abi = Android.abiString (get targetArch target)
-            toolChain = applyEnv $ Android.toolChain ndk compiler target
+            ndk = getEnv' "ANDROID_NDK"
+            toolChain = Android.toolChain
+                          <$> ndk
+                          <*> pure compiler
+                          <*> pure target
             buildFlags =     getBuildFlags getConfig
-                         >-> pure (Android.libcxx Static ndk target)
+                         >-> (Android.libcxx Static <$> ndk <*> pure target)
         libmethcla <- staticLibrary toolChain
                         (targetBuildPrefix' target </> "libmethcla.a")
                         buildFlags
@@ -312,9 +321,9 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                           Debug -> NaCl.Debug
                           Release -> NaCl.Release
           toolChain = NaCl.toolChain
-                        sdk
-                        naclConfig
-                        target
+                        <$> getEnv' "NACL_SDK"
+                        <*> pure naclConfig
+                        <*> pure target
           buildPrefix = targetBuildPrefix' target
           getConfig = getConfigFrom $ sourceDir </> "config/pepper.cfg"
       libmethcla <- staticLibrary toolChain
@@ -330,7 +339,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                           >-> pure (append localLibraries [libmethcla]))
                         (getSources getConfigTests)
       let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
-      pnacl_test *> NaCl.finalize toolChain pnacl_test_bc
+      pnacl_test *> \out -> join $ NaCl.finalize <$> toolChain <*> pure pnacl_test_bc <*> pure out
       let pnacl_test_nmf = pnacl_test `replaceExtension` "nmf"
       pnacl_test_nmf *> NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
 
@@ -392,8 +401,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       --       ]
       --
       -- (examplesDir </> "sampler/sounds/*") *> \output -> do
-      --   freesoundApiKey <- getEnvWithDefault
-      --                       (error "Environment variable FREESOUND_API_KEY undefined")
+      --   freesoundApiKey <- getEnv'
       --                       "FREESOUND_API_KEY"
       --   cmd "curl" [    "http://www.freesound.org/api/sounds/"
       --                ++ dropExtension (takeFileName output)
