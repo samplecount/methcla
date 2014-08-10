@@ -256,30 +256,30 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
   -- iOS
   do
-    let sdkVersion = OSX.sdkVersion 7 1
+    let sdkVersion platform = maximum <$> (OSX.getPlatformVersions platform =<< OSX.getSDKRoot)
         getConfig = getConfigFrom $ sourceDir </> "config/ios.cfg"
 
     iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s] $ \target -> do
         staticLibrary
           (OSX.toolChain
-            <$> liftIO OSX.getDeveloperPath
-            <*> pure sdkVersion
+            <$> OSX.getSDKRoot
+            <*> sdkVersion OSX.iPhoneOS
             <*> pure target
            >>= ToolChain.applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
-    iphoneosLib <- OSX.universalBinary
-                    iphoneosLibs
-                    (platformBuildPrefix buildDir config OSX.iPhoneOS </> "libmethcla.a")
+
+    let iphoneosLib = platformBuildPrefix buildDir config OSX.iPhoneOS </> "libmethcla.a"
+    iphoneosLib *> OSX.universalBinary iphoneosLibs
     phony "iphoneos" (need [iphoneosLib])
 
     iphonesimulatorLibI386 <- do
         let target = OSX.target OSX.iPhoneSimulator (X86 I386)
         staticLibrary
           (OSX.toolChain
-            <$> liftIO OSX.getDeveloperPath
-            <*> pure sdkVersion
+            <$> OSX.getSDKRoot
+            <*> sdkVersion OSX.iPhoneSimulator
             <*> pure target
            >>= ToolChain.applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
@@ -290,9 +290,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony "iphonesimulator" (need [iphonesimulatorLib])
 
     let universalTarget = "iphone-universal"
-    universalLib <- OSX.universalBinary
-                        (iphoneosLibs ++ [iphonesimulatorLib])
-                        (mkBuildPrefix buildDir config universalTarget </> "libmethcla.a")
+        universalLib = mkBuildPrefix buildDir config universalTarget </> "libmethcla.a"
+    universalLib *> OSX.universalBinary (iphoneosLibs ++ [iphonesimulatorLib])
     phony universalTarget (need [universalLib])
   -- Android
   do
@@ -323,10 +322,10 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       let installPath = mkBuildPrefix buildDir config "android"
                           </> abi
                           </> takeFileName libmethcla
-      installPath ?=> \_ -> copyFile' libmethcla installPath
+      installPath *> copyFile' libmethcla
 
       let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
-      testInstallPath ?=> \_ -> copyFile' libmethcla_tests testInstallPath
+      testInstallPath *> copyFile' libmethcla_tests
       return (installPath, testInstallPath)
     phony "android" $ need $ map fst libs
     phony "android-tests" $ need $ map snd libs
@@ -480,7 +479,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
         tagFile = "tags"
         tagFiles = "tagfiles"
-    tagFile ?=> \output -> flip actionFinally (removeFile tagFiles) $ do
+    tagFile *> \output -> flip actionFinally (removeFile tagFiles) $ do
         fs <- liftIO $ find
                   (fileName /=? "typeof") (extension ==? ".hpp") ("external_libraries/boost/boost")
             `and_` sources "include"
