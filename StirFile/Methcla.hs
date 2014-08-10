@@ -304,7 +304,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           ndk = getEnv' "ANDROID_NDK"
           toolChain = Android.toolChain
                         <$> ndk
-                        <*> pure (Android.apiVersion 9)
+                        <*> pure (Android.sdkVersion 9)
                         <*> pure compiler
                         <*> pure target
           buildFlags =     getBuildFlags getConfig
