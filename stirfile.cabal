@@ -17,8 +17,9 @@ Version: 0.3.0
 Cabal-Version: >= 1.8
 Build-Type: Simple
 
-X-Stir-Package-Dirs: external_libraries/stir
-X-Stir-Sandbox: cabal
+X-Stir-Package-Dirs:
+  external_libraries/shake
+  external_libraries/stir
 
 Library
   Hs-Source-Dirs: dist, StirFile
@@ -36,7 +37,7 @@ Library
     , directory
     , filemanip
     , shake >= 0.13
-    , stir >= 0.4
+    , shake-language-c >= 0.4
 
 Executable methcla-stirfile
   Main-Is: stirfile.hs
@@ -45,5 +46,4 @@ Executable methcla-stirfile
       base >= 4 && < 5
     , directory
     , shake >= 0.13
-    , stir
     , methcla-stirfile

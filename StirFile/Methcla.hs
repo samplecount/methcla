@@ -32,24 +32,25 @@ import           Control.Arrow
 import           Control.Exception as E
 import           Control.Monad
 import           Data.Char (toLower)
+-- import           Data.Monoid
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
-import qualified Paths_methcla_stirfile as Package
-import           Shakefile.C
-import qualified Shakefile.C.Android as Android
-import qualified Shakefile.C.BuildFlags as BuildFlags
-import qualified Shakefile.C.Host as Host
-import qualified Shakefile.C.NaCl as NaCl
-import qualified Shakefile.C.OSX as OSX
-import qualified Shakefile.C.PkgConfig as PkgConfig
-import qualified Shakefile.C.ToolChain as ToolChain
-import qualified Shakefile.Config as Config
-import           Shakefile.Label
+import           Development.Shake.Language.C
+import qualified Development.Shake.Language.C.BuildFlags as BuildFlags
+import qualified Development.Shake.Language.C.Host as Host
+import           Development.Shake.Language.C.Label
+import qualified Development.Shake.Language.C.PkgConfig as PkgConfig
+import qualified Development.Shake.Language.C.Target.Android as Android
+import qualified Development.Shake.Language.C.Target.NaCl as NaCl
+import qualified Development.Shake.Language.C.Target.OSX as OSX
+import qualified Development.Shake.Language.C.Config as Config
+-- import           Development.Shake.Language.C.Label
+-- import qualified Paths_methcla_stirfile as Package
 import           System.Console.GetOpt
 import           System.Directory hiding (executable)
 -- import qualified System.Environment as Env
-import           System.FilePath.Find
+-- import           System.FilePath.Find
 
 {-import Debug.Trace-}
 
@@ -82,9 +83,9 @@ isPro Pro = True
 isPro _   = False
 
 version :: Variant -> String
-version variant = showVersion $ Package.version {
-    versionTags = versionTags Package.version ++ tags
-  }
+version variant = showVersion (Version [0,3,0] tags)-- $ Package.version {
+  --   versionTags = versionTags Package.version ++ tags
+  -- }
   where tags = if isPro variant then ["pro"] else []
 
 newtype VersionHeader = VersionHeader { versionHeaderPath :: FilePath }
@@ -92,16 +93,17 @@ newtype VersionHeader = VersionHeader { versionHeaderPath :: FilePath }
 mkVersionHeader :: FilePath -> VersionHeader
 mkVersionHeader buildDir = VersionHeader $ buildDir </> "include/Methcla/Version.h"
 
-versionHeaderRule :: Variant -> FilePath -> Rules VersionHeader
-versionHeaderRule variant buildDir = do
+versionHeaderRule :: Variant -> FilePath -> FilePath -> Rules VersionHeader
+versionHeaderRule variant sourceDir buildDir = do
   let output = mkVersionHeader buildDir
   versionHeaderPath output *> \path -> do
-    alwaysRerun
+    version <- head <$> readFileLines (sourceDir </> "VERSION")
+    let tag = if isPro variant then "-pro" else ""
     writeFileChanged path $ unlines [
         "#ifndef METHCLA_VERSION_H_INCLUDED"
       , "#define METHCLA_VERSION_H_INCLUDED"
       , ""
-      , "static const char* kMethclaVersion = \"" ++ version variant ++ "\";"
+      , "static const char* kMethclaVersion = \"" ++ version ++ tag ++ "\";"
       , ""
       , "#endif /* METHCLA_VERSION_H_INCLUDED */"
       ]
@@ -160,24 +162,22 @@ targetBuildPrefix :: FilePath -> Config -> Target -> FilePath
 targetBuildPrefix buildDir config target =
   mkBuildPrefix buildDir config (toBuildPrefix target)
 
-(>->) :: Monad m => m (a -> b) -> m (b -> c) -> m (a -> c)
-(>->) = liftM2 (>>>)
-
-configureBuild :: FilePath -> FilePath -> Config -> Rules ()
-configureBuild sourceDir buildDir config = do
-  (buildDir </> "config/build.cfg") *> \out -> do
-    alwaysRerun
-    writeFileChanged out $ unlines [
-        "la.methc.sourceDir = " ++ sourceDir
-      , "la.methc.buildDir = " ++ buildDir
-      , "include config/" ++ map toLower (show config) ++ ".cfg"
-      ]
+-- configureBuild :: FilePath -> FilePath -> Config -> Rules ()
+-- configureBuild sourceDir buildDir config = do
+--   ("build/methcla-build.cfg") *> \out -> do
+--     alwaysRerun
+--     writeFileChanged out $ unlines [
+--         "la.methc.sourceDir = " ++ sourceDir
+--       , "la.methc.buildDir = " ++ buildDir
+--       , "include config/" ++ map toLower (show config) ++ ".cfg"
+--       ]
 
 withCurrentDirectory :: FilePath -> IO a -> IO a
-withCurrentDirectory dir action = do
-  oldwd <- getCurrentDirectory
-  setCurrentDirectory dir
-  action `finally` setCurrentDirectory oldwd
+-- withCurrentDirectory dir action = do
+--   oldwd <- getCurrentDirectory
+--   setCurrentDirectory dir
+--   action `finally` setCurrentDirectory oldwd
+withCurrentDirectory _ action = action
 
 data LibraryTarget =
     Lib_Pepper
@@ -185,20 +185,30 @@ data LibraryTarget =
   | Lib_iOS
   deriving (Eq, Show)
 
-libmethcla :: LibraryTarget -> Variant -> Config -> FilePath -> FilePath -> Maybe PkgConfig.Options -> Rules (Action (BuildFlags -> BuildFlags))
+-- selectLibraryFlags :: (BuildFlags -> BuildFlags) -> (BuildFlags -> BuildFlags)
+-- selectLibraryFlags f =
+--   let b = f mempty
+--   in   set libraries (get libraries b)
+--      . set linkerFlags (get linkerFlags b)
+--      $ mempty
+
+libmethcla :: LibraryTarget -> Variant -> Config -> FilePath -> FilePath -> Maybe PkgConfig.Options -> Rules (FilePath, Action (BuildFlags -> BuildFlags))
 libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
-  let result =
+  let (result, exportFlags) =
         case libTarget of
           Lib_Pepper ->
-            targetBuildPrefix buildDir config NaCl.target
-              </> "libmethcla.a"
+            ( targetBuildPrefix buildDir config NaCl.target </> "libmethcla.a"
+            , -- FIXME: Read this from config file
+              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           Lib_iOS ->
-            mkBuildPrefix buildDir config "iphone-universal"
-              </> "libmethcla.a"
+            ( mkBuildPrefix buildDir config "iphone-universal" </> "libmethcla.a"
+            , return id )
           Lib_Android arch ->
-            mkBuildPrefix buildDir config "android"
+            ( mkBuildPrefix buildDir config "android"
               </> Android.abiString arch
               </> "libmethcla.a"
+            , -- FIXME: Read this from config file
+              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
   result *> \_ -> do
     currentShakeOptions <- getShakeOptions
@@ -221,10 +231,9 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
                      pkgConfigOptions
       withCurrentDirectory sourceDir $ shake options $
         rules >> want [cwd </> result]
-  return $ pure ( append systemIncludes [sourceDir </> "include"]
-                 . append localLibraries [result])
-           -- FIXME: Read this from config file
-           >-> PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile"
+  return (result, pure ( append systemIncludes [sourceDir </> "include"]
+                        . append localLibraries [result])
+                  >>>= exportFlags)
 
 mkRules :: Variant -> FilePath -> FilePath -> Options -> Maybe PkgConfig.Options -> Rules ()
 mkRules variant sourceDir buildDir options pkgConfigOptions = do
@@ -234,29 +243,34 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- Common rules
   phony "clean" $ removeFilesAfter buildDir ["//*"]
 
-  _ <- versionHeaderRule variant buildDir
+  _ <- versionHeaderRule variant sourceDir buildDir
 
-  configureBuild sourceDir buildDir config
+  -- configureBuild sourceDir buildDir config
 
-  getConfigFrom <- Config.withConfig [buildDir </> "config/build.cfg"]
+  let configEnv = [
+          ("la.methc.sourceDir", sourceDir)
+        , ("la.methc.buildDir", buildDir)
+        , ("la.methc.buildConfig", map toLower (show config)) ]
+
+  getConfigFrom <- Config.withConfig [] >>= \f -> return $ f configEnv
 
   let getBuildFlags cfg =
-            BuildFlags.fromConfig cfg
-        >-> PkgConfig.fromConfigWithOptions
+             BuildFlags.fromConfig cfg
+        >>>= PkgConfig.fromConfigWithOptions
               (maybe PkgConfig.defaultOptions id pkgConfigOptions) cfg
       getSources cfg = do
-        need =<< Config.getList cfg [ "Sources.deps"
-                                    , if isPro variant
-                                      then "Sources.pro.deps"
-                                      else "Sources.default.deps"]
-        Config.getList cfg [ "Sources"
-                           , if isPro variant
-                             then "Sources.pro"
-                             else "Sources.default"]
+        need =<< Config.getPaths cfg [ "Sources.deps"
+                                     , if isPro variant
+                                       then "Sources.pro.deps"
+                                       else "Sources.default.deps"]
+        Config.getPaths cfg [ "Sources"
+                            , if isPro variant
+                              then "Sources.pro"
+                              else "Sources.default"]
 
   -- iOS
   do
-    let sdkVersion platform = maximum <$> (OSX.getPlatformVersions platform =<< OSX.getSDKRoot)
+    let sdkVersion platform = maximum <$> OSX.getPlatformVersions platform
         getConfig = getConfigFrom $ sourceDir </> "config/ios.cfg"
 
     iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s] $ \target -> do
@@ -265,7 +279,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
             <$> OSX.getSDKRoot
             <*> sdkVersion OSX.iPhoneOS
             <*> pure target
-           >>= ToolChain.applyEnv)
+           >>= applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
@@ -281,7 +295,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
             <$> OSX.getSDKRoot
             <*> sdkVersion OSX.iPhoneSimulator
             <*> pure target
-           >>= ToolChain.applyEnv)
+           >>= applyEnv)
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
@@ -307,8 +321,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                         <*> pure (Android.sdkVersion 9)
                         <*> pure compiler
                         <*> pure target
-          buildFlags =     getBuildFlags getConfig
-                       >-> (Android.libcxx Static <$> ndk <*> pure target)
+          buildFlags =      getBuildFlags getConfig
+                       >>>= (Android.libcxx Static <$> ndk <*> pure target)
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
                       buildFlags
@@ -316,7 +330,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
       libmethcla_tests <- sharedLibrary toolChain
                             (targetBuildPrefix' target </> "libmethcla-tests.so")
-                            (buildFlags >-> pure (append localLibraries [libmethcla]))
+                            (buildFlags >>>= pure (append localLibraries [libmethcla]))
                             (getSources getConfigTests)
 
       let installPath = mkBuildPrefix buildDir config "android"
@@ -352,7 +366,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     pnacl_test_bc <- executable toolChain
                       (buildPrefix </> "methcla-pnacl-tests.bc")
                       (getBuildFlags getConfigTests
-                        >-> pure (append localLibraries [libmethcla]))
+                        >>>= pure (append localLibraries [libmethcla]))
                       (getSources getConfigTests)
     let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
     pnacl_test *> \out -> join $ NaCl.finalize <$> toolChain <*> pure pnacl_test_bc <*> pure out
@@ -439,7 +453,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     --   cmd (Cwd examplesDir) server :: Action ()
   -- Desktop
   do
-    let (target, toolChain) = second ((=<<) ToolChain.applyEnv) Host.defaultToolChain
+    let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFrom $ sourceDir </> "config/desktop.cfg"
         build f ext =
           f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
@@ -461,7 +475,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony "desktop" $ need [staticLib, installedSharedLib]
   -- tests
   do
-    let (target, toolChain) = second ((=<<) ToolChain.applyEnv) Host.defaultToolChain
+    let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFrom $ sourceDir </> "config/host_tests.cfg"
     result <- executable toolChain
                 (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
@@ -472,23 +486,24 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         need [result]
         command_ [] result []
     phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
+
   --tags
-  do
-    let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
-        files clause dir = find always clause dir
-        sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
-        tagFile = "tags"
-        tagFiles = "tagfiles"
-    tagFile *> \output -> flip actionFinally (removeFile tagFiles) $ do
-        fs <- liftIO $ find
-                  (fileName /=? "typeof") (extension ==? ".hpp") ("external_libraries/boost/boost")
-            `and_` sources "include"
-            `and_` sources "platform"
-            `and_` sources "plugins"
-            `and_` sources "src"
-        need fs
-        writeFileLines tagFiles fs
-        command_ [] "ctags" $
-            (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
-         ++ ["-f", output]
-         ++ ["-L", tagFiles]
+  -- do
+  --   let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
+  --       files clause dir = find always clause dir
+  --       sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
+  --       tagFile = "tags"
+  --       tagFiles = "tagfiles"
+  --   tagFile *> \output -> flip actionFinally (removeFile tagFiles) $ do
+  --       fs <- liftIO $ find
+  --                 (fileName /=? "typeof") (extension ==? ".hpp") ("external_libraries/boost/boost")
+  --           `and_` sources "include"
+  --           `and_` sources "platform"
+  --           `and_` sources "plugins"
+  --           `and_` sources "src"
+  --       need fs
+  --       writeFileLines tagFiles fs
+  --       command_ [] "ctags" $
+  --           (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
+  --        ++ ["-f", output]
+  --        ++ ["-L", tagFiles]
