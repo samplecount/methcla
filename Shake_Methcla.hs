@@ -211,26 +211,22 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
               PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
   result *> \_ -> do
-    currentShakeOptions <- getShakeOptions
     alwaysRerun
+    currentShakeOptions <- getShakeOptions
     liftIO $ do
-      cwd <- getCurrentDirectory
-      let fullBuildDir = cwd </> buildDir
-          options = currentShakeOptions {
-                        shakeFiles = addTrailingPathSeparator fullBuildDir
+      let options = currentShakeOptions {
+                        shakeFiles = addTrailingPathSeparator buildDir
                       , shakeVersion = version variant
-                      , shakeAbbreviations = [
-                          (fullBuildDir, buildDir) ]
-                      , shakeReport = map (combine fullBuildDir . takeFileName)
+                      , shakeReport = map (combine buildDir . takeFileName)
                                           (shakeReport currentShakeOptions)
                       }
           rules = mkRules variant
-                     ""
-                     fullBuildDir
+                     sourceDir
+                     buildDir
                      (set buildConfig config defaultOptions)
                      pkgConfigOptions
       withCurrentDirectory sourceDir $ shake options $
-        rules >> want [cwd </> result]
+        rules >> want [result]
   return (result, pure ( append systemIncludes [sourceDir </> "include"]
                         . append localLibraries [result])
                   >>>= exportFlags)
