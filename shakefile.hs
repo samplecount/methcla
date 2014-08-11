@@ -14,7 +14,7 @@
 
 import           Development.Shake
 import           Development.Shake.FilePath
-import qualified Methcla as Methcla
+import qualified Shake_Methcla as Methcla
 import qualified System.Directory as Dir
 
 main :: IO ()

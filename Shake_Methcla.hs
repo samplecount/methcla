@@ -14,7 +14,7 @@
 
 {-# LANGUAGE TypeOperators #-}
 
-module Methcla (
+module Shake_Methcla (
     Variant(..)
   , Options
   , buildConfig
