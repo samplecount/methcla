@@ -12,7 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-Name: methcla-stirfile
+Name: methcla-shakefile
 Version: 0.3.0
 Cabal-Version: >= 1.8
 Build-Type: Simple
@@ -22,28 +22,28 @@ X-Stir-Package-Dirs:
   external_libraries/stir
 
 Library
-  Hs-Source-Dirs: dist, StirFile
+  -- Hs-Source-Dirs: dist
 
   Exposed-Modules:
-    Methcla
+    Shake_Methcla
 
-  Other-Modules:
-    Paths_methcla_stirfile
+  -- Other-Modules:
+  --   Paths_methcla_stirfile
 
   Ghc-Options: -Wall
 
   Build-Depends:
       base >= 4 && < 5
     , directory
-    , filemanip
+    -- , filemanip
     , shake >= 0.13
     , shake-language-c >= 0.4
 
-Executable methcla-stirfile
-  Main-Is: stirfile.hs
-  Ghc-Options: -Wall -rtsopts -threaded
+Executable methcla-shakefile
+  Main-Is: shakefile.hs
+  Ghc-Options: -Wall -rtsopts
   Build-Depends:
       base >= 4 && < 5
     , directory
     , shake >= 0.13
-    , methcla-stirfile
+    , shake-language-c >= 0.4
