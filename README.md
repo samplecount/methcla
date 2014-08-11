@@ -8,42 +8,55 @@ Methcla is a light-weight, efficient sound engine for mobile devices, see our [w
 
 ## Building the sound engine
 
-Our build system is written in Haskell and you need to install at least the [Haskell platform](http://www.haskell.org/platform/) and [cabal-install 1.18](http://hackage.haskell.org/package/cabal-install) before building Methcla.
+Our build system is written in Haskell using the [Shake](https://github.com/ndmitchell/shake) library and you need to install the latest [Haskell platform](http://www.haskell.org/platform/) before building Methcla.
 
-In the `engine` subdirectory execute
-
-    ./stir update
-
-initially and each time the build files change. Also don't forget to
+First off, don't forget to
 
     git submodule update --init --recursive
 
-after you pull from Methcla's repository.
+after pulling from Methcla's repository.
 
-Note that for the examples bundled with methcla there's no need to call *stir* directly, that's taken care of by the respective platform specific build systems.
+Initialize the build system:
 
-To build a specific target:
+    ./shake .update
 
-    ./stir TARGET
+This step needs to be repeated each time the build script's package dependencies change.
+
+To build a specific target (see below for a list of possible targets):
+
+    ./shake TARGET
 
 To clean everything
 
-    ./stir clean
+    ./shake clean
 
 Use the `-j` flag for parallel builds:
 
-    ./stir -j4 test
+    ./shake -j4 test
 
-The `-c` flag allows to select a build configuration (*debug* is the default):
+The build script automatically passes the number of core in your build machine, use `-j1` to force a sequential build.
 
-    ./stir -c release test
+The `-c` flag allows to select a build configuration (*release* or *debug*):
 
-Display the list of commandline options:
+    ./shake -c release test
 
-    ./stir -h
+Display the list of Shake command line options:
+
+    ./shake -h
+
+All built files are put in the `build` directory.
+
+Here's a non-exhaustive list of targets:
+
+* `test`: Run the test suite; this should be first thing to do when porting to a new platform.
+* `desktop`: Build a shared library for the host operating system
+* `iphoneos`: Build a static library for iOS devices
+* `iphone-universal`: Build a static library for iOS devices and simulator
+* `android`: Build a static library for Android
+* `pnacl`: Build a static library for Pepper/PNaCl
 
 ## Examples
 
 [thADDeus](https://github.com/samplecount/methcla/tree/develop/engine/examples/thADDeus) is an example project that builds the engine for iOS and Android devices and provides a simple multitouch sine synthesizer.
 
-The [sampler](https://github.com/samplecount/methcla/tree/develop/engine/examples/sampler) example is a simple multitouch sampler application (it uses a streaming disk sampler for the Pro version of Methcla).
+The [sampler](https://github.com/samplecount/methcla/tree/develop/engine/examples/sampler) example is a simple multitouch sampler application.
