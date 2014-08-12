@@ -244,7 +244,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                                   then sourceDir </> "pro/config"
                                   else sourceDir </> "config/default") ]
 
-  getConfigFrom <- Config.withConfig [] >>= \f -> return $ f configEnv
+  getConfigFromWithEnv <- Config.withConfig [] >>= \f -> return $ f . (configEnv++)
+  let getConfigFrom = getConfigFromWithEnv []
 
   let getBuildFlags cfg =
              BuildFlags.fromConfig cfg
@@ -295,29 +296,34 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony universalTarget (need [universalLib])
   -- Android
   do
-    let getConfig = getConfigFrom $ sourceDir </> "config/android.cfg"
-        getConfigTests = getConfigFrom $ sourceDir </> "config/android_tests.cfg"
+    let ndk = getEnv' "ANDROID_NDK"
+        mkAndroidConfig file = do
+          ndkPath <- ndk
+          return $ getConfigFromWithEnv [("ANDROID_NDK", ndkPath)] file
 
     libs <- mapTarget Android.target [Arm Armv5, Arm Armv7] $ \target -> do
       let compiler = (LLVM, Version [3,4] [])
           abi = Android.abiString (targetArch target)
-          ndk = getEnv' "ANDROID_NDK"
           toolChain = Android.toolChain
                         <$> ndk
                         <*> pure (Android.sdkVersion 9)
                         <*> pure compiler
                         <*> pure target
-          buildFlags =      getBuildFlags getConfig
-                       >>>= (Android.libcxx Static <$> ndk <*> pure target)
+
+      let getConfig = mkAndroidConfig "config/android.cfg"
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
-                      buildFlags
-                      (getSources getConfig)
+                      (     (Android.libcxx Static <$> ndk <*> pure target)
+                       >>>= (getBuildFlags =<< getConfig))
+                      (getSources =<< getConfig)
 
+      let getConfig = mkAndroidConfig "config/android_tests.cfg"
       libmethcla_tests <- sharedLibrary toolChain
                             (targetBuildPrefix' target </> "libmethcla-tests.so")
-                            (buildFlags >>>= pure (append localLibraries [libmethcla]))
-                            (getSources getConfigTests)
+                            (     (Android.libcxx Static <$> ndk <*> pure target)
+                             >>>= (getBuildFlags =<< getConfig)
+                             >>>= pure (append localLibraries [libmethcla]))
+                            (getSources =<< getConfig)
 
       let installPath = mkBuildPrefix buildDir config "android"
                           </> abi
