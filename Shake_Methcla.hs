@@ -20,7 +20,6 @@ module Shake_Methcla (
   , buildConfig
   , defaultOptions
   , optionDescrs
-  , version
   , Config(..)
   , mkRules
   , LibraryTarget(..)
@@ -46,7 +45,7 @@ import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
 import qualified Development.Shake.Language.C.Config as Config
 -- import           Development.Shake.Language.C.Label
--- import qualified Paths_methcla_stirfile as Package
+import qualified Paths_methcla_shakefile as Package
 import           System.Console.GetOpt
 import           System.Directory hiding (executable)
 -- import qualified System.Environment as Env
@@ -81,12 +80,6 @@ data Variant = Default | Pro deriving (Eq, Show)
 isPro :: Variant -> Bool
 isPro Pro = True
 isPro _   = False
-
-version :: Variant -> String
-version variant = showVersion (Version [0,3,0] tags)-- $ Package.version {
-  --   versionTags = versionTags Package.version ++ tags
-  -- }
-  where tags = if isPro variant then ["pro"] else []
 
 newtype VersionHeader = VersionHeader { versionHeaderPath :: FilePath }
 
@@ -216,7 +209,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
     liftIO $ do
       let options = currentShakeOptions {
                         shakeFiles = addTrailingPathSeparator buildDir
-                      , shakeVersion = version variant
+                      , shakeVersion = showVersion Package.version
                       , shakeReport = map (combine buildDir . takeFileName)
                                           (shakeReport currentShakeOptions)
                       }

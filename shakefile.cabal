@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 Name: methcla-shakefile
-Version: 0.3.0
+Version: 0.1
 Cabal-Version: >= 1.8
 Build-Type: Simple
 
@@ -27,8 +27,8 @@ Library
   Exposed-Modules:
     Shake_Methcla
 
-  -- Other-Modules:
-  --   Paths_methcla_stirfile
+  Other-Modules:
+    Paths_methcla_shakefile
 
   Ghc-Options: -Wall
 
