@@ -22,10 +22,14 @@ boost_src="$1" ; shift
 
 if [ -z "$1" ]; then
   out_dir="./external_libraries/boost"
+else
+  out_dir="$1" ; shift
+fi
+
+if [ -z "$@" ]; then
   # src_dirs="include platform plugins src tests"
   modules="atomic assert heap lockfree serialization utility"
 else
-  out_dir="$1" ; shift
   # src_dirs="$@"
   modules="$@"
 fi
