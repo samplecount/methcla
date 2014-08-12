@@ -11,6 +11,7 @@
 #include <thread>
 #include <unistd.h>
 
+#if 0
 #if defined(__clang__)
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-private-field"
@@ -19,6 +20,7 @@
 # include <catch.hpp>
 #if defined(__clang__)
 # pragma clang diagnostic pop
+#endif
 #endif
 
 extern const char* __progname;
@@ -30,12 +32,19 @@ static void run_tests()
 
     __android_log_print(logLevel, progname.c_str(), "Running unit tests ...");
 
+#if 0
     // Configure CATCH to send all its output to a stringstream
     std::stringstream oss;
     Catch::Ptr<Catch::Config> config = new Catch::Config();
     config->setStreamBuf(oss.rdbuf());
     Catch::Runner runner(config);
     const int result = runner.runTests().assertions.failed;
+#else
+#   warning Android unit test runner needs to be ported to gtest!
+    std::stringstream oss;
+    oss << "FIXME: Android unit test runner needs to be ported to gtest!";
+    const int result = 1;
+#endif
 
     __android_log_print(logLevel, progname.c_str(), "%s", oss.str().c_str());
     __android_log_print(logLevel, progname.c_str(), "Unit tests returned %d", result);
