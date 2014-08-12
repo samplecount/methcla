@@ -47,3 +47,4 @@ Executable methcla-shakefile
     , directory
     , shake >= 0.13
     , shake-language-c >= 0.4
+    , unordered-containers
