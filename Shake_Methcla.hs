@@ -244,7 +244,9 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                                   then sourceDir </> "pro/config"
                                   else sourceDir </> "config/default") ]
 
-  getConfigFromWithEnv <- Config.withConfig [] >>= \f -> return $ f . (configEnv++)
+  getConfigFromWithEnv <- do
+    f <- Config.withConfig []
+    return $ \env file -> f (configEnv ++ env) (sourceDir </> file)
   let getConfigFrom = getConfigFromWithEnv []
 
   let getBuildFlags cfg =
@@ -258,7 +260,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- iOS
   do
     let sdkVersion platform = maximum <$> OSX.getPlatformVersions platform
-        getConfig = getConfigFrom $ sourceDir </> "config/ios.cfg"
+        getConfig = getConfigFrom "config/ios.cfg"
 
     iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s] $ \target -> do
         staticLibrary
@@ -347,14 +349,14 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                       <*> pure naclConfig
                       <*> pure target
         buildPrefix = targetBuildPrefix' target
-        getConfig = getConfigFrom $ sourceDir </> "config/pepper.cfg"
+        getConfig = getConfigFrom "config/pepper.cfg"
     libmethcla <- staticLibrary toolChain
                     (targetBuildPrefix' target </> "libmethcla.a")
                     (getBuildFlags getConfig)
                     (getSources getConfig)
     phony "pnacl" $ need [libmethcla]
 
-    let getConfigTests = getConfigFrom $ sourceDir </> "config/pepper_tests.cfg"
+    let getConfigTests = getConfigFrom "config/pepper_tests.cfg"
     pnacl_test_bc <- executable toolChain
                       (buildPrefix </> "methcla-pnacl-tests.bc")
                       (getBuildFlags getConfigTests
@@ -446,7 +448,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- Desktop
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
-        getConfig = getConfigFrom $ sourceDir </> "config/desktop.cfg"
+        getConfig = getConfigFrom "config/desktop.cfg"
         build f ext =
           f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
             (getBuildFlags getConfig)
@@ -468,7 +470,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- tests
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
-        getConfig = getConfigFrom $ sourceDir </> "config/host_tests.cfg"
+        getConfig = getConfigFrom "config/host_tests.cfg"
     result <- executable toolChain
                 (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
                 (getBuildFlags getConfig)
