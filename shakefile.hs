@@ -19,7 +19,7 @@ import qualified System.Directory as Dir
 
 main :: IO ()
 main = do
-  isPro <- Dir.doesFileExist "LICENSE-PRO"
+  isPro <- Dir.doesFileExist "pro/LICENSE"
   let variant = if isPro then Methcla.Pro else Methcla.Default
       sourceDir = "."
       buildDir = "build"

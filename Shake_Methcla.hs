@@ -246,7 +246,10 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   let configEnv = [
           ("la.methc.sourceDir", sourceDir)
         , ("la.methc.buildDir", buildDir)
-        , ("la.methc.buildConfig", map toLower (show config)) ]
+        , ("la.methc.buildConfig", map toLower (show config))
+        , ("la.methc.variantDir", if isPro variant
+                                  then sourceDir </> "pro/config"
+                                  else sourceDir </> "config/default") ]
 
   getConfigFrom <- Config.withConfig [] >>= \f -> return $ f configEnv
 
@@ -255,14 +258,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         >>>= PkgConfig.fromConfigWithOptions
               (maybe PkgConfig.defaultOptions id pkgConfigOptions) cfg
       getSources cfg = do
-        need =<< Config.getPaths cfg [ "Sources.deps"
-                                     , if isPro variant
-                                       then "Sources.pro.deps"
-                                       else "Sources.default.deps"]
-        Config.getPaths cfg [ "Sources"
-                            , if isPro variant
-                              then "Sources.pro"
-                              else "Sources.default"]
+        need =<< Config.getPaths cfg [ "Sources.deps" ]
+        Config.getPaths cfg [ "Sources" ]
 
   -- iOS
   do
