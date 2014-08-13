@@ -155,23 +155,6 @@ targetBuildPrefix :: FilePath -> Config -> Target -> FilePath
 targetBuildPrefix buildDir config target =
   mkBuildPrefix buildDir config (toBuildPrefix target)
 
--- configureBuild :: FilePath -> FilePath -> Config -> Rules ()
--- configureBuild sourceDir buildDir config = do
---   ("build/methcla-build.cfg") *> \out -> do
---     alwaysRerun
---     writeFileChanged out $ unlines [
---         "la.methc.sourceDir = " ++ sourceDir
---       , "la.methc.buildDir = " ++ buildDir
---       , "include config/" ++ map toLower (show config) ++ ".cfg"
---       ]
-
-withCurrentDirectory :: FilePath -> IO a -> IO a
--- withCurrentDirectory dir action = do
---   oldwd <- getCurrentDirectory
---   setCurrentDirectory dir
---   action `finally` setCurrentDirectory oldwd
-withCurrentDirectory _ action = action
-
 data LibraryTarget =
     Lib_Pepper
   | Lib_Android Arch
@@ -218,8 +201,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
                      buildDir
                      (set buildConfig config defaultOptions)
                      pkgConfigOptions
-      withCurrentDirectory sourceDir $ shake options $
-        rules >> want [result]
+      shake options $ rules >> want [result]
   return (result, pure ( append systemIncludes [sourceDir </> "include"]
                         . append localLibraries [result])
                   >>>= exportFlags)
@@ -233,8 +215,6 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   phony "clean" $ removeFilesAfter buildDir ["//*"]
 
   _ <- versionHeaderRule variant sourceDir buildDir
-
-  -- configureBuild sourceDir buildDir config
 
   let configEnv = [
           ("la.methc.sourceDir", sourceDir)
