@@ -31,6 +31,7 @@ import           Control.Arrow
 import           Control.Exception as E
 import           Control.Monad
 import           Data.Char (toLower)
+import           Data.List
 -- import           Data.Monoid
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
@@ -437,11 +438,11 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     sharedLib <- build sharedLibrary Host.sharedLibraryExtension
 
     -- Quick hack for setting install path of shared library
-    let installedSharedLib = joinPath $ ["install"] ++ tail (splitPath sharedLib)
-    phony installedSharedLib $
+    let installedSharedLib =  intercalate "-" ("install":tail (splitDirectories sharedLib))
+    phony installedSharedLib $ do
+      need [sharedLib]
       case targetOS target of
         OSX -> do
-          need [sharedLib]
           command_ [] "install_name_tool"
                       ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
         _ -> return ()
