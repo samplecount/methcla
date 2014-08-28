@@ -271,7 +271,7 @@ private:
             m_file = std::move(Methcla::SoundFile(host, m_path));
 
             m_channels = m_file.info().channels;
-            m_startFrame = std::min(std::max(0ll, m_startFrame), m_file.info().frames);
+            m_startFrame = std::min(std::max<int64_t>(0, m_startFrame), m_file.info().frames);
             m_fileFrames = m_fileFrames < 0
                             ? m_file.info().frames - m_startFrame
                             : std::min(m_fileFrames, m_file.info().frames - m_startFrame);
