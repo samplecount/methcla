@@ -11,9 +11,6 @@
 	url = https://github.com/samplecount/shake-language-c.git
         branch = master
         ignore = untracked
-[submodule "external_libraries/shake"]
-	path = external_libraries/shake
-	url = https://github.com/kaoskorobase/shake.git
 [submodule "external_libraries/shake-cabal-build"]
 	path = external_libraries/shake-cabal-build
 	url = https://github.com/samplecount/shake-cabal-build.git
