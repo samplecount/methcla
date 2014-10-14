@@ -7,7 +7,7 @@
         branch = master
         ignore = untracked
 [submodule "engine/external_libraries/stir"]
-	path = external_libraries/stir
+	path = external_libraries/shake-language-c
 	url = https://github.com/samplecount/shake-language-c.git
         branch = master
         ignore = untracked
