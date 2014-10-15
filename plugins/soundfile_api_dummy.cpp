@@ -148,6 +148,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api, const char*
 
 static const Methcla_SoundFileAPI kSoundFileAPI = {
     nullptr,
+    nullptr,
     soundfile_open
 };
 

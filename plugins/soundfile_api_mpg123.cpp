@@ -191,6 +191,7 @@ static void methcla_mpg123_library_destroy(const Methcla_Library*)
 
 static const Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {
     nullptr,
+    "mp3",
     soundfile_open
 };
 

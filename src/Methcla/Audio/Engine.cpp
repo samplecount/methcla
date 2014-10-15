@@ -19,7 +19,11 @@
 #include "Methcla/Memory.hpp"
 #include "Methcla/Platform.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 #include <cassert>
+#include <string>
+#include <vector>
 
 using namespace Methcla;
 using namespace Methcla::Audio;
@@ -84,6 +88,40 @@ METHCLA_C_LINKAGE void methcla_api_host_free_aligned(const Methcla_Host*, void* 
     Memory::freeAligned(ptr);
 }
 
+std::vector<std::string> split(const std::string& s, char delim)
+{
+    std::stringstream ss(s);
+    std::string item;
+    std::vector<std::string> elems;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+std::string takeExtension(const std::string& path)
+{
+    auto exts = split(path, '.');
+    return exts.size() >= 2 ? exts.back() : std::string();
+}
+
+std::string toLower(const std::string& s)
+{
+    std::string result(s);
+    boost::algorithm::to_lower(result);
+    return result;
+}
+
+bool matchExtension(std::vector<std::string> extensions, std::string ext)
+{
+    for (auto validExt : extensions)
+    {
+        if (toLower(validExt) == toLower(ext))
+            return true;
+    }
+    return false;
+}
+
 METHCLA_C_LINKAGE Methcla_Error methcla_api_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
 {
     assert(host && host->handle);
@@ -101,23 +139,27 @@ METHCLA_C_LINKAGE Methcla_Error methcla_api_host_soundfile_open(const Methcla_Ho
         );
     }
 
-    // Open sound file with first API that doesn't return an error.
+    // Open sound file with first API that matches the file extension or doesn't return an error (if the API doesn't specify file extensions).
     for (auto it=apis.begin(); it != apis.end(); it++)
     {
-        Methcla_Error result = (*it)->open(*it, path, mode, file, info);
-        if (methcla_is_ok(result))
+        if (   (*it)->valid_file_extensions == nullptr
+            || matchExtension(split((*it)->valid_file_extensions, ','), takeExtension(path)))
         {
-            assert(file != nullptr);
-            return result;
-        }
-        else if (!(   methcla_error_has_code(result, kMethcla_UnsupportedFileTypeError)
-                   || methcla_error_has_code(result, kMethcla_UnsupportedDataFormatError)))
-        {
-            return result;
-        }
-        else
-        {
-            methcla_error_free(result);
+            Methcla_Error result = (*it)->open(*it, path, mode, file, info);
+            if (methcla_is_ok(result))
+            {
+                assert(file != nullptr);
+                return result;
+            }
+            else if (!(   methcla_error_has_code(result, kMethcla_UnsupportedFileTypeError)
+                       || methcla_error_has_code(result, kMethcla_UnsupportedDataFormatError)))
+            {
+                return result;
+            }
+            else
+            {
+                methcla_error_free(result);
+            }
         }
     }
 
