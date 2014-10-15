@@ -28,7 +28,7 @@ fi
 
 if [ -z "$@" ]; then
   # src_dirs="include platform plugins src tests"
-  modules="atomic assert heap lockfree serialization utility"
+  modules="algorithm atomic assert heap lockfree serialization utility"
 else
   # src_dirs="$@"
   modules="$@"
