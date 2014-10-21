@@ -170,7 +170,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
           Lib_Pepper ->
             ( targetBuildPrefix buildDir config NaCl.target </> "libmethcla.a"
             , -- FIXME: Read this from config file
-              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
+              PkgConfig.pkgConfig (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           Lib_iOS ->
             ( mkBuildPrefix buildDir config "iphone-universal" </> "libmethcla.a"
             , return id )
@@ -179,7 +179,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
               </> Android.abiString arch
               </> "libmethcla.a"
             , -- FIXME: Read this from config file
-              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
+              PkgConfig.pkgConfig (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
   result *> \_ -> do
     alwaysRerun
@@ -226,7 +226,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
   let getBuildFlags cfg =
              BuildFlags.fromConfig cfg
-        >>>= PkgConfig.fromConfigWithOptions
+        >>>= PkgConfig.fromConfig
               (maybe PkgConfig.defaultOptions id pkgConfigOptions) cfg
       getSources cfg = do
         need =<< Config.getPaths cfg [ "Sources.deps" ]
