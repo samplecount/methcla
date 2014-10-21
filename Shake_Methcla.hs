@@ -28,11 +28,9 @@ module Shake_Methcla (
 
 import           Control.Applicative hiding ((*>))
 import           Control.Arrow
-import           Control.Exception as E
 import           Control.Monad
 import           Data.Char (toLower)
 import           Data.List
--- import           Data.Monoid
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
@@ -45,12 +43,8 @@ import qualified Development.Shake.Language.C.Target.Android as Android
 import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
 import qualified Development.Shake.Language.C.Config as Config
--- import           Development.Shake.Language.C.Label
 import qualified Paths_methcla_shakefile as Package
 import           System.Console.GetOpt
-import           System.Directory hiding (executable)
--- import qualified System.Environment as Env
--- import           System.FilePath.Find
 
 {-import Debug.Trace-}
 
