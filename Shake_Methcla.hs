@@ -28,11 +28,9 @@ module Shake_Methcla (
 
 import           Control.Applicative hiding ((*>))
 import           Control.Arrow
-import           Control.Exception as E
 import           Control.Monad
 import           Data.Char (toLower)
 import           Data.List
--- import           Data.Monoid
 import           Data.Version (Version(..), showVersion)
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
@@ -45,12 +43,8 @@ import qualified Development.Shake.Language.C.Target.Android as Android
 import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
 import qualified Development.Shake.Language.C.Config as Config
--- import           Development.Shake.Language.C.Label
 import qualified Paths_methcla_shakefile as Package
 import           System.Console.GetOpt
-import           System.Directory hiding (executable)
--- import qualified System.Environment as Env
--- import           System.FilePath.Find
 
 {-import Debug.Trace-}
 
@@ -176,7 +170,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
           Lib_Pepper ->
             ( targetBuildPrefix buildDir config NaCl.target </> "libmethcla.a"
             , -- FIXME: Read this from config file
-              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
+              PkgConfig.pkgConfig (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           Lib_iOS ->
             ( mkBuildPrefix buildDir config "iphone-universal" </> "libmethcla.a"
             , return id )
@@ -185,7 +179,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
               </> Android.abiString arch
               </> "libmethcla.a"
             , -- FIXME: Read this from config file
-              PkgConfig.pkgConfigWithOptions (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
+              PkgConfig.pkgConfig (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
           -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
   result *> \_ -> do
     alwaysRerun
@@ -232,7 +226,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
   let getBuildFlags cfg =
              BuildFlags.fromConfig cfg
-        >>>= PkgConfig.fromConfigWithOptions
+        >>>= PkgConfig.fromConfig
               (maybe PkgConfig.defaultOptions id pkgConfigOptions) cfg
       getSources cfg = do
         need =<< Config.getPaths cfg [ "Sources.deps" ]
