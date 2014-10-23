@@ -6,7 +6,7 @@
 	url = https://github.com/kaoskorobase/oscpp.git
         branch = master
         ignore = untracked
-[submodule "engine/external_libraries/stir"]
+[submodule "engine/external_libraries/shake-language-c"]
 	path = external_libraries/shake-language-c
 	url = https://github.com/samplecount/shake-language-c.git
         branch = master
