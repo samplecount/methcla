@@ -12,10 +12,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-import           Data.Version (showVersion)
 import           Development.Shake
 import           Development.Shake.FilePath
-import qualified Paths_methcla_shakefile as Package
 import qualified Shake_Methcla as Methcla
 import qualified System.Directory as Dir
 
@@ -27,7 +25,7 @@ main = do
       buildDir = "build"
       shakeOptions' = shakeOptions {
                       shakeFiles = addTrailingPathSeparator buildDir
-                    , shakeVersion = showVersion Package.version
+                    , shakeVersion = Methcla.buildSystemVersion
                     }
       f xs ts = do
           let options = foldl (.) id xs $ Methcla.defaultOptions

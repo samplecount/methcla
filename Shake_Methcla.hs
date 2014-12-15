@@ -15,7 +15,8 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Shake_Methcla (
-    Variant(..)
+    buildSystemVersion
+  , Variant(..)
   , Options
   , buildConfig
   , defaultOptions
@@ -31,7 +32,7 @@ import           Control.Arrow
 import           Control.Monad
 import           Data.Char (toLower)
 import           Data.List
-import           Data.Version (Version(..), showVersion)
+import           Data.Version (Version(..))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Development.Shake.Language.C
@@ -43,10 +44,13 @@ import qualified Development.Shake.Language.C.Target.Android as Android
 import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
 import qualified Development.Shake.Language.C.Config as Config
-import qualified Paths_methcla_shakefile as Package
 import           System.Console.GetOpt
 
 {-import Debug.Trace-}
+
+-- Bump this when build system changes require a complete rebuild.
+buildSystemVersion :: String
+buildSystemVersion = "1"
 
 -- ====================================================================
 -- Utilities
@@ -187,7 +191,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
     liftIO $ do
       let options = currentShakeOptions {
                         shakeFiles = addTrailingPathSeparator buildDir
-                      , shakeVersion = showVersion Package.version
+                      , shakeVersion = buildSystemVersion
                       , shakeReport = map (combine buildDir . takeFileName)
                                           (shakeReport currentShakeOptions)
                       }

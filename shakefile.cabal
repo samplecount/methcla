@@ -26,15 +26,11 @@ Library
   Exposed-Modules:
     Shake_Methcla
 
-  Other-Modules:
-    Paths_methcla_shakefile
-
   Ghc-Options: -Wall
 
   Build-Depends:
       base >= 4 && < 5
     , directory
-    -- , filemanip
     , shake >= 0.13
     , shake-language-c >= 0.4
 
