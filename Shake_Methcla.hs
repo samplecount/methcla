@@ -324,7 +324,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                         Release -> NaCl.Release
         toolChain = NaCl.toolChain
                       <$> getEnv' "NACL_SDK"
-                      <*> pure NaCl.canary
+                      <*> pure (NaCl.pepper 39)
                       <*> pure naclConfig
                       <*> pure target
         buildPrefix = targetBuildPrefix' target
