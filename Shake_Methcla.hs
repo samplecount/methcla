@@ -158,6 +158,7 @@ data LibraryTarget =
     Lib_Pepper
   | Lib_Android Arch
   | Lib_iOS
+  | Lib_Desktop
   deriving (Eq, Show)
 
 -- selectLibraryFlags :: (BuildFlags -> BuildFlags) -> (BuildFlags -> BuildFlags)
@@ -184,7 +185,9 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
               </> "libmethcla.a"
             , -- FIXME: Read this from config file
               PkgConfig.pkgConfig (maybe PkgConfig.defaultOptions id pkgConfigOptions) "sndfile" )
-          -- _ -> error $ "Library target " ++ show libTarget ++ " not supported yet"
+          Lib_Desktop ->
+            ( targetBuildPrefix buildDir config (fst Host.defaultToolChain) </> "libmethcla.a"
+            , return id )
   result *> \_ -> do
     alwaysRerun
     currentShakeOptions <- getShakeOptions
