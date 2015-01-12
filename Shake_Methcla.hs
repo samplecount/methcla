@@ -285,7 +285,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           ndkPath <- ndk
           return $ getConfigFromWithEnv [("ANDROID_NDK", ndkPath)] file
 
-    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7] $ \target -> do
+    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, X86 I386] $ \target -> do
       let compiler = (LLVM, Version [3,4] [])
           abi = Android.abiString (targetArch target)
           toolChain = Android.toolChain
