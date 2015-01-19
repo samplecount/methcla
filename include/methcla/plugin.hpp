@@ -146,6 +146,12 @@ namespace Methcla { namespace Plugin {
         }
     };
 
+    struct NoOptions
+    {
+        NoOptions(OSCPP::Server::ArgStream)
+        {}
+    };
+
     template <class Options, class PortDescriptor> class StaticSynthOptions
     {
     public:

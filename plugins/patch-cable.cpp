@@ -13,10 +13,13 @@
 // limitations under the License.
 
 #include <methcla/plugins/patch-cable.h>
+#include <methcla/plugin.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+
+using namespace Methcla::Plugin;
 
 typedef enum {
     kPort_in,
@@ -95,10 +98,79 @@ static const Methcla_SynthDef descriptor =
     NULL
 };
 
+// Amplifier
+
+namespace {
+
+typedef NoOptions AmplifierOptions;
+
+class AmplifierPorts
+{
+public:
+    enum Port
+    {
+        kInput
+      , kOutput
+      , kGain
+    };
+
+    static constexpr size_t numPorts() { return 3; }
+
+    static Methcla_PortDescriptor descriptor(Port port)
+    {
+        switch (port)
+        {
+            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
+            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
+            case kGain:   return Methcla::Plugin::PortDescriptor::controlInput();
+            default: throw std::runtime_error(METHCLA_PLUGINS_AMPLIFIER_URI ": Invalid port index");
+        }
+    }
+};
+
+class Amplifier
+{
+    float* m_ports[AmplifierPorts::numPorts()];
+
+public:
+    Amplifier(const World<Amplifier>& world, const Methcla_SynthDef*, const AmplifierOptions& options)
+    {
+    }
+
+    void connect(AmplifierPorts::Port port, void* data)
+    {
+        m_ports[port] = static_cast<float*>(data);
+    }
+
+    void process(const World<Amplifier>& world, size_t numFrames)
+    {
+        const float* const input = m_ports[AmplifierPorts::kInput];
+        float* output = m_ports[AmplifierPorts::kOutput];
+        const float gain = *m_ports[AmplifierPorts::kGain];
+
+        if (gain == 0.0f) {
+            for (size_t i=0; i < numFrames; i++) {
+                output[i] = 0.0f;
+            }
+        } else {
+            for (size_t i=0; i < numFrames; i++) {
+                output[i] = gain * input[i];
+            }
+        }
+    }
+};
+
+StaticSynthDef<Amplifier,AmplifierOptions,AmplifierPorts> kAmplifierDef;
+
+};
+
+// Library initialization
+
 static const Methcla_Library library = { NULL, NULL };
 
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_patch_cable(const Methcla_Host* host, const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
+    kAmplifierDef(host, METHCLA_PLUGINS_AMPLIFIER_URI);
     return &library;
 }
