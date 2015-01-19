@@ -712,7 +712,10 @@ void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 const shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) const
 {
     auto it = m_synthDefs.find(uri);
-    if (it == m_synthDefs.end())
-        throw std::runtime_error("Synth definition not found");
+    if (it == m_synthDefs.end()) {
+        throwErrorWith(kMethcla_SynthDefNotFoundError, [&](std::stringstream& s) {
+            s << "Synth definition " << uri << " not found";
+        });
+    }
     return it->second;
 }
