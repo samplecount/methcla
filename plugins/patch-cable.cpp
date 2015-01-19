@@ -72,13 +72,13 @@ process(const Methcla_World*, Methcla_Synth* synth, size_t numFrames)
     const float* src = self->ports[kPort_in];
     float* dst = self->ports[kPort_out];
 
-    float rms = 0;
-    for (size_t i=0; i < numFrames; i++) {
-        rms += src[i] * src[i];
-    }
-    rms = sqrt(rms);
-
+    // float rms = 0;
+    // for (size_t i=0; i < numFrames; i++) {
+    //     rms += src[i] * src[i];
+    // }
+    // rms = sqrt(rms);
     // std::cout << "patch_cable " << rms << "\n";
+
     std::copy(src, src + numFrames, dst);
 }
 
