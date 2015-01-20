@@ -72,9 +72,6 @@ Synth::~Synth()
 
 Synth* Synth::construct(Environment& env, NodeId nodeId, const SynthDef& synthDef, OSCPP::Server::ArgStream controls, OSCPP::Server::ArgStream options)
 {
-    // TODO: This is not really necessary; each buffer could be aligned correctly, with some padding in between buffers.
-    assert( kBufferAlignment.isAligned(env.blockSize() * sizeof(sample_t)) );
-
     // Get synth options
     const Methcla_SynthOptions* synthOptions = synthDef.configure(options);
 
