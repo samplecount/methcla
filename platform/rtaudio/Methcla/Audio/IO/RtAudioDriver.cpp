@@ -34,6 +34,8 @@ using namespace Methcla::Audio::IO;
 RtAudioDriver::RtAudioDriver(Options options)
     : Driver(options)
     , m_sampleRate(0)
+    , m_isOpen(false)
+    , m_isRunning(false)
 {
     // Determine the number of devices available
     if (m_audio.getDeviceCount() < 1)
@@ -76,6 +78,7 @@ RtAudioDriver::RtAudioDriver(Options options)
         m_audio.openStream(&oParams, iParamsPtr, RTAUDIO_FLOAT32,
                            sampleRate, &bufferFrames, processCallback, this);
         m_sampleRate = m_audio.getStreamSampleRate();
+        m_isOpen = true;
     }
     catch (RtError& e)
     {
@@ -96,7 +99,6 @@ RtAudioDriver::RtAudioDriver(Options options)
 
 RtAudioDriver::~RtAudioDriver()
 {
-    // Stop audio unit
     stop();
 }
 
@@ -122,12 +124,18 @@ size_t RtAudioDriver::bufferSize() const
 
 void RtAudioDriver::start()
 {
-    m_audio.startStream();
+    if (m_isOpen && !m_isRunning) {
+        m_audio.startStream();
+        m_isRunning = true;
+    }
 }
 
 void RtAudioDriver::stop()
 {
-    m_audio.stopStream();
+    if (m_isOpen && m_isRunning) {
+        m_audio.stopStream();
+        m_isRunning = false;
+    }
 }
 
 Methcla_Time RtAudioDriver::currentTime()

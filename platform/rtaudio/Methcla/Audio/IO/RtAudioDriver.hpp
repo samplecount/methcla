@@ -23,7 +23,12 @@ namespace Methcla { namespace Audio { namespace IO
 {
     class RtAudioDriver : public Driver
     {
+        RtAudio m_audio;
         double m_sampleRate;
+        bool m_isOpen;
+        bool m_isRunning;
+        std::unique_ptr<MultiChannelBuffer> m_inputBuffer;
+        std::unique_ptr<MultiChannelBuffer> m_outputBuffer;
 
     public:
         RtAudioDriver(Options options);
@@ -43,11 +48,6 @@ namespace Methcla { namespace Audio { namespace IO
         static int processCallback(void* outputBuffer, void* inputBuffer, unsigned int numFrames,
                                    double streamTime, RtAudioStreamStatus status, void* data);
         void process(float* outputBuffer, const float* inputBuffer, unsigned int numFrames, double streamTime);
-
-    private:
-        RtAudio m_audio;
-        std::unique_ptr<MultiChannelBuffer> m_inputBuffer;
-        std::unique_ptr<MultiChannelBuffer> m_outputBuffer;
     };
 }; }; };
 
