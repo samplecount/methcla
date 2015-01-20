@@ -8,8 +8,8 @@ language: haskell
   # - cd engine && cabal install --only-dependencies --enable-tests
   # - sh ./engine/tools/travis-ci-install.sh
   # - cabal install split
+env: CC=clang
 script:
   # - cabal configure && cabal build && ./dist/build/shakefile/shakefile test
   # - cd engine && ./stir update --force-reinstalls && ./stir test
   - cabal update && cabal install --only-dependencies && cabal run -- test
-# env: PATH=/opt/llvm/bin:$PATH CC=clang TOOLCHAIN_VARIANT=clang
