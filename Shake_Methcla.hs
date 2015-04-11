@@ -244,7 +244,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let sdkVersion platform = maximum <$> OSX.getPlatformVersions platform
         getConfig = getConfigFrom "config/ios.cfg"
 
-    iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s] $ \target -> do
+    iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s, Arm Arm64] $ \target -> do
         staticLibrary
           (OSX.toolChain
             <$> OSX.getSDKRoot
@@ -259,8 +259,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     iphoneosLib *> OSX.universalBinary iphoneosLibs
     phony "iphoneos" (need [iphoneosLib])
 
-    iphonesimulatorLibI386 <- do
-        let target = OSX.target OSX.iPhoneSimulator (X86 I386)
+    iphonesimulatorLibs <- mapTarget (OSX.target OSX.iPhoneSimulator) [X86 I386, X86 X86_64] $ \target -> do
         staticLibrary
           (OSX.toolChain
             <$> OSX.getSDKRoot
@@ -270,8 +269,9 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           (targetBuildPrefix' target </> "libmethcla.a")
           (getBuildFlags getConfig)
           (getSources getConfig)
+
     let iphonesimulatorLib = platformBuildPrefix buildDir config OSX.iPhoneSimulator </> "libmethcla.a"
-    iphonesimulatorLib *> copyFile' iphonesimulatorLibI386
+    iphonesimulatorLib *> OSX.universalBinary iphonesimulatorLibs
     phony "iphonesimulator" (need [iphonesimulatorLib])
 
     let universalTarget = "iphone-universal"
