@@ -15,7 +15,7 @@
 #include "Engine.hpp"
 
 #include <methcla/file.hpp>
-#include <methcla/plugins/pro/disksampler.h>
+#include <methcla/plugins/disksampler.h>
 #include <methcla/plugins/sampler.h>
 #include <methcla/plugins/node-control.h>
 #include <methcla/plugins/patch-cable.h>
