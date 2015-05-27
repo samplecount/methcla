@@ -216,7 +216,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Pull PATH from environment\n[ -f \"$HOME/.profile\" ] && . \"$HOME/.profile\"\n[ -f \"$HOME/.bash_ogin\" ] && . \"$HOME/.bash_login\"\n\ncd ../../..\n\ncase ACTION in\nclean) stir_action=clean ;;\n*) stir_action=desktop ;;\nesac\n\n./stir -j`sysctl -n hw.ncpu` -c \"$CONFIGURATION\" $stir_action\n";
+			shellScript = "# Pull PATH from environment\n[ -f \"$HOME/.profile\" ] && . \"$HOME/.profile\"\n[ -f \"$HOME/.bash_ogin\" ] && . \"$HOME/.bash_login\"\n\ncd ../../..\n\ncase ACTION in\nclean) shake_action=clean ;;\n*) shake_action=desktop ;;\nesac\n\n./shake -j`sysctl -n hw.ncpu` -c \"$CONFIGURATION\" $shake_action\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
