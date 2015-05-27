@@ -23,8 +23,13 @@
 #define METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING 1
 
 static const size_t kCacheLineSize = 64;
+// Multiple of disk block size, more or less.
 static const size_t kDiskBlockSize = 8192;
-static const size_t kDiskTransferSize = kDiskBlockSize * 4;
+// How many frames are read at once?
+// NOTE: Previously kDiskBlockSize * 4, now kDiskBlockSize * 8 in order to avoid buffer underruns while app is in background on iOS.
+// TODO: Make disk buffer size configurable at runtime.
+static const size_t kDiskTransferSize = kDiskBlockSize * 8;
+// How many transfer blocks are in a buffer?
 static const size_t kNumTransfersPerBuffer = 4;
 
 static const size_t kMinInterpFrames = 4;
