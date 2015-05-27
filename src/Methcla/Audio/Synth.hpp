@@ -109,30 +109,23 @@ public:
     void write(const Environment& env, size_t numFrames, const sample_t* src, size_t offset=0)
     {
         if (bus() != nullptr) {
-            if (   ((flags() & kMethcla_BusMappingReplace) == 0)
-                && (bus()->epoch() == env.epoch()))
-            {
-                // Accumulate
-                sample_t* dst = bus()->data() + offset;
-                // accumulate(dst, src, numFrames);
-                for (size_t i=0; i < numFrames; i++) {
-                    dst[i] += src[i];
+            sample_t* buffer = bus()->data();
+            if (bus()->epoch() == env.epoch()) { // Bus has been written to in this epoch
+                if ((flags() & kMethcla_BusMappingReplace) == kMethcla_BusMappingReplace) { // Replace
+                    memset(buffer, 0, offset * sizeof(sample_t));
+                    std::copy(src, src + numFrames, buffer + offset);
+                } else { // Accumulate
+                    sample_t* dst = buffer + offset;
+                    // accumulate(dst, src, numFrames);
+                    for (size_t i=0; i < numFrames; i++) {
+                        dst[i] += src[i];
+                    }
                 }
-            } else {
-                // Copy
-                std::copy(src, src + numFrames, bus()->data() + offset);
+            } else { // Bus hasn't been written in this epoch
+                // Assign
+                memset(buffer, 0, offset * sizeof(sample_t));
+                std::copy(src, src + numFrames, buffer + offset);
                 bus()->setEpoch(env.epoch());
-            }
-        }
-    }
-
-    void zero(const Environment& env, size_t numFrames, size_t offset=0)
-    {
-        if (bus() != nullptr) {
-            if (   ((flags() & kMethcla_BusMappingReplace) != 0)
-                && (bus()->epoch() == env.epoch() /* Otherwise bus will be zero'd anyway */))
-            {
-                memset(bus()->data() + offset, 0, numFrames * sizeof(sample_t));
             }
         }
     }

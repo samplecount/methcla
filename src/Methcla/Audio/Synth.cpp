@@ -337,7 +337,6 @@ void Synth::doProcess(size_t numFrames)
 
         for (size_t i=0; i < numAudioOutputs(); i++) {
             AudioOutputConnection& x = m_audioOutputConnections[i];
-            x.zero(env, sampleOffset);
             x.write(env, numFrames - sampleOffset, outputBuffers + x.index() * blockSize, sampleOffset);
         }
 
