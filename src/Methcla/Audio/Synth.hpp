@@ -89,7 +89,8 @@ public:
             if (   ((flags() & kMethcla_BusMappingExternal) == kMethcla_BusMappingExternal)
                 || ((flags() & kMethcla_BusMappingFeedback) == kMethcla_BusMappingFeedback)
                 || (bus()->epoch() == env.epoch())) {
-                memcpy(dst, bus()->data() + offset, numFrames * sizeof(sample_t));
+                const sample_t* buffer = bus()->data();
+                std::copy(buffer + offset, buffer + offset + numFrames, dst);
             } else {
                 memset(dst, 0, numFrames * sizeof(sample_t));
             }
