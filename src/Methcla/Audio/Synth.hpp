@@ -86,8 +86,8 @@ public:
     {
         if (bus() != nullptr) {
             // std::lock_guard<AudioBus::Lock> lock(bus->lock());
-            if (   (flags() & kMethcla_BusMappingExternal)
-                || (flags() & kMethcla_BusMappingFeedback)
+            if (   ((flags() & kMethcla_BusMappingExternal) == kMethcla_BusMappingExternal)
+                || ((flags() & kMethcla_BusMappingFeedback) == kMethcla_BusMappingFeedback)
                 || (bus()->epoch() == env.epoch())) {
                 memcpy(dst, bus()->data() + offset, numFrames * sizeof(sample_t));
             } else {
