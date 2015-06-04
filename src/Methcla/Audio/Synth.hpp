@@ -113,7 +113,6 @@ public:
             sample_t* buffer = bus()->data();
             if (bus()->epoch() == env.epoch()) { // Bus has been written to in this epoch
                 if ((flags() & kMethcla_BusMappingReplace) == kMethcla_BusMappingReplace) { // Replace
-                    memset(buffer, 0, offset * sizeof(sample_t));
                     std::copy(src, src + numFrames, buffer + offset);
                 } else { // Accumulate
                     sample_t* dst = buffer + offset;
