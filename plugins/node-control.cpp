@@ -129,7 +129,7 @@ public:
     ASREnvelope(const World<ASREnvelope>& world, const Methcla_SynthDef*, const ASREnvelopeOptions& options)
         : m_options(options)
         , m_state(kAttackPhase)
-        , m_numFramesLeft(options.attackTime * world.sampleRate())
+        , m_numFramesLeft((size_t)(options.attackTime * world.sampleRate() + 0.5f))
         , m_slope(m_options.sustainLevel / m_numFramesLeft)
         , m_level(0.f)
     {
