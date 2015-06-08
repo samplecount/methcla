@@ -67,6 +67,11 @@ namespace Methcla
         NodeId()
             : NodeId(-1)
         { }
+
+        operator bool() const
+        {
+            return *this != NodeId();
+        }
     };
 
     class GroupId : public NodeId
