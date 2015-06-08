@@ -15,6 +15,8 @@
 #include <methcla/plugins/node-control.h>
 #include <methcla/plugin.hpp>
 
+#include <cmath>
+
 using namespace Methcla::Plugin;
 
 // DoneAfter
@@ -188,13 +190,119 @@ public:
                 }
             }
 
-            for (size_t k=outFrame; k < numFrames; k++)
+            for (size_t k=outFrame; k < numFrames; k++) {
                 output[k] = 0.f;
+            }
         }
     }
 };
 
 StaticSynthDef<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeDef;
+
+// ExponentialFade
+
+class ExponentialFadeOptions
+{
+public:
+    ExponentialFadeOptions(OSCPP::Server::ArgStream args)
+    {
+        startLevel = args.float32();
+        endLevel = args.float32();
+        duration = args.float32();
+    }
+
+    float startLevel;
+    float endLevel;
+    float duration;
+};
+
+class ExponentialFadePorts
+{
+public:
+    enum Port
+    {
+        kInput
+      , kOutput
+    };
+
+    static constexpr size_t numPorts() { return 2; }
+
+    static Methcla_PortDescriptor descriptor(Port port)
+    {
+        switch (port)
+        {
+            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
+            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
+            default: throw std::runtime_error("Invalid port index");
+        }
+    }
+};
+
+class ExponentialFade
+{
+    enum State {
+        kRunning,
+        kDone
+    };
+
+    State  m_state;
+    size_t m_numFramesLeft;
+    float  m_growth;
+    float  m_level;
+    float* m_ports[ExponentialFadePorts::numPorts()];
+
+public:
+    ExponentialFade(const World<ExponentialFade>& world, const Methcla_SynthDef*, const ExponentialFadeOptions& options)
+        : m_state(kRunning)
+        , m_numFramesLeft((size_t)(options.duration * world.sampleRate() + 0.5f))
+        , m_growth(std::pow(options.endLevel / options.startLevel, 1.0 / m_numFramesLeft))
+        , m_level(options.startLevel)
+    {
+        std::fill(m_ports, m_ports + ExponentialFadePorts::numPorts(), nullptr);
+    }
+
+    void connect(ExponentialFadePorts::Port port, void* data)
+    {
+        m_ports[port] = static_cast<float*>(data);
+    }
+
+    void process(const World<ExponentialFade>& world, size_t numFrames)
+    {
+        const float* input = m_ports[ExponentialFadePorts::kInput];
+        float* output = m_ports[ExponentialFadePorts::kOutput];
+
+        if (m_numFramesLeft == 0)
+        {
+            if (m_state == kRunning) {
+                m_state = kDone;
+                world.synthDone(this);
+            }
+            for (size_t k=0; k < numFrames; k++) {
+                output[k] = m_level * input[k];
+            }
+        }
+        else
+        {
+            const size_t n = std::min(numFrames, m_numFramesLeft);
+            for (size_t k=0; k < n; k++) {
+                output[k] = m_level * input[k];
+                m_level *= m_growth;
+            }
+            for (size_t k=n; k < numFrames; k++) {
+                output[k] = m_level * input[k];
+            }
+
+            m_numFramesLeft -= n;
+
+            if (m_numFramesLeft == 0) {
+                m_state = kDone;
+                world.synthDone(this);
+            }
+        }
+    }
+};
+
+StaticSynthDef<ExponentialFade,ExponentialFadeOptions,ExponentialFadePorts> kExponentialFade;
 
 // Library
 
@@ -204,5 +312,6 @@ METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla
 {
     kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);
+    kExponentialFade(host, METHCLA_PLUGINS_EXPONENTIAL_FADE_URI);
     return &library;
 }
