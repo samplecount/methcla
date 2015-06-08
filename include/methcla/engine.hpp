@@ -947,6 +947,20 @@ namespace Methcla
             m_notificationHandlers.erase(handlerId);
         }
 
+        static NotificationHandler nodeEndedHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        {
+            return [nodeId,whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended") {
+                    NodeId otherNodeId = NodeId(msg.args().int32());
+                    if (nodeId == otherNodeId) {
+                        whenDone(nodeId);
+                        return true;
+                    }
+                }
+                return false;
+            };
+        }
+
         NotificationHandler freeNodeIdHandler(NodeId nodeId)
         {
             return [this,nodeId](const OSCPP::Server::Message& msg) {
