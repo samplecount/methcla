@@ -148,8 +148,9 @@ public:
 
         if (m_state == kDone)
         {
-            for (size_t k=0; k < numFrames; k++)
+            for (size_t k=0; k < numFrames; k++) {
                 output[k] = 0.f;
+            }
         }
         else
         {
