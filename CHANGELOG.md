@@ -6,6 +6,8 @@
 * Implement various node placement options
 * Allow plugins to notify the engine that they are done processing; add `methcla_world_synth_done` function to plugin API
 * Fix bus zeroing logic (#102)
+* Add operator bool to `Methcla::NodeId`
+* Add `Methcla::Engine::nodeEndedHandler` API method returning `/node/ended` notification handler
 
 ### 0.2.0
 
