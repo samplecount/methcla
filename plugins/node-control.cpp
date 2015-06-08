@@ -133,6 +133,7 @@ public:
         , m_slope(m_options.sustainLevel / m_numFramesLeft)
         , m_level(0.f)
     {
+        std::fill(m_ports, m_ports + ASREnvelopePorts::numPorts(), nullptr);
     }
 
     void connect(ASREnvelopePorts::Port port, void* data)
