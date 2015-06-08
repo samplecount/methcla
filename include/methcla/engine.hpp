@@ -964,11 +964,9 @@ namespace Methcla
         NotificationHandler freeNodeIdHandler(NodeId nodeId)
         {
             return [this,nodeId](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/ended")
-                {
+                if (msg == "/node/ended") {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId)
-                    {
+                    if (nodeId == otherNodeId) {
                         nodeIdAllocator().free(nodeId);
                         return true;
                     }
@@ -980,11 +978,9 @@ namespace Methcla
         NotificationHandler freeNodeIdHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
         {
             return [this,nodeId,whenDone](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/ended")
-                {
+                if (msg == "/node/ended") {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId)
-                    {
+                    if (nodeId == otherNodeId) {
                         nodeIdAllocator().free(nodeId);
                         whenDone(nodeId);
                         return true;
