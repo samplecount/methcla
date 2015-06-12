@@ -74,6 +74,12 @@ namespace Methcla
         }
     };
 
+    inline static std::ostream& operator<<(std::ostream& out, const NodeId& nodeId)
+    {
+        out << nodeId.id();
+        return out;
+    }
+
     class GroupId : public NodeId
     {
     public:
