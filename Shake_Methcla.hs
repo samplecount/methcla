@@ -351,7 +351,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
     pnacl_test *> \out -> join $ NaCl.finalize <$> toolChain <*> pure pnacl_test_bc <*> pure out
     let pnacl_test_nmf = pnacl_test `replaceExtension` "nmf"
-    pnacl_test_nmf *> NaCl.mk_nmf [(NaCl.PNaCl, pnacl_test)]
+    pnacl_test_nmf *> NaCl.mk_nmf (NaCl.Program (NaCl.Executable pnacl_test Nothing) Nothing)
 
     let pnacl_test' = "tests/pnacl" </> takeFileName pnacl_test
     pnacl_test' *> copyFile' pnacl_test
