@@ -45,6 +45,7 @@ import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
 import qualified Development.Shake.Language.C.Config as Config
 import           System.Console.GetOpt
+import           Text.Read (readMaybe)
 
 {-import Debug.Trace-}
 
@@ -321,17 +322,20 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony "android-tests" $ need $ map snd libs
   -- Pepper/PNaCl
   do
-    let target = NaCl.target
+    let getConfig = getConfigFrom "config/pepper.cfg"
+        target = NaCl.target
         naclConfig = case config of
                         Debug -> NaCl.Debug
                         Release -> NaCl.Release
         toolChain = NaCl.toolChain
                       <$> getEnv' "NACL_SDK"
-                      <*> pure (NaCl.pepper 39)
+                      <*> (maybe (error "PEPPER_SDK_VERSION undefined")
+                                 (maybe (error "Couldn't parse PEPPER_SDK_VERSION")
+                                        NaCl.pepper . readMaybe)
+                            <$> getConfig "PEPPER_SDK_VERSION")
                       <*> pure naclConfig
                       <*> pure target
         buildPrefix = targetBuildPrefix' target
-        getConfig = getConfigFrom "config/pepper.cfg"
     libmethcla <- staticLibrary toolChain
                     (targetBuildPrefix' target </> "libmethcla.a")
                     (getBuildFlags getConfig)
