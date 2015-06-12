@@ -102,8 +102,7 @@ void Group::addToTail(Node* node)
 
 void Group::addBefore(Node* target, Node* node)
 {
-    BOOST_ASSERT(target != nullptr);
-    BOOST_ASSERT(target->parent() == this);
+    METHCLA_ASSERT_NODE_IS_LINKED(target);
     METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
@@ -124,8 +123,7 @@ void Group::addBefore(Node* target, Node* node)
 
 void Group::addAfter(Node* target, Node* node)
 {
-    BOOST_ASSERT(target != nullptr);
-    BOOST_ASSERT(target->parent() == this);
+    METHCLA_ASSERT_NODE_IS_LINKED(target);
     METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
