@@ -177,7 +177,9 @@ static inline void addNodeToTarget(Node* target, Node* node, Methcla_NodePlaceme
         default:
             throwError(kMethcla_ArgumentError, "Invalid node placement specification");
     }
-    assert(node->parent() != nullptr);
+
+    // POST: Node should be linked into node tree.
+    BOOST_ASSERT(node->parent() != nullptr);
 }
 
 void Methcla::Audio::perform_nrt_free(Environment*, void* data)
