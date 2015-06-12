@@ -50,8 +50,7 @@ Group* Group::construct(Environment& env, NodeId nodeId)
 void Group::doProcess(size_t numFrames)
 {
     Node* node = m_first;
-    while (node != nullptr)
-    {
+    while (node != nullptr) {
         // Store pointer to next node because current node might be destroyed by done action after process.
         Node* nextNode = node->m_next;
         node->process(numFrames);
@@ -69,13 +68,15 @@ void Group::addToHead(Node* node)
     node->m_parent = this;
     node->m_next = m_first;
 
-    if (m_first != nullptr)
+    if (m_first != nullptr) {
         m_first->m_prev = node;
+    }
 
     m_first = node;
 
-    if (m_last == nullptr)
+    if (m_last == nullptr) {
         m_last = node;
+    }
 }
 
 void Group::addToTail(Node* node)
@@ -88,13 +89,15 @@ void Group::addToTail(Node* node)
     node->m_parent = this;
     node->m_prev = m_last;
 
-    if (m_last != nullptr)
+    if (m_last != nullptr) {
         m_last->m_next = node;
+    }
 
     m_last = node;
 
-    if (m_first == nullptr)
+    if (m_first == nullptr) {
         m_first = node;
+    }
 }
 
 void Group::addBefore(Node* target, Node* node)
@@ -188,8 +191,7 @@ bool Group::isEmpty() const
 void Group::freeAll()
 {
     Node* node = m_first;
-    while (node != nullptr)
-    {
+    while (node != nullptr) {
         // Store pointer to next node because current node might be destroyed by done action after process.
         Node* nextNode = node->m_next;
         node->free();

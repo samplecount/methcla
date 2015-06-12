@@ -141,12 +141,9 @@ static inline void addNodeToTarget(Node* target, Node* node, Methcla_NodePlaceme
         case kMethcla_NodePlacementHeadOfGroup:
             {
                 Group* group = dynamic_cast<Group*>(target);
-                if (group != nullptr)
-                {
+                if (group != nullptr) {
                     group->addToHead(node);
-                }
-                else
-                {
+                } else {
                     throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                         s << "Target node " << target->id() << " is not a group";
                     });
@@ -156,12 +153,9 @@ static inline void addNodeToTarget(Node* target, Node* node, Methcla_NodePlaceme
         case kMethcla_NodePlacementTailOfGroup:
             {
                 Group* group = dynamic_cast<Group*>(target);
-                if (group != nullptr)
-                {
+                if (group != nullptr) {
                     group->addToTail(node);
-                }
-                else
-                {
+                } else {
                     throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
                         s << "Target node " << target->id() << " is not a group";
                     });
@@ -169,15 +163,13 @@ static inline void addNodeToTarget(Node* target, Node* node, Methcla_NodePlaceme
             }
             break;
         case kMethcla_NodePlacementBeforeNode:
-            if (target->parent() == nullptr)
-            {
+            if (target->parent() == nullptr) {
                 throwError(kMethcla_NodeIdError, "Cannot place node before root node");
             }
             target->parent()->addBefore(target, node);
             break;
         case kMethcla_NodePlacementAfterNode:
-            if (target->parent() == nullptr)
-            {
+            if (target->parent() == nullptr) {
                 throwError(kMethcla_NodeIdError, "Cannot place node after root node");
             }
             target->parent()->addAfter(target, node);

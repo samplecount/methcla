@@ -31,24 +31,20 @@ Node::Node(Environment& env, NodeId nodeId)
 
 Node::~Node()
 {
-    if (m_parent)
-    {
+    if (m_parent) {
         m_parent->remove(this);
     }
 
-    assert(m_parent == nullptr);
-    assert(m_prev == nullptr);
-    assert(m_next == nullptr);
+    BOOST_ASSERT(m_parent == nullptr);
+    BOOST_ASSERT(m_prev == nullptr);
+    BOOST_ASSERT(m_next == nullptr);
 }
 
 void Node::process(size_t numFrames)
 {
-    if (m_done)
-    {
+    if (m_done) {
         free();
-    }
-    else
-    {
+    } else {
         doProcess(numFrames);
     }
 }
@@ -78,8 +74,9 @@ void Node::setDone()
 
     if (flags & kMethcla_NodeDoneFreeParent)
     {
-        if (m_parent != nullptr && m_parent != env().rootNode())
+        if (m_parent != nullptr && m_parent != env().rootNode()) {
             setDoneFreeSelf(m_parent);
+        }
     }
     else if (flags & kMethcla_NodeDoneFreeAllSiblings)
     {
