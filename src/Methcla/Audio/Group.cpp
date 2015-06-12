@@ -26,6 +26,8 @@ using namespace Methcla::Audio;
 #define METHCLA_ASSERT_NODE_IS_LINKED(node) \
     BOOST_ASSERT(m_first != nullptr); \
     BOOST_ASSERT(m_last != nullptr); \
+    BOOST_ASSERT(node != nullptr); \
+    BOOST_ASSERT(node->m_parent == this); \
     BOOST_ASSERT(node->m_prev != nullptr || node == m_first); \
     BOOST_ASSERT(node->m_next != nullptr || node == m_last); \
     BOOST_ASSERT(m_first != m_last || (m_first == node && node == m_last));
@@ -144,13 +146,9 @@ void Group::addAfter(Node* target, Node* node)
 
 void Group::remove(Node* node)
 {
-    BOOST_ASSERT(node != nullptr);
-    BOOST_ASSERT(node->parent() == this);
-    BOOST_ASSERT(   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
-                || !((node->m_prev == nullptr) && (node->m_next == nullptr)) );
+    METHCLA_ASSERT_NODE_IS_LINKED(node);
 
     if (node == m_first) {
-        BOOST_ASSERT(node->m_prev == nullptr);
         m_first = node->m_next;
         if (m_first != nullptr) {
             m_first->m_prev = nullptr;
@@ -160,7 +158,6 @@ void Group::remove(Node* node)
     }
 
     if (node == m_last) {
-        BOOST_ASSERT(node->m_next == nullptr);
         m_last = node->m_prev;
         if (m_last != nullptr) {
             m_last->m_next = nullptr;
@@ -176,6 +173,7 @@ void Group::remove(Node* node)
 
 bool Group::isEmpty() const
 {
+    BOOST_ASSERT(m_first != nullptr || m_last == nullptr);
     return m_first == nullptr;
 }
 
@@ -188,4 +186,5 @@ void Group::freeAll()
         node->free();
         node = nextNode;
     }
+    BOOST_ASSERT(isEmpty());
 }
