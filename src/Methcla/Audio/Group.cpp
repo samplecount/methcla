@@ -60,10 +60,7 @@ void Group::doProcess(size_t numFrames)
 
 void Group::addToHead(Node* node)
 {
-    assert(node != nullptr);
-    assert(node->parent() == nullptr);
-    assert(node->m_prev == nullptr);
-    assert(node->m_next == nullptr);
+    METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
     node->m_next = m_first;
@@ -77,14 +74,13 @@ void Group::addToHead(Node* node)
     if (m_last == nullptr) {
         m_last = node;
     }
+
+    METHCLA_ASSERT_NODE_IS_LINKED(node);
 }
 
 void Group::addToTail(Node* node)
 {
-    assert(node != nullptr);
-    assert(node->parent() == nullptr);
-    assert(node->m_prev == nullptr);
-    assert(node->m_next == nullptr);
+    METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
     node->m_prev = m_last;
@@ -98,6 +94,8 @@ void Group::addToTail(Node* node)
     if (m_first == nullptr) {
         m_first = node;
     }
+
+    METHCLA_ASSERT_NODE_IS_LINKED(node);
 }
 
 void Group::addBefore(Node* target, Node* node)
@@ -146,36 +144,29 @@ void Group::addAfter(Node* target, Node* node)
 
 void Group::remove(Node* node)
 {
-    assert(node != nullptr);
-    assert(node->parent() == this);
-    assert(   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
-           || !((node->m_prev == nullptr) && (node->m_next == nullptr)) );
+    BOOST_ASSERT(node != nullptr);
+    BOOST_ASSERT(node->parent() == this);
+    BOOST_ASSERT(   (node == m_first && node == m_last && node->m_prev == nullptr && node->m_next == nullptr)
+                || !((node->m_prev == nullptr) && (node->m_next == nullptr)) );
 
-    Node* prev = node->m_prev;
-    Node* next = node->m_next;
-
-    if (node == m_first)
-    {
-        assert( prev == nullptr );
-        m_first = next;
-        if (m_first != nullptr)
+    if (node == m_first) {
+        BOOST_ASSERT(node->m_prev == nullptr);
+        m_first = node->m_next;
+        if (m_first != nullptr) {
             m_first->m_prev = nullptr;
-    }
-    else
-    {
-        prev->m_next = next;
+        }
+    } else {
+        node->m_prev->m_next = node->m_next;
     }
 
-    if (node == m_last)
-    {
-        assert( next == nullptr );
-        m_last = prev;
-        if (m_last != nullptr)
+    if (node == m_last) {
+        BOOST_ASSERT(node->m_next == nullptr);
+        m_last = node->m_prev;
+        if (m_last != nullptr) {
             m_last->m_next = nullptr;
-    }
-    else
-    {
-        next->m_prev = prev;
+        }
+    } else {
+        node->m_next->m_prev = node->m_prev;
     }
 
     node->m_parent = nullptr;
