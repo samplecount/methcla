@@ -116,4 +116,8 @@ void Node::setDone()
             m_done = true;
         }
     }
+
+    if (flags & kMethcla_NodeDoneNotify) {
+        env().notifyNodeDone(id());
+    }
 }

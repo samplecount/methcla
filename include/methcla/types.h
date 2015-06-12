@@ -41,6 +41,7 @@ enum Methcla_NodeDoneFlags
   , kMethcla_NodeDoneFreeFollowing      = 0x04
   , kMethcla_NodeDoneFreeAllSiblings    = 0x08
   , kMethcla_NodeDoneFreeParent         = 0x10
+  , kMethcla_NodeDoneNotify             = 0x20
 };
 
 #endif /* METHCLA_TYPES_H_INCLUDED */

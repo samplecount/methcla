@@ -191,7 +191,12 @@ namespace Methcla { namespace Audio
     private:
         friend class Node;
 
-        //* A node has ended.
+        //* Notify the client that a node has been flagged as 'done'.
+        //
+        // Context: RT
+        void notifyNodeDone(NodeId nodeId);
+
+        //* Notify the client that a node has ended.
         //
         // Context: RT
         void nodeEnded(NodeId nodeId);

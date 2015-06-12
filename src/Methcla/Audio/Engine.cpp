@@ -398,6 +398,11 @@ void Environment::logLineNRT(Methcla_LogLevel level, const char* message)
     m_impl->logLineNRT(level, message);
 }
 
+void Environment::notifyNodeDone(NodeId nodeId)
+{
+    m_impl->notifyNodeDone(nodeId);
+}
+
 void Environment::nodeEnded(NodeId nodeId)
 {
     m_impl->nodeEnded(nodeId);

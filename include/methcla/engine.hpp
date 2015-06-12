@@ -183,6 +183,7 @@ namespace Methcla
       , kNodeDoneFreeFollowing   = kMethcla_NodeDoneFreeFollowing
       , kNodeDoneFreeAllSiblings = kMethcla_NodeDoneFreeAllSiblings
       , kNodeDoneFreeParent      = kMethcla_NodeDoneFreeParent
+      , kNodeDoneNotify          = kMethcla_NodeDoneNotify
     };
 
     static inline NodeDoneFlags operator|(NodeDoneFlags a, NodeDoneFlags b)
@@ -951,6 +952,20 @@ namespace Methcla
         {
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
             m_notificationHandlers.erase(handlerId);
+        }
+
+        static NotificationHandler nodeDoneHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        {
+            return [nodeId,whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/done") {
+                    NodeId otherNodeId = NodeId(msg.args().int32());
+                    if (nodeId == otherNodeId) {
+                        whenDone(nodeId);
+                        return true;
+                    }
+                }
+                return false;
+            };
         }
 
         static NotificationHandler nodeEndedHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)

@@ -276,6 +276,11 @@ public:
         return m_rootNode;
     }
 
+    bool isValid(NodeId nodeId) const
+    {
+        return nodeId >= 0 && (size_t)nodeId < m_nodes.size();
+    }
+
     Methcla_Time currentTime() const
     {
         return m_currentTime;
@@ -342,13 +347,56 @@ public:
         virtual void notify(Environment* env) = 0;
     };
 
-    class NodeEndedNotification : public Notification
+    class NodeNotification : public Notification
     {
         NodeId m_nodeId;
 
     public:
-        NodeEndedNotification(NodeId nodeId)
+        NodeNotification(NodeId nodeId)
             : m_nodeId(nodeId)
+        {}
+
+        NodeId nodeId() const
+        {
+            return m_nodeId;
+        }
+    };
+
+    class NodeDoneNotification : public NodeNotification
+    {
+    public:
+        NodeDoneNotification(NodeId nodeId)
+            : NodeNotification(nodeId)
+        {}
+
+    private:
+        void notify(Environment* env) override
+        {
+            static const char* address = "/node/done";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 1)
+              + OSCPP::Size::int32(1)
+            );
+            packet.openMessage(address, 1);
+            packet.int32(nodeId());
+            packet.closeMessage();
+            env->notify(packet);
+        }
+    };
+
+    //* Context: RT
+    void notifyNodeDone(NodeId nodeId)
+    {
+        if (isValid(nodeId)) {
+            sendToWorker<NodeDoneNotification>(nodeId);
+        }
+    }
+
+    class NodeEndedNotification : public NodeNotification
+    {
+    public:
+        NodeEndedNotification(NodeId nodeId)
+            : NodeNotification(nodeId)
         {}
 
     private:
@@ -360,7 +408,7 @@ public:
               + OSCPP::Size::int32(1)
             );
             packet.openMessage(address, 1);
-            packet.int32(m_nodeId);
+            packet.int32(nodeId());
             packet.closeMessage();
             env->notify(packet);
         }
@@ -369,8 +417,7 @@ public:
     //* Context: RT
     void nodeEnded(NodeId nodeId)
     {
-        if (nodeId >= 0 && (size_t)nodeId < m_nodes.size())
-        {
+        if (isValid(nodeId)) {
             m_nodes[nodeId] = nullptr;
             sendToWorker<NodeEndedNotification>(nodeId);
         }
