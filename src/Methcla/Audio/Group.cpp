@@ -17,6 +17,19 @@
 
 using namespace Methcla::Audio;
 
+#define METHCLA_ASSERT_NODE_IS_BLANK(node) \
+    BOOST_ASSERT(node != nullptr); \
+    BOOST_ASSERT(node->m_parent == nullptr); \
+    BOOST_ASSERT(node->m_prev == nullptr); \
+    BOOST_ASSERT(node->m_next == nullptr); \
+
+#define METHCLA_ASSERT_NODE_IS_LINKED(node) \
+    BOOST_ASSERT(m_first != nullptr); \
+    BOOST_ASSERT(m_last != nullptr); \
+    BOOST_ASSERT(node->m_prev != nullptr || node == m_first); \
+    BOOST_ASSERT(node->m_next != nullptr || node == m_last); \
+    BOOST_ASSERT(m_first != m_last || (m_first == node && node == m_last));
+
 Group::Group(Environment& env, NodeId nodeId)
     : Node(env, nodeId)
     , m_first(nullptr)
@@ -86,38 +99,46 @@ void Group::addToTail(Node* node)
 
 void Group::addBefore(Node* target, Node* node)
 {
-    assert(target != nullptr);
-    assert(node != nullptr);
-    assert(target->parent() == this);
-    assert(node->parent() == nullptr);
-    assert(node->m_prev == nullptr);
-    assert(node->m_next == nullptr);
+    BOOST_ASSERT(target != nullptr);
+    BOOST_ASSERT(target->parent() == this);
+    METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
     node->m_prev = target->m_prev;
     target->m_prev = node;
     node->m_next = target;
 
-    if (target == m_first)
+    if (target == m_first) {
+        BOOST_ASSERT(node->m_prev == nullptr);
         m_first = node;
+    } else {
+        BOOST_ASSERT(node->m_prev != nullptr);
+        node->m_prev->m_next = node;
+    }
+
+    METHCLA_ASSERT_NODE_IS_LINKED(node);
 }
 
 void Group::addAfter(Node* target, Node* node)
 {
-    assert(target != nullptr);
-    assert(node != nullptr);
-    assert(target->parent() == this);
-    assert(node->parent() == nullptr);
-    assert(node->m_prev == nullptr);
-    assert(node->m_next == nullptr);
+    BOOST_ASSERT(target != nullptr);
+    BOOST_ASSERT(target->parent() == this);
+    METHCLA_ASSERT_NODE_IS_BLANK(node);
 
     node->m_parent = this;
     node->m_next = target->m_next;
     target->m_next = node;
     node->m_prev = target;
 
-    if (target == m_last)
+    if (target == m_last) {
+        BOOST_ASSERT(node->m_next == nullptr);
         m_last = node;
+    } else {
+        BOOST_ASSERT(node->m_next != nullptr);
+        node->m_next->m_prev = node;
+    }
+
+    METHCLA_ASSERT_NODE_IS_LINKED(node);
 }
 
 void Group::remove(Node* node)

@@ -9,6 +9,8 @@
 * Add operator bool to `Methcla::NodeId`
 * Add `Methcla::Engine::nodeEndedHandler` API method returning `/node/ended` notification handler
 * Add `ExponentialFade` plugin (`METHCLA_PLUGINS_EXPONENTIAL_FADE_URI`) to `methcla_plugins_node_control` library
+* Fix bug in linked list implementation when adding a node before or after an existing node
+
 ### 0.2.0
 
 * Rename `Methcla::Engine::freeNode` to `Methcla::Engine::free`
