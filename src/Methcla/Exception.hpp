@@ -52,14 +52,6 @@ public:
     {
         return errorMessage();
     }
-
-    operator Methcla_Error() const
-    {
-        return methcla_error_new_with_message(
-            errorCode(),
-            m_message.empty() ? nullptr : m_message.c_str()
-        );
-    }
 };
 }
 
