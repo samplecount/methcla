@@ -21,14 +21,11 @@
 #include <thread>
 #include <vector>
 
-#include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
 
-METHCLA_WITHOUT_WARNINGS_BEGIN
-# include <boost/lockfree/spsc_queue.hpp>
-METHCLA_WITHOUT_WARNINGS_END
+#include <boost/lockfree/spsc_queue.hpp>
 
 namespace Methcla { namespace Utility {
 

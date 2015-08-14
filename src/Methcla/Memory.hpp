@@ -15,8 +15,6 @@
 #ifndef METHCLA_MEMORY_HPP_INCLUDED
 #define METHCLA_MEMORY_HPP_INCLUDED
 
-#include "Methcla/Utility/Macros.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -26,10 +24,8 @@
 // probably not needed anymore.
 
 #if METHCLA_USE_BOOST_SHARED_PTR
-METHCLA_WITHOUT_WARNINGS_BEGIN
 #  include <boost/shared_ptr.hpp>
 #  include <boost/make_shared.hpp>
-METHCLA_WITHOUT_WARNINGS_END
 #else
 #  include <memory>
 #endif
