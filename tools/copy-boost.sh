@@ -26,7 +26,7 @@ else
   out_dir="$1" ; shift
 fi
 
-if [ -z "$@" ]; then
+if [ -z "$*" ]; then
   # src_dirs="include platform plugins src tests"
   modules="algorithm atomic assert heap lockfree serialization utility"
 else
