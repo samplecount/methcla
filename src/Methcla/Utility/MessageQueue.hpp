@@ -141,7 +141,7 @@ public:
         if (m_signal) m_signal();
     }
 
-    bool dequeue(Command& cmd)
+    bool dequeue(Command& cmd) override
     {
         if (this->needsLock()) {
             std::lock_guard<std::mutex> lock(this->mutex());
