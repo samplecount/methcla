@@ -80,7 +80,7 @@ RtAudioDriver::RtAudioDriver(Options options)
         m_sampleRate = m_audio.getStreamSampleRate();
         m_isOpen = true;
     }
-    catch (RtError& e)
+    catch (RtAudioError& e)
     {
         throw std::runtime_error(e.what());
     }
