@@ -84,7 +84,7 @@ static const char* samplerPlugin(bool useDisk)
 
 Engine::Engine(Options inOptions)
     : m_engine(nullptr)
-    , m_useDisk(Methcla::Version::isPro())
+    , m_useDisk(true)
 {
     Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
@@ -148,7 +148,7 @@ void Engine::useDisk(bool flag)
     }
 }
 
-static Methcla_Time kLatency = 0.001;
+static Methcla_Time kLatency = 0.003;
 
 static float mapRate(float value)
 {
@@ -174,12 +174,14 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
             const Methcla::SynthId synth = request.synth(
                 samplerPlugin(m_useDisk),
                 m_voiceGroup,
-                { amp, rate },
+                { 1, 48000./44100. },
                 { Methcla::Value(sound.path())
                 , Methcla::Value(false) }
             );
             request.mapOutput(synth, 0, bus1);
             request.mapOutput(synth, 1, bus2);
+//            request.mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
+//            request.mapOutput(synth, 1, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
 
             // Envelope options
             const std::list<Methcla::Value> envOptions =
@@ -189,12 +191,14 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
                 , Methcla::Value(1.5f)
                 };
 
-            auto envelope1 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
+//            auto envelope1 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
+            auto envelope1 = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
             request.mapInput(envelope1, 0, bus1);
             request.mapOutput(envelope1, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
             request.whenDone(envelope1, Methcla::kNodeDoneFreeSelf|Methcla::kNodeDoneFreePreceeding);
 
-            auto envelope2 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
+//            auto envelope2 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
+            auto envelope2 = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
             request.mapInput(envelope2, 0, bus2);
             request.mapOutput(envelope2, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
             request.whenDone(envelope2, Methcla::kNodeDoneFreeSelf);
@@ -207,14 +211,14 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
         request.closeBundle();
 
         m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth));
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1));
-        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId){
-            m_engine->audioBusId().free(bus1);
-            m_engine->audioBusId().free(bus2);
-        }));
+//        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1));
+//        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId){
+//            m_engine->audioBusId().free(bus1);
+//            m_engine->audioBusId().free(bus2);
+//        }));
 
         request.send();
-//        m_voices[voice] = synth;
+        m_voices[voice] = synth;
         // std::cout << "Synth " << synth.id()
         //           << sound.path()
         //           << " duration=" << sound.duration()
@@ -238,13 +242,13 @@ void Engine::updateVoice(VoiceId voice, float amp, float rate)
 
 void Engine::stopVoice(VoiceId voice)
 {
-//    auto it = m_voices.find(voice);
-//    if (it != m_voices.end()) {
-//        Methcla::Request request(engine());
-//        request.openBundle(engine().currentTime() + kLatency);
-//        request.free(it->second);
-//        request.closeBundle();
-////        request.send();
-//        m_voices.erase(it);
-//    }
+    auto it = m_voices.find(voice);
+    if (it != m_voices.end()) {
+        Methcla::Request request(engine());
+        request.openBundle(engine().currentTime() + kLatency);
+        request.free(it->second);
+        request.closeBundle();
+        request.send();
+        m_voices.erase(it);
+    }
 }
