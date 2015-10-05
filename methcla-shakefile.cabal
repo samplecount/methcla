@@ -32,7 +32,7 @@ Library
     , shake-language-c >= 0.6.4
 
 Executable methcla-shakefile
-  Main-Is: shakefile.hs
+  Main-Is: methcla-shakefile.hs
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5
