@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 Name: methcla-shakefile
-Version: 0.1
+Version: 0.2
 Cabal-Version: >= 1.8
 Build-Type: Simple
 
@@ -28,7 +28,7 @@ Library
   Build-Depends:
       base >= 4 && < 5
     , directory
-    , shake >= 0.13
+    , shake >= 0.14
     , shake-language-c >= 0.6.4
 
 Executable methcla-shakefile
@@ -37,6 +37,6 @@ Executable methcla-shakefile
   Build-Depends:
       base >= 4 && < 5
     , directory
-    , shake >= 0.13
+    , shake >= 0.14
     , shake-language-c >= 0.8.0
     , unordered-containers

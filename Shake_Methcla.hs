@@ -89,7 +89,7 @@ mkVersionHeader buildDir = VersionHeader $ buildDir </> "include/Methcla/Version
 versionHeaderRule :: Variant -> FilePath -> FilePath -> Rules VersionHeader
 versionHeaderRule variant sourceDir buildDir = do
   let output = mkVersionHeader buildDir
-  versionHeaderPath output *> \path -> do
+  versionHeaderPath output %> \path -> do
     version <- head <$> readFileLines (sourceDir </> "VERSION")
     let tag = if isPro variant then "-pro" else ""
     writeFileChanged path $ unlines [
@@ -189,7 +189,7 @@ libmethcla libTarget variant config sourceDir buildDir pkgConfigOptions = do
           Lib_Desktop ->
             ( targetBuildPrefix buildDir config (fst Host.defaultToolChain) </> "libmethcla.a"
             , return id )
-  result *> \_ -> do
+  result %> \_ -> do
     alwaysRerun
     currentShakeOptions <- getShakeOptions
     liftIO $ do
@@ -257,7 +257,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           (getSources getConfig)
 
     let iphoneosLib = platformBuildPrefix buildDir config OSX.iPhoneOS </> "libmethcla.a"
-    iphoneosLib *> OSX.universalBinary iphoneosLibs
+    iphoneosLib %> OSX.universalBinary iphoneosLibs
     phony "iphoneos" (need [iphoneosLib])
 
     iphonesimulatorLibs <- mapTarget (OSX.target OSX.iPhoneSimulator) [X86 I386, X86 X86_64] $ \target -> do
@@ -272,12 +272,12 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           (getSources getConfig)
 
     let iphonesimulatorLib = platformBuildPrefix buildDir config OSX.iPhoneSimulator </> "libmethcla.a"
-    iphonesimulatorLib *> OSX.universalBinary iphonesimulatorLibs
+    iphonesimulatorLib %> OSX.universalBinary iphonesimulatorLibs
     phony "iphonesimulator" (need [iphonesimulatorLib])
 
     let universalTarget = "iphone-universal"
         universalLib = mkBuildPrefix buildDir config universalTarget </> "libmethcla.a"
-    universalLib *> OSX.universalBinary (iphoneosLibs ++ [iphonesimulatorLib])
+    universalLib %> OSX.universalBinary (iphoneosLibs ++ [iphonesimulatorLib])
     phony universalTarget (need [universalLib])
   -- Android
   do
@@ -313,10 +313,10 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
       let installPath = mkBuildPrefix buildDir config "android"
                           </> abi
                           </> takeFileName libmethcla
-      installPath *> copyFile' libmethcla
+      installPath %> copyFile' libmethcla
 
       let testInstallPath = "tests/android/libs" </> abi </> takeFileName libmethcla_tests
-      testInstallPath *> copyFile' libmethcla_tests
+      testInstallPath %> copyFile' libmethcla_tests
       return (installPath, testInstallPath)
     phony "android" $ need $ map fst libs
     phony "android-tests" $ need $ map snd libs
@@ -349,14 +349,14 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                         >>>= pure (append localLibraries [libmethcla]))
                       (getSources getConfigTests)
     let pnacl_test = (pnacl_test_bc `replaceExtension` "pexe")
-    pnacl_test *> \out -> join $ NaCl.finalize <$> toolChain <*> pure pnacl_test_bc <*> pure out
+    pnacl_test %> \out -> join $ NaCl.finalize <$> toolChain <*> pure pnacl_test_bc <*> pure out
     let pnacl_test_nmf = pnacl_test `replaceExtension` "nmf"
-    pnacl_test_nmf *> NaCl.mk_nmf (NaCl.Program (NaCl.Executable pnacl_test Nothing) Nothing)
+    pnacl_test_nmf %> NaCl.mk_nmf (NaCl.Program (NaCl.Executable pnacl_test Nothing) Nothing)
 
     let pnacl_test' = "tests/pnacl" </> takeFileName pnacl_test
-    pnacl_test' *> copyFile' pnacl_test
+    pnacl_test' %> copyFile' pnacl_test
     let pnacl_test_nmf' = "tests/pnacl" </> takeFileName pnacl_test_nmf
-    pnacl_test_nmf' *> copyFile' pnacl_test_nmf
+    pnacl_test_nmf' %> copyFile' pnacl_test_nmf
     phony "pnacl-test" $ need [pnacl_test', pnacl_test_nmf']
 
     -- let examplesBuildFlags flags = do
@@ -370,12 +370,12 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     --               $ SourceTree.files sources
     --       let pexe = bc `replaceExtension` "pexe"
     --                     `replaceDirectory` (outputDir </> show naclConfig)
-    --       pexe *> NaCl.finalize toolChain bc
+    --       pexe %> NaCl.finalize toolChain bc
     --       let nmf = pexe `replaceExtension` "nmf"
-    --       nmf *> NaCl.mk_nmf [(NaCl.PNaCl, pexe)]
+    --       nmf %> NaCl.mk_nmf [(NaCl.PNaCl, pexe)]
     --       let allFiles = ["examples/common/common.js"] ++ files
     --           allFiles' = map (`replaceDirectory` outputDir) allFiles
-    --       mapM_ (\(old, new) -> new *> copyFile' old) (zip allFiles allFiles')
+    --       mapM_ (\(old, new) -> new %> copyFile' old) (zip allFiles allFiles')
     --
     --       return $ [pexe, nmf] ++ allFiles'
     --
@@ -410,7 +410,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     --       , "http://freesound.org/people/ThePriest909/sounds/209331/"
     --       ]
     --
-    -- (examplesDir </> "sampler/sounds/*") *> \output -> do
+    -- (examplesDir </> "sampler/sounds/*") %> \output -> do
     --   freesoundApiKey <- getEnv'
     --                       "FREESOUND_API_KEY"
     --   cmd "curl" [    "http://www.freesound.org/api/sounds/"
@@ -421,7 +421,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     -- -- Install warp-static web server if needed
     -- let server = ".cabal-sandbox/bin/warp"
     --
-    -- server *> \_ -> do
+    -- server %> \_ -> do
     --   cmd "cabal sandbox init" :: Action ()
     --   cmd "cabal install -j warp-static" :: Action ()
     --
@@ -478,7 +478,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   --       sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
   --       tagFile = "tags"
   --       tagFiles = "tagfiles"
-  --   tagFile *> \output -> flip actionFinally (removeFile tagFiles) $ do
+  --   tagFile %> \output -> flip actionFinally (removeFile tagFiles) $ do
   --       fs <- liftIO $ find
   --                 (fileName /=? "typeof") (extension ==? ".hpp") ("external_libraries/boost/boost")
   --           `and_` sources "include"
