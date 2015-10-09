@@ -13,9 +13,11 @@ tmtags
 build/
 cabal-dev/
 .cabal-sandbox/
+config/env.sh
 dist/
+engine/tests/output/*
 .shake.database
 .shake.journal
-engine/tests/output/*
+.stack-work
 xcuserdata/
 *.xcworkspace/
