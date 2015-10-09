@@ -1,6 +1,13 @@
 #!/bin/sh -e
 
+ENV_FILE="config/env.sh"
 SHAKE_ARGS="-j"
+
+# Configure environment
+set -a # auto export variables
+if [ -f "$ENV_FILE" ]; then
+    source "${ENV_FILE}"
+fi
 
 if [ -z "`which stack`" ]; then
     case "$1" in
