@@ -50,7 +50,7 @@ PepperDriver::PepperDriver(Options options, const pp::InstanceHandle& instance)
     uint32_t bufferSize =
         pp::AudioConfig::RecommendSampleFrameCount(instance,
                                                    ppSampleRate,
-                                                   options.bufferSize > 0 ? options.bufferSize : 512);
+                                                   options.bufferSize > 0 ? options.bufferSize : kDefaultBufferSize);
 
     pp::AudioConfig audioConfig = pp::AudioConfig(instance,
                                                   ppSampleRate,

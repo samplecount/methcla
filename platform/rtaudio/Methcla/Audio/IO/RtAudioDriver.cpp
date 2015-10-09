@@ -69,7 +69,7 @@ RtAudioDriver::RtAudioDriver(Options options)
     }
 
     const unsigned int sampleRate = options.sampleRate == -1 ? 44100 : options.sampleRate;
-    unsigned int bufferFrames = options.bufferSize == -1 ? 0 : options.bufferSize;
+    unsigned int bufferFrames = options.bufferSize == -1 ? kDefaultBufferSize : options.bufferSize;
 
     try
     {

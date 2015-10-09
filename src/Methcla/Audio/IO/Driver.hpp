@@ -26,6 +26,8 @@ namespace Methcla { namespace Audio { namespace IO {
 class Driver : public Methcla::Audio::TimeInterface
 {
 public:
+    static constexpr size_t kDefaultBufferSize = 512;
+
     struct Options
     {
         double sampleRate = -1.;
