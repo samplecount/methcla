@@ -340,7 +340,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                     (targetBuildPrefix' target </> "libmethcla.a")
                     (getBuildFlags getConfig)
                     (getSources getConfig)
-    phony "pnacl" $ need [libmethcla]
+    phony "pepper" $ need [libmethcla]
 
     let getConfigTests = getConfigFrom "config/pepper_tests.cfg"
     pnacl_test_bc <- executable toolChain
