@@ -450,16 +450,24 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
 
     case targetOS target of
       Linux -> do
-        staticLib <- build Nothing staticLibrary "a"
-        sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
-        staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
-        sharedLib32 <- build (Just (X86 I686)) sharedLibrary Host.sharedLibraryExtension
-        staticLib64 <- build (Just (X86 X86_64)) staticLibrary "a"
-        sharedLib64 <- build (Just (X86 X86_64)) sharedLibrary Host.sharedLibraryExtension
+        case targetArch target of
+          X86 a -> do
+            staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
+            sharedLib32 <- build (Just (X86 I686)) sharedLibrary Host.sharedLibraryExtension
+            staticLib64 <- build (Just (X86 X86_64)) staticLibrary "a"
+            sharedLib64 <- build (Just (X86 X86_64)) sharedLibrary Host.sharedLibraryExtension
 
-        phony "desktop" $ need [staticLib, sharedLib]
-        phony "desktop32" $ need [staticLib32, sharedLib32]
-        phony "desktop64" $ need [staticLib64, sharedLib64]
+            phony "desktop32" $ need [staticLib32, sharedLib32]
+            phony "desktop64" $ need [staticLib64, sharedLib64]
+
+            case a of
+              I386 -> phony "desktop" $ need ["desktop32"]
+              I686 -> phony "desktop" $ need ["desktop32"]
+              X86_64 -> phony "desktop" $ need ["desktop64"]
+          _ -> do
+            staticLib <- build Nothing staticLibrary "a"
+            sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+            phony "desktop" $ need [staticLib, sharedLib]
       OSX -> do
         staticLib <- build Nothing staticLibrary "a"
         sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
