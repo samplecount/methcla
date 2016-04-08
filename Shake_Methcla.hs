@@ -442,24 +442,47 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
           ] "config/desktop.cfg"
-        build f ext =
-          f toolChain (targetBuildPrefix' target </> "libmethcla" <.> ext)
-            (getBuildFlags getConfig)
+        build arch f ext =
+          f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
+            (bf arch <$> getBuildFlags getConfig)
             (getSources getConfig)
-    staticLib <- build staticLibrary "a"
-    sharedLib <- build sharedLibrary Host.sharedLibraryExtension
+         where
+           bf arch =
+             case arch of
+               Just (X86 I686)   -> (>>> append compilerFlags [(Nothing, ["-m32"])] >>> append linkerFlags ["-m32"])
+               Just (X86 X86_64) -> (>>> append compilerFlags [(Nothing, ["-m64"])] >>> append linkerFlags ["-m64"])
+               _ -> id
 
-    -- Quick hack for setting install path of shared library
-    let installedSharedLib =  intercalate "-" ("install":tail (splitDirectories sharedLib))
-    phony installedSharedLib $ do
-      need [sharedLib]
-      case targetOS target of
-        OSX -> do
-          command_ [] "install_name_tool"
-                      ["-id", "@executable_path/../Resources/libmethcla.dylib", sharedLib]
-        _ -> return ()
+    case targetOS target of
+      Linux -> do
+        case targetArch target of
+          X86 a -> do
+            staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
+            sharedLib32 <- build (Just (X86 I686)) sharedLibrary Host.sharedLibraryExtension
+            staticLib64 <- build (Just (X86 X86_64)) staticLibrary "a"
+            sharedLib64 <- build (Just (X86 X86_64)) sharedLibrary Host.sharedLibraryExtension
 
-    phony "desktop" $ need [staticLib, installedSharedLib]
+            phony "desktop32" $ need [staticLib32, sharedLib32]
+            phony "desktop64" $ need [staticLib64, sharedLib64]
+
+            case a of
+              I386 -> phony "desktop" $ need ["desktop32"]
+              I686 -> phony "desktop" $ need ["desktop32"]
+              X86_64 -> phony "desktop" $ need ["desktop64"]
+          _ -> do
+            staticLib <- build Nothing staticLibrary "a"
+            sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+            phony "desktop" $ need [staticLib, sharedLib]
+      OSX -> do
+        staticLib <- build Nothing staticLibrary "a"
+        sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+
+        phony "desktop" $ need [staticLib, sharedLib]
+      _ -> do
+        staticLib <- build Nothing staticLibrary "a"
+        sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+        phony "desktop" $ need [staticLib, sharedLib]
+
   -- tests
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
