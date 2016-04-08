@@ -18,7 +18,6 @@
 #define METHCLA_FILE_H_INCLUDED
 
 #include <methcla/common.h>
-#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 
