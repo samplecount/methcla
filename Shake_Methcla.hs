@@ -72,6 +72,12 @@ getEnv' name =
     (error $ "Environment variable " ++ name ++ " is undefined")
     name
 
+readConfigVar :: (Read a) => (String -> Action (Maybe String)) -> String -> Action a
+readConfigVar config key =
+  maybe (error $ key ++ " undefined")
+        (maybe (error $ "Couldn't parse " ++ key) id . readMaybe)
+        <$> config key
+
 -- ====================================================================
 -- Library variants
 
@@ -286,16 +292,15 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           ndkPath <- ndk
           return $ getConfigFromWithEnv [("ANDROID_NDK", ndkPath)] file
 
-    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, X86 I386] $ \target -> do
-      let compiler = (LLVM, Version [3,4] [])
+    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, Arm Arm64, X86 I386] $ \target -> do
+      let getConfig = mkAndroidConfig "config/android.cfg"
           abi = Android.abiString (targetArch target)
           toolChain = Android.toolChain
                         <$> ndk
-                        <*> pure (Android.sdkVersion 9)
-                        <*> pure compiler
+                        <*> (getConfig >>= \config -> Android.sdkVersion <$> readConfigVar config "Android.sdkVersion")
+                        <*> pure LLVM
                         <*> pure target
 
-      let getConfig = mkAndroidConfig "config/android.cfg"
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
                       (     (Android.libcxx Static <$> ndk <*> pure target)
