@@ -472,13 +472,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         staticLib <- build Nothing staticLibrary "a"
         sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
 
-        -- Quick hack for setting install path of shared library
-        let installedSharedLib =  intercalate "-" ("install":tail (splitDirectories sharedLib))
-        phony installedSharedLib $ do
-          need [sharedLib]
-          cmd "install_name_tool -id @executable_path/../Resources/libmethcla.dylib" sharedLib
-
-        phony "desktop" $ need [staticLib, installedSharedLib]
+        phony "desktop" $ need [staticLib, sharedLib]
       _ -> do
         staticLib <- build Nothing staticLibrary "a"
         sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
