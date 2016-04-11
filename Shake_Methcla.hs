@@ -27,12 +27,9 @@ module Shake_Methcla (
   , libmethcla
 ) where
 
-import           Control.Applicative hiding ((*>))
 import           Control.Arrow
 import           Control.Monad
 import           Data.Char (toLower)
-import           Data.List
-import           Data.Version (Version(..))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Development.Shake.Language.C
