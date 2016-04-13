@@ -20,6 +20,6 @@ if [ -z "`which stack`" ]; then
 	    ;;
     esac
 else
-    stack build
+    stack --install-ghc build
     stack exec -- methcla-shakefile $SHAKE_ARGS "$@"
 fi
