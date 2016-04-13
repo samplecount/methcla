@@ -455,6 +455,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
+          , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
           ] "config/desktop.cfg"
         build arch f ext =
           f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
