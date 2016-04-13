@@ -1,0 +1,25 @@
+sudo: false
+language: cpp
+cache:
+  directories:
+  - $HOME/.stack
+addons:
+  apt:
+    sources:
+      - llvm-toolchain-precise
+      - ubuntu-toolchain-r-test
+    packages:
+      - clang-3.7
+      - g++-5
+      - gcc-5
+script: make
+env:
+  - MY_CXX=g++-5
+  # - MY_CXX=clang++
+before_install:
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+install:
+  - export CXX="${MY_CXX}"
+script: ./shake test
