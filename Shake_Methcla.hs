@@ -485,6 +485,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
+          , ("ToolChain.variant", map toLower . show . variant $ toolChain)
           ] "config/host_tests.cfg"
     result <- executable toolChain
                 (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
