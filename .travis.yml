@@ -6,19 +6,22 @@ cache:
 addons:
   apt:
     sources:
+      - hvr-ghc
       - llvm-toolchain-precise
       - ubuntu-toolchain-r-test
     packages:
       - clang-3.7
       - g++-5
       - gcc-5
+      - ghc-7.10.3
 script: make
 env:
   - MY_CXX=g++-5
   # - MY_CXX=clang++
 before_install:
+  - export PATH=$HOME/.local/bin:/opt/ghc/7.10.2/bin:$PATH
+  # Install stack
   - mkdir -p ~/.local/bin
-  - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
 install:
   - export CXX="${MY_CXX}"
