@@ -391,8 +391,12 @@ template <bool wrapInterp, bool wrapPhase> inline size_t resample(float* out0, f
 
         phase += rate;
 
-        if (wrapPhase && phase >= maxPhase)
-            phase -= maxPhase;
+        if (wrapPhase) {
+            if (phase < 0.)
+                phase += maxPhase;
+            if (phase >= maxPhase)
+                phase -= maxPhase;
+        }
     }
 
     return k;
