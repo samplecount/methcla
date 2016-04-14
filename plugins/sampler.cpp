@@ -383,6 +383,7 @@ process_interp(
                 out0[k] = out1[k] = 0.f;
             }
             freeBuffer(world, self);
+            methcla_world_synth_done(world, self);
         }
     }
 
