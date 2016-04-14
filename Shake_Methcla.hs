@@ -27,12 +27,9 @@ module Shake_Methcla (
   , libmethcla
 ) where
 
-import           Control.Applicative hiding ((*>))
 import           Control.Arrow
 import           Control.Monad
 import           Data.Char (toLower)
-import           Data.List
-import           Data.Version (Version(..))
 import           Development.Shake as Shake
 import           Development.Shake.FilePath
 import           Development.Shake.Language.C
@@ -43,6 +40,7 @@ import qualified Development.Shake.Language.C.PkgConfig as PkgConfig
 import qualified Development.Shake.Language.C.Target.Android as Android
 import qualified Development.Shake.Language.C.Target.NaCl as NaCl
 import qualified Development.Shake.Language.C.Target.OSX as OSX
+import qualified Development.Shake.Language.C.ToolChain as ToolChain
 import qualified Development.Shake.Language.C.Config as Config
 import           System.Console.GetOpt
 import           Text.Read (readMaybe)
@@ -71,6 +69,12 @@ getEnv' name =
   getEnvWithDefault
     (error $ "Environment variable " ++ name ++ " is undefined")
     name
+
+readConfigVar :: (Read a) => (String -> Action (Maybe String)) -> String -> Action a
+readConfigVar config key =
+  maybe (error $ key ++ " undefined")
+        (maybe (error $ "Couldn't parse " ++ key) id . readMaybe)
+        <$> config key
 
 -- ====================================================================
 -- Library variants
@@ -122,21 +126,37 @@ parseConfig x =
 
 data Options = Options {
     _buildConfig :: Config
+  , _toolChainVariant :: ToolChain.ToolChainVariant
   } deriving (Show)
 
 buildConfig :: Options :-> Config
 buildConfig = lens _buildConfig
                    (\g f -> f { _buildConfig = g (_buildConfig f) })
 
+toolChainVariant :: Options :-> ToolChain.ToolChainVariant
+toolChainVariant = lens _toolChainVariant
+                        (\g f -> f { _toolChainVariant = g (_toolChainVariant f) })
+
 defaultOptions :: Options
 defaultOptions = Options {
     _buildConfig = Debug
+  , _toolChainVariant = ToolChain.LLVM
   }
 
 optionDescrs :: [OptDescr (Either String (Options -> Options))]
 optionDescrs = [ Option "c" ["config"]
                    (ReqArg (fmap (set buildConfig) . parseConfig) "CONFIG")
-                   "Build configuration (debug, release)." ]
+                   "Build configuration (debug, release)."
+               , Option "" ["toolchain"]
+                   (ReqArg (fmap (set toolChainVariant) . parseToolChainVariant) "generic|gcc|llvm")
+                   "Toolchain variant (generic, gcc, llvm)." ]
+  where
+    parseToolChainVariant s =
+      case s of
+        "generic" -> Right ToolChain.Generic
+        "gcc" -> Right ToolChain.GCC
+        "llvm" -> Right ToolChain.LLVM
+        _ -> Left $ "Invalid toolchain variant " ++ show s
 
 mapTarget :: Monad m => (Arch -> Target) -> [Arch] -> (Target -> m a) -> m [a]
 mapTarget mkTarget archs f = mapM (f . mkTarget) archs
@@ -286,16 +306,15 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
           ndkPath <- ndk
           return $ getConfigFromWithEnv [("ANDROID_NDK", ndkPath)] file
 
-    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, X86 I386] $ \target -> do
-      let compiler = (LLVM, Version [3,4] [])
+    libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, Arm Arm64, X86 I386] $ \target -> do
+      let getConfig = mkAndroidConfig "config/android.cfg"
           abi = Android.abiString (targetArch target)
           toolChain = Android.toolChain
                         <$> ndk
-                        <*> pure (Android.sdkVersion 9)
-                        <*> pure compiler
+                        <*> (getConfig >>= \config -> Android.sdkVersion <$> readConfigVar config "Android.sdkVersion")
+                        <*> pure LLVM
                         <*> pure target
 
-      let getConfig = mkAndroidConfig "config/android.cfg"
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
                       (     (Android.libcxx Static <$> ndk <*> pure target)
@@ -436,6 +455,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
+          , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
           ] "config/desktop.cfg"
         build arch f ext =
           f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
@@ -483,6 +503,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
+          , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
           ] "config/host_tests.cfg"
     result <- executable toolChain
                 (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)

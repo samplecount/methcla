@@ -33,6 +33,7 @@ Library
 
 Executable methcla-shakefile
   Main-Is: methcla-shakefile.hs
+  Other-Modules: Shake_Methcla
   Ghc-Options: -Wall -rtsopts -threaded
   Build-Depends:
       base >= 4 && < 5

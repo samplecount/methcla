@@ -11,8 +11,6 @@ errors.err
 tags
 tmtags
 build/
-cabal-dev/
-.cabal-sandbox/
 config/env.sh
 dist/
 engine/tests/output/*
