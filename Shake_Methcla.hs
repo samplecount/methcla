@@ -469,7 +469,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                _ -> id
 
     case targetOS target of
-      Linux -> do
+      os | os == Linux || os == Windows -> do
         case targetArch target of
           X86 a -> do
             staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
@@ -488,11 +488,6 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
             staticLib <- build Nothing staticLibrary "a"
             sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
             phony "desktop" $ need [staticLib, sharedLib]
-      OSX -> do
-        staticLib <- build Nothing staticLibrary "a"
-        sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
-
-        phony "desktop" $ need [staticLib, sharedLib]
       _ -> do
         staticLib <- build Nothing staticLibrary "a"
         sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
