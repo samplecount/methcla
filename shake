@@ -21,5 +21,5 @@ if [ -z "`which stack`" ]; then
     esac
 else
     stack build
-    stack exec -- methcla-shakefile $SHAKE_ARGS "$@"
+    `stack path --local-install-root`/bin/methcla-shakefile $SHAKE_ARGS "$@"
 fi
