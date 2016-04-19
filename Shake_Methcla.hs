@@ -450,13 +450,13 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     --   need $ sampler ++ map (combine (examplesDir </> "sampler/sounds"))
     --                         freesounds
     --   cmd (Cwd examplesDir) server :: Action ()
-  -- Desktop
+  -- Library for host operating system
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
             ("Target.os", map toLower . show . targetOS $ target)
           , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
-          ] "config/desktop.cfg"
+          ] "config/host_library.cfg"
         build arch f ext =
           f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
             (bf arch <$> getBuildFlags getConfig)
@@ -493,7 +493,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
         phony "desktop" $ need [staticLib, sharedLib]
 
-  -- tests
+  -- Tests for host operating system
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
         getConfig = getConfigFromWithEnv [
