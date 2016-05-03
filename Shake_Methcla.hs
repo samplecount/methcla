@@ -237,13 +237,6 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- Common rules
   phony "clean" $ removeFilesAfter buildDir ["//*"]
 
-  sourceDir </> "external_libraries/boost/boost/config.hpp" %> \out -> do
-    let boostDir = takeDirectory.takeDirectory $ out
-    need [ boostDir </> ".git/HEAD" ]
-    () <- cmd [Cwd boostDir, Shell] "./bootstrap.sh"
-    () <- cmd [Cwd boostDir, Shell] "./b2 headers"
-    return ()
-
   _ <- versionHeaderRule variant sourceDir buildDir
 
   let configEnv = [
