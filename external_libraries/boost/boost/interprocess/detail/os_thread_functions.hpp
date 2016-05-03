@@ -22,12 +22,20 @@
 #ifndef BOOST_INTERPROCESS_DETAIL_OS_THREAD_FUNCTIONS_HPP
 #define BOOST_INTERPROCESS_DETAIL_OS_THREAD_FUNCTIONS_HPP
 
+#ifndef BOOST_CONFIG_HPP
+#  include <boost/config.hpp>
+#endif
+#
+#if defined(BOOST_HAS_PRAGMA_ONCE)
+#  pragma once
+#endif
+
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/interprocess/detail/workaround.hpp>
 #include <boost/interprocess/streams/bufferstream.hpp>
 #include <boost/interprocess/detail/posix_time_types_wrk.hpp>
 #include <cstddef>
-#include <memory>
+#include <ostream>
 
 #if defined(BOOST_INTERPROCESS_WINDOWS)
 #  include <boost/interprocess/detail/win32_api.hpp>
@@ -69,7 +77,19 @@ namespace ipcdetail{
 
 typedef unsigned long OS_process_id_t;
 typedef unsigned long OS_thread_id_t;
-typedef void*         OS_thread_t;
+struct OS_thread_t
+{
+   OS_thread_t()
+      : m_handle()
+   {}
+
+   
+   void* handle() const
+   {  return m_handle;  }
+
+   void* m_handle;
+};
+
 typedef OS_thread_id_t OS_systemwide_thread_id_t;
 
 //process
@@ -193,7 +213,7 @@ inline long double get_current_process_creation_time()
 {
    winapi::interprocess_filetime CreationTime, ExitTime, KernelTime, UserTime;
 
-   get_process_times
+   winapi::get_process_times
       ( winapi::get_current_process(), &CreationTime, &ExitTime, &KernelTime, &UserTime);
 
    typedef long double ldouble_t;
@@ -286,11 +306,11 @@ typedef unsigned long long OS_highres_count_t;
 inline unsigned long get_system_tick_ns()
 {
    #ifdef _SC_CLK_TCK
-   long hz =::sysconf(_SC_CLK_TCK); // ticks per sec
-   if(hz <= 0){   //Try a typical value on error
-      hz = 100;
+   long ticks_per_second =::sysconf(_SC_CLK_TCK); // ticks per sec
+   if(ticks_per_second <= 0){   //Try a typical value on error
+      ticks_per_second = 100;
    }
-   return 999999999ul/static_cast<unsigned long>(hz)+1ul;
+   return 999999999ul/static_cast<unsigned long>(ticks_per_second)+1ul;
    #else
       #error "Can't obtain system tick value for your system, please provide a patch"
    #endif
@@ -487,18 +507,21 @@ inline int thread_create( OS_thread_t * thread, unsigned (__stdcall * start_rout
    void* h = (void*)_beginthreadex( 0, 0, start_routine, arg, 0, 0 );
 
    if( h != 0 ){
-      *thread = h;
+      thread->m_handle = h;
       return 0;
    }
    else{
       return 1;
    }
+
+   thread->m_handle = (void*)_beginthreadex( 0, 0, start_routine, arg, 0, 0 );
+   return thread->m_handle != 0;
 }
 
 inline void thread_join( OS_thread_t thread)
 {
-   winapi::wait_for_single_object( thread, winapi::infinite_time );
-   winapi::close_handle( thread );
+   winapi::wait_for_single_object( thread.handle(), winapi::infinite_time );
+   winapi::close_handle( thread.handle() );
 }
 
 #endif
