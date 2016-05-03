@@ -9,3 +9,6 @@
 [submodule "external_libraries/rtaudio"]
 	path = external_libraries/rtaudio
 	url = https://github.com/thestk/rtaudio.git
+[submodule "external_libraries/boost"]
+	path = external_libraries/boost
+	url = https://github.com/boostorg/boost.git

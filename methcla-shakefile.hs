@@ -20,8 +20,9 @@ import qualified System.Directory as Dir
 main :: IO ()
 main = do
   isPro <- Dir.doesFileExist "pro/LICENSE"
+  cwd <- Dir.getCurrentDirectory
   let variant = if isPro then Methcla.Pro else Methcla.Default
-      sourceDir = "."
+      sourceDir = cwd
       buildDir = "build"
       shakeOptions' = shakeOptions {
                       shakeFiles = addTrailingPathSeparator buildDir
