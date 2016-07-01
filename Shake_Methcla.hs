@@ -140,7 +140,7 @@ toolChainVariant = lens _toolChainVariant
 defaultOptions :: Options
 defaultOptions = Options {
     _buildConfig = Debug
-  , _toolChainVariant = ToolChain.LLVM
+  , _toolChainVariant = ToolChain.Generic
   }
 
 optionDescrs :: [OptDescr (Either String (Options -> Options))]
@@ -248,9 +248,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                                   else sourceDir </> "config/default") ]
 
   getConfigFromWithEnv <- do
-    f <- Config.withConfig []
-    return $ \env file -> f (configEnv ++ env) (sourceDir </> file)
-  let getConfigFrom = getConfigFromWithEnv []
+    f <- Config.mkConfig
+    return $ \deps file env key -> f deps (sourceDir </> file) (configEnv ++ env) key
 
   let getBuildFlags cfg =
              BuildFlags.fromConfig cfg
@@ -263,7 +262,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- iOS
   do
     let sdkVersion platform = maximum <$> OSX.getPlatformVersions platform
-        getConfig = getConfigFrom "config/ios.cfg"
+        getConfig = getConfigFromWithEnv [] "config/ios.cfg" []
 
     iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s, Arm Arm64] $ \target -> do
         staticLibrary
@@ -302,32 +301,34 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- Android
   do
     let ndk = getEnv' "ANDROID_NDK"
-        mkAndroidConfig file = do
+
+    let mkAndroidConfig file key = do
           ndkPath <- ndk
-          return $ getConfigFromWithEnv [("ANDROID_NDK", ndkPath)] file
+          getConfigFromWithEnv [] file [("ANDROID_NDK", ndkPath)] key
 
     libs <- mapTarget Android.target [Arm Armv5, Arm Armv7, Arm Arm64, X86 I386] $ \target -> do
       let getConfig = mkAndroidConfig "config/android.cfg"
           abi = Android.abiString (targetArch target)
           toolChain = Android.toolChain
                         <$> ndk
-                        <*> (getConfig >>= \config -> Android.sdkVersion <$> readConfigVar config "Android.sdkVersion")
+                        <*> (Android.sdkVersion <$> readConfigVar getConfig "Android.sdkVersion")
                         <*> pure LLVM
                         <*> pure target
 
       libmethcla <- staticLibrary toolChain
                       (targetBuildPrefix' target </> "libmethcla.a")
                       (     (Android.libcxx Static <$> ndk <*> pure target)
-                       >>>= (getBuildFlags =<< getConfig))
-                      (getSources =<< getConfig)
+                       >>>= (getBuildFlags getConfig))
+                      (getSources getConfig)
 
       let getConfig = mkAndroidConfig "config/android_tests.cfg"
+
       libmethcla_tests <- sharedLibrary toolChain
                             (targetBuildPrefix' target </> "libmethcla-tests.so")
                             (     (Android.libcxx Static <$> ndk <*> pure target)
-                             >>>= (getBuildFlags =<< getConfig)
+                             >>>= (getBuildFlags getConfig)
                              >>>= pure (append localLibraries [libmethcla]))
-                            (getSources =<< getConfig)
+                            (getSources getConfig)
 
       let installPath = mkBuildPrefix buildDir config "android"
                           </> abi
@@ -341,7 +342,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     phony "android-tests" $ need $ map snd libs
   -- Pepper/PNaCl
   do
-    let getConfig = getConfigFrom "config/pepper.cfg"
+    let getConfig = getConfigFromWithEnv [] "config/pepper.cfg" []
         target = NaCl.target
         naclConfig = case config of
                         Debug -> NaCl.Debug
@@ -361,7 +362,8 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
                     (getSources getConfig)
     phony "pepper" $ need [libmethcla]
 
-    let getConfigTests = getConfigFrom "config/pepper_tests.cfg"
+    let getConfigTests = getConfigFromWithEnv [] "config/pepper_tests.cfg" []
+
     pnacl_test_bc <- executable toolChain
                       (buildPrefix </> "methcla-pnacl-tests.bc")
                       (getBuildFlags getConfigTests
@@ -450,65 +452,74 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     --   need $ sampler ++ map (combine (examplesDir </> "sampler/sounds"))
     --                         freesounds
     --   cmd (Cwd examplesDir) server :: Action ()
-  -- Library for host operating system
+
+  -- Desktop host targets
   do
     let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
-        getConfig = getConfigFromWithEnv [
-            ("Target.os", map toLower . show . targetOS $ target)
-          , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
-          ] "config/host_library.cfg"
-        build arch f ext =
-          f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
-            (bf arch <$> getBuildFlags getConfig)
-            (getSources getConfig)
-         where
-           bf arch =
-             case arch of
-               Just (X86 I686)   -> (>>> append compilerFlags [(Nothing, ["-m32"])] >>> append linkerFlags ["-m32"])
-               Just (X86 X86_64) -> (>>> append compilerFlags [(Nothing, ["-m64"])] >>> append linkerFlags ["-m64"])
-               _ -> id
+        hostToolChainConfig = buildDir </> "config/host_toolchain.cfg"
 
-    case targetOS target of
-      os | os == Linux || os == Windows -> do
-        case targetArch target of
-          X86 a -> do
-            staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
-            sharedLib32 <- build (Just (X86 I686)) sharedLibrary Host.sharedLibraryExtension
-            staticLib64 <- build (Just (X86 X86_64)) staticLibrary "a"
-            sharedLib64 <- build (Just (X86 X86_64)) sharedLibrary Host.sharedLibraryExtension
+    hostToolChainConfig %> \out -> do
+      alwaysRerun
+      tc <- toolChain
+      let tcVariant = case get toolChainVariant options of
+                        ToolChain.Generic -> get ToolChain.variant tc
+                        v -> v
+      writeFileChanged out $ unlines [
+          "ToolChain.variant = " ++ map toLower (show tcVariant)
+        ]
 
-            phony "desktop32" $ need [staticLib32, sharedLib32]
-            phony "desktop64" $ need [staticLib64, sharedLib64]
+    -- Library for host operating system
+    do
+      let getConfig = getConfigFromWithEnv [hostToolChainConfig] "config/host_library.cfg" [("Target.os", map toLower . show . targetOS $ target)]
+          build arch f ext =
+            f toolChain (targetBuildPrefix' (maybe target (\a -> target { targetArch = a}) arch) </> "libmethcla" <.> ext)
+              (bf arch <$> getBuildFlags getConfig)
+              (getSources getConfig)
+           where
+             bf arch =
+               case arch of
+                 Just (X86 I686)   -> (>>> append compilerFlags [(Nothing, ["-m32"])] >>> append linkerFlags ["-m32"])
+                 Just (X86 X86_64) -> (>>> append compilerFlags [(Nothing, ["-m64"])] >>> append linkerFlags ["-m64"])
+                 _ -> id
 
-            case a of
-              I386 -> phony "desktop" $ need ["desktop32"]
-              I686 -> phony "desktop" $ need ["desktop32"]
-              X86_64 -> phony "desktop" $ need ["desktop64"]
-          _ -> do
-            staticLib <- build Nothing staticLibrary "a"
-            sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
-            phony "desktop" $ need [staticLib, sharedLib]
-      _ -> do
-        staticLib <- build Nothing staticLibrary "a"
-        sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
-        phony "desktop" $ need [staticLib, sharedLib]
+      case targetOS target of
+        os | os == Linux || os == Windows -> do
+          case targetArch target of
+            X86 a -> do
+              staticLib32 <- build (Just (X86 I686)) staticLibrary "a"
+              sharedLib32 <- build (Just (X86 I686)) sharedLibrary Host.sharedLibraryExtension
+              staticLib64 <- build (Just (X86 X86_64)) staticLibrary "a"
+              sharedLib64 <- build (Just (X86 X86_64)) sharedLibrary Host.sharedLibraryExtension
 
-  -- Tests for host operating system
-  do
-    let (target, toolChain) = second ((=<<) applyEnv) Host.defaultToolChain
-        getConfig = getConfigFromWithEnv [
-            ("Target.os", map toLower . show . targetOS $ target)
-          , ("ToolChain.variant", map toLower . show . get toolChainVariant $ options)
-          ] "config/host_tests.cfg"
-    result <- executable toolChain
-                (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
-                (getBuildFlags getConfig)
-                (getSources getConfig)
-    phony "host-tests" $ need [result]
-    phony "test" $ do
+              phony "desktop32" $ need [staticLib32, sharedLib32]
+              phony "desktop64" $ need [staticLib64, sharedLib64]
+
+              case a of
+                I386 -> phony "desktop" $ need ["desktop32"]
+                I686 -> phony "desktop" $ need ["desktop32"]
+                X86_64 -> phony "desktop" $ need ["desktop64"]
+            _ -> do
+              staticLib <- build Nothing staticLibrary "a"
+              sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+              phony "desktop" $ need [staticLib, sharedLib]
+        _ -> do
+          staticLib <- build Nothing staticLibrary "a"
+          sharedLib <- build Nothing sharedLibrary Host.sharedLibraryExtension
+          phony "desktop" $ need [staticLib, sharedLib]
+
+    -- Tests for host operating system
+    do
+      let getConfig = getConfigFromWithEnv [hostToolChainConfig] "config/host_tests.cfg" [("Target.os", map toLower . show . targetOS $ target)]
+
+      result <- executable toolChain
+                  (targetBuildPrefix' target </> "methcla-tests" <.> Host.executableExtension)
+                  (getBuildFlags getConfig)
+                  (getSources getConfig)
+      phony "host-tests" $ need [result]
+      phony "test" $ do
         need [result]
         command_ [] result []
-    phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
+      phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
 
   --tags
   -- do

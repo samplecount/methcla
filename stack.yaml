@@ -1,4 +1,6 @@
 flags: {}
 packages:
 - '.'
+extra-deps:
+- shake-language-c-0.10.0
 resolver: nightly-2016-04-14
