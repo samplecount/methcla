@@ -488,6 +488,18 @@ namespace Methcla
 
         AudioDriverOptions audioDriver;
 
+        EngineOptions& setLogHandler(const LogHandler& logHandler)
+        {
+            this->logHandler = logHandler;
+            return *this;
+        }
+
+        EngineOptions& setLogFlags(Methcla_EngineLogFlags logFlags)
+        {
+            this->logFlags = logFlags;
+            return *this;
+        }
+
         EngineOptions& addLibrary(LibraryFunction pluginLibrary)
         {
             pluginLibraries.push_back(pluginLibrary);
