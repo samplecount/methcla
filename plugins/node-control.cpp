@@ -64,7 +64,7 @@ public:
     }
 };
 
-StaticSynthDef<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterDef;
+static StaticSynthDef<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterDef;
 
 // LinearEnvelope
 
@@ -199,7 +199,7 @@ public:
     }
 };
 
-StaticSynthDef<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeDef;
+static StaticSynthDef<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeDef;
 
 // ExponentialFade
 
@@ -304,7 +304,7 @@ public:
     }
 };
 
-StaticSynthDef<ExponentialFade,ExponentialFadeOptions,ExponentialFadePorts> kExponentialFade;
+static StaticSynthDef<ExponentialFade,ExponentialFadeOptions,ExponentialFadePorts> kExponentialFade;
 
 // Library
 
