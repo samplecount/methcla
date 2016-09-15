@@ -70,7 +70,7 @@ namespace Methcla { namespace Plugin {
             methcla_world_perform_command(m_context, perform, data);
         }
 
-        LogStream log(Methcla_LogLevel logLevel=kMethcla_LogInfo)
+        LogStream log(Methcla_LogLevel logLevel=kMethcla_LogInfo) const
         {
             using namespace std::placeholders;
             return LogStream(std::bind(m_context->log_line, m_context, _1, _2), logLevel);
