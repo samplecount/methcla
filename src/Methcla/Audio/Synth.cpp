@@ -327,17 +327,18 @@ void Synth::doProcess(size_t numFrames)
     } else if (m_flags.state == kStateActivating) {
         const size_t sampleOffset = std::floor(m_sampleOffset);
         assert( m_sampleOffset < (double)numFrames && sampleOffset < numFrames );
+        const size_t remainingFrames = numFrames - sampleOffset;
 
         for (size_t i=0; i < numAudioInputs(); i++) {
             AudioInputConnection& x = m_audioInputConnections[i];
-            x.read(env, numFrames - sampleOffset, inputBuffers + x.index() * blockSize, sampleOffset);
+            x.read(env, remainingFrames, inputBuffers + x.index() * blockSize, sampleOffset);
         }
 
-        m_synthDef.process(env, m_synth, numFrames - sampleOffset);
+        m_synthDef.process(env, m_synth, remainingFrames);
 
         for (size_t i=0; i < numAudioOutputs(); i++) {
             AudioOutputConnection& x = m_audioOutputConnections[i];
-            x.write(env, numFrames - sampleOffset, outputBuffers + x.index() * blockSize, sampleOffset);
+            x.write(env, remainingFrames, outputBuffers + x.index() * blockSize, sampleOffset);
         }
 
         m_flags.state = kStateActive;
