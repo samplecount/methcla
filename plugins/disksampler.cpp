@@ -144,7 +144,7 @@ public:
 
     StateVar state() const
     {
-        return static_cast<StateVar>(m_state.load(std::memory_order_consume));
+        return static_cast<StateVar>(m_state.load(std::memory_order_acquire));
     }
 
     bool loop() const
@@ -189,12 +189,12 @@ public:
 
     inline void finish()
     {
-        m_state.store(kFinished, std::memory_order_relaxed);
+        setState(kFinished);
     }
 
     void fillBuffer(const Methcla_World* world)
     {
-        m_state.store(kFilling, std::memory_order_relaxed);
+        setState(kFilling);
         performCommand(world, fillBufferCallback);
     }
 
@@ -237,6 +237,11 @@ private:
     ~State()
     {
         delete [] m_buffer;
+    }
+
+    void setState(StateVar newState)
+    {
+        m_state.store(newState, std::memory_order_release);
     }
 
     static void freeCallback(const Methcla_World* world, void* data)
@@ -294,6 +299,8 @@ private:
             // Seek to start frame
             m_file.seek(m_startFrame);
 
+            StateVar newState = state();
+
             if (m_fileFrames <= (int64_t)m_transferFrames)
             {
                 // If the file's number of frames is less than transferFrames,
@@ -309,7 +316,8 @@ private:
                 // After having read the whole file close it right away.
                 // FIXME: In order to keep latency low, maybe better do it later.
                 m_file.close();
-                m_state.store(kMemoryPlayback, std::memory_order_release);
+
+                newState = kMemoryPlayback;
             }
             else
             {
@@ -322,8 +330,11 @@ private:
                     throw std::exception();
 
                 m_writePos.store(numFrames == m_bufferFrames ? 0 : numFrames, std::memory_order_release);
-                m_state.store(kIdle, std::memory_order_release);
+
+                newState = kIdle;
             }
+
+            setState(newState);
         }
         catch (std::exception)
         {
@@ -368,7 +379,7 @@ private:
                     << ", need " << m_transferFrames
                     << ", got " << writeSpace
                     << ", missing " << m_transferFrames - writeSpace;
-                m_state.store(kIdle, std::memory_order_release);
+                setState(kIdle);
             }
             else
             {
@@ -389,9 +400,9 @@ private:
                 );
 
                 if (!m_loop && (numFrames < m_transferFrames)) {
-                    m_state.store(kFinishing, std::memory_order_release);
+                    setState(kFinishing);
                 } else {
-                    m_state.store(kIdle, std::memory_order_release);
+                    setState(kIdle);
                 }
             }
         }
