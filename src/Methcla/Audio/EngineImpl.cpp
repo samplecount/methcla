@@ -202,7 +202,7 @@ EnvironmentImpl::EnvironmentImpl(
     , m_packetHandler(listener)
     , m_rtMem(options.realtimeMemorySize)
     , m_requests(messageQueue == nullptr ? new Utility::MessageQueue<Request*>(kQueueSize) : messageQueue)
-    , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, 2))
+    , m_worker(worker ? worker : new Utility::WorkerThread<Environment::Command>(kQueueSize, kNumWorkerThreads))
     , m_scheduler(options.mode == Environment::kRealtimeMode ? kQueueSize : 0)
     , m_epoch(0)
     , m_currentTime(0)

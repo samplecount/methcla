@@ -216,6 +216,7 @@ public:
         char*   message;
     };
 
+    static const size_t kNumWorkerThreads = 2;
     static const size_t kQueueSize = 8192;
 
     Environment*                m_owner;
