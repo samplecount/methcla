@@ -286,9 +286,10 @@ private:
                             ? m_file.info().frames - m_startFrame
                             : std::min(m_fileFrames, m_file.info().frames - m_startFrame);
 
-            if (m_fileFrames <= 0)
+            if (m_fileFrames <= 0) {
                 // Force cleanup
-                throw std::exception();
+                throw std::runtime_error("Zero frame count requested");
+            }
 
             // If kDiskTransferSize is smaller than audio block size, use audio block size.
             m_transferFrames = std::max(
@@ -310,8 +311,9 @@ private:
                 m_buffer = new float[framesToBytes(m_channels, m_bufferFrames)];
 
                 const size_t numFrames = m_file.read(m_buffer, m_bufferFrames);
-                if (numFrames != m_bufferFrames)
-                    throw std::exception();
+                if (numFrames != m_bufferFrames) {
+                    throw std::runtime_error("Premature end of file");
+                }
 
                 // After having read the whole file close it right away.
                 // FIXME: In order to keep latency low, maybe better do it later.
@@ -326,8 +328,9 @@ private:
                 m_buffer = new float[framesToBytes(m_channels, m_bufferFrames)];
 
                 const size_t numFrames = m_file.read(m_buffer, m_transferFrames);
-                if (numFrames != m_transferFrames)
-                    throw std::exception();
+                if (numFrames != m_transferFrames) {
+                    throw std::runtime_error("Premature end of file");
+                }
 
                 m_writePos.store(numFrames == m_bufferFrames ? 0 : numFrames, std::memory_order_release);
 
@@ -336,13 +339,15 @@ private:
 
             setState(newState);
         }
-        catch (std::exception)
+        catch (std::exception& e)
         {
+            Methcla::Plugin::HostContext(host).log(kMethcla_LogError)
+                << METHCLA_PLUGINS_DISKSAMPLER_URI << ": " << e.what();
             finish();
-            if (m_file)
+            if (m_file) {
                 m_file.close();
-            if (m_buffer != nullptr)
-            {
+            }
+            if (m_buffer != nullptr) {
                 delete [] m_buffer;
                 m_buffer = nullptr;
             }
