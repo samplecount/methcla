@@ -15,7 +15,7 @@ void check_dlerror()
     const char* errorString = dlerror();
     if (errorString != nullptr) {
         throw std::runtime_error(errorString);
-    }    
+    }
 }
 
 typedef Function (*DLFuncFunction)(void*, const char*);
