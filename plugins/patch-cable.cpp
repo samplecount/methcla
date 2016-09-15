@@ -152,6 +152,10 @@ public:
             for (size_t i=0; i < numFrames; i++) {
                 output[i] = 0.0f;
             }
+        } else if (gain == 1.f) {
+            for (size_t i=0; i < numFrames; i++) {
+                output[i] = input[i];
+            }
         } else {
             for (size_t i=0; i < numFrames; i++) {
                 output[i] = gain * input[i];
