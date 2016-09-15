@@ -18,6 +18,7 @@
 #include <cmath>
 #include <limits>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <thread>
 
@@ -27,7 +28,45 @@
 # include <time.h>
 #endif
 
+#include "gtest/gtest.h"
+
+// Code from http://stackoverflow.com/a/29155677
+namespace testing
+{
+    namespace internal
+    {
+        enum GTestColor
+        {
+            COLOR_DEFAULT,
+            COLOR_RED,
+            COLOR_GREEN,
+            COLOR_YELLOW
+        };
+
+        extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
+    }
+}
+
+#define PRINTF(...) \
+    do { \
+        testing::internal::ColoredPrintf(testing::internal::COLOR_GREEN, "[          ] "); \
+        testing::internal::ColoredPrintf(testing::internal::COLOR_YELLOW, __VA_ARGS__); \
+    } while(0)
+
+#define TEST_COUT Methcla::Tests::TestCout()
+
+#define TEST_DESCRIPTION(desc) RecordProperty("description", desc)
+
 namespace Methcla { namespace Tests {
+    class TestCout : public std::stringstream
+    {
+    public:
+        ~TestCout()
+        {
+            PRINTF("%s", str().c_str());
+        }
+    };
+
     void initialize(std::string inputFileDirectory, std::string outputFileDirectory);
 
     std::string inputFile(const std::string& name);

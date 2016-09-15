@@ -17,8 +17,6 @@
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
-#include "gtest/gtest.h"
-
 #include <atomic>
 #include <iostream>
 #include <mutex>

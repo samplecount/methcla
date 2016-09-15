@@ -108,7 +108,8 @@ class State
     size_t m_bufferFrames;
     float* m_buffer;
 
-    double m_phase;
+    double m_filePhase;     // Current position in file
+    double m_bufferPhase;   // Current position in playback buffer
 
     std::atomic<size_t> m_readPos;
     // Force read and write pointers to different cache lines.
@@ -126,7 +127,8 @@ public:
        , m_transferFrames(0)
        , m_bufferFrames(bufferFrames)
        , m_buffer(nullptr)
-       , m_phase(0.)
+       , m_filePhase(0)
+       , m_bufferPhase(0.)
        , m_readPos(0)
        , m_writePos(0)
     {
@@ -150,6 +152,11 @@ public:
     bool loop() const
     {
         return m_loop;
+    }
+
+    uint64_t fileFrames() const
+    {
+        return m_fileFrames < 0 ? 0 : m_fileFrames;
     }
 
     size_t bufferChannels() const
@@ -213,14 +220,20 @@ public:
         return m_writePos.load(std::memory_order_acquire);
     }
 
-    double phase() const
+    double filePhase() const
     {
-        return m_phase;
+        return m_filePhase;
     }
 
-    void setPhase(double phase)
+    double bufferPhase() const
     {
-        m_phase = phase;
+        return m_bufferPhase;
+    }
+
+    void setPhase(double filePhase, double bufferPhase)
+    {
+        m_filePhase = filePhase;
+        m_bufferPhase = bufferPhase;
     }
 
     inline static size_t readable(size_t w, size_t r, size_t n)
@@ -427,8 +440,8 @@ private:
 
 struct DiskSampler
 {
-    float* ports[kNumPorts];
-    State* state;
+    float*  ports[kNumPorts];
+    State*  state;
 };
 
 extern "C"
@@ -551,7 +564,7 @@ static void reportUnderrun(
         << ", missing " << numFramesNeeded - numFramesProvided;
 }
 
-static inline void
+static inline size_t
 process_disk(
     const Methcla_World* world,
     DiskSampler* self,
@@ -616,23 +629,16 @@ process_disk(
         }
     }
 
-    if (readable < numFrames)
-    {
-        if (state == kFinishing)
-        {
-            self->state->finish();
-        }
-        else
-        {
-            reportUnderrun(world, numFrames, readable);
-        }
-    }
-
     const size_t nextReadPos = readable2 > 0 ? readable2 : readPos + readable1;
     self->state->setReadPos(nextReadPos == bufferFrames ? 0 : nextReadPos);
+    if (!self->state->loop()) {
+        self->state->setPhase(self->state->filePhase() + (double)readable, 0.);
+    }
+
+    return readable;
 }
 
-static inline void
+static inline size_t
 process_memory(
     DiskSampler* self,
     size_t numFrames,
@@ -645,7 +651,10 @@ process_memory(
     const size_t left = self->state->bufferFrames() - pos;
     const size_t channels = self->state->bufferChannels();
 
+    size_t numFramesProduced = 0;
+
     if (left >= numFrames) {
+        numFramesProduced = numFrames;
         if (channels == 1) {
             for (size_t k = 0; k < numFrames; k++) {
                 out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
@@ -657,13 +666,12 @@ process_memory(
                 out1[k] = amp * buffer[j+1];
             }
         }
-        if (left == numFrames) {
-            if (self->state->loop()) self->state->setReadPos(0);
-            else self->state->finish();
-        } else {
-            self->state->setReadPos(pos + numFrames);
+        self->state->setReadPos(left == numFrames ? 0 : pos + numFrames);
+        if (!self->state->loop()) {
+            self->state->setPhase(self->state->filePhase() + (double)numFrames, 0.);
         }
     } else if (self->state->loop()) {
+        numFramesProduced = numFrames;
         size_t played = 0;
         size_t toPlay = left;
         while (played < numFrames) {
@@ -688,6 +696,7 @@ process_memory(
         }
         self->state->setReadPos(pos);
     } else {
+        numFramesProduced = left;
         if (channels == 1) {
             for (size_t k = 0; k < left; k++) {
                 out0[k] = out1[k] = amp * buffer[(pos+k)*channels];
@@ -702,8 +711,10 @@ process_memory(
         for (size_t k = left; k < numFrames; k++) {
             out0[k] = out1[k] = 0.f;
         }
-        self->state->finish();
+        self->state->setPhase(self->state->filePhase() + (double)left, 0.);
     }
+
+    return numFramesProduced;
 }
 
 static inline float hermite1(float x, float y0, float y1, float y2, float y3)
@@ -729,17 +740,19 @@ resample(
     size_t bufferEnd,
     float amp,
     float rate,
-    double& phase )
+    double& filePhase,
+    double& bufferPhase
+    )
 {
     const size_t bufferChannel1 = 0;
     const size_t bufferChannel2 = bufferChannels > 1 ? 1 : 0;
-    const double maxPhase = (double)bufferFrames;
+    const double maxBufferPhase = (double)bufferFrames;
 
     size_t k;
 
     for (k=0; k < numFrames; k++)
     {
-        const double findex = std::floor(phase);
+        const double findex = std::floor(bufferPhase);
         const size_t index = (size_t)findex;
 
         const float* xm;
@@ -793,21 +806,22 @@ resample(
             break;
         }
 
-        const double x = phase - findex;
+        const double x = bufferPhase - findex;
 
         out0[k] = amp * hermite1(x, xm[bufferChannel1], x0[bufferChannel1], x1[bufferChannel1], x2[bufferChannel1]);
         out1[k] = amp * hermite1(x, xm[bufferChannel2], x0[bufferChannel2], x1[bufferChannel2], x2[bufferChannel2]);
 
-        phase += rate;
+        bufferPhase += rate;
+        filePhase += rate;
 
-        if (wrapPhase && phase >= maxPhase)
-            phase -= maxPhase;
+        if (wrapPhase && bufferPhase >= maxBufferPhase)
+            bufferPhase -= maxBufferPhase;
     }
 
     return k;
 }
 
-static inline void
+static inline size_t
 process_disk_interp(
     const Methcla_World* world,
     DiskSampler* self,
@@ -827,23 +841,22 @@ process_disk_interp(
     const size_t writePos = self->state->writePos();
     const size_t readPos = self->state->readPos();
 
-    if (state == kIdle)
-    {
-        if (State::writable(writePos, readPos, bufferFrames)
+    if (   state == kIdle
+        && State::writable(writePos, readPos, bufferFrames)
             >= (self->state->transferFrames() + kMinInterpFrames))
-        {
-            // Trigger refill
-            self->state->fillBuffer(world);
-        }
+    {
+        // Trigger refill
+        self->state->fillBuffer(world);
     }
 
     const size_t readable  = State::readable(writePos, readPos, bufferFrames);
     const size_t readable1 = std::min(readable, bufferFrames - readPos);
     const size_t readable2 = readable - readable1;
 
-    double phase = self->state->phase();
+    double filePhase = self->state->filePhase();
+    double bufferPhase = self->state->bufferPhase();
     using namespace std;
-    assert((size_t)trunc(phase) == readPos);
+    assert((size_t)trunc(bufferPhase) == readPos);
 
     size_t numFramesProduced = 0;
 
@@ -861,7 +874,8 @@ process_disk_interp(
                 bufferFrames,
                 amp,
                 rate,
-                phase
+                filePhase,
+                bufferPhase
             );
             if (numFramesProduced < numFrames)
             {
@@ -875,7 +889,8 @@ process_disk_interp(
                     readable2,
                     amp,
                     rate,
-                    phase
+                    filePhase,
+                    bufferPhase
                 );
             }
         }
@@ -891,37 +906,29 @@ process_disk_interp(
                 readPos + readable1,
                 amp,
                 rate,
-                phase
+                filePhase,
+                bufferPhase
             );
         }
     }
 
-    if (numFramesProduced < numFrames)
-    {
-        for (size_t k=numFramesProduced; k < numFrames; k++)
-        {
-            out0[k] = out1[k] = 0.f;
-        }
-
-        if (state == kFinishing)
-        {
-            self->state->finish();
-        }
-        else
-        {
-            reportUnderrun(world, numFrames, numFramesProduced);
-        }
+    for (size_t k=numFramesProduced; k < numFrames; k++) {
+        out0[k] = out1[k] = 0.f;
     }
 
-    assert(phase >= 0 && phase < (double)bufferFrames);
-    const size_t nextReadPos = std::floor(phase);
+    assert(bufferPhase >= 0 && bufferPhase < (double)bufferFrames);
+    const size_t nextReadPos = std::floor(bufferPhase);
     assert(nextReadPos < bufferFrames);
-    if (nextReadPos != readPos)
+    if (nextReadPos != readPos) {
         self->state->setReadPos(nextReadPos);
-    self->state->setPhase(phase);
+    }
+
+    self->state->setPhase(self->state->loop() ? 0. : filePhase, bufferPhase);
+
+    return numFramesProduced;
 }
 
-static inline void
+static inline size_t
 process_memory_interp(
     DiskSampler* self,
     size_t numFrames,
@@ -933,12 +940,13 @@ process_memory_interp(
 {
     const size_t bufferFrames = self->state->bufferFrames();
     const size_t bufferChannels = self->state->bufferChannels();
-    double phase = self->state->phase();
+    double filePhase = self->state->filePhase();
+    double bufferPhase = self->state->bufferPhase();
+
+    size_t numFramesProduced = 0;
 
     if (self->state->loop())
     {
-        size_t numFramesProduced = 0;
-
         while (numFramesProduced < numFrames)
         {
             numFramesProduced += resample<true,true>(
@@ -951,7 +959,8 @@ process_memory_interp(
                 bufferFrames,
                 amp,
                 rate,
-                phase
+                filePhase,
+                bufferPhase
             );
         }
 
@@ -959,7 +968,7 @@ process_memory_interp(
     }
     else
     {
-        const size_t numFramesProduced = resample<false,false>(
+        numFramesProduced = resample<false,false>(
             out0,
             out1,
             numFrames,
@@ -969,26 +978,27 @@ process_memory_interp(
             bufferFrames,
             amp,
             rate,
-            phase
+            filePhase,
+            bufferPhase
         );
 
-        if (numFramesProduced < numFrames)
-        {
-            for (size_t k = numFramesProduced; k < numFrames; k++) {
-                out0[k] = out1[k] = 0.f;
-            }
-            self->state->finish();
+        for (size_t k = numFramesProduced; k < numFrames; k++) {
+            out0[k] = out1[k] = 0.f;
         }
     }
 
-    self->state->setPhase(phase);
+    self->state->setPhase(self->state->loop() ? 0. : filePhase, bufferPhase);
+
+    return numFramesProduced;
 }
 
 static void
-disksampler_process(
+process(
     const Methcla_World* world,
     Methcla_Synth* synth,
-    size_t numFrames )
+    size_t numFrames,
+    bool withInterp
+    )
 {
     DiskSampler* self = static_cast<DiskSampler*>(synth);
 
@@ -1005,26 +1015,44 @@ disksampler_process(
         case kIdle:
         case kFilling:
         case kFinishing:
-#if METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING
-        process_disk_interp(world, self, numFrames, amp, rate, buffer, out0, out1, state);
-#else
-        process_disk(world, self, numFrames, amp, buffer, out0, out1, state);
-#endif
-        break;
+            {
+                const size_t numFramesProduced =
+                    withInterp
+                        ? process_disk_interp(world, self, numFrames, amp, rate, buffer, out0, out1, state)
+                        : process_disk(world, self, numFrames, amp, buffer, out0, out1, state);
+
+                if (numFramesProduced < numFrames && state != kFinishing) {
+                    reportUnderrun(world, numFrames, numFramesProduced);
+                }
+
+                if (!self->state->loop() && self->state->filePhase() >= (double)self->state->fileFrames()) {
+                    self->state->finish();
+                }
+            }
+            break;
         case kMemoryPlayback:
-#if METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING
-        process_memory_interp(self, numFrames, amp, rate, buffer, out0, out1);
-#else
-        process_memory(self, numFrames, amp, buffer, out0, out1);
-#endif
+            if (withInterp) {
+                process_memory_interp(self, numFrames, amp, rate, buffer, out0, out1);
+            } else {
+                process_memory(self, numFrames, amp, buffer, out0, out1);
+            }
         break;
         case kInitializing:
         case kFinished:
-        for (size_t k = 0; k < numFrames; k++) {
-            out0[k] = out1[k] = 0.f;
-        }
-        break;
+            for (size_t k = 0; k < numFrames; k++) {
+                out0[k] = out1[k] = 0.f;
+            }
+            break;
     }
+}
+
+static void
+disksampler_process(
+    const Methcla_World* world,
+    Methcla_Synth* synth,
+    size_t numFrames )
+{
+    process(world, synth, numFrames, METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING);
 }
 
 static const Methcla_SynthDef kDiskSamplerDef =
