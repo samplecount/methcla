@@ -102,7 +102,7 @@ static Methcla_Error soundfile_write_float(const Methcla_SoundFile* file, const 
     // memset(buffer, 0, numFrames * handle->numChannels * sizeof(float));
     // int64_t prevPos = handle->pos;
     // handle->pos += numFrames;
-    // 
+    //
     // METHCLA_PRINT_DEBUG("soundfile_read_float: %p %p numFrames=%zu prevPos=%lld pos=%lld", file, handle, numFrames, prevPos, handle->pos);
 
     *outNumFrames = inNumFrames;
