@@ -261,6 +261,7 @@ public:
     SynthDefMap                                         m_synthDefs;
     std::list<const Methcla_SoundFileAPI*>              m_soundFileAPIs;
 
+    std::atomic<int>                                    m_logLevel;
     std::atomic<int>                                    m_logFlags;
 
     EnvironmentImpl(Environment* owner, LogHandler logHandler, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
@@ -478,14 +479,11 @@ public:
     LogStream rt_log(Methcla_LogLevel level)
     {
         using namespace std::placeholders;
-        const Methcla_LogLevel currentLogLevel =
-            m_logFlags.load() & kMethcla_EngineLogDebug
-                ? kMethcla_LogDebug
-                : kMethcla_LogWarn;
+        const Methcla_LogLevel logLevel = (Methcla_LogLevel)m_logLevel.load();
         return LogStream(
             std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
             level,
-            currentLogLevel
+            logLevel
         );
     }
 
@@ -501,14 +499,11 @@ public:
     LogStream nrt_log(Methcla_LogLevel level)
     {
         using namespace std::placeholders;
-        const Methcla_LogLevel currentLogLevel =
-            m_logFlags.load() & kMethcla_EngineLogDebug
-                ? kMethcla_LogDebug
-                : kMethcla_LogWarn;
+        const Methcla_LogLevel logLevel = (Methcla_LogLevel)m_logLevel.load();
         return LogStream(
             std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
             level,
-            currentLogLevel
+            logLevel
         );
     }
 

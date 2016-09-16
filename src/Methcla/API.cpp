@@ -219,6 +219,7 @@ METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options)
     memset(options, 0, sizeof(Methcla_EngineOptions));
     options->log_handler = Methcla::Platform::defaultLogHandler();
     options->packet_handler = defaultPacketHandler();
+    options->log_level = kMethcla_LogWarn;
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(

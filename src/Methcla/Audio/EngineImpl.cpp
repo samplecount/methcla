@@ -207,8 +207,10 @@ EnvironmentImpl::EnvironmentImpl(
     , m_epoch(0)
     , m_currentTime(0)
     , m_nodes(options.maxNumNodes, nullptr)
+    , m_logLevel(options.logLevel)
     , m_logFlags(kMethcla_EngineLogDefault)
 {
+    assert( m_logLevel.is_lock_free() );
     assert( m_logFlags.is_lock_free() );
 
     const Epoch prevEpoch = m_epoch - 1;

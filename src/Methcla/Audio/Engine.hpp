@@ -71,6 +71,7 @@ namespace Methcla { namespace Audio
             size_t numHardwareInputChannels = 2;
             size_t numHardwareOutputChannels = 2;
             std::list<Methcla_LibraryFunction> pluginLibraries;
+            Methcla_LogLevel logLevel = kMethcla_LogWarn;
         };
 
         struct Command

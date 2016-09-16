@@ -476,6 +476,7 @@ namespace Methcla
 
     public:
         LogHandler logHandler;
+        Methcla_LogLevel logLevel = kMethcla_LogWarn;
         Methcla_EngineLogFlags logFlags = kMethcla_EngineLogDefault;
 
         size_t realtimeMemorySize = 1024*1024;
@@ -492,6 +493,12 @@ namespace Methcla
         {
             this->logHandler = logHandler;
             return *this;
+        }
+
+        EngineOptions& setLogLevel(Methcla_LogLevel logLevel)
+        {
+          this->logLevel = logLevel;
+          return *this;
         }
 
         EngineOptions& setLogFlags(Methcla_EngineLogFlags logFlags)
@@ -515,6 +522,7 @@ namespace Methcla
             m_options.realtime_memory_size = realtimeMemorySize;
             m_options.max_num_nodes = maxNumNodes;
             m_options.max_num_audio_buses = maxNumAudioBuses;
+            m_options.log_level = logLevel;
 
             m_pluginLibraries.assign(pluginLibraries.begin(), pluginLibraries.end());
             m_pluginLibraries.push_back(nullptr);

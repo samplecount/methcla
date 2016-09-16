@@ -90,6 +90,8 @@ struct Methcla_EngineOptions
     size_t                      max_num_nodes;
     size_t                      max_num_audio_buses;
 
+    Methcla_LogLevel            log_level;
+
     //* NULL terminated array of plugin library functions.
     Methcla_LibraryFunction*    plugin_libraries;
 };
@@ -123,8 +125,7 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine);
 enum Methcla_EngineLogFlags
 {
     kMethcla_EngineLogDefault   = 0x00,
-    kMethcla_EngineLogDebug     = 0x01,
-    kMethcla_EngineLogRequests  = 0x02
+    kMethcla_EngineLogRequests  = 0x01
 };
 
 //* Set flags for debug logging.
