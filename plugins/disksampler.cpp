@@ -289,7 +289,7 @@ private:
     {
         try
         {
-            m_file = std::move(Methcla::SoundFile(host, m_path));
+            m_file = Methcla::SoundFile(host, m_path);
 
             m_channels = m_file.info().channels;
             m_startFrame = std::min(std::max<int64_t>(0, m_startFrame), m_file.info().frames);
