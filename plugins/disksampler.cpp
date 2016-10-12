@@ -52,8 +52,6 @@ typedef enum {
     kNumPorts
 } PortIndex;
 
-static const size_t kNumOutputChannels = 2;
-
 enum StateVar
 {
     kInitializing,
