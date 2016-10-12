@@ -22,17 +22,17 @@
 
 #define METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING 1
 
-static const size_t kCacheLineSize = 64;
+static constexpr size_t kCacheLineSize = 64;
 // Multiple of disk block size, more or less.
-static const size_t kDiskBlockSize = 8192;
+static constexpr size_t kDiskBlockSize = 8192;
 // How many frames are read at once?
 // NOTE: Previously kDiskBlockSize * 4, now kDiskBlockSize * 8 in order to avoid buffer underruns while app is in background on iOS.
 // TODO: Make disk buffer size configurable at runtime.
-static const size_t kDiskTransferSize = kDiskBlockSize * 8;
+static constexpr size_t kDiskTransferSize = kDiskBlockSize * 8;
 // How many transfer blocks are in a buffer?
-static const size_t kNumTransfersPerBuffer = 4;
+static constexpr size_t kNumTransfersPerBuffer = 4;
 
-static const size_t kMinInterpFrames = 4;
+static constexpr size_t kMinInterpFrames = 4;
 
 static inline size_t bytesToFrames(size_t channels, size_t bytes)
 {
@@ -109,10 +109,9 @@ class State
     double m_filePhase;     // Current position in file
     double m_bufferPhase;   // Current position in playback buffer
 
-    std::atomic<size_t> m_readPos;
     // Force read and write pointers to different cache lines.
-    char m_padding[kCacheLineSize-sizeof(m_readPos)];
-    std::atomic<size_t> m_writePos;
+                            std::atomic<size_t> m_readPos;
+    alignas(kCacheLineSize) std::atomic<size_t> m_writePos;
 
 public:
     State(const char* path, bool loop, int64_t startFrame, int64_t fileFrames, size_t bufferFrames)
