@@ -16,12 +16,6 @@ First off, don't forget to
 
 after pulling from Methcla's repository.
 
-Initialize the build system:
-
-    ./shake .update
-
-This step needs to be repeated each time the build script's package dependencies change.
-
 To build a specific target (see below for a list of possible targets):
 
     ./shake TARGET
