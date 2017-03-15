@@ -53,8 +53,14 @@ RtAudioDriver::RtAudioDriver(Options options)
     else if (options.numInputs > 0)
     {
         iParams.deviceId = m_audio.getDefaultInputDevice();
-        iParams.nChannels = options.numInputs;
-        iParamsPtr = &iParams;
+        int available = m_audio.getDeviceInfo(iParams.deviceId).inputChannels;
+        // clamp to number of available channels
+        if (options.numInputs <= available)
+            iParams.nChannels = options.numInputs;
+        else
+            iParams.nChannels = options.numInputs = available;
+        if (0 < iParams.nChannels)
+            iParamsPtr = &iParams;
     }
 
     if (options.numOutputs == -1)
