@@ -15,6 +15,7 @@
 #include <methcla/plugins/soundfile_api_dummy.h>
 // #include "Log.hpp"
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -64,7 +65,7 @@ static Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFr
     SoundFileHandle* handle = (SoundFileHandle*)file->handle;
     int64_t prevPos = handle->pos;
     handle->pos = std::max<int64_t>(0, std::min(numFrames, handle->numFrames - 1));
-    METHCLA_PRINT_DEBUG("soundfile_seek: %p %p prevPos=%lld pos=%lld", file, handle, prevPos, handle->pos);
+    METHCLA_PRINT_DEBUG("soundfile_seek: %p %p prevPos=%" PRId64 " pos=%" PRId64, file, handle, prevPos, handle->pos);
     return methcla_no_error();
 }
 
@@ -85,7 +86,7 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* 
     int64_t prevPos = handle->pos;
     handle->pos += numFrames;
 
-    METHCLA_PRINT_DEBUG("soundfile_read_float: %p %p numFrames=%zu prevPos=%lld pos=%lld", file, handle, numFrames, prevPos, handle->pos);
+    METHCLA_PRINT_DEBUG("soundfile_read_float: %p %p numFrames=%zu prevPos=%" PRId64 " pos=%" PRId64, file, handle, numFrames, prevPos, handle->pos);
 
     *outNumFrames = numFrames;
 
@@ -141,7 +142,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api, const char*
     info->channels = handle->numChannels;
     info->samplerate = handle->sampleRate;
 
-    METHCLA_PRINT_DEBUG("soundfile_open: %s %lld %u %u", path, info->frames, info->channels, info->samplerate);
+    METHCLA_PRINT_DEBUG("soundfile_open: %s %" PRId64 " %u %u", path, info->frames, info->channels, info->samplerate);
 
     return methcla_no_error();
 }
