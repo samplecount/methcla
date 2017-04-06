@@ -80,6 +80,16 @@ struct _opensl_stream {
   int callbacks;
 };
 
+inline static size_t inputBufferSize(OPENSL_STREAM* p)
+{
+  return p->totalBufferFrames * p->inputChannels;
+}
+
+inline static size_t outputBufferSize(OPENSL_STREAM* p)
+{
+  return p->totalBufferFrames * p->outputChannels;
+}
+
 static double time_diff_millis(struct timespec *a, struct timespec *b)
 {
   return (a->tv_sec - b->tv_sec) * 1e3 + (a->tv_nsec - b->tv_nsec) * 1e-6;
@@ -389,9 +399,8 @@ OPENSL_STREAM *opensl_open(
   }
 
   if (p->inputChannels > 0) {
-    int inBufSize = p->totalBufferFrames * p->inputChannels;
     if (!(openSLRecOpen(p, srmillihz) == SL_RESULT_SUCCESS &&
-        (p->inputBuffer = (short *) calloc(inBufSize, sizeof(short))) &&
+        (p->inputBuffer = (short *) calloc(inputBufferSize(p), sizeof(short))) &&
         (p->dummyBuffer = (short *) calloc(callbackBufferFrames * p->inputChannels,
              sizeof(short))))) {
       opensl_close(p);
@@ -400,9 +409,8 @@ OPENSL_STREAM *opensl_open(
   }
 
   if (p->outputChannels > 0) {
-    int outBufSize = p->totalBufferFrames * p->outputChannels;
     if (!(openSLPlayOpen(p, srmillihz) == SL_RESULT_SUCCESS &&
-        (p->outputBuffer = (short *) calloc(outBufSize, sizeof(short))))) {
+        (p->outputBuffer = (short *) calloc(outputBufferSize(p), sizeof(short))))) {
       opensl_close(p);
       return NULL;
     }
@@ -445,7 +453,10 @@ int opensl_start(OPENSL_STREAM *p)
   p->intervals = 0;
   p->callbacks = 0;
 
-  memset(p->outputBuffer, 0, sizeof(p->outputBuffer));
+  if (p->outputChannels > 0) {
+    memset(p->outputBuffer, 0, outputBufferSize(p) * sizeof(short));
+  }
+
   if ((*p->playerPlay)->SetPlayState(p->playerPlay,
          SL_PLAYSTATE_PLAYING) != SL_RESULT_SUCCESS) {
     opensl_pause(p);
@@ -455,7 +466,7 @@ int opensl_start(OPENSL_STREAM *p)
   playerCallback(p->playerBufferQueue, p);
 
   if (p->recorderRecord) {
-    memset(p->inputBuffer, 0, sizeof(p->inputBuffer));
+    memset(p->inputBuffer, 0, inputBufferSize(p) * sizeof(short));
     sem_wait(&p->semReady);
     if ((*p->recorderRecord)->SetRecordState(p->recorderRecord,
             SL_RECORDSTATE_RECORDING) != SL_RESULT_SUCCESS) {
