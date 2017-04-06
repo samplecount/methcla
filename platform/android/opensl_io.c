@@ -397,7 +397,6 @@ OPENSL_STREAM *opensl_open(
       opensl_close(p);
       return NULL;
     }
-    memset(p->dummyBuffer, 0, sizeof(p->dummyBuffer));
   }
 
   if (p->outputChannels > 0) {
