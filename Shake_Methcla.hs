@@ -264,7 +264,7 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
     let sdkVersion platform = maximum <$> OSX.getPlatformVersions platform
         getConfig = getConfigFromWithEnv [] "config/ios.cfg" []
 
-    iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Armv7s, Arm Arm64] $ \target -> do
+    iphoneosLibs <- mapTarget (OSX.target OSX.iPhoneOS) [Arm Armv7, Arm Arm64] $ \target -> do
         staticLibrary
           (OSX.toolChain
             <$> OSX.getSDKRoot
