@@ -20,6 +20,6 @@ if [ -z "`which stack`" ]; then
 	    ;;
     esac
 else
-    stack build
+    stack build --no-system-ghc --install-ghc
     `stack path --local-install-root`/bin/methcla-shakefile $SHAKE_ARGS "$@"
 fi
