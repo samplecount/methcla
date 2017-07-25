@@ -259,7 +259,7 @@ namespace Methcla
                     m_bits[i] = true;
                     m_pos = (i+1) == m_bits.size() ? 0 : i+1;
                     m_allocated++;
-                    return Id(m_offset + i);
+                    return Id(m_offset + static_cast<T>(i));
                 }
             }
             for (size_t i=0; i < m_pos; i++) {
@@ -267,7 +267,7 @@ namespace Methcla
                     m_bits[i] = true;
                     m_pos = i+1;
                     m_allocated++;
-                    return Id(m_offset + i);
+                    return Id(m_offset + static_cast<T>(i));
                 }
             }
             throw std::runtime_error("No free ids");
@@ -461,10 +461,10 @@ namespace Methcla
         {
             Methcla_AudioDriverOptions result;
             methcla_audio_driver_options_init(&result);
-            result.sample_rate = sampleRate.value(-1);
-            result.num_inputs = numInputs.value(-1);
-            result.num_outputs = numOutputs.value(-1);
-            result.buffer_size = bufferSize.value(-1);
+            result.sample_rate = static_cast<int>(sampleRate.value(-1));
+            result.num_inputs = static_cast<int>(numInputs.value(-1));
+            result.num_outputs = static_cast<int>(numOutputs.value(-1));
+            result.buffer_size = static_cast<int>(bufferSize.value(-1));
             return result;
         }
     };
@@ -738,7 +738,7 @@ namespace Methcla
             oscPacket()
                 .openMessage("/synth/map/input", 4)
                     .int32(synth.id())
-                    .int32(index)
+                    .int32(static_cast<int32_t>(index))
                     .int32(bus.id())
                     .int32(flags)
                 .closeMessage();
@@ -751,7 +751,7 @@ namespace Methcla
             oscPacket()
                 .openMessage("/synth/map/output", 4)
                     .int32(synth.id())
-                    .int32(index)
+                    .int32(static_cast<int32_t>(index))
                     .int32(bus.id())
                     .int32(flags)
                 .closeMessage();
@@ -764,7 +764,7 @@ namespace Methcla
             oscPacket()
                 .openMessage("/node/set", 3)
                     .int32(node.id())
-                    .int32(index)
+                    .int32(static_cast<int32_t>(index))
                     .float32(value)
                 .closeMessage();
         }
