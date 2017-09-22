@@ -237,6 +237,11 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- Common rules
   phony "clean" $ removeFilesAfter buildDir ["//*"]
 
+  -- Update includes (because we can't use symlinks with git on Windows)
+  phony "update-includes" $
+    cmd "rsync -a external_libraries/oscpp/include/oscpp/ include/oscpp/"
+  want ["update-includes"]
+
   _ <- versionHeaderRule variant sourceDir buildDir
 
   let configEnv = [
