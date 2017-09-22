@@ -521,23 +521,12 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
         command_ [] result []
       phony "clean-test" $ removeFilesAfter "tests/output" ["*.osc", "*.wav"]
 
-  --tags
-  -- do
-  --   let and_ a b = do { as <- a; bs <- b; return $! as ++ bs }
-  --       files clause dir = find always clause dir
-  --       sources = files (extension ~~? ".h*" ||? extension ~~? ".c*")
-  --       tagFile = "tags"
-  --       tagFiles = "tagfiles"
-  --   tagFile %> \output -> flip actionFinally (removeFile tagFiles) $ do
-  --       fs <- liftIO $ find
-  --                 (fileName /=? "typeof") (extension ==? ".hpp") ("external_libraries/boost/boost")
-  --           `and_` sources "include"
-  --           `and_` sources "platform"
-  --           `and_` sources "plugins"
-  --           `and_` sources "src"
-  --       need fs
-  --       writeFileLines tagFiles fs
-  --       command_ [] "ctags" $
-  --           (words "--sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+q --tag-relative=yes")
-  --        ++ ["-f", output]
-  --        ++ ["-L", tagFiles]
+  -- tags
+  "tags" %> \tags ->
+    cmd "ctags -R --languages=c,c++ --sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+qf --tag-relative=yes"
+              "--exclude='*typeof*'"
+              "external_libraries"
+              "include"
+              "platform"
+              "plugins"
+              "src"
