@@ -529,9 +529,10 @@ mkRules variant sourceDir buildDir options pkgConfigOptions = do
   -- tags
   "tags" %> \tags ->
     cmd "ctags -R --languages=c,c++ --sort=foldcase --c++-kinds=+p --fields=+iaS --extra=+qf --tag-relative=yes"
-              "--exclude='*typeof*'"
-              "external_libraries"
-              "include"
-              "platform"
-              "plugins"
-              "src"
+        "--exclude='*typeof*'"
+        "-f" tags
+        "external_libraries"
+        "include"
+        "platform"
+        "plugins"
+        "src"
