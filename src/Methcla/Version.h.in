@@ -1,0 +1,6 @@
+#ifndef METHCLA_VERSION_H_INCLUDED
+#define METHCLA_VERSION_H_INCLUDED
+
+static const char* kMethclaVersion = "${PROJECT_VERSION}";
+
+#endif /* METHCLA_VERSION_H_INCLUDED */
