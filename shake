@@ -1,25 +1,28 @@
-#!/bin/sh -e
+#!/bin/sh
 
-ENV_FILE="config/env.sh"
-SHAKE_ARGS="-j"
+env_file="config/env.sh"
 
 # Configure environment
-set -a # auto export variables
-if [ -f "$ENV_FILE" ]; then
-    source "${ENV_FILE}"
+if [ -f "$env_file" ]; then
+    # Check whether env file is owned by and only writable by user
+    if [ -O "$env_file" ] && ls -l "$env_file" | grep -qe "^-...[-r]-[-x][-r]-[-x]"; then
+        set -a # auto export variables
+        source "${env_file}"
+    else
+        echo "For security reasons, the environment file \"$env_file\"" 1>&2
+        echo "should be owned by and writable by you and you only." 1>&2
+        exit 1
+    fi
 fi
 
-if [ -z "`which stack`" ]; then
-    case "$1" in
-	.update)
-	    shift
-	    cabal install --only-dependencies "$@"
-	    cabal clean
-	    ;;
-	*) cabal run -- $SHAKE_ARGS "$@"
-	    ;;
-    esac
-else
-    stack build --no-system-ghc --install-ghc
-    `stack path --local-install-root`/bin/methcla-shakefile $SHAKE_ARGS "$@"
+stack=`which stack`
+if [ -z "$stack" ]; then
+    echo "stack not found in \$PATH, please install from http://haskellstack.org" 1>&2
+    exit 1
 fi
+
+# Build the build system.
+"$stack" build --no-system-ghc --install-ghc || exit 1
+
+# Execute build system.
+`"$stack" path --local-install-root`/bin/methcla-shakefile "$@" || exit 1
