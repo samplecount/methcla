@@ -1,5 +1,8 @@
 language: cpp
 script:
+- mkdir -p build
+- cd build
+- cmake ..
 - cmake --build . --config Release
 - ctest --config Release
 matrix:
