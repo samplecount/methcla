@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,13 +18,15 @@
 #include "Methcla/Utility/Semaphore.hpp"
 
 #include <boost/assert.hpp>
+
 #include <chrono>
 #include <iostream>
-#include <lame/lame.h>
 #include <memory>
-#include <shout/shout.h>
 #include <stdexcept>
 #include <thread>
+
+#include <lame/lame.h>
+#include <shout/shout.h>
 
 using namespace Methcla;
 using namespace Methcla::Audio::IO;
@@ -36,16 +38,20 @@ static const size_t kMinLameBufferSize = 7200;
 class detail::IcecastDriverImpl
 {
 public:
-    typedef std::unique_ptr<lame_global_flags,std::function<int(lame_global_flags*)>> LamePtr;
-    typedef std::unique_ptr<shout_t,std::function<void(shout_t*)>> ShoutPtr;
+    typedef std::unique_ptr<lame_global_flags,
+                            std::function<int(lame_global_flags*)>>
+                                                                    LamePtr;
+    typedef std::unique_ptr<shout_t, std::function<void(shout_t*)>> ShoutPtr;
 
-    IcecastDriverImpl(Driver::Options driverOptions, IcecastDriver::IcecastOptions icecastOptions, IcecastDriver* driver)
-        : m_driver(driver)
-        , m_sampleRate(driverOptions.sampleRate)
-        , m_bufferSize(driverOptions.bufferSize)
-        , m_outputBuffers(Driver::makeBuffers(kNumOutputs, m_bufferSize))
-        , m_lame(LamePtr(lame_init(), lame_close))
-        , m_shout(ShoutPtr(shout_new(), shout_free))
+    IcecastDriverImpl(Driver::Options               driverOptions,
+                      IcecastDriver::IcecastOptions icecastOptions,
+                      IcecastDriver*                driver)
+    : m_driver(driver)
+    , m_sampleRate(driverOptions.sampleRate)
+    , m_bufferSize(driverOptions.bufferSize)
+    , m_outputBuffers(Driver::makeBuffers(kNumOutputs, m_bufferSize))
+    , m_lame(LamePtr(lame_init(), lame_close))
+    , m_shout(ShoutPtr(shout_new(), shout_free))
     {
         initEncoder(m_lame.get(), driverOptions);
         initConnection(m_shout.get(), icecastOptions);
@@ -59,29 +65,18 @@ public:
         Driver::freeBuffers(kNumOutputs, m_outputBuffers);
     }
 
-    double sampleRate() const
-    {
-        return m_sampleRate;
-    }
+    double sampleRate() const { return m_sampleRate; }
 
-    size_t bufferSize() const
-    {
-        return m_bufferSize;
-    }
+    size_t bufferSize() const { return m_bufferSize; }
 
-    void connect()
-    {
-        check(m_shout.get(), shout_open(m_shout.get()));
-    }
+    void connect() { check(m_shout.get(), shout_open(m_shout.get())); }
 
-    void disconnect()
-    {
-        check(m_shout.get(), shout_close(m_shout.get()));
-    }
+    void disconnect() { check(m_shout.get(), shout_close(m_shout.get())); }
 
     void start()
     {
-        if (!m_thread.joinable()) {
+        if (!m_thread.joinable())
+        {
             m_continue = true;
             m_thread = std::thread(&IcecastDriverImpl::run, this);
         }
@@ -89,7 +84,8 @@ public:
 
     void stop()
     {
-        if (m_thread.joinable()) {
+        if (m_thread.joinable())
+        {
             m_continue = false;
             m_thread.join();
         }
@@ -98,29 +94,29 @@ public:
 private:
     void run()
     {
-        const size_t lameBufferSize = 1.25 * bufferSize() + kMinLameBufferSize + 0.5;
-        std::unique_ptr<unsigned char[]> lameBuffer(new unsigned char[lameBufferSize]);
+        const size_t lameBufferSize =
+            1.25 * bufferSize() + kMinLameBufferSize + 0.5;
+        std::unique_ptr<unsigned char[]> lameBuffer(
+            new unsigned char[lameBufferSize]);
 
-        BOOST_ASSERT( sizeof(sample_t) == sizeof(float) );
-        BOOST_ASSERT( lameBufferSize >= kMinLameBufferSize );
-  
-        while (m_continue) {
+        BOOST_ASSERT(sizeof(sample_t) == sizeof(float));
+        BOOST_ASSERT(lameBufferSize >= kMinLameBufferSize);
+
+        while (m_continue)
+        {
             std::chrono::milliseconds delay(shout_delay(m_shout.get()));
-            auto start = std::chrono::steady_clock::now();
+            auto                      start = std::chrono::steady_clock::now();
 
             m_driver->process(bufferSize(), nullptr, m_outputBuffers);
 
             int n = lame_encode_buffer_ieee_float(
-                    m_lame.get(),
-                    m_outputBuffers[0],
-                    m_outputBuffers[1],
-                    bufferSize(),
-                    lameBuffer.get(),
-                    static_cast<int>(lameBufferSize)
-                );
+                m_lame.get(), m_outputBuffers[0], m_outputBuffers[1],
+                bufferSize(), lameBuffer.get(),
+                static_cast<int>(lameBufferSize));
             // std::cout << n << '\n';
-            if (n < 0) check(m_lame.get(), n);
-            BOOST_ASSERT_MSG( n > 0, "lame_encode_buffer_ieee_float returned 0" );            
+            if (n < 0)
+                check(m_lame.get(), n);
+            BOOST_ASSERT_MSG(n > 0, "lame_encode_buffer_ieee_float returned 0");
 
             auto end = std::chrono::steady_clock::now();
             auto elapsed = end - start;
@@ -134,8 +130,10 @@ private:
 private:
     void check(lame_global_flags*, int code)
     {
-        if (code < 0) {
-            switch (code) {
+        if (code < 0)
+        {
+            switch (code)
+            {
                 case LAME_NOMEM:
                     throw Error::memory();
                 case LAME_GENERICERROR:
@@ -164,7 +162,8 @@ private:
 
     void check(shout_t* self, int code)
     {
-        if (code != SHOUTERR_SUCCESS) {
+        if (code != SHOUTERR_SUCCESS)
+        {
             std::cerr << "libshout: " << shout_get_error(self) << "\n";
             if (code == SHOUTERR_INSANE)
                 throw std::logic_error(shout_get_error(self));
@@ -185,76 +184,50 @@ private:
         check(self, shout_set_format(self, SHOUT_FORMAT_MP3));
         if (!options.mount.empty())
             check(self, shout_set_mount(self, options.mount.c_str()));
-        if (!options.name.empty()) {
+        if (!options.name.empty())
+        {
             check(self, shout_set_name(self, options.name.c_str()));
         }
     }
 
-    IcecastDriver*      m_driver;
-    double              m_sampleRate;
-    size_t              m_bufferSize;
-    sample_t**          m_outputBuffers;
-    LamePtr             m_lame;
-    ShoutPtr            m_shout;
-    std::thread         m_thread;
-    std::atomic<bool>   m_continue;
+    IcecastDriver*    m_driver;
+    double            m_sampleRate;
+    size_t            m_bufferSize;
+    sample_t**        m_outputBuffers;
+    LamePtr           m_lame;
+    ShoutPtr          m_shout;
+    std::thread       m_thread;
+    std::atomic<bool> m_continue;
 };
 
 class ShoutLibrary
 {
 public:
-    ShoutLibrary()
-    {
-        shout_init();
-    }
-    ~ShoutLibrary()
-    {
-        shout_shutdown();
-    }
+    ShoutLibrary() { shout_init(); }
+    ~ShoutLibrary() { shout_shutdown(); }
 };
 
-IcecastDriver::IcecastDriver(Driver::Options driverOptions, IcecastOptions icecastOptions)
-    : Driver(driverOptions)
+IcecastDriver::IcecastDriver(Driver::Options driverOptions,
+                             IcecastOptions  icecastOptions)
+: Driver(driverOptions)
 {
     static ShoutLibrary libshout;
     m_impl = new detail::IcecastDriverImpl(driverOptions, icecastOptions, this);
 }
 
-IcecastDriver::~IcecastDriver()
-{
-    delete m_impl;
-}
+IcecastDriver::~IcecastDriver() { delete m_impl; }
 
-double IcecastDriver::sampleRate() const
-{
-    return m_impl->sampleRate();
-}
+double IcecastDriver::sampleRate() const { return m_impl->sampleRate(); }
 
-size_t IcecastDriver::numInputs() const
-{
-    return 0;
-}
+size_t IcecastDriver::numInputs() const { return 0; }
 
-size_t IcecastDriver::numOutputs() const
-{
-    return kNumOutputs;
-}
+size_t IcecastDriver::numOutputs() const { return kNumOutputs; }
 
-size_t IcecastDriver::bufferSize() const
-{
-    return m_impl->bufferSize();
-}
+size_t IcecastDriver::bufferSize() const { return m_impl->bufferSize(); }
 
+void IcecastDriver::start() { m_impl->start(); }
 
-void IcecastDriver::start()
-{
-    m_impl->start();
-}
-
-void IcecastDriver::stop()
-{
-    m_impl->stop();
-}
+void IcecastDriver::stop() { m_impl->stop(); }
 
 Driver* Methcla::Platform::defaultAudioDriver(Driver::Options driverOptions)
 {

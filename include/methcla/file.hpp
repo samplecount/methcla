@@ -23,38 +23,31 @@
 
 #include <stdexcept>
 
-namespace Methcla
-{
+namespace Methcla {
     class SoundFileInfo : public Methcla_SoundFileInfo
     {
     public:
         SoundFileInfo()
         {
-            frames      = 0;
-            channels    = 0;
-            samplerate  = 0;
-            file_type   = kMethcla_SoundFileTypeUnknown;
+            frames = 0;
+            channels = 0;
+            samplerate = 0;
+            file_type = kMethcla_SoundFileTypeUnknown;
             file_format = kMethcla_SoundFileFormatUnknown;
         }
 
         SoundFileInfo(const Methcla_SoundFileInfo& info)
         {
-            frames      = info.frames;
-            channels    = info.channels;
-            samplerate  = info.samplerate;
-            file_type   = info.file_type;
+            frames = info.frames;
+            channels = info.channels;
+            samplerate = info.samplerate;
+            file_type = info.file_type;
             file_format = info.file_format;
         }
 
-        int64_t samples() const
-        {
-            return channels * frames;
-        }
+        int64_t samples() const { return channels * frames; }
 
-        double duration() const
-        {
-            return (double)frames/(double)samplerate;
-        }
+        double duration() const { return (double)frames / (double)samplerate; }
     };
 
     class SoundFile
@@ -70,48 +63,47 @@ namespace Methcla
 
     public:
         SoundFile()
-            : m_file(nullptr)
+        : m_file(nullptr)
         {}
 
         SoundFile(Methcla_SoundFile* file, const Methcla_SoundFileInfo& info)
-            : m_file(file)
-            , m_info(info)
+        : m_file(file)
+        , m_info(info)
         {}
 
         SoundFile(const Engine& engine, const std::string& path)
         {
-            detail::checkReturnCode(
-                methcla_engine_soundfile_open(engine, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info)
-            );
+            detail::checkReturnCode(methcla_engine_soundfile_open(
+                engine, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info));
         }
 
-        SoundFile(const Engine& engine, const std::string& path, const SoundFileInfo& info)
-            : m_info(info)
+        SoundFile(const Engine& engine, const std::string& path,
+                  const SoundFileInfo& info)
+        : m_info(info)
         {
-            detail::checkReturnCode(
-                methcla_engine_soundfile_open(engine, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info)
-            );
+            detail::checkReturnCode(methcla_engine_soundfile_open(
+                engine, path.c_str(), kMethcla_FileModeWrite, &m_file,
+                &m_info));
         }
 
         SoundFile(const Methcla_Host* host, const std::string& path)
         {
-            detail::checkReturnCode(
-                methcla_host_soundfile_open(host, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info)
-            );
+            detail::checkReturnCode(methcla_host_soundfile_open(
+                host, path.c_str(), kMethcla_FileModeRead, &m_file, &m_info));
         }
 
-        SoundFile(const Methcla_Host* host, const std::string& path, const SoundFileInfo& info)
-            : m_info(info)
+        SoundFile(const Methcla_Host* host, const std::string& path,
+                  const SoundFileInfo& info)
+        : m_info(info)
         {
-            detail::checkReturnCode(
-                methcla_host_soundfile_open(host, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info)
-            );
+            detail::checkReturnCode(methcla_host_soundfile_open(
+                host, path.c_str(), kMethcla_FileModeWrite, &m_file, &m_info));
         }
 
         // SoundFile is moveable
         SoundFile(SoundFile&& other)
-            : m_file(std::move(other.m_file))
-            , m_info(std::move(other.m_info))
+        : m_file(std::move(other.m_file))
+        , m_info(std::move(other.m_info))
         {
             other.m_file = nullptr;
         }
@@ -134,15 +126,9 @@ namespace Methcla
                 methcla_soundfile_close(m_file);
         }
 
-        operator bool() const
-        {
-            return m_file != nullptr;
-        }
+        operator bool() const { return m_file != nullptr; }
 
-        const SoundFileInfo& info() const
-        {
-            return m_info;
-        }
+        const SoundFileInfo& info() const { return m_info; }
 
         void close()
         {
@@ -169,7 +155,8 @@ namespace Methcla
         {
             ensureInitialized();
             size_t outNumFrames;
-            detail::checkReturnCode(methcla_soundfile_read_float(m_file, buffer, numFrames, &outNumFrames));
+            detail::checkReturnCode(methcla_soundfile_read_float(
+                m_file, buffer, numFrames, &outNumFrames));
             return outNumFrames;
         }
 
@@ -177,10 +164,11 @@ namespace Methcla
         {
             ensureInitialized();
             size_t outNumFrames;
-            detail::checkReturnCode(methcla_soundfile_write_float(m_file, buffer, numFrames, &outNumFrames));
+            detail::checkReturnCode(methcla_soundfile_write_float(
+                m_file, buffer, numFrames, &outNumFrames));
             return outNumFrames;
         }
     };
-}
+} // namespace Methcla
 
 #endif // METHCLA_FILE_HPP_INCLUDED

@@ -23,25 +23,24 @@
 
 namespace Methcla { namespace Plugin {
 
-typedef void (*Function)();
+    typedef void (*Function)();
 
-//* Dynamically loaded binary module
-class Library
-{
-public:
-    virtual ~Library() { }
-    virtual Function symbol(const std::string& name) = 0;
-};
+    //* Dynamically loaded binary module
+    class Library
+    {
+    public:
+        virtual ~Library() {}
+        virtual Function symbol(const std::string& name) = 0;
+    };
 
+    //* Dynamic loader.
+    class Loader
+    {
+    public:
+        virtual ~Loader() {}
+        virtual Memory::shared_ptr<Library> open(const std::string& path) = 0;
+    };
 
-//* Dynamic loader.
-class Loader
-{
-public:
-    virtual ~Loader() { }
-    virtual Memory::shared_ptr<Library> open(const std::string& path) = 0;
-};
-
-} }
+}} // namespace Methcla::Plugin
 
 #endif // METHCLA_PLUGIN_LOADER_HPP_INCLUDED

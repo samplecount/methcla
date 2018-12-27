@@ -23,60 +23,60 @@
 
 namespace Methcla { namespace Audio { namespace IO {
 
-class Driver : public Methcla::Audio::TimeInterface
-{
-public:
-    static constexpr size_t kDefaultBufferSize = 512;
-
-    struct Options
+    class Driver : public Methcla::Audio::TimeInterface
     {
-        double sampleRate = -1.;
-        int numInputs     = -1;
-        int numOutputs    = -1;
-        int bufferSize    = -1;
+    public:
+        static constexpr size_t kDefaultBufferSize = 512;
+
+        struct Options
+        {
+            double sampleRate = -1.;
+            int    numInputs = -1;
+            int    numOutputs = -1;
+            int    bufferSize = -1;
+        };
+
+        typedef void (*ProcessCallback)(void* data, Methcla_Time currentTime,
+                                        size_t                 numFrames,
+                                        const sample_t* const* inputs,
+                                        sample_t* const*       outputs);
+
+        Driver(Options options);
+        virtual ~Driver();
+
+        void setProcessCallback(ProcessCallback callback, void* data);
+
+        virtual double sampleRate() const = 0;
+        virtual size_t numInputs() const = 0;
+        virtual size_t numOutputs() const = 0;
+        virtual size_t bufferSize() const = 0;
+
+        virtual Methcla_Time currentTime();
+
+        virtual void start() = 0;
+        virtual void stop() = 0;
+
+        static Methcla_AudioSample** makeBuffers(size_t numChannels,
+                                                 size_t numFrames)
+        {
+            return MultiChannelBuffer::makeBuffers(numChannels, numFrames);
+        }
+
+        static void freeBuffers(size_t                numChannels,
+                                Methcla_AudioSample** buffers)
+        {
+            MultiChannelBuffer::freeBuffers(numChannels, buffers);
+        }
+
+    protected:
+        void process(Methcla_Time currentTime, size_t numFrames,
+                     const sample_t* const* inputs, sample_t* const* outputs);
+
+    private:
+        ProcessCallback m_processCallback;
+        void*           m_processData;
     };
 
-    typedef void (*ProcessCallback)(
-        void* data,
-        Methcla_Time currentTime,
-        size_t numFrames,
-        const sample_t* const* inputs,
-        sample_t* const* outputs
-        );
-
-    Driver(Options options);
-    virtual ~Driver();
-
-    void setProcessCallback(ProcessCallback callback, void* data);
-
-    virtual double sampleRate() const = 0;
-    virtual size_t numInputs() const = 0;
-    virtual size_t numOutputs() const = 0;
-    virtual size_t bufferSize() const = 0;
-
-    virtual Methcla_Time currentTime();
-
-    virtual void start() = 0;
-    virtual void stop() = 0;
-
-    static Methcla_AudioSample** makeBuffers(size_t numChannels, size_t numFrames)
-    {
-        return MultiChannelBuffer::makeBuffers(numChannels, numFrames);
-    }
-
-    static void freeBuffers(size_t numChannels, Methcla_AudioSample** buffers)
-    {
-        MultiChannelBuffer::freeBuffers(numChannels, buffers);
-    }
-
-protected:
-    void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
-
-private:
-    ProcessCallback m_processCallback;
-    void*           m_processData;
-};
-
-} } }
+}}} // namespace Methcla::Audio::IO
 
 #endif // METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED

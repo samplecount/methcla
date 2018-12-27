@@ -22,7 +22,7 @@
 using namespace Methcla::Audio;
 
 SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
-    : m_descriptor(synthDef)
+: m_descriptor(synthDef)
 {
     // Validate descriptor fields (some are optional)
     if (m_descriptor->uri == nullptr || m_descriptor->uri[0] == '\0')
@@ -30,75 +30,80 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
     if (m_descriptor->construct == nullptr)
         throw std::invalid_argument("SynthDef: Missing `construct' function");
     if (m_descriptor->port_descriptor == nullptr)
-        throw std::invalid_argument("SynthDef: Missing `port_descriptor' function");
+        throw std::invalid_argument(
+            "SynthDef: Missing `port_descriptor' function");
     if (m_descriptor->connect == nullptr)
         throw std::invalid_argument("SynthDef: Missing `connect' function");
     if (m_descriptor->process == nullptr)
         throw std::invalid_argument("SynthDef: Missing `process' function");
 
-    m_options = m_descriptor->options_size > 0 ? new char[m_descriptor->options_size] : nullptr;
+    m_options = m_descriptor->options_size > 0
+                    ? new char[m_descriptor->options_size]
+                    : nullptr;
 }
 
-SynthDef::~SynthDef()
-{
-    delete [] static_cast<char*>(m_options);
-}
+SynthDef::~SynthDef() { delete[] static_cast<char*>(m_options); }
 
-const Methcla_SynthOptions* SynthDef::configure(OSCPP::Server::ArgStream options) const
+const Methcla_SynthOptions*
+SynthDef::configure(OSCPP::Server::ArgStream options) const
 {
-    if (m_descriptor->configure) {
+    if (m_descriptor->configure)
+    {
         auto state = options.state();
-        m_descriptor->configure(
-            std::get<0>(state).pos(), std::get<0>(state).consumable(),
-            std::get<1>(state).pos(), std::get<1>(state).consumable(),
-            m_options
-        );
+        m_descriptor->configure(std::get<0>(state).pos(),
+                                std::get<0>(state).consumable(),
+                                std::get<1>(state).pos(),
+                                std::get<1>(state).consumable(), m_options);
         return m_options;
     }
     return nullptr;
 }
 
-bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index, Methcla_PortDescriptor* port) const
+bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index,
+                              Methcla_PortDescriptor* port) const
 {
     return m_descriptor->port_descriptor(options, index, port);
 }
 
-void SynthDef::construct(const Methcla_World* world, const Methcla_SynthOptions* options, Methcla_Synth* synth) const
+void SynthDef::construct(const Methcla_World*        world,
+                         const Methcla_SynthOptions* options,
+                         Methcla_Synth*              synth) const
 {
     m_descriptor->construct(world, m_descriptor, options, synth);
 }
 
 void SynthDef::destroy(const Methcla_World* world, Methcla_Synth* synth) const
 {
-    if (m_descriptor->destroy) m_descriptor->destroy(world, synth);
+    if (m_descriptor->destroy)
+        m_descriptor->destroy(world, synth);
 }
 
-PluginLibrary::PluginLibrary(const Methcla_Library* lib, Memory::shared_ptr<Methcla::Plugin::Library> plugin)
-    : m_lib(lib)
-    , m_plugin(plugin)
-{
-}
+PluginLibrary::PluginLibrary(
+    const Methcla_Library*                       lib,
+    Memory::shared_ptr<Methcla::Plugin::Library> plugin)
+: m_lib(lib)
+, m_plugin(plugin)
+{}
 
-PluginLibrary::~PluginLibrary()
-{
-    methcla_library_destroy(m_lib);
-}
+PluginLibrary::~PluginLibrary() { methcla_library_destroy(m_lib); }
 
-PluginManager::PluginManager()
-{
-}
+PluginManager::PluginManager() {}
 
-void PluginManager::loadPlugins(const Methcla_Host* host, const std::list<Methcla_LibraryFunction>& funcs)
+void PluginManager::loadPlugins(const Methcla_Host*                       host,
+                                const std::list<Methcla_LibraryFunction>& funcs)
 {
-    for (auto f : funcs) {
+    for (auto f : funcs)
+    {
         const Methcla_Library* lib = f(host, ".");
-        if (lib != nullptr) {
+        if (lib != nullptr)
+        {
             m_libs.push_back(Memory::make_shared<PluginLibrary>(lib));
         }
     }
 }
 
-void PluginManager::loadPlugins(const Methcla_Host* /*host*/, const std::string& /*directory*/)
+void PluginManager::loadPlugins(const Methcla_Host* /*host*/,
+                                const std::string& /*directory*/)
 {
     std::cout << "PluginManager::loadPlugins not yet implemented" << std::endl;
 }

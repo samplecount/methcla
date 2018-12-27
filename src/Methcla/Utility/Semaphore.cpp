@@ -16,20 +16,23 @@
 
 #if !METHCLA_USE_CV_SEMAPHORE
 
-#include "Methcla/Exception.hpp"
-#include "zix/sem.h"
+#    include "Methcla/Exception.hpp"
 
-#include <memory>
-#include <stdexcept>
+#    include "zix/sem.h"
+
+#    include <memory>
+#    include <stdexcept>
 
 using namespace Methcla;
 using namespace Methcla::Utility;
 
-class Methcla::Utility::detail::SemaphoreImpl : public ZixSem { };
+class Methcla::Utility::detail::SemaphoreImpl : public ZixSem
+{};
 
 static void check(ZixStatus status)
 {
-    switch (status) {
+    switch (status)
+    {
         case ZIX_STATUS_SUCCESS:
             break;
         case ZIX_STATUS_ERROR:
@@ -60,10 +63,7 @@ Semaphore::~Semaphore()
     delete m_impl;
 }
 
-void Semaphore::post()
-{
-    zix_sem_post(m_impl);
-}
+void Semaphore::post() { zix_sem_post(m_impl); }
 
 void Semaphore::wait()
 {
@@ -71,28 +71,24 @@ void Semaphore::wait()
     check(status);
 }
 
-bool Semaphore::tryWait()
-{
-    return zix_sem_try_wait(m_impl);
-}
+bool Semaphore::tryWait() { return zix_sem_try_wait(m_impl); }
 
 #else // !METHCLA_USE_CV_SEMAPHORE
-#include <mutex>
-#include <condition_variable>
+#    include <condition_variable>
+#    include <mutex>
 
 namespace Methcla { namespace Utility {
 
-    namespace detail
-    {
+    namespace detail {
         class SemaphoreImpl
         {
-            std::mutex m_mutex;
+            std::mutex              m_mutex;
             std::condition_variable m_condVar;
-            unsigned m_count;
+            unsigned                m_count;
 
         public:
             SemaphoreImpl(unsigned count)
-                : m_count(count)
+            : m_count(count)
             {}
 
             void post()
@@ -106,7 +102,8 @@ namespace Methcla { namespace Utility {
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
 
-                while (m_count == 0) {
+                while (m_count == 0)
+                {
                     m_condVar.wait(lock);
                 }
 
@@ -127,34 +124,22 @@ namespace Methcla { namespace Utility {
                     return false;
                 }
             }
-       };
-   }
+        };
+    } // namespace detail
 
-   Semaphore::Semaphore(unsigned initial)
-   {
-       m_impl = new detail::SemaphoreImpl(initial);
-   }
+    Semaphore::Semaphore(unsigned initial)
+    {
+        m_impl = new detail::SemaphoreImpl(initial);
+    }
 
-   Semaphore::~Semaphore()
-   {
-       delete m_impl;
-   }
+    Semaphore::~Semaphore() { delete m_impl; }
 
-   void Semaphore::post()
-   {
-       m_impl->post();
-   }
+    void Semaphore::post() { m_impl->post(); }
 
-   void Semaphore::wait()
-   {
-       m_impl->wait();
-   }
+    void Semaphore::wait() { m_impl->wait(); }
 
-   bool Semaphore::tryWait()
-   {
-       return m_impl->tryWait();
-   }
+    bool Semaphore::tryWait() { return m_impl->tryWait(); }
 
-} }
+}} // namespace Methcla::Utility
 
 #endif // !METHCLA_USE_CV_SEMAPHORE

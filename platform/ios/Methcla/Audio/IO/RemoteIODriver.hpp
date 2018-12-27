@@ -19,12 +19,11 @@
 
 #include <AudioUnit/AudioUnit.h>
 
-namespace Methcla { namespace Audio { namespace IO
-{
+namespace Methcla { namespace Audio { namespace IO {
     class RemoteIODriver : public Driver
     {
     public:
-        RemoteIODriver(Options options, bool initializeAudioSession=true);
+        RemoteIODriver(Options options, bool initializeAudioSession = true);
         virtual ~RemoteIODriver();
 
         virtual double sampleRate() const override { return m_sampleRate; }
@@ -40,29 +39,28 @@ namespace Methcla { namespace Audio { namespace IO
         AudioUnit audioUnit();
 
     private:
-        static void InterruptionCallback(void *inClientData, UInt32 inInterruption);
-        static OSStatus InputCallback(void                         *inRefCon,
-                                      AudioUnitRenderActionFlags   *ioActionFlags,
-                                      const AudioTimeStamp         *inTimeStamp,
-                                      UInt32                       inBusNumber,
-                                      UInt32                       inNumberFrames,
-                                      AudioBufferList              *ioData);
-        static OSStatus RenderCallback(void                         *inRefCon,
-                                       AudioUnitRenderActionFlags   *ioActionFlags,
-                                       const AudioTimeStamp         *inTimeStamp,
-                                       UInt32                       inBusNumber,
-                                       UInt32                       inNumberFrames,
-                                       AudioBufferList              *ioData);
+        static void     InterruptionCallback(void*  inClientData,
+                                             UInt32 inInterruption);
+        static OSStatus InputCallback(void*                       inRefCon,
+                                      AudioUnitRenderActionFlags* ioActionFlags,
+                                      const AudioTimeStamp*       inTimeStamp,
+                                      UInt32 inBusNumber, UInt32 inNumberFrames,
+                                      AudioBufferList* ioData);
+        static OSStatus
+        RenderCallback(void*                       inRefCon,
+                       AudioUnitRenderActionFlags* ioActionFlags,
+                       const AudioTimeStamp* inTimeStamp, UInt32 inBusNumber,
+                       UInt32 inNumberFrames, AudioBufferList* ioData);
 
     private:
-        double              m_sampleRate;
-        size_t              m_numInputs;
-        size_t              m_numOutputs;
-        size_t              m_bufferSize;
-        AudioUnit           m_rioUnit;
-        sample_t**          m_inputBuffers;
-        sample_t**          m_outputBuffers;
+        double     m_sampleRate;
+        size_t     m_numInputs;
+        size_t     m_numOutputs;
+        size_t     m_bufferSize;
+        AudioUnit  m_rioUnit;
+        sample_t** m_inputBuffers;
+        sample_t** m_outputBuffers;
     };
-}; }; };
+}; }; }; // namespace Methcla::Audio::IO
 
 #endif // METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP

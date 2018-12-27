@@ -19,10 +19,10 @@ namespace Methcla { namespace Utility {
     template <typename Message> class MessageQueueInterface
     {
     public:
-        virtual ~MessageQueueInterface() { }
+        virtual ~MessageQueueInterface() {}
         virtual void send(const Message& msg) = 0;
         virtual bool next(Message& msg) = 0;
     };
-} }
+}} // namespace Methcla::Utility
 
 #endif // METHCLA_MESSAGE_QUEUE_INTERFACE_HPP_INCLUDED

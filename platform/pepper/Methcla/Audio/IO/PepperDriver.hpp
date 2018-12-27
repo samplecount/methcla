@@ -17,13 +17,13 @@
 
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/MultiChannelBuffer.hpp"
+
 #include "ppapi/cpp/audio.h"
 
 #include <atomic>
 #include <memory>
 
-namespace Methcla { namespace Audio { namespace IO
-{
+namespace Methcla { namespace Audio { namespace IO {
     class PepperDriver : public Driver
     {
     public:
@@ -41,7 +41,8 @@ namespace Methcla { namespace Audio { namespace IO
         virtual void stop() override;
 
     private:
-        static void processCallback(void* samples, uint32_t buffer_size, void* data);
+        static void processCallback(void* samples, uint32_t buffer_size,
+                                    void* data);
 
     private:
         pp::Audio                           m_audio;
@@ -49,6 +50,6 @@ namespace Methcla { namespace Audio { namespace IO
         std::atomic<uint64_t>               m_frameCount;
         double                              m_sampleRateRecip;
     };
-}; }; };
+}; }; }; // namespace Methcla::Audio::IO
 
 #endif // METHCLA_AUDIO_IO_PEPPER_DRIVER_HPP

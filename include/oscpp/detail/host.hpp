@@ -26,33 +26,21 @@
 #define OSCPP_HOST_HPP_INCLUDED
 
 #include <cstdint>
-#include <oscpp/detail/endian.hpp>
 #include <stdexcept>
 
-namespace OSCPP
-{
+#include <oscpp/detail/endian.hpp>
+
+namespace OSCPP {
 #if defined(__GNUC__)
-    inline static uint32_t bswap32(uint32_t x)
-    {
-        return __builtin_bswap32(x);
-    }
-    inline static uint64_t bswap64(uint64_t x)
-    {
-        return __builtin_bswap64(x);
-    }
+    inline static uint32_t bswap32(uint32_t x) { return __builtin_bswap32(x); }
+    inline static uint64_t bswap64(uint64_t x) { return __builtin_bswap64(x); }
 #elif defined(_WINDOWS_)
-#   include <stdlib.h>
-    inline static uint32_t bswap32(uint32_t x)
-    {
-        return _byteswap_ulong(x);
-    }
-    inline static uint64_t bswap64(uint64_t x)
-    {
-        return _byteswap_uint64(x);
-    }
+#    include <stdlib.h>
+    inline static uint32_t bswap32(uint32_t x) { return _byteswap_ulong(x); }
+    inline static uint64_t bswap64(uint64_t x) { return _byteswap_uint64(x); }
 #else
-    // Fallback implementation
-#   warning Using unoptimized byte swap functions
+// Fallback implementation
+#    warning Using unoptimized byte swap functions
 
     inline static uint32_t bswap32(uint32_t x)
     {
@@ -76,12 +64,12 @@ namespace OSCPP
         HostByteOrder
     };
 
-    template<ByteOrder B> inline uint32_t convert32(uint32_t)
+    template <ByteOrder B> inline uint32_t convert32(uint32_t)
     {
         throw std::logic_error("Invalid byte order");
     }
 
-    template<> inline uint32_t convert32<NetworkByteOrder>(uint32_t x)
+    template <> inline uint32_t convert32<NetworkByteOrder>(uint32_t x)
     {
 #if defined(OSCPP_LITTLE_ENDIAN)
         return bswap32(x);
@@ -90,17 +78,17 @@ namespace OSCPP
 #endif
     }
 
-    template<> inline uint32_t convert32<HostByteOrder>(uint32_t x)
+    template <> inline uint32_t convert32<HostByteOrder>(uint32_t x)
     {
         return x;
     }
 
-    template<ByteOrder B> inline uint64_t convert64(uint64_t)
+    template <ByteOrder B> inline uint64_t convert64(uint64_t)
     {
         throw std::logic_error("Invalid byte order");
     }
 
-    template<> inline uint64_t convert64<NetworkByteOrder>(uint64_t x)
+    template <> inline uint64_t convert64<NetworkByteOrder>(uint64_t x)
     {
 #if defined(OSCPP_LITTLE_ENDIAN)
         return bswap64(x);
@@ -109,10 +97,10 @@ namespace OSCPP
 #endif
     }
 
-    template<> inline uint64_t convert64<HostByteOrder>(uint64_t x)
+    template <> inline uint64_t convert64<HostByteOrder>(uint64_t x)
     {
         return x;
     }
-}
+} // namespace OSCPP
 
 #endif // OSCPP_HOST_HPP_INCLUDED

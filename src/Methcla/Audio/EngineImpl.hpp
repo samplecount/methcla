@@ -36,488 +36,479 @@
 // OSC request with reference counting.
 namespace Methcla { namespace Audio {
 
-void perform_nrt_free(Environment*, void* data);
-void perform_rt_free(Environment* env, void* data);
+    void perform_nrt_free(Environment*, void* data);
+    void perform_rt_free(Environment* env, void* data);
 
-template <class T> static void perform_delete(Environment*, void* data)
-{
-    delete static_cast<T>(data);
-}
+    template <class T> static void perform_delete(Environment*, void* data)
+    {
+        delete static_cast<T>(data);
+    }
 
-template <class T> static void perform_perform(Environment* env, void* data)
-{
-    static_cast<T*>(data)->perform(env);
-}
+    template <class T> static void perform_perform(Environment* env, void* data)
+    {
+        static_cast<T*>(data)->perform(env);
+    }
 
-class Request
-{
-    typedef size_t RefCount;
+    class Request
+    {
+        typedef size_t RefCount;
 
-    Environment* m_env;
-    RefCount*    m_refs;
-    void*        m_packet;
-    size_t       m_size;
+        Environment* m_env;
+        RefCount*    m_refs;
+        void*        m_packet;
+        size_t       m_size;
 
-public:
-    Request()
+    public:
+        Request()
         : m_env(nullptr)
         , m_refs(nullptr)
         , m_packet(nullptr)
         , m_size(0)
-    {
-    }
+        {}
 
-    Request(Environment* env, const void* packet, size_t size)
+        Request(Environment* env, const void* packet, size_t size)
         : m_env(env)
         , m_size(size)
-    {
-        // Allocate memory for packet and data block
-        char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
-
-        m_refs = reinterpret_cast<RefCount*>(mem);
-        *m_refs = 1;
-
-        m_packet = mem + sizeof(RefCount);
-        memcpy(m_packet, packet, size);
-    }
-
-    Request(const Request& other) = delete;
-    Request& operator=(const Request& other) = delete;
-
-    ~Request()
-    {
-        // std::cout << "~Request()\n";
-        Methcla::Memory::free(m_refs);
-    }
-
-    void* packet()
-    {
-        return m_packet;
-    }
-
-    size_t size() const
-    {
-        return m_size;
-    }
-
-    void retain()
-    {
-        if (m_refs != nullptr)
-            (*m_refs)++;
-    }
-
-    void release()
-    {
-        if (m_refs != nullptr)
         {
-            (*m_refs)--;
-            if (*m_refs == 0)
-                m_env->sendToWorker(perform_delete<Request*>, this);
-        }
-    }
-};
+            // Allocate memory for packet and data block
+            char* mem = Memory::allocOf<char>(sizeof(RefCount) + size);
 
-template <typename T> class Scheduler
-{
-    class Item
+            m_refs = reinterpret_cast<RefCount*>(mem);
+            *m_refs = 1;
+
+            m_packet = mem + sizeof(RefCount);
+            memcpy(m_packet, packet, size);
+        }
+
+        Request(const Request& other) = delete;
+        Request& operator=(const Request& other) = delete;
+
+        ~Request()
+        {
+            // std::cout << "~Request()\n";
+            Methcla::Memory::free(m_refs);
+        }
+
+        void* packet() { return m_packet; }
+
+        size_t size() const { return m_size; }
+
+        void retain()
+        {
+            if (m_refs != nullptr)
+                (*m_refs)++;
+        }
+
+        void release()
+        {
+            if (m_refs != nullptr)
+            {
+                (*m_refs)--;
+                if (*m_refs == 0)
+                    m_env->sendToWorker(perform_delete<Request*>, this);
+            }
+        }
+    };
+
+    template <typename T> class Scheduler
     {
-    public:
-        Item(Methcla_Time time, const T& data)
+        class Item
+        {
+        public:
+            Item(Methcla_Time time, const T& data)
             : m_time(time)
             , m_data(data)
-        { }
+            {}
+
+            Methcla_Time time() const { return m_time; }
+
+            const T& data() const { return m_data; }
+
+            bool operator==(const Item& other) const
+            {
+                return time() == other.time();
+            }
+
+            bool operator<(const Item& other) const
+            {
+                return time() > other.time();
+            }
+
+        private:
+            Methcla_Time m_time;
+            T            m_data;
+        };
+
+        typedef boost::heap::priority_queue<
+            Item, boost::heap::stable<true>,
+            boost::heap::stability_counter_type<uint64_t>>
+            PriorityQueue;
+
+        // We need constant time size and reserve in order to avoid memory
+        // allocations from the audio thread.
+        static_assert(PriorityQueue::has_reserve,
+                      "priority queue does not implement reserve()");
+        static_assert(
+            PriorityQueue::constant_time_size,
+            "priority queue implementation has non-constant time size()");
+        // We want a stable priority queue
+        static_assert(PriorityQueue::is_stable,
+                      "priority queue implementation is not stable");
+
+        size_t        m_maxSize;
+        PriorityQueue m_queue;
+
+    public:
+        Scheduler(size_t maxSize)
+        : m_maxSize(maxSize)
+        {
+            m_queue.reserve(m_maxSize);
+        }
+
+        void push(Methcla_Time time, const T& data)
+        {
+            if (m_maxSize == 0 || m_queue.size() < m_maxSize)
+            {
+                m_queue.push(Item(time, data));
+            }
+            else
+            {
+                throw std::runtime_error("Scheduler queue overflow");
+            }
+        }
+
+        bool isEmpty() const { return m_queue.empty(); }
 
         Methcla_Time time() const
         {
-            return m_time;
+            assert(!isEmpty());
+            return m_queue.top().time();
         }
 
-        const T& data() const
+        const T& top() const
         {
-            return m_data;
+            assert(!isEmpty());
+            return m_queue.top().data();
         }
 
-        bool operator==(const Item& other) const
+        void pop()
         {
-            return time() == other.time();
+            assert(!isEmpty());
+            m_queue.pop();
         }
-
-        bool operator<(const Item& other) const
-        {
-            return time() > other.time();
-        }
-
-    private:
-        Methcla_Time    m_time;
-        T               m_data;
     };
 
-    typedef boost::heap::priority_queue<
-        Item,
-        boost::heap::stable<true>,
-        boost::heap::stability_counter_type<uint64_t>
-        > PriorityQueue;
-
-    // We need constant time size and reserve in order to avoid memory allocations from the audio thread.
-    static_assert(PriorityQueue::has_reserve, "priority queue does not implement reserve()");
-    static_assert(PriorityQueue::constant_time_size, "priority queue implementation has non-constant time size()");
-    // We want a stable priority queue
-    static_assert(PriorityQueue::is_stable, "priority queue implementation is not stable");
-
-    size_t        m_maxSize;
-    PriorityQueue m_queue;
-
-public:
-    Scheduler(size_t maxSize)
-        : m_maxSize(maxSize)
+    class EnvironmentImpl
     {
-        m_queue.reserve(m_maxSize);
-    }
+    public:
+        struct ErrorData
+        {
+            int32_t requestId;
+            char*   message;
+        };
 
-    void push(Methcla_Time time, const T& data)
-    {
-        if (m_maxSize == 0 || m_queue.size() < m_maxSize) {
-            m_queue.push(Item(time, data));
-        } else {
-            throw std::runtime_error("Scheduler queue overflow");
-        }
-    }
+        static const size_t kNumWorkerThreads = 2;
+        static const size_t kQueueSize = 8192;
 
-    bool isEmpty() const
-    {
-        return m_queue.empty();
-    }
+        Environment* m_owner;
 
-    Methcla_Time time() const
-    {
-        assert(!isEmpty());
-        return m_queue.top().time();
-    }
+        LogHandler    m_logHandler;
+        PacketHandler m_packetHandler;
 
-    const T& top() const
-    {
-        assert(!isEmpty());
-        return m_queue.top().data();
-    }
+        PluginManager           m_plugins;
+        Memory::RTMemoryManager m_rtMem;
 
-    void pop()
-    {
-        assert(!isEmpty());
-        m_queue.pop();
-    }
-};
+        typedef Utility::MessageQueue<Request*>             MessageQueue;
+        typedef Utility::WorkerThread<Environment::Command> Worker;
 
-class EnvironmentImpl
-{
-public:
-    struct ErrorData
-    {
-        int32_t requestId;
-        char*   message;
-    };
+        std::unique_ptr<Environment::MessageQueue> m_requests;
 
-    static const size_t kNumWorkerThreads = 2;
-    static const size_t kQueueSize = 8192;
+        // NOTE: Worker needs to be constructed before and destroyed after node
+        // map (m_nodes).
+        std::unique_ptr<Environment::Worker> m_worker;
 
-    Environment*                m_owner;
-
-    LogHandler                  m_logHandler;
-    PacketHandler               m_packetHandler;
-
-    PluginManager               m_plugins;
-    Memory::RTMemoryManager     m_rtMem;
-
-    typedef Utility::MessageQueue<Request*> MessageQueue;
-    typedef Utility::WorkerThread<Environment::Command> Worker;
-
-    std::unique_ptr<Environment::MessageQueue> m_requests;
-
-    // NOTE: Worker needs to be constructed before and destroyed after node map (m_nodes).
-    std::unique_ptr<Environment::Worker> m_worker;
-
-    struct ScheduledBundle
-    {
-        ScheduledBundle(Request* request, const OSCPP::Server::Bundle& bundle)
+        struct ScheduledBundle
+        {
+            ScheduledBundle(Request*                     request,
+                            const OSCPP::Server::Bundle& bundle)
             : m_request(request)
             , m_bundle(bundle)
-        { }
+            {}
 
-        Request*              m_request;
-        OSCPP::Server::Bundle m_bundle;
-    };
+            Request*              m_request;
+            OSCPP::Server::Bundle m_bundle;
+        };
 
-    Scheduler<ScheduledBundle>  m_scheduler;
+        Scheduler<ScheduledBundle> m_scheduler;
 
-    std::vector<Memory::shared_ptr<ExternalAudioBus>>   m_externalAudioInputs;
-    std::vector<Memory::shared_ptr<ExternalAudioBus>>   m_externalAudioOutputs;
-    std::vector<Memory::shared_ptr<AudioBus>>           m_internalAudioBuses;
+        std::vector<Memory::shared_ptr<ExternalAudioBus>> m_externalAudioInputs;
+        std::vector<Memory::shared_ptr<ExternalAudioBus>>
+                                                  m_externalAudioOutputs;
+        std::vector<Memory::shared_ptr<AudioBus>> m_internalAudioBuses;
 
-    Epoch                                               m_epoch;
-    Methcla_Time                                        m_currentTime;
+        Epoch        m_epoch;
+        Methcla_Time m_currentTime;
 
-    std::vector<Node*>                                  m_nodes;
-    Group*                                              m_rootNode;
+        std::vector<Node*> m_nodes;
+        Group*             m_rootNode;
 
-    SynthDefMap                                         m_synthDefs;
-    std::list<const Methcla_SoundFileAPI*>              m_soundFileAPIs;
+        SynthDefMap                            m_synthDefs;
+        std::list<const Methcla_SoundFileAPI*> m_soundFileAPIs;
 
-    std::atomic<int>                                    m_logLevel;
-    std::atomic<int>                                    m_logFlags;
+        std::atomic<int> m_logLevel;
+        std::atomic<int> m_logFlags;
 
-    EnvironmentImpl(Environment* owner, LogHandler logHandler, PacketHandler listener, const Environment::Options& options, Environment::MessageQueue* messageQueue, Environment::Worker* worker);
-    ~EnvironmentImpl();
+        EnvironmentImpl(Environment* owner, LogHandler logHandler,
+                        PacketHandler               listener,
+                        const Environment::Options& options,
+                        Environment::MessageQueue*  messageQueue,
+                        Environment::Worker*        worker);
+        ~EnvironmentImpl();
 
-    // Initialization that has to take place after constructor returns
-    void init(const Environment::Options& options);
+        // Initialization that has to take place after constructor returns
+        void init(const Environment::Options& options);
 
-    Group* rootNode()
-    {
-        return m_rootNode;
-    }
+        Group* rootNode() { return m_rootNode; }
 
-    bool isValid(NodeId nodeId) const
-    {
-        return nodeId >= 0 && (size_t)nodeId < m_nodes.size();
-    }
-
-    Methcla_Time currentTime() const
-    {
-        return m_currentTime;
-    }
-
-    Memory::RTMemoryManager& rtMem()
-    {
-        return m_rtMem;
-    }
-
-    void registerSynthDef(const Methcla_SynthDef* def);
-    const Memory::shared_ptr<SynthDef>& synthDef(const char* uri) const;
-
-    void process(Methcla_Time currentTime, size_t numFrames, const sample_t* const* inputs, sample_t* const* outputs);
-
-    void processRequests(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime);
-    void processScheduler(Methcla_EngineLogFlags logFlags, const Methcla_Time currentTime, const Methcla_Time nextTime);
-    void processBundle(Methcla_EngineLogFlags logFlags, Request* request, const OSCPP::Server::Bundle& bundle, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
-    void processMessage(Methcla_EngineLogFlags logFlags, const OSCPP::Server::Message& msg, const Methcla_Time scheduleTime, const Methcla_Time currentTime);
-
-    void sendToWorker(PerformFunc f, void* data)
-    {
-        Environment::Command cmd;
-        cmd.m_env = m_owner;
-        cmd.m_perform = f;
-        cmd.m_data = data;
-        m_worker->sendToWorker(cmd);
-    }
-
-    void sendFromWorker(PerformFunc f, void* data)
-    {
-        Environment::Command cmd;
-        cmd.m_env = m_owner;
-        cmd.m_perform = f;
-        cmd.m_data = data;
-        m_worker->sendFromWorker(cmd);
-    }
-
-    template <class T> void sendToWorker(T* command)
-    {
-        sendToWorker(perform_perform<T>, command);
-    }
-
-    template <class T, class ... Args> void sendToWorker(Args&&...args)
-    {
-        sendToWorker(perform_perform<T>, rtMem().construct<T,Args...>(std::forward<Args>(args)...));
-    }
-
-    template <class T> void sendFromWorker(T* command)
-    {
-        sendFromWorker(perform_perform<T>, command);
-    }
-
-    class Notification
-    {
-    public:
-        void perform(Environment* env)
+        bool isValid(NodeId nodeId) const
         {
-            notify(env);
-            env->sendFromWorker(perform_rt_free, this);
+            return nodeId >= 0 && (size_t)nodeId < m_nodes.size();
         }
 
-    private:
-        virtual void notify(Environment* env) = 0;
-    };
+        Methcla_Time currentTime() const { return m_currentTime; }
 
-    class NodeNotification : public Notification
-    {
-        NodeId m_nodeId;
+        Memory::RTMemoryManager& rtMem() { return m_rtMem; }
 
-    public:
-        NodeNotification(NodeId nodeId)
+        void registerSynthDef(const Methcla_SynthDef* def);
+        const Memory::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+
+        void process(Methcla_Time currentTime, size_t numFrames,
+                     const sample_t* const* inputs, sample_t* const* outputs);
+
+        void processRequests(Methcla_EngineLogFlags logFlags,
+                             const Methcla_Time     currentTime);
+        void processScheduler(Methcla_EngineLogFlags logFlags,
+                              const Methcla_Time     currentTime,
+                              const Methcla_Time     nextTime);
+        void processBundle(Methcla_EngineLogFlags logFlags, Request* request,
+                           const OSCPP::Server::Bundle& bundle,
+                           const Methcla_Time           scheduleTime,
+                           const Methcla_Time           currentTime);
+        void processMessage(Methcla_EngineLogFlags        logFlags,
+                            const OSCPP::Server::Message& msg,
+                            const Methcla_Time            scheduleTime,
+                            const Methcla_Time            currentTime);
+
+        void sendToWorker(PerformFunc f, void* data)
+        {
+            Environment::Command cmd;
+            cmd.m_env = m_owner;
+            cmd.m_perform = f;
+            cmd.m_data = data;
+            m_worker->sendToWorker(cmd);
+        }
+
+        void sendFromWorker(PerformFunc f, void* data)
+        {
+            Environment::Command cmd;
+            cmd.m_env = m_owner;
+            cmd.m_perform = f;
+            cmd.m_data = data;
+            m_worker->sendFromWorker(cmd);
+        }
+
+        template <class T> void sendToWorker(T* command)
+        {
+            sendToWorker(perform_perform<T>, command);
+        }
+
+        template <class T, class... Args> void sendToWorker(Args&&... args)
+        {
+            sendToWorker(perform_perform<T>, rtMem().construct<T, Args...>(
+                                                 std::forward<Args>(args)...));
+        }
+
+        template <class T> void sendFromWorker(T* command)
+        {
+            sendFromWorker(perform_perform<T>, command);
+        }
+
+        class Notification
+        {
+        public:
+            void perform(Environment* env)
+            {
+                notify(env);
+                env->sendFromWorker(perform_rt_free, this);
+            }
+
+        private:
+            virtual void notify(Environment* env) = 0;
+        };
+
+        class NodeNotification : public Notification
+        {
+            NodeId m_nodeId;
+
+        public:
+            NodeNotification(NodeId nodeId)
             : m_nodeId(nodeId)
-        {}
+            {}
 
-        NodeId nodeId() const
+            NodeId nodeId() const { return m_nodeId; }
+        };
+
+        class NodeDoneNotification : public NodeNotification
         {
-            return m_nodeId;
-        }
-    };
-
-    class NodeDoneNotification : public NodeNotification
-    {
-    public:
-        NodeDoneNotification(NodeId nodeId)
+        public:
+            NodeDoneNotification(NodeId nodeId)
             : NodeNotification(nodeId)
-        {}
+            {}
 
-    private:
-        void notify(Environment* env) override
+        private:
+            void notify(Environment* env) override
+            {
+                static const char*           address = "/node/done";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+                packet.openMessage(address, 1);
+                packet.int32(nodeId());
+                packet.closeMessage();
+                env->notify(packet);
+            }
+        };
+
+        //* Context: RT
+        void notifyNodeDone(NodeId nodeId)
         {
-            static const char* address = "/node/done";
-            OSCPP::Client::DynamicPacket packet(
-                OSCPP::Size::message(address, 1)
-              + OSCPP::Size::int32(1)
-            );
-            packet.openMessage(address, 1);
-            packet.int32(nodeId());
-            packet.closeMessage();
-            env->notify(packet);
+            if (isValid(nodeId))
+            {
+                sendToWorker<NodeDoneNotification>(nodeId);
+            }
         }
-    };
 
-    //* Context: RT
-    void notifyNodeDone(NodeId nodeId)
-    {
-        if (isValid(nodeId)) {
-            sendToWorker<NodeDoneNotification>(nodeId);
-        }
-    }
-
-    class NodeEndedNotification : public NodeNotification
-    {
-    public:
-        NodeEndedNotification(NodeId nodeId)
+        class NodeEndedNotification : public NodeNotification
+        {
+        public:
+            NodeEndedNotification(NodeId nodeId)
             : NodeNotification(nodeId)
-        {}
+            {}
 
-    private:
-        void notify(Environment* env) override
+        private:
+            void notify(Environment* env) override
+            {
+                static const char*           address = "/node/ended";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+                packet.openMessage(address, 1);
+                packet.int32(nodeId());
+                packet.closeMessage();
+                env->notify(packet);
+            }
+        };
+
+        //* Context: RT
+        void nodeEnded(NodeId nodeId)
         {
-            static const char* address = "/node/ended";
-            OSCPP::Client::DynamicPacket packet(
-                OSCPP::Size::message(address, 1)
-              + OSCPP::Size::int32(1)
-            );
-            packet.openMessage(address, 1);
-            packet.int32(nodeId());
-            packet.closeMessage();
-            env->notify(packet);
+            if (isValid(nodeId))
+            {
+                m_nodes[nodeId] = nullptr;
+                sendToWorker<NodeEndedNotification>(nodeId);
+            }
+        }
+
+        //* Context: NRT
+        void reply(Methcla_RequestId requestId, const void* packet, size_t size)
+        {
+            m_packetHandler(requestId, packet, size);
+        }
+
+        //* Context: NRT
+        void reply(Methcla_RequestId            requestId,
+                   const OSCPP::Client::Packet& packet)
+        {
+            reply(requestId, packet.data(), packet.size());
+        }
+
+        //* Context: NRT
+        void replyError(Methcla_RequestId requestId, const char* what)
+        {
+            // EnvironmentImpl::ErrorData* data =
+            //     (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
+            // data->requestId = requestId;
+            // data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
+            // strcpy(data->message, msg);
+            // sendToWorker(perform_response_error, data);
+            using namespace std::placeholders;
+            auto out = nrt_log(kMethcla_LogError);
+            out << "ERROR";
+            if (requestId != kMethcla_Notification)
+                out << "[" << requestId << "]";
+            out << ": " << what;
+        }
+
+        //* Context: NRT
+        void notify(const void* packet, size_t size)
+        {
+            m_packetHandler(kMethcla_Notification, packet, size);
+        }
+
+        //* Context: NRT
+        void notify(const OSCPP::Client::Packet& packet)
+        {
+            notify(packet.data(), packet.size());
+        }
+
+        //* Context: RT
+        void logLineRT(Methcla_LogLevel level, const char* message)
+        {
+            logLineNRT(level, message);
+        }
+
+        //* Context: NRT
+        void logLineNRT(Methcla_LogLevel level, const char* message)
+        {
+            // std::cout << message << std::endl;
+            m_logHandler(level, message);
+        }
+
+        LogStream rt_log(Methcla_LogLevel level)
+        {
+            using namespace std::placeholders;
+            const Methcla_LogLevel logLevel =
+                (Methcla_LogLevel)m_logLevel.load();
+            return LogStream(
+                std::bind(&EnvironmentImpl::logLineRT, this, _1, _2), level,
+                logLevel);
+        }
+
+        LogStream rt_log()
+        {
+            using namespace std::placeholders;
+            return LogStream(
+                std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
+                kMethcla_LogDebug);
+        }
+
+        LogStream nrt_log(Methcla_LogLevel level)
+        {
+            using namespace std::placeholders;
+            const Methcla_LogLevel logLevel =
+                (Methcla_LogLevel)m_logLevel.load();
+            return LogStream(
+                std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2), level,
+                logLevel);
+        }
+
+        LogStream nrt_log()
+        {
+            using namespace std::placeholders;
+            return LogStream(
+                std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
+                kMethcla_LogDebug);
         }
     };
 
-    //* Context: RT
-    void nodeEnded(NodeId nodeId)
-    {
-        if (isValid(nodeId)) {
-            m_nodes[nodeId] = nullptr;
-            sendToWorker<NodeEndedNotification>(nodeId);
-        }
-    }
-
-    //* Context: NRT
-    void reply(Methcla_RequestId requestId, const void* packet, size_t size)
-    {
-        m_packetHandler(requestId, packet, size);
-    }
-
-    //* Context: NRT
-    void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet)
-    {
-        reply(requestId, packet.data(), packet.size());
-    }
-
-    //* Context: NRT
-    void replyError(Methcla_RequestId requestId, const char* what)
-    {
-        // EnvironmentImpl::ErrorData* data =
-        //     (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
-        // data->requestId = requestId;
-        // data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
-        // strcpy(data->message, msg);
-        // sendToWorker(perform_response_error, data);
-        using namespace std::placeholders;
-        auto out = nrt_log(kMethcla_LogError);
-        out << "ERROR";
-        if (requestId != kMethcla_Notification)
-            out << "[" << requestId << "]";
-        out << ": " << what;
-    }
-
-    //* Context: NRT
-    void notify(const void* packet, size_t size)
-    {
-        m_packetHandler(kMethcla_Notification, packet, size);
-    }
-
-    //* Context: NRT
-    void notify(const OSCPP::Client::Packet& packet)
-    {
-        notify(packet.data(), packet.size());
-    }
-
-    //* Context: RT
-    void logLineRT(Methcla_LogLevel level, const char* message)
-    {
-        logLineNRT(level, message);
-    }
-
-    //* Context: NRT
-    void logLineNRT(Methcla_LogLevel level, const char* message)
-    {
-        // std::cout << message << std::endl;
-        m_logHandler(level, message);
-    }
-
-    LogStream rt_log(Methcla_LogLevel level)
-    {
-        using namespace std::placeholders;
-        const Methcla_LogLevel logLevel = (Methcla_LogLevel)m_logLevel.load();
-        return LogStream(
-            std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
-            level,
-            logLevel
-        );
-    }
-
-    LogStream rt_log()
-    {
-        using namespace std::placeholders;
-        return LogStream(
-            std::bind(&EnvironmentImpl::logLineRT, this, _1, _2),
-            kMethcla_LogDebug
-        );
-    }
-
-    LogStream nrt_log(Methcla_LogLevel level)
-    {
-        using namespace std::placeholders;
-        const Methcla_LogLevel logLevel = (Methcla_LogLevel)m_logLevel.load();
-        return LogStream(
-            std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
-            level,
-            logLevel
-        );
-    }
-
-    LogStream nrt_log()
-    {
-        using namespace std::placeholders;
-        return LogStream(
-            std::bind(&EnvironmentImpl::logLineNRT, this, _1, _2),
-            kMethcla_LogDebug
-        );
-    }
-};
-
-} // namespace Audio
-} // namespace Methcla
+}} // namespace Methcla::Audio
 
 #endif // METHCLA_AUDIO_ENGINE_IMPL_HPP_INCLUDED

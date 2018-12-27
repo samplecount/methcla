@@ -1,11 +1,13 @@
-// c++ -std=c++11 -stdlib=libc++ -I include -o build/dumposcfile tools/dumposcfile.cpp 
+// c++ -std=c++11 -stdlib=libc++ -I include -o build/dumposcfile
+// tools/dumposcfile.cpp
 
 #include <iostream>
+#include <sstream>
+#include <vector>
+
 #include <oscpp/detail/host.hpp>
 #include <oscpp/print.hpp>
 #include <oscpp/server.hpp>
-#include <sstream>
-#include <vector>
 
 int main(int argc, const char* const* argv)
 {
@@ -30,8 +32,9 @@ int main(int argc, const char* const* argv)
         while (true)
         {
             int32_t size;
-            size_t n = fread(&size, sizeof(size), 1, file);
-            if (n != 1) break;
+            size_t  n = fread(&size, sizeof(size), 1, file);
+            if (n != 1)
+                break;
             size = OSCPP::convert32<OSCPP::NetworkByteOrder>(size);
             if (buffer.size() < size)
                 buffer.resize(size);

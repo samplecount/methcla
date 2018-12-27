@@ -17,154 +17,150 @@
 
 #include "Methcla/Memory.hpp"
 
-#include <boost/type_traits/alignment_of.hpp>
 #include <boost/type_traits/aligned_storage.hpp>
+#include <boost/type_traits/alignment_of.hpp>
 
 #include <cassert>
 #include <cstddef>
+
 #include <tlsf.h>
 
 namespace Methcla { namespace Memory {
 
-class Allocator
-{
-public:
-    //* Allocate memory of `size` bytes.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
-    virtual void* alloc(size_t size) = 0;
-
-    //* Free memory allocated by `alloc`.
-    virtual void free(void* ptr) noexcept = 0;
-
-    //* Allocate aligned memory of `size` bytes.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
-    virtual void* allocAligned(Alignment align, size_t size) = 0;
-
-    //* Free memory allocated by `allocAligned`.
-    virtual void freeAligned(void* ptr) noexcept = 0;
-
-    //* Allocate memory for `n` elements of type `T`.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
-    template <typename T> T* allocOf(size_t n=1)
+    class Allocator
     {
-        return static_cast<T*>(alloc(n * sizeof(T)));
-    }
+    public:
+        //* Allocate memory of `size` bytes.
+        //
+        // @throw std::invalid_argument
+        // @throw std::bad_alloc
+        virtual void* alloc(size_t size) = 0;
 
-    //* Allocate aligned memory for `n` elements of type `T`.
-    //
-    // @throw std::invalid_argument
-    // @throw std::bad_alloc
-    template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
-    {
-        return static_cast<T*>(allocAligned(align, n * sizeof(T)));
-    }
+        //* Free memory allocated by `alloc`.
+        virtual void free(void* ptr) noexcept = 0;
 
-    //* Construct an object in a chunk of memory returned by this allocator.
-    template <class T, class ... Args> T* construct(Args&&... args)
-    {
-        void* mem = alloc(sizeof(T));
-        try
+        //* Allocate aligned memory of `size` bytes.
+        //
+        // @throw std::invalid_argument
+        // @throw std::bad_alloc
+        virtual void* allocAligned(Alignment align, size_t size) = 0;
+
+        //* Free memory allocated by `allocAligned`.
+        virtual void freeAligned(void* ptr) noexcept = 0;
+
+        //* Allocate memory for `n` elements of type `T`.
+        //
+        // @throw std::invalid_argument
+        // @throw std::bad_alloc
+        template <typename T> T* allocOf(size_t n = 1)
         {
-            return new (mem) T(std::forward<Args>(args)...);
+            return static_cast<T*>(alloc(n * sizeof(T)));
         }
-        catch (...)
+
+        //* Allocate aligned memory for `n` elements of type `T`.
+        //
+        // @throw std::invalid_argument
+        // @throw std::bad_alloc
+        template <typename T> T* allocAlignedOf(Alignment align, size_t n = 1)
         {
-            free(mem);
-            throw;
+            return static_cast<T*>(allocAligned(align, n * sizeof(T)));
         }
-    }
-};
 
-class RTMemoryManager : public Allocator
-{
-public:
-    //* Construct a realtime memory allocator with a capacity of `size` kB.
-    RTMemoryManager(size_t size);
-    ~RTMemoryManager();
-
-    void* alloc(size_t size) override;
-    void free(void* ptr) noexcept override;
-    void* allocAligned(Alignment align, size_t size) override;
-    void freeAligned(void* ptr) noexcept override;
-
-    struct Statistics
-    {
-        size_t freeNumBytes;
-        size_t usedNumBytes;
+        //* Construct an object in a chunk of memory returned by this allocator.
+        template <class T, class... Args> T* construct(Args&&... args)
+        {
+            void* mem = alloc(sizeof(T));
+            try
+            {
+                return new (mem) T(std::forward<Args>(args)...);
+            }
+            catch (...)
+            {
+                free(mem);
+                throw;
+            }
+        }
     };
 
-    Statistics statistics() const;
-
-private:
-    void*       m_memory;
-    tlsf_pool   m_pool;
-};
-
-template <class T, class Allocator> class AllocatedBase
-{
-    struct Chunk
+    class RTMemoryManager : public Allocator
     {
-        typedef boost::aligned_storage<1,boost::alignment_of<T>::value> Padding;
+    public:
+        //* Construct a realtime memory allocator with a capacity of `size` kB.
+        RTMemoryManager(size_t size);
+        ~RTMemoryManager();
 
-        Allocator*  alloc;
-        Padding     padding;
+        void* alloc(size_t size) override;
+        void  free(void* ptr) noexcept override;
+        void* allocAligned(Alignment align, size_t size) override;
+        void  freeAligned(void* ptr) noexcept override;
+
+        struct Statistics
+        {
+            size_t freeNumBytes;
+            size_t usedNumBytes;
+        };
+
+        Statistics statistics() const;
+
+    private:
+        void*     m_memory;
+        tlsf_pool m_pool;
     };
 
-protected:
-    static void* alloc(Allocator& allocator, size_t size)
+    template <class T, class Allocator> class AllocatedBase
     {
-        Chunk* chunk = static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
-        chunk->alloc = &allocator;
-        void* ptr = chunk + 1;
-        assert( Alignment::isAligned(
-            boost::alignment_of<T>::value,
-            reinterpret_cast<std::uintptr_t>(ptr)) );
-        return ptr;
-    }
+        struct Chunk
+        {
+            typedef boost::aligned_storage<1, boost::alignment_of<T>::value>
+                Padding;
 
-    static void destroy(void* ptr)
-    {
-        Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
-        chunk->alloc->free(chunk);
-    }
+            Allocator* alloc;
+            Padding    padding;
+        };
 
-private:
-    void* operator new(size_t);
-};
+    protected:
+        static void* alloc(Allocator& allocator, size_t size)
+        {
+            Chunk* chunk =
+                static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
+            chunk->alloc = &allocator;
+            void* ptr = chunk + 1;
+            assert(Alignment::isAligned(boost::alignment_of<T>::value,
+                                        reinterpret_cast<std::uintptr_t>(ptr)));
+            return ptr;
+        }
 
-template <class T, class Allocator> class Allocated
-    : public AllocatedBase<T, Allocator>
-{
-    typedef AllocatedBase<T, Allocator> super;
+        static void destroy(void* ptr)
+        {
+            Chunk* chunk = static_cast<Chunk*>(ptr) - 1;
+            chunk->alloc->free(chunk);
+        }
 
-public:
-    void* operator new(size_t size, Allocator& alloc)
+    private:
+        void* operator new(size_t);
+    };
+
+    template <class T, class Allocator>
+    class Allocated : public AllocatedBase<T, Allocator>
     {
-        return super::alloc(alloc, size);
-    }
-    void operator delete(void* ptr, Allocator&)
-    {
-        super::destroy(ptr);
-    }
-    void* operator new(size_t size, Allocator& alloc, size_t additional)
-    {
-        return super::alloc(alloc, size+additional);
-    }
-    void operator delete(void* ptr, Allocator&, size_t)
-    {
-        super::destroy(ptr);
-    }
-    void operator delete(void* ptr)
-    {
-        super::destroy(ptr);
-    }
-};
-} }
+        typedef AllocatedBase<T, Allocator> super;
+
+    public:
+        void* operator new(size_t size, Allocator& alloc)
+        {
+            return super::alloc(alloc, size);
+        }
+        void  operator delete(void* ptr, Allocator&) { super::destroy(ptr); }
+        void* operator new(size_t size, Allocator& alloc, size_t additional)
+        {
+            return super::alloc(alloc, size + additional);
+        }
+        void operator delete(void* ptr, Allocator&, size_t)
+        {
+            super::destroy(ptr);
+        }
+        void operator delete(void* ptr) { super::destroy(ptr); }
+    };
+}} // namespace Methcla::Memory
 
 #endif // METHCLA_MEMORY_MANAGER_HPP_INCLUDED

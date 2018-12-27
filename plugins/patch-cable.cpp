@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <methcla/plugins/patch-cable.h>
 #include <methcla/plugin.hpp>
+#include <methcla/plugins/patch-cable.h>
 
 #include <algorithm>
 #include <cmath>
@@ -21,59 +21,54 @@
 
 using namespace Methcla::Plugin;
 
-typedef enum {
+typedef enum
+{
     kPort_in,
     kPort_out,
     kNumPorts
 } PortIndex;
 
-typedef struct {
+typedef struct
+{
     float* ports[kNumPorts];
 } PatchCable;
 
 static const Methcla_PortDescriptor kPortDescriptors[] = {
-    { kMethcla_Input, kMethcla_AudioPort, kMethcla_PortFlags },
-    { kMethcla_Output, kMethcla_AudioPort, kMethcla_PortFlags }
-};
+    {kMethcla_Input, kMethcla_AudioPort, kMethcla_PortFlags},
+    {kMethcla_Output, kMethcla_AudioPort, kMethcla_PortFlags}};
 
-static bool
-port_descriptor( const Methcla_SynthOptions*
-               , Methcla_PortCount index
-               , Methcla_PortDescriptor* port )
+static bool port_descriptor(const Methcla_SynthOptions*,
+                            Methcla_PortCount       index,
+                            Methcla_PortDescriptor* port)
 {
-    if (index < kNumPorts) {
+    if (index < kNumPorts)
+    {
         *port = kPortDescriptors[index];
         return true;
     }
     return false;
 }
 
-static void
-construct( const Methcla_World*
-         , const Methcla_SynthDef*
-         , const Methcla_SynthOptions*
-         , Methcla_Synth* synth )
+static void construct(const Methcla_World*, const Methcla_SynthDef*,
+                      const Methcla_SynthOptions*, Methcla_Synth* synth)
 {
     PatchCable* self = static_cast<PatchCable*>(synth);
     std::fill(self->ports, self->ports + kNumPorts, nullptr);
 }
 
-static void
-connect( Methcla_Synth* synth
-       , Methcla_PortCount port
-       , void* data)
+static void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data)
 {
     PatchCable* self = static_cast<PatchCable*>(synth);
     self->ports[port] = static_cast<float*>(data);
 }
 
-static void
-process(const Methcla_World*, Methcla_Synth* synth, size_t numFrames)
+static void process(const Methcla_World*, Methcla_Synth* synth,
+                    size_t numFrames)
 {
     PatchCable* self = static_cast<PatchCable*>(synth);
 
     const float* src = self->ports[kPort_in];
-    float* dst = self->ports[kPort_out];
+    float*       dst = self->ports[kPort_out];
 
     // float rms = 0;
     // for (size_t i=0; i < numFrames; i++) {
@@ -85,94 +80,107 @@ process(const Methcla_World*, Methcla_Synth* synth, size_t numFrames)
     std::copy(src, src + numFrames, dst);
 }
 
-static const Methcla_SynthDef descriptor =
-{
-    METHCLA_PLUGINS_PATCH_CABLE_URI,
-    sizeof(PatchCable),
-    0, NULL,
-    port_descriptor,
-    construct,
-    connect,
-    NULL,
-    process,
-    NULL
-};
+static const Methcla_SynthDef descriptor = {METHCLA_PLUGINS_PATCH_CABLE_URI,
+                                            sizeof(PatchCable),
+                                            0,
+                                            NULL,
+                                            port_descriptor,
+                                            construct,
+                                            connect,
+                                            NULL,
+                                            process,
+                                            NULL};
 
 // Amplifier
 
 namespace {
 
-typedef NoOptions AmplifierOptions;
+    typedef NoOptions AmplifierOptions;
 
-class AmplifierPorts
-{
-public:
-    enum Port
+    class AmplifierPorts
     {
-        kInput
-      , kOutput
-      , kGain
+    public:
+        enum Port
+        {
+            kInput,
+            kOutput,
+            kGain
+        };
+
+        static constexpr size_t numPorts() { return 3; }
+
+        static Methcla_PortDescriptor descriptor(Port port)
+        {
+            switch (port)
+            {
+                case kInput:
+                    return Methcla::Plugin::PortDescriptor::audioInput();
+                case kOutput:
+                    return Methcla::Plugin::PortDescriptor::audioOutput();
+                case kGain:
+                    return Methcla::Plugin::PortDescriptor::controlInput();
+                default:
+                    throw std::runtime_error(METHCLA_PLUGINS_AMPLIFIER_URI
+                                             ": Invalid port index");
+            }
+        }
     };
 
-    static constexpr size_t numPorts() { return 3; }
-
-    static Methcla_PortDescriptor descriptor(Port port)
+    class Amplifier
     {
-        switch (port)
+        float* m_ports[AmplifierPorts::numPorts()];
+
+    public:
+        Amplifier(const World<Amplifier>& world, const Methcla_SynthDef*,
+                  const AmplifierOptions& options)
+        {}
+
+        void connect(AmplifierPorts::Port port, void* data)
         {
-            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
-            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
-            case kGain:   return Methcla::Plugin::PortDescriptor::controlInput();
-            default: throw std::runtime_error(METHCLA_PLUGINS_AMPLIFIER_URI ": Invalid port index");
+            m_ports[port] = static_cast<float*>(data);
         }
-    }
-};
 
-class Amplifier
-{
-    float* m_ports[AmplifierPorts::numPorts()];
+        void process(const World<Amplifier>& world, size_t numFrames)
+        {
+            const float* const input = m_ports[AmplifierPorts::kInput];
+            float*             output = m_ports[AmplifierPorts::kOutput];
+            const float        gain = *m_ports[AmplifierPorts::kGain];
 
-public:
-    Amplifier(const World<Amplifier>& world, const Methcla_SynthDef*, const AmplifierOptions& options)
-    {
-    }
-
-    void connect(AmplifierPorts::Port port, void* data)
-    {
-        m_ports[port] = static_cast<float*>(data);
-    }
-
-    void process(const World<Amplifier>& world, size_t numFrames)
-    {
-        const float* const input = m_ports[AmplifierPorts::kInput];
-        float* output = m_ports[AmplifierPorts::kOutput];
-        const float gain = *m_ports[AmplifierPorts::kGain];
-
-        if (gain == 0.0f) {
-            for (size_t i=0; i < numFrames; i++) {
-                output[i] = 0.0f;
+            if (gain == 0.0f)
+            {
+                for (size_t i = 0; i < numFrames; i++)
+                {
+                    output[i] = 0.0f;
+                }
             }
-        } else if (gain == 1.f) {
-            for (size_t i=0; i < numFrames; i++) {
-                output[i] = input[i];
+            else if (gain == 1.f)
+            {
+                for (size_t i = 0; i < numFrames; i++)
+                {
+                    output[i] = input[i];
+                }
             }
-        } else {
-            for (size_t i=0; i < numFrames; i++) {
-                output[i] = gain * input[i];
+            else
+            {
+                for (size_t i = 0; i < numFrames; i++)
+                {
+                    output[i] = gain * input[i];
+                }
             }
         }
-    }
-};
+    };
 
-StaticSynthDef<Amplifier,AmplifierOptions,AmplifierPorts> kAmplifierDef;
+    StaticSynthDef<Amplifier, AmplifierOptions, AmplifierPorts> kAmplifierDef;
 
-};
+}; // namespace
 
 // Library initialization
 
-static const Methcla_Library library = { NULL, NULL };
+static const Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT const Methcla_Library* methcla_plugins_patch_cable(const Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT const Methcla_Library*
+                     methcla_plugins_patch_cable(const Methcla_Host* host,
+                                                 const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
     kAmplifierDef(host, METHCLA_PLUGINS_AMPLIFIER_URI);

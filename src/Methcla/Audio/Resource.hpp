@@ -16,22 +16,20 @@
 #define METHCLA_AUDIO_RESOURCE_HPP_INCLUDED
 
 #include <boost/intrusive_ptr.hpp>
+
 #include <cassert>
 #include <stdexcept>
 #include <vector>
 
-namespace Methcla { namespace Audio
-{
+namespace Methcla { namespace Audio {
     class Environment;
 
-    template<typename T>
-    inline void intrusive_ptr_add_ref(T* expr)
+    template <typename T> inline void intrusive_ptr_add_ref(T* expr)
     {
         expr->retain();
     }
 
-    template<typename T>
-    inline void intrusive_ptr_release(T* expr)
+    template <typename T> inline void intrusive_ptr_release(T* expr)
     {
         expr->release();
     }
@@ -41,8 +39,8 @@ namespace Methcla { namespace Audio
     {
     public:
         Reference()
-            : m_refs(0)
-        { }
+        : m_refs(0)
+        {}
 
         Reference(const Reference&) = delete;
         Reference& operator=(const Reference&) = delete;
@@ -53,10 +51,7 @@ namespace Methcla { namespace Audio
             return m_refs;
         }
 
-        inline void retain()
-        {
-            m_refs++;
-        }
+        inline void retain() { m_refs++; }
 
         inline void release()
         {
@@ -64,17 +59,12 @@ namespace Methcla { namespace Audio
             assert(m_refs >= 0);
             if (m_refs == 0)
                 this->free();
-
         }
 
     protected:
-        virtual ~Reference()
-        { }
+        virtual ~Reference() {}
 
-        virtual void free()
-        {
-            delete this;
-        }
+        virtual void free() { delete this; }
 
     private:
         int m_refs;
@@ -87,20 +77,20 @@ namespace Methcla { namespace Audio
     {
     public:
         Resource(Environment& env, Id id)
-            : m_env(env)
-            , m_id(id)
-        { }
+        : m_env(env)
+        , m_id(id)
+        {}
 
         /// Access environment.
         const Environment& env() const { return m_env; }
-        Environment& env() { return m_env; }
+        Environment&       env() { return m_env; }
 
         /// Return unique id.
         Id id() const { return m_id; }
 
     private:
-        Environment&    m_env;
-        Id              m_id;
+        Environment& m_env;
+        Id           m_id;
     };
 
     template <class T> using ResourceRef = boost::intrusive_ptr<T>;
@@ -114,26 +104,26 @@ namespace Methcla { namespace Audio
         typedef boost::intrusive_ptr<T> Pointer;
 
         ResourceMap(size_t size)
-            : m_elems(size, nullptr)
-        { }
+        : m_elems(size, nullptr)
+        {}
 
         ResourceMap(const ResourceMap&) = delete;
         ResourceMap& operator=(const ResourceMap&) = delete;
 
-        size_t size() const
-        {
-            return m_elems.size();
-        }
+        size_t size() const { return m_elems.size(); }
 
         bool contains(Id id) const
         {
-            return id >= Id(0) && id < Id(m_elems.size()) && m_elems[id] != nullptr;
+            return id >= Id(0) && id < Id(m_elems.size()) &&
+                   m_elems[id] != nullptr;
         }
 
         Id nextId()
         {
-            for (size_t i=0; i < m_elems.size(); i++) {
-                if (m_elems[i] == nullptr) {
+            for (size_t i = 0; i < m_elems.size(); i++)
+            {
+                if (m_elems[i] == nullptr)
+                {
                     return static_cast<Id>(i);
                 }
             }
@@ -142,17 +132,17 @@ namespace Methcla { namespace Audio
 
         void insert(Id id, Pointer a)
         {
-            if ((id >= Id(0)) && (id < Id(m_elems.size()))) {
+            if ((id >= Id(0)) && (id < Id(m_elems.size())))
+            {
                 m_elems[id] = a;
-            } else {
+            }
+            else
+            {
                 throw std::out_of_range("Invalid resource id");
             }
         }
 
-        void remove(Id id)
-        {
-            m_elems[id] = nullptr;
-        }
+        void remove(Id id) { m_elems[id] = nullptr; }
 
         Pointer lookup(Id id)
         {
@@ -164,6 +154,6 @@ namespace Methcla { namespace Audio
     private:
         std::vector<Pointer> m_elems;
     };
-} }
+}} // namespace Methcla::Audio
 
 #endif // METHCLA_AUDIO_RESOURCE_HPP_INCLUDED

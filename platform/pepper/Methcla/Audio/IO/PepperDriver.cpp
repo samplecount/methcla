@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "Methcla/API.hpp"
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/IO/PepperDriver.hpp"
-#include "Methcla/API.hpp"
 #include "Methcla/Exception.hpp"
 #include "Methcla/Memory.hpp"
 #include "Methcla/Platform.hpp"
@@ -32,8 +32,8 @@ using namespace Methcla;
 using namespace Methcla::Audio::IO;
 
 PepperDriver::PepperDriver(Options options, const pp::InstanceHandle& instance)
-    : Driver(options)
-    , m_frameCount(0)
+: Driver(options)
+, m_frameCount(0)
 {
     PP_AudioSampleRate ppSampleRate;
 
@@ -47,23 +47,17 @@ PepperDriver::PepperDriver(Options options, const pp::InstanceHandle& instance)
             break;
     }
 
-    uint32_t bufferSize =
-        pp::AudioConfig::RecommendSampleFrameCount(instance,
-                                                   ppSampleRate,
-                                                   options.bufferSize > 0 ? options.bufferSize : kDefaultBufferSize);
+    uint32_t bufferSize = pp::AudioConfig::RecommendSampleFrameCount(
+        instance, ppSampleRate,
+        options.bufferSize > 0 ? options.bufferSize : kDefaultBufferSize);
 
-    pp::AudioConfig audioConfig = pp::AudioConfig(instance,
-                                                  ppSampleRate,
-                                                  bufferSize);
+    pp::AudioConfig audioConfig =
+        pp::AudioConfig(instance, ppSampleRate, bufferSize);
 
-    m_audio = pp::Audio(instance,
-                        audioConfig,
-                        processCallback,
-                        this);
+    m_audio = pp::Audio(instance, audioConfig, processCallback, this);
 
-    m_outputBuffer = std::unique_ptr<MultiChannelBuffer>(
-        new MultiChannelBuffer(numOutputs(), m_audio.config().sample_frame_count())
-        );
+    m_outputBuffer = std::unique_ptr<MultiChannelBuffer>(new MultiChannelBuffer(
+        numOutputs(), m_audio.config().sample_frame_count()));
 
     m_sampleRateRecip = 1. / sampleRate();
 }
@@ -87,30 +81,18 @@ double PepperDriver::sampleRate() const
     }
 }
 
-size_t PepperDriver::numInputs() const
-{
-    return 0;
-}
+size_t PepperDriver::numInputs() const { return 0; }
 
-size_t PepperDriver::numOutputs() const
-{
-    return 2;
-}
+size_t PepperDriver::numOutputs() const { return 2; }
 
 size_t PepperDriver::bufferSize() const
 {
     return m_audio.config().sample_frame_count();
 }
 
-void PepperDriver::start()
-{
-    m_audio.StartPlayback();
-}
+void PepperDriver::start() { m_audio.StartPlayback(); }
 
-void PepperDriver::stop()
-{
-    m_audio.StopPlayback();
-}
+void PepperDriver::stop() { m_audio.StopPlayback(); }
 
 Methcla_Time PepperDriver::currentTime()
 {
@@ -118,35 +100,28 @@ Methcla_Time PepperDriver::currentTime()
     return (double)frameCount * m_sampleRateRecip;
 }
 
-void PepperDriver::processCallback(void* samples, uint32_t buffer_size, void* data)
+void PepperDriver::processCallback(void* samples, uint32_t buffer_size,
+                                   void* data)
 {
     PepperDriver* driver = static_cast<PepperDriver*>(data);
 
-    assert(buffer_size >= driver->m_outputBuffer->numSamples() * sizeof(int16_t));
+    assert(buffer_size >=
+           driver->m_outputBuffer->numSamples() * sizeof(int16_t));
 
-    // NOTE: Always need to produce the number of frames requested from the browser.
+    // NOTE: Always need to produce the number of frames requested from the
+    // browser.
     const size_t numFrames = driver->m_outputBuffer->numFrames();
 
-    driver->process(
-        driver->currentTime(),
-        numFrames,
-        nullptr,
-        driver->m_outputBuffer->data()
-    );
+    driver->process(driver->currentTime(), numFrames, nullptr,
+                    driver->m_outputBuffer->data());
 
-    driver->m_frameCount.fetch_add(
-        numFrames,
-        std::memory_order_relaxed
-    );
+    driver->m_frameCount.fetch_add(numFrames, std::memory_order_relaxed);
 
     // Interleave and scale
     Methcla::Audio::interleave(
-        static_cast<int16_t*>(samples),
-        driver->m_outputBuffer->data(),
+        static_cast<int16_t*>(samples), driver->m_outputBuffer->data(),
         Methcla_AudioSample(std::numeric_limits<int16_t>::max()),
-        driver->m_outputBuffer->numChannels(),
-        numFrames
-    );
+        driver->m_outputBuffer->numChannels(), numFrames);
 }
 
 Driver* Methcla::Platform::defaultAudioDriver(Driver::Options)
@@ -157,13 +132,8 @@ Driver* Methcla::Platform::defaultAudioDriver(Driver::Options)
 
 Methcla_AudioDriver* methcla_platform_pepper_audio_driver_new(
     const Methcla_AudioDriverOptions* options,
-    const pp::InstanceHandle& instance
-    )
+    const pp::InstanceHandle&         instance)
 {
-    return Methcla::API::wrapAudioDriver(
-        new Methcla::Audio::IO::PepperDriver(
-            Methcla::API::convertOptions(options),
-            instance
-            )
-        );
+    return Methcla::API::wrapAudioDriver(new Methcla::Audio::IO::PepperDriver(
+        Methcla::API::convertOptions(options), instance));
 }

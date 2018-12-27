@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "Methcla/Memory/Manager.hpp"
-#include <stdexcept>    // std::invalid_argument
-#include <new>          // std::bad_alloc
+
+#include <new>       // std::bad_alloc
+#include <stdexcept> // std::invalid_argument
 
 // Set to 1 to disable the realtime memory manager.
 #define METHCLA_NO_RT_MEMORY 0
@@ -23,13 +24,13 @@ using namespace Methcla::Memory;
 
 #if METHCLA_NO_RT_MEMORY
 RTMemoryManager::RTMemoryManager(size_t)
-    : m_memory(nullptr)
-    , m_pool(nullptr)
-{ }
+: m_memory(nullptr)
+, m_pool(nullptr)
+{}
 #else
 RTMemoryManager::RTMemoryManager(size_t poolSize)
-    : m_memory(nullptr)
-    , m_pool(nullptr)
+: m_memory(nullptr)
+, m_pool(nullptr)
 {
     const size_t allocSize = tlsf_overhead() + poolSize;
     m_memory = Memory::alloc(allocSize);
@@ -56,7 +57,8 @@ void* RTMemoryManager::alloc(size_t size)
     return Methcla::Memory::alloc(size);
 #else
     if (size == 0)
-        throw std::invalid_argument("allocation size must be greater than zero");
+        throw std::invalid_argument(
+            "allocation size must be greater than zero");
     void* ptr = tlsf_malloc(m_pool, size);
     if (ptr == nullptr)
         throw std::bad_alloc();
@@ -80,7 +82,8 @@ void* RTMemoryManager::allocAligned(Alignment align, size_t size)
     return Methcla::Memory::allocAligned(align, size);
 #else
     if (size == 0)
-        throw std::invalid_argument("allocation size must be greater than zero");
+        throw std::invalid_argument(
+            "allocation size must be greater than zero");
     void* ptr = tlsf_memalign(m_pool, align, size);
     if (ptr == nullptr)
         throw std::bad_alloc();
@@ -98,7 +101,8 @@ void RTMemoryManager::freeAligned(void* ptr) noexcept
 #endif
 }
 
-static void collectStatistics(void* /* ptr */, size_t size, int used, void* user)
+static void collectStatistics(void* /* ptr */, size_t size, int used,
+                              void* user)
 {
     auto stats = static_cast<RTMemoryManager::Statistics*>(user);
     if (used)

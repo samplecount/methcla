@@ -20,19 +20,22 @@
 #include <iostream>
 
 #if defined(__native_client__)
-#  include <time.h>
+#    include <time.h>
 #else
-#  include <chrono>
+#    include <chrono>
 #endif
 
 using namespace Methcla::Audio::IO;
 
 DummyDriver::DummyDriver(Options options)
-    : Driver(options)
-    , m_sampleRate(options.sampleRate >= 0 ? options.sampleRate : kDefaultSampleRate)
-    , m_numInputs(options.numInputs >= 0 ? options.numInputs : kDefaultNumInputs)
-    , m_numOutputs(options.numOutputs >= 0 ? options.numOutputs : kDefaultNumOutputs)
-    , m_bufferSize(options.bufferSize >= 0 ? options.bufferSize : kDefaultBufferSize)
+: Driver(options)
+, m_sampleRate(options.sampleRate >= 0 ? options.sampleRate
+                                       : kDefaultSampleRate)
+, m_numInputs(options.numInputs >= 0 ? options.numInputs : kDefaultNumInputs)
+, m_numOutputs(options.numOutputs >= 0 ? options.numOutputs
+                                       : kDefaultNumOutputs)
+, m_bufferSize(options.bufferSize >= 0 ? options.bufferSize
+                                       : kDefaultBufferSize)
 {
     assert(m_sampleRate > 0);
     assert(m_numOutputs > 0);
@@ -78,8 +81,8 @@ void DummyDriver::run()
 {
 #if defined(__native_client__)
     // TODO: Remove drift and jitter
-    const double dt = (double)bufferSize()/(double)sampleRate();
-    double t = 0.;
+    const double dt = (double)bufferSize() / (double)sampleRate();
+    double       t = 0.;
     while (m_continue)
     {
         storeTime(m_time, t);
@@ -91,13 +94,15 @@ void DummyDriver::run()
         t += dt;
     }
 #else
-    auto dt = std::chrono::duration<double>(bufferSize()/sampleRate());
+    auto dt = std::chrono::duration<double>(bufferSize() / sampleRate());
     auto t0 = std::chrono::steady_clock::now();
     auto t = t0 + std::chrono::duration<double>(0);
 
     while (m_continue)
     {
-        const double tDouble = std::chrono::duration_cast<std::chrono::duration<double>>(t-t0).count();
+        const double tDouble =
+            std::chrono::duration_cast<std::chrono::duration<double>>(t - t0)
+                .count();
         storeTime(m_time, tDouble);
         process(tDouble, bufferSize(), m_inputBuffers, m_outputBuffers);
         std::this_thread::sleep_until(t);
@@ -109,7 +114,7 @@ void DummyDriver::run()
 Methcla_Time DummyDriver::currentTime()
 {
     const uint64_t t64 = m_time.load();
-    double result;
+    double         result;
     std::memcpy(&result, &t64, sizeof(t64));
     return result;
 }

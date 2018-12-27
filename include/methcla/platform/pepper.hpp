@@ -15,13 +15,13 @@
 #ifndef METHCLA_PLATFORM_PEPPER_HPP_INCLUDED
 #define METHCLA_PLATFORM_PEPPER_HPP_INCLUDED
 
+#include "ppapi/cpp/instance_handle.h"
+
 #include <methcla/common.h>
 #include <methcla/engine.h>
-#include "ppapi/cpp/instance_handle.h"
 
 METHCLA_EXPORT Methcla_AudioDriver* methcla_platform_pepper_audio_driver_new(
     const Methcla_AudioDriverOptions* options,
-    const pp::InstanceHandle& instance
-    );
+    const pp::InstanceHandle&         instance);
 
 #endif // METHCLA_PLATFORM_PEPPER_HPP_INCLUDED

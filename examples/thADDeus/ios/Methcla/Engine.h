@@ -1,11 +1,11 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,13 +20,13 @@
 
 Methcla::Engine* makeEngine()
 {
-//    NSString* resources = [[NSBundle mainBundle] resourcePath];
-//    NSString* bundles = [resources stringByAppendingPathComponent:@"lv2/bundles"];
+    //    NSString* resources = [[NSBundle mainBundle] resourcePath];
+    //    NSString* bundles = [resources
+    //    stringByAppendingPathComponent:@"lv2/bundles"];
 
-    Methcla::Engine* engine = new Methcla::Engine({
-        Methcla::Option::driverBufferSize(256),
-        Methcla::Option::pluginLibrary(methcla_plugins_sine)
-        });
+    Methcla::Engine* engine = new Methcla::Engine(
+        {Methcla::Option::driverBufferSize(256),
+         Methcla::Option::pluginLibrary(methcla_plugins_sine)});
     engine->start();
 
     return engine;

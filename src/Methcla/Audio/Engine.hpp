@@ -15,9 +15,6 @@
 #ifndef METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 #define METHCLA_AUDIO_ENGINE_HPP_INCLUDED
 
-#include <methcla/engine.h>
-#include <methcla/plugin.h>
-
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/AudioBus.hpp"
 #include "Methcla/Audio/IO/Driver.hpp"
@@ -27,6 +24,9 @@
 #include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/WorkerInterface.hpp"
 
+#include <methcla/engine.h>
+#include <methcla/plugin.h>
+
 #include <cstddef>
 #include <functional>
 #include <string>
@@ -35,16 +35,16 @@
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
 
-namespace Methcla { namespace Audio
-{
+namespace Methcla { namespace Audio {
     class Environment;
 
     typedef void (*PerformFunc)(Environment* env, void* data);
 
     class Group;
 
-    typedef std::function<void (Methcla_LogLevel, const char*)> LogHandler;
-    typedef std::function<void (Methcla_RequestId, const void*, size_t)> PacketHandler;
+    typedef std::function<void(Methcla_LogLevel, const char*)> LogHandler;
+    typedef std::function<void(Methcla_RequestId, const void*, size_t)>
+        PacketHandler;
 
     class Request;
 
@@ -61,17 +61,17 @@ namespace Methcla { namespace Audio
 
         struct Options
         {
-            Mode mode = kRealtimeMode;
-            size_t realtimeMemorySize = 1024*1024;
-            size_t maxNumNodes = 1024;
-            size_t maxNumAudioBuses = 1024;
-            size_t maxNumControlBuses = 4096;
-            size_t sampleRate = 44100;
-            size_t blockSize = 64;
-            size_t numHardwareInputChannels = 2;
-            size_t numHardwareOutputChannels = 2;
+            Mode                               mode = kRealtimeMode;
+            size_t                             realtimeMemorySize = 1024 * 1024;
+            size_t                             maxNumNodes = 1024;
+            size_t                             maxNumAudioBuses = 1024;
+            size_t                             maxNumControlBuses = 4096;
+            size_t                             sampleRate = 44100;
+            size_t                             blockSize = 64;
+            size_t                             numHardwareInputChannels = 2;
+            size_t                             numHardwareOutputChannels = 2;
             std::list<Methcla_LibraryFunction> pluginLibraries;
-            Methcla_LogLevel logLevel = kMethcla_LogWarn;
+            Methcla_LogLevel                   logLevel = kMethcla_LogWarn;
         };
 
         struct Command
@@ -88,23 +88,21 @@ namespace Methcla { namespace Audio
         };
 
         typedef Utility::MessageQueueInterface<Request*> MessageQueue;
-        typedef Utility::WorkerInterface<Command> Worker;
+        typedef Utility::WorkerInterface<Command>        Worker;
 
-        Environment(LogHandler logHandler,
-                    PacketHandler packetHandler,
-                    const Options& options,
-                    MessageQueue* queue=nullptr,
-                    Worker* worker=nullptr);
+        Environment(LogHandler logHandler, PacketHandler packetHandler,
+                    const Options& options, MessageQueue* queue = nullptr,
+                    Worker* worker = nullptr);
         ~Environment();
 
         Environment(const Environment&) = delete;
         Environment& operator=(const Environment&) = delete;
 
         //* Convert environment to Methcla_Host.
-        operator const Methcla_Host* () const;
+        operator const Methcla_Host*() const;
 
         //* Convert environment to Methcla_World.
-        operator const Methcla_World* () const;
+        operator const Methcla_World*() const;
 
         //* Return the root group node.
         Group* rootNode();
@@ -162,12 +160,8 @@ namespace Methcla { namespace Audio
         // Context: NRT
         void sendFromWorker(PerformFunc f, void* data);
 
-        void process(
-            Methcla_Time currentTime,
-            size_t numFrames,
-            const sample_t* const* inputs,
-            sample_t* const* outputs
-            );
+        void process(Methcla_Time currentTime, size_t numFrames,
+                     const sample_t* const* inputs, sample_t* const* outputs);
 
         void setLogFlags(Methcla_EngineLogFlags flags);
 
@@ -178,9 +172,11 @@ namespace Methcla { namespace Audio
         void logLineNRT(Methcla_LogLevel level, const char* message);
 
         //* Context: NRT
-        void reply(Methcla_RequestId requestId, const void* packet, size_t size);
+        void reply(Methcla_RequestId requestId, const void* packet,
+                   size_t size);
         //* Context: NRT
-        void reply(Methcla_RequestId requestId, const OSCPP::Client::Packet& packet);
+        void reply(Methcla_RequestId            requestId,
+                   const OSCPP::Client::Packet& packet);
         //* Context: NRT
         void replyError(Methcla_RequestId requestId, const char* what);
 
@@ -203,12 +199,12 @@ namespace Methcla { namespace Audio
         void nodeEnded(NodeId nodeId);
 
     private:
-        EnvironmentImpl*    m_impl;
-        const double        m_sampleRate;
-        const size_t        m_blockSize;
-        Methcla_Host        m_host;
-        Methcla_World       m_world;
+        EnvironmentImpl* m_impl;
+        const double     m_sampleRate;
+        const size_t     m_blockSize;
+        Methcla_Host     m_host;
+        Methcla_World    m_world;
     };
-} }
+}} // namespace Methcla::Audio
 
 #endif // METHCLA_AUDIO_ENGINE_HPP_INCLUDED

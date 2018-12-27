@@ -41,10 +41,12 @@ typedef struct Methcla_Host Methcla_Host;
 typedef void Methcla_Synth;
 
 //* Callback function type for performing commands in the non-realtime context.
-typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host, void* data);
+typedef void (*Methcla_HostPerformFunction)(const Methcla_Host* host,
+                                            void*               data);
 
 //* Callback function type for performing commands in the realtime context.
-typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world, void* data);
+typedef void (*Methcla_WorldPerformFunction)(const Methcla_World* world,
+                                             void*                data);
 
 //* Realtime interface
 struct Methcla_World
@@ -64,14 +66,17 @@ struct Methcla_World
     // Realtime memory allocation
     void* (*alloc)(const struct Methcla_World* world, size_t size);
     void (*free)(const struct Methcla_World* world, void* ptr);
-    void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment, size_t size);
+    void* (*alloc_aligned)(const struct Methcla_World* world, size_t alignment,
+                           size_t size);
     void (*free_aligned)(const struct Methcla_World* world, void* ptr);
 
     //* Schedule a command for execution in the non-realtime context.
-    void (*perform_command)(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data);
+    void (*perform_command)(const Methcla_World*        world,
+                            Methcla_HostPerformFunction perform, void* data);
 
     //* Log a message and a newline character.
-    void (*log_line)(const Methcla_World* world, Methcla_LogLevel level, const char* message);
+    void (*log_line)(const Methcla_World* world, Methcla_LogLevel level,
+                     const char* message);
 
     //* Free synth.
     void (*synth_done)(const struct Methcla_World* world, Methcla_Synth* synth);
@@ -89,7 +94,8 @@ static inline size_t methcla_world_block_size(const Methcla_World* world)
     return world->block_size(world);
 }
 
-static inline Methcla_Time methcla_world_current_time(const Methcla_World* world)
+static inline Methcla_Time
+methcla_world_current_time(const Methcla_World* world)
 {
     assert(world);
     assert(world->current_time);
@@ -108,26 +114,32 @@ static inline void methcla_world_free(const Methcla_World* world, void* ptr)
     world->free(world, ptr);
 }
 
-static inline void* methcla_world_alloc_aligned(const Methcla_World* world, size_t alignment, size_t size)
+static inline void* methcla_world_alloc_aligned(const Methcla_World* world,
+                                                size_t alignment, size_t size)
 {
     assert(world && world->alloc_aligned);
     return world->alloc_aligned(world, alignment, size);
 }
 
-static inline void methcla_world_free_aligned(const Methcla_World* world, void* ptr)
+static inline void methcla_world_free_aligned(const Methcla_World* world,
+                                              void*                ptr)
 {
     assert(world && world->free_aligned);
     world->free_aligned(world, ptr);
 }
 
-static inline void methcla_world_perform_command(const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
+static inline void
+methcla_world_perform_command(const Methcla_World*        world,
+                              Methcla_HostPerformFunction perform, void* data)
 {
     assert(world && world->perform_command);
     assert(perform);
     world->perform_command(world, perform, data);
 }
 
-static inline void methcla_world_log_line(const Methcla_World* world, Methcla_LogLevel level, const char* message)
+static inline void methcla_world_log_line(const Methcla_World* world,
+                                          Methcla_LogLevel     level,
+                                          const char*          message)
 {
     assert(world);
     assert(world->log_line);
@@ -135,7 +147,8 @@ static inline void methcla_world_log_line(const Methcla_World* world, Methcla_Lo
     world->log_line(world, level, message);
 }
 
-static inline void methcla_world_synth_done(const Methcla_World* world, Methcla_Synth* synth)
+static inline void methcla_world_synth_done(const Methcla_World* world,
+                                            Methcla_Synth*       synth)
 {
     assert(world);
     assert(world->synth_done);
@@ -157,8 +170,8 @@ typedef enum
 
 typedef enum
 {
-    kMethcla_PortFlags  = 0x0
-  , kMethcla_Trigger    = 0x1
+    kMethcla_PortFlags = 0x0,
+    kMethcla_Trigger = 0x1
 } Methcla_PortFlags;
 
 typedef struct Methcla_PortDescriptor Methcla_PortDescriptor;
@@ -188,13 +201,19 @@ struct Methcla_SynthDef
     size_t options_size;
 
     //* Parse OSC options and fill options struct.
-    void (*configure)(const void* tag_buffer, size_t tag_size, const void* arg_buffer, size_t arg_size, Methcla_SynthOptions* options);
+    void (*configure)(const void* tag_buffer, size_t tag_size,
+                      const void* arg_buffer, size_t arg_size,
+                      Methcla_SynthOptions* options);
 
     //* Get port descriptor at index.
-    bool (*port_descriptor)(const Methcla_SynthOptions* options, Methcla_PortCount index, Methcla_PortDescriptor* port);
+    bool (*port_descriptor)(const Methcla_SynthOptions* options,
+                            Methcla_PortCount           index,
+                            Methcla_PortDescriptor*     port);
 
     //* Construct a synth instance at the location given.
-    void (*construct)(const Methcla_World* world, const Methcla_SynthDef* def, const Methcla_SynthOptions* options, Methcla_Synth* synth);
+    void (*construct)(const Methcla_World* world, const Methcla_SynthDef* def,
+                      const Methcla_SynthOptions* options,
+                      Methcla_Synth*              synth);
 
     //* Connect port at index to data.
     void (*connect)(Methcla_Synth* synth, Methcla_PortCount index, void* data);
@@ -203,7 +222,8 @@ struct Methcla_SynthDef
     void (*activate)(const Methcla_World* world, Methcla_Synth* synth);
 
     //* Process numFrames of audio samples.
-    void (*process)(const Methcla_World* world, Methcla_Synth* synth, size_t numFrames);
+    void (*process)(const Methcla_World* world, Methcla_Synth* synth,
+                    size_t numFrames);
 
     //* Destroy a synth instance.
     void (*destroy)(const Methcla_World* world, Methcla_Synth* synth);
@@ -215,10 +235,12 @@ struct Methcla_Host
     void* handle;
 
     //* Register a synth definition.
-    void (*register_synthdef)(const struct Methcla_Host* host, const Methcla_SynthDef* synthDef);
+    void (*register_synthdef)(const struct Methcla_Host* host,
+                              const Methcla_SynthDef*    synthDef);
 
     //* Register sound file API.
-    void (*register_soundfile_api)(const struct Methcla_Host* host, const Methcla_SoundFileAPI* api);
+    void (*register_soundfile_api)(const struct Methcla_Host*  host,
+                                   const Methcla_SoundFileAPI* api);
 
     //* Allocate a block of memory
     void* (*alloc)(const struct Methcla_Host* context, size_t size);
@@ -227,32 +249,43 @@ struct Methcla_Host
     void (*free)(const struct Methcla_Host* context, void* ptr);
 
     //* Allocate a block of aligned memory.
-    void* (*alloc_aligned)(const struct Methcla_Host* context, size_t alignment, size_t size);
+    void* (*alloc_aligned)(const struct Methcla_Host* context, size_t alignment,
+                           size_t size);
 
     //* Free a block of memory previously allocated by alloc or alloc_aligned.
     void (*free_aligned)(const struct Methcla_Host* context, void* ptr);
 
     //* Open sound file.
-    Methcla_Error (*soundfile_open)(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info);
+    Methcla_Error (*soundfile_open)(const Methcla_Host* host, const char* path,
+                                    Methcla_FileMode       mode,
+                                    Methcla_SoundFile**    file,
+                                    Methcla_SoundFileInfo* info);
 
     //* Schedule a command for execution in the realtime context.
-    void (*perform_command)(const Methcla_Host* host, const Methcla_WorldPerformFunction perform, void* data);
+    void (*perform_command)(const Methcla_Host*                host,
+                            const Methcla_WorldPerformFunction perform,
+                            void*                              data);
 
     //* Send an OSC notification packet to the client.
     void (*notify)(const Methcla_Host* host, const void* packet, size_t size);
 
     //* Log a message and a newline character.
-    void (*log_line)(const Methcla_Host* host, Methcla_LogLevel level, const char* message);
+    void (*log_line)(const Methcla_Host* host, Methcla_LogLevel level,
+                     const char* message);
 };
 
-static inline void methcla_host_register_synthdef(const Methcla_Host* host, const Methcla_SynthDef* synthDef)
+static inline void
+methcla_host_register_synthdef(const Methcla_Host*     host,
+                               const Methcla_SynthDef* synthDef)
 {
     assert(host && host->register_synthdef);
     assert(synthDef);
     host->register_synthdef(host, synthDef);
 }
 
-static inline void methcla_host_register_soundfile_api(const Methcla_Host* host, const Methcla_SoundFileAPI* api)
+static inline void
+methcla_host_register_soundfile_api(const Methcla_Host*         host,
+                                    const Methcla_SoundFileAPI* api)
 {
     assert(host && host->register_soundfile_api && api);
     host->register_soundfile_api(host, api);
@@ -265,7 +298,8 @@ static inline void* methcla_host_alloc(const Methcla_Host* context, size_t size)
     return context->alloc(context, size);
 }
 
-static inline void* methcla_host_alloc_aligned(const Methcla_Host* context, size_t alignment, size_t size)
+static inline void* methcla_host_alloc_aligned(const Methcla_Host* context,
+                                               size_t alignment, size_t size)
 {
     assert(context);
     assert(context->alloc_aligned);
@@ -279,7 +313,10 @@ static inline void methcla_host_free(const Methcla_Host* context, void* ptr)
     context->free(context, ptr);
 }
 
-static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host, const char* path, Methcla_FileMode mode, Methcla_SoundFile** file, Methcla_SoundFileInfo* info)
+static inline Methcla_Error
+methcla_host_soundfile_open(const Methcla_Host* host, const char* path,
+                            Methcla_FileMode mode, Methcla_SoundFile** file,
+                            Methcla_SoundFileInfo* info)
 {
     assert(host && host->soundfile_open);
     assert(path);
@@ -288,13 +325,17 @@ static inline Methcla_Error methcla_host_soundfile_open(const Methcla_Host* host
     return host->soundfile_open(host, path, mode, file, info);
 }
 
-static inline void methcla_host_perform_command(const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+static inline void
+methcla_host_perform_command(const Methcla_Host*          host,
+                             Methcla_WorldPerformFunction perform, void* data)
 {
     assert(host && host->perform_command);
     host->perform_command(host, perform, data);
 }
 
-static inline void methcla_host_log_line(const Methcla_Host* host, Methcla_LogLevel level, const char* message)
+static inline void methcla_host_log_line(const Methcla_Host* host,
+                                         Methcla_LogLevel    level,
+                                         const char*         message)
 {
     assert(host);
     assert(host->log_line);
@@ -313,7 +354,8 @@ struct Methcla_Library
     void (*destroy)(const Methcla_Library* library);
 };
 
-typedef const Methcla_Library* (*Methcla_LibraryFunction)(const Methcla_Host* host, const char* bundlePath);
+typedef const Methcla_Library* (*Methcla_LibraryFunction)(
+    const Methcla_Host* host, const char* bundlePath);
 
 static inline void methcla_library_destroy(const Methcla_Library* library)
 {

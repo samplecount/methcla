@@ -31,10 +31,10 @@ extern "C" {
  * input and output buffers whose size must be the number of channels times
  * the number of frames per buffer.
  */
-typedef void (*opensl_process_t)
-    (void *context, int sample_rate, int buffer_frames,
-     int input_channels, const short *input_buffer,
-     int output_channels, short *output_buffer);
+typedef void (*opensl_process_t)(void* context, int sample_rate,
+                                 int buffer_frames, int input_channels,
+                                 const short* input_buffer, int output_channels,
+                                 short* output_buffer);
 
 /*
  * Abstract data type for streaming audio with OpenSL.
@@ -60,33 +60,33 @@ typedef struct _opensl_stream OPENSL_STREAM;
  *
  * Returns NULL on failure.
  */
-OPENSL_STREAM *opensl_open(
-    int sample_rate, int input_channels, int output_channels,
-    int callback_buffer_size, opensl_process_t proc, void *context);
+OPENSL_STREAM* opensl_open(int sample_rate, int input_channels,
+                           int output_channels, int callback_buffer_size,
+                           opensl_process_t proc, void* context);
 
 /*
  * Stops playback and frees all resources associated with the given stream,
  * except for the context pointer, which is owned by the caller; the cleanup of
  * the context (if any) is the responsibility of the caller.
  */
-void opensl_close(OPENSL_STREAM *p);
+void opensl_close(OPENSL_STREAM* p);
 
 /*
  * Returns nonzero value if the given stream is currently running.
  */
-int opensl_is_running(OPENSL_STREAM *p);
+int opensl_is_running(OPENSL_STREAM* p);
 
 /*
  * Starts the audio stream.
  *
  * Returns 0 on success.
  */
-int opensl_start(OPENSL_STREAM *p);
+int opensl_start(OPENSL_STREAM* p);
 
 /*
  * Pauses the audio stream.
  */
-void opensl_pause(OPENSL_STREAM *p);
+void opensl_pause(OPENSL_STREAM* p);
 
 #ifdef __cplusplus
 };

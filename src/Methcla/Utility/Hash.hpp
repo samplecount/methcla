@@ -16,10 +16,10 @@
 #define METHCLA_UTILITY_HASH_HPP_INCLUDED
 
 #include <boost/functional/hash.hpp>
+
 #include <cstring>
 
-namespace Methcla { namespace Utility { namespace Hash
-{
+namespace Methcla { namespace Utility { namespace Hash {
     struct cstr_equal
     {
         bool operator()(const char* const& s1, const char* const& s2) const
@@ -33,12 +33,13 @@ namespace Methcla { namespace Utility { namespace Hash
         size_t operator()(const char* const& str) const
         {
             size_t seed = 0;
-            for (const char* it = str; *it != '\0'; it++) {
+            for (const char* it = str; *it != '\0'; it++)
+            {
                 boost::hash_combine(seed, *it);
             }
             return seed;
         }
     };
-} } }
+}}} // namespace Methcla::Utility::Hash
 
 #endif // METHCLA_UTILITY_HASH_HPP_INCLUDED

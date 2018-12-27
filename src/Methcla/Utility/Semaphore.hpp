@@ -17,25 +17,27 @@
 
 namespace Methcla { namespace Utility {
 
-namespace detail { class SemaphoreImpl; }
+    namespace detail {
+        class SemaphoreImpl;
+    }
 
-class Semaphore
-{
-public:
-    Semaphore(unsigned initial=0);
-    ~Semaphore();
+    class Semaphore
+    {
+    public:
+        Semaphore(unsigned initial = 0);
+        ~Semaphore();
 
-    Semaphore(const Semaphore&) = delete;
-    Semaphore& operator=(const Semaphore&) = delete;
+        Semaphore(const Semaphore&) = delete;
+        Semaphore& operator=(const Semaphore&) = delete;
 
-    void post();
-    void wait();
-    bool tryWait();
+        void post();
+        void wait();
+        bool tryWait();
 
-private:
-    detail::SemaphoreImpl* m_impl;
-};
+    private:
+        detail::SemaphoreImpl* m_impl;
+    };
 
-} }
+}} // namespace Methcla::Utility
 
 #endif // METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED

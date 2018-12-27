@@ -15,15 +15,14 @@
 #ifndef METHCLA_AUDIO_IO_ICECASTDRIVER_HPP
 #define METHCLA_AUDIO_IO_ICECASTDRIVER_HPP
 
-#include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio.hpp"
+#include "Methcla/Audio/IO/Driver.hpp"
 
 #include <string>
 
 namespace Methcla { namespace Audio { namespace IO {
 
-    namespace detail
-    {
+    namespace detail {
         class IcecastDriverImpl;
     }
 
@@ -33,14 +32,15 @@ namespace Methcla { namespace Audio { namespace IO {
         struct IcecastOptions
         {
             std::string host = "localhost";
-            int port = 8000;
+            int         port = 8000;
             std::string user = "source";
             std::string password;
             std::string mount;
             std::string name;
         };
 
-        IcecastDriver(Driver::Options driverOptions, IcecastOptions icecastOptions=IcecastOptions());
+        IcecastDriver(Driver::Options driverOptions,
+                      IcecastOptions  icecastOptions = IcecastOptions());
         ~IcecastDriver();
 
         virtual double sampleRate() const override;
@@ -56,6 +56,6 @@ namespace Methcla { namespace Audio { namespace IO {
         detail::IcecastDriverImpl* m_impl;
     };
 
-} } }
+}}} // namespace Methcla::Audio::IO
 
 #endif // METHCLA_AUDIO_IO_ICECASTDRIVER_HPP

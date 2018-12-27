@@ -22,29 +22,34 @@
 
 struct SoundFileHandle
 {
-    ExtAudioFileRef file;
-    size_t numChannels;
-    double sampleRate;
-    Methcla_FileMode mode;
+    ExtAudioFileRef         file;
+    size_t                  numChannels;
+    double                  sampleRate;
+    Methcla_FileMode        mode;
     Methcla_SoundFileFormat format;
-    Methcla_SoundFile soundFile;
+    Methcla_SoundFile       soundFile;
 };
 
-extern "C"
-{
-    static Methcla_Error soundfile_close(const Methcla_SoundFile*);
-    static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
-    static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
-    static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*, size_t, size_t*);
-    static Methcla_Error soundfile_write_float(const Methcla_SoundFile*, const float*, size_t, size_t*);
-    static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*, Methcla_FileMode, Methcla_SoundFile**, Methcla_SoundFileInfo*);
+extern "C" {
+static Methcla_Error soundfile_close(const Methcla_SoundFile*);
+static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
+static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
+static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*,
+                                          size_t, size_t*);
+static Methcla_Error soundfile_write_float(const Methcla_SoundFile*,
+                                           const float*, size_t, size_t*);
+static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*,
+                                    Methcla_FileMode, Methcla_SoundFile**,
+                                    Methcla_SoundFileInfo*);
 }
 
 Methcla_Error soundfile_close(const Methcla_SoundFile* file)
 {
-//    std::cout << "extAudioFile_close " << file << " " << file->handle << std::endl;
+    //    std::cout << "extAudioFile_close " << file << " " << file->handle <<
+    //    std::endl;
     SoundFileHandle* handle = (SoundFileHandle*)file->handle;
-    if (handle->file != nullptr) {
+    if (handle->file != nullptr)
+    {
         ExtAudioFileDispose(handle->file);
         handle->file = nullptr;
     }
@@ -71,7 +76,7 @@ Methcla_Error soundfile_tell(const Methcla_SoundFile* file, int64_t* numFrames)
     if (extFile == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
 
-    SInt64 outNumFrames;
+    SInt64   outNumFrames;
     OSStatus err = ExtAudioFileTell(extFile, &outNumFrames);
     if (err != noErr)
         return methcla_error_new(kMethcla_UnspecifiedError);
@@ -81,20 +86,23 @@ Methcla_Error soundfile_tell(const Methcla_SoundFile* file, int64_t* numFrames)
     return methcla_no_error();
 }
 
-AudioStreamBasicDescription floatClientFormat(double sampleRate, size_t numChannels)
+AudioStreamBasicDescription floatClientFormat(double sampleRate,
+                                              size_t numChannels)
 {
     AudioStreamBasicDescription clientFormat;
     clientFormat.mSampleRate = sampleRate;
     clientFormat.mFormatID = kAudioFormatLinearPCM;
     clientFormat.mChannelsPerFrame = numChannels;
     clientFormat.mBitsPerChannel = sizeof(float) * 8;
-    clientFormat.mBytesPerPacket = clientFormat.mBytesPerFrame = sizeof(float) * clientFormat.mChannelsPerFrame;
+    clientFormat.mBytesPerPacket = clientFormat.mBytesPerFrame =
+        sizeof(float) * clientFormat.mChannelsPerFrame;
     clientFormat.mFramesPerPacket = 1;
     clientFormat.mFormatFlags = kAudioFormatFlagsNativeFloatPacked;
     return clientFormat;
 }
 
-Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer, size_t inNumFrames, size_t* outNumFrames)
+Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer,
+                                   size_t inNumFrames, size_t* outNumFrames)
 {
     if (file == nullptr || buffer == nullptr || outNumFrames == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
@@ -112,7 +120,8 @@ Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer,
     AudioBufferList bufferList;
     bufferList.mNumberBuffers = 1;
     bufferList.mBuffers[0].mNumberChannels = handle->numChannels;
-    bufferList.mBuffers[0].mDataByteSize = handle->numChannels * inNumFrames * sizeof(float);
+    bufferList.mBuffers[0].mDataByteSize =
+        handle->numChannels * inNumFrames * sizeof(float);
     bufferList.mBuffers[0].mData = buffer;
 
     OSStatus err = ExtAudioFileRead(extFile, &numFrames, &bufferList);
@@ -126,7 +135,7 @@ Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer,
 
 static void convert16(void* dst, const float* src, size_t n)
 {
-    for (size_t i=0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
     {
         static_cast<int16_t*>(dst)[i] = src[i] * 32767.f;
     }
@@ -134,13 +143,15 @@ static void convert16(void* dst, const float* src, size_t n)
 
 static void convert32(void* dst, const float* src, size_t n)
 {
-    for (size_t i=0; i < n; i++)
+    for (size_t i = 0; i < n; i++)
     {
         static_cast<int32_t*>(dst)[i] = src[i] * 2147483648.f;
     }
 }
 
-Methcla_Error soundfile_write_float(const Methcla_SoundFile* file, const float* buffer, size_t inNumFrames, size_t* outNumFrames)
+Methcla_Error soundfile_write_float(const Methcla_SoundFile* file,
+                                    const float* buffer, size_t inNumFrames,
+                                    size_t* outNumFrames)
 {
     if (file == nullptr || buffer == nullptr || outNumFrames == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
@@ -158,7 +169,8 @@ Methcla_Error soundfile_write_float(const Methcla_SoundFile* file, const float* 
         AudioBufferList bufferList;
         bufferList.mNumberBuffers = 1;
         bufferList.mBuffers[0].mNumberChannels = handle->numChannels;
-        bufferList.mBuffers[0].mDataByteSize = handle->numChannels * inNumFrames * sizeof(float);
+        bufferList.mBuffers[0].mDataByteSize =
+            handle->numChannels * inNumFrames * sizeof(float);
         bufferList.mBuffers[0].mData = const_cast<float*>(buffer);
 
         OSStatus err = ExtAudioFileWrite(extFile, inNumFrames, &bufferList);
@@ -191,13 +203,16 @@ Methcla_Error soundfile_write_float(const Methcla_SoundFile* file, const float* 
         AudioBufferList bufferList;
         bufferList.mNumberBuffers = 1;
         bufferList.mBuffers[0].mNumberChannels = handle->numChannels;
-        bufferList.mBuffers[0].mDataByteSize = handle->numChannels * inNumFrames * bytesPerSample;
-        bufferList.mBuffers[0].mData = malloc(bufferList.mBuffers[0].mDataByteSize);
+        bufferList.mBuffers[0].mDataByteSize =
+            handle->numChannels * inNumFrames * bytesPerSample;
+        bufferList.mBuffers[0].mData =
+            malloc(bufferList.mBuffers[0].mDataByteSize);
 
         if (bufferList.mBuffers[0].mData == nullptr)
             return methcla_error_new(kMethcla_MemoryError);
 
-        convert(bufferList.mBuffers[0].mData, buffer, handle->numChannels * inNumFrames);
+        convert(bufferList.mBuffers[0].mData, buffer,
+                handle->numChannels * inNumFrames);
 
         OSStatus err = ExtAudioFileWrite(extFile, inNumFrames, &bufferList);
 
@@ -217,26 +232,22 @@ template <class T> class CFRef
 {
 public:
     CFRef(T ref)
-        : m_ref(ref)
-    { }
-    ~CFRef()
-    {
-        CFRelease(m_ref);
-    }
+    : m_ref(ref)
+    {}
+    ~CFRef() { CFRelease(m_ref); }
 
     CFRef(const CFRef<T>& other) = delete;
     CFRef<T>& operator=(const CFRef<T>& other) = delete;
 
-    operator T ()
-    {
-        return m_ref;
-    }
+    operator T() { return m_ref; }
 
 private:
     T m_ref;
 };
 
-Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Methcla_FileMode mode, Methcla_SoundFile** outFile, Methcla_SoundFileInfo* info)
+Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path,
+                             Methcla_FileMode mode, Methcla_SoundFile** outFile,
+                             Methcla_SoundFileInfo* info)
 {
     if (path == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
@@ -245,7 +256,8 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
     if (info == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
 
-    CFRef<CFURLRef> pathURL(CFURLCreateFromFileSystemRepresentation(kCFAllocatorDefault, (UInt8*)path, strlen(path), false));
+    CFRef<CFURLRef> pathURL(CFURLCreateFromFileSystemRepresentation(
+        kCFAllocatorDefault, (UInt8*)path, strlen(path), false));
     ExtAudioFileRef extFile = nullptr;
 
     if (mode == kMethcla_FileModeRead)
@@ -256,21 +268,26 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
         {
             std::stringstream s;
             s << "OSStatus " << err;
-            return methcla_error_new_with_message(kMethcla_UnspecifiedError, s.str().c_str());
+            return methcla_error_new_with_message(kMethcla_UnspecifiedError,
+                                                  s.str().c_str());
         }
 
         AudioStreamBasicDescription srcFormat;
-        UInt32 size = sizeof(srcFormat);
-        err = ExtAudioFileGetProperty(extFile, kExtAudioFileProperty_FileDataFormat, &size, &srcFormat);
-        if (err != noErr) {
+        UInt32                      size = sizeof(srcFormat);
+        err = ExtAudioFileGetProperty(
+            extFile, kExtAudioFileProperty_FileDataFormat, &size, &srcFormat);
+        if (err != noErr)
+        {
             ExtAudioFileDispose(extFile);
             return methcla_error_new(kMethcla_UnspecifiedError);
         }
 
         SInt64 numFrames;
         size = sizeof(numFrames);
-        err = ExtAudioFileGetProperty(extFile, kExtAudioFileProperty_FileLengthFrames, &size, &numFrames);
-        if (err != noErr) {
+        err = ExtAudioFileGetProperty(
+            extFile, kExtAudioFileProperty_FileLengthFrames, &size, &numFrames);
+        if (err != noErr)
+        {
             ExtAudioFileDispose(extFile);
             return methcla_error_new(kMethcla_UnspecifiedError);
         }
@@ -279,8 +296,11 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
         info->channels = srcFormat.mChannelsPerFrame;
         info->samplerate = srcFormat.mSampleRate;
 
-        AudioStreamBasicDescription clientFormat(floatClientFormat(info->samplerate, info->channels));
-        err = ExtAudioFileSetProperty(extFile, kExtAudioFileProperty_ClientDataFormat, sizeof(clientFormat), &clientFormat);
+        AudioStreamBasicDescription clientFormat(
+            floatClientFormat(info->samplerate, info->channels));
+        err = ExtAudioFileSetProperty(extFile,
+                                      kExtAudioFileProperty_ClientDataFormat,
+                                      sizeof(clientFormat), &clientFormat);
         if (err != noErr)
             return methcla_error_new(kMethcla_UnsupportedDataFormatError);
     }
@@ -310,7 +330,8 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
         const uint16_t numChannels = info->channels;
 
         streamDesc.mSampleRate = info->samplerate;
-        streamDesc.mFormatFlags = kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked;
+        streamDesc.mFormatFlags =
+            kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked;
         streamDesc.mChannelsPerFrame = numChannels;
         streamDesc.mFramesPerPacket = 1;
 
@@ -346,20 +367,17 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
                 return methcla_error_new(kMethcla_UnsupportedDataFormatError);
         }
 
-        streamDesc.mBytesPerPacket = streamDesc.mFramesPerPacket * streamDesc.mBytesPerFrame;
+        streamDesc.mBytesPerPacket =
+            streamDesc.mFramesPerPacket * streamDesc.mBytesPerFrame;
 
         AudioChannelLayout channelLayout;
         memset(&channelLayout, 0, sizeof(channelLayout));
-        channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_DiscreteInOrder | numChannels;
+        channelLayout.mChannelLayoutTag =
+            kAudioChannelLayoutTag_DiscreteInOrder | numChannels;
 
         OSStatus status = ExtAudioFileCreateWithURL(
-            pathURL,
-            fileType,
-            &streamDesc,
-            &channelLayout,
-            kAudioFileFlags_EraseFile,
-            &extFile
-        );
+            pathURL, fileType, &streamDesc, &channelLayout,
+            kAudioFileFlags_EraseFile, &extFile);
         if (status != noErr)
             return methcla_error_new(kMethcla_SystemError);
     }
@@ -368,7 +386,7 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
         return methcla_error_new(kMethcla_ArgumentError);
     }
 
-    assert( extFile != nullptr );
+    assert(extFile != nullptr);
 
     SoundFileHandle* handle = (SoundFileHandle*)malloc(sizeof(SoundFileHandle));
     if (handle == nullptr)
@@ -397,13 +415,11 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Meth
     return methcla_no_error();
 }
 
-static const Methcla_SoundFileAPI kSoundFileAPI = {
-    nullptr,
-    nullptr,
-    soundfile_open
-};
+static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
+                                                   soundfile_open};
 
-METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_extaudiofile(const Methcla_Host* host, const char*)
+METHCLA_EXPORT const Methcla_Library*
+                     methcla_soundfile_api_extaudiofile(const Methcla_Host* host, const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
     return nullptr;

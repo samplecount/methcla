@@ -24,131 +24,129 @@
 // probably not needed anymore.
 
 #if METHCLA_USE_BOOST_SHARED_PTR
-#  include <boost/shared_ptr.hpp>
-#  include <boost/make_shared.hpp>
+#    include <boost/make_shared.hpp>
+#    include <boost/shared_ptr.hpp>
 #else
-#  include <memory>
+#    include <memory>
 #endif
 
 namespace Methcla { namespace Memory {
 
-class Alignment
-{
-public:
-    Alignment(size_t alignment)
+    class Alignment
+    {
+    public:
+        Alignment(size_t alignment)
         : m_alignment(std::max(alignment, sizeof(void*)))
+        {
+            if ((m_alignment & (m_alignment - 1)) != 0)
+                // Alignment must be a power of two
+                throw std::invalid_argument("Alignment must be a power of two");
+        }
+
+        Alignment(const Alignment&) = default;
+
+        operator size_t() const { return m_alignment; }
+
+        template <typename T> bool isAligned(T size) const
+        {
+            return isAligned(m_alignment, size);
+        }
+
+        template <typename T> T align(T size) const
+        {
+            return align(m_alignment, size);
+        }
+
+        template <typename T> size_t padding(T size) const
+        {
+            return padding(m_alignment, size);
+        }
+
+        // Aligning pointers
+        template <typename T> bool isAligned(T* ptr) const
+        {
+            return isAligned(reinterpret_cast<uintptr_t>(ptr));
+        }
+
+        template <typename T> T* align(T* ptr) const
+        {
+            return reinterpret_cast<T*>(
+                align(reinterpret_cast<uintptr_t>(ptr)));
+        }
+
+        template <typename T> size_t padding(T* ptr) const
+        {
+            return padding(reinterpret_cast<uintptr_t>(ptr));
+        }
+
+        // Static alignment functions
+        template <typename T> static bool isAligned(size_t alignment, T n)
+        {
+            return (n & ~(alignment - 1)) == n;
+        }
+
+        template <typename T> static T align(size_t alignment, T n)
+        {
+            return (n + alignment) & ~(alignment - 1);
+        }
+
+        template <typename T> static size_t padding(size_t alignment, T n)
+        {
+            return align(alignment, n) - n;
+        }
+
+    private:
+        size_t m_alignment;
+    };
+
+    //* Alignment needed for data accessed by SIMD instructions.
+    static const Alignment kSIMDAlignment(16);
+
+    //* Allocate memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    void* alloc(size_t size);
+
+    //* Free memory allocated by `alloc`.
+    void free(void* ptr) noexcept;
+
+    //* Allocate aligned memory of `size` bytes.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    void* allocAligned(Alignment align, size_t size);
+
+    //* Free memory allocated by `allocAligned`.
+    void freeAligned(void* ptr) noexcept;
+
+    //* Allocate memory for `n` elements of type `T`.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    template <typename T> T* allocOf(size_t n = 1)
     {
-        if ((m_alignment & (m_alignment - 1)) != 0)
-            // Alignment must be a power of two
-            throw std::invalid_argument("Alignment must be a power of two");
+        return static_cast<T*>(alloc(n * sizeof(T)));
     }
 
-    Alignment(const Alignment&) = default;
-
-    operator size_t () const
+    //* Allocate aligned memory for `n` elements of type `T`.
+    //
+    // @throw std::invalid_argument
+    // @throw std::bad_alloc
+    template <typename T> T* allocAlignedOf(Alignment align, size_t n = 1)
     {
-        return m_alignment;
+        return static_cast<T*>(allocAligned(align, n * sizeof(T)));
     }
-
-    template <typename T> bool isAligned(T size) const
-    {
-        return isAligned(m_alignment, size);
-    }
-
-    template <typename T> T align(T size) const
-    {
-        return align(m_alignment, size);
-    }
-
-    template <typename T> size_t padding(T size) const
-    {
-        return padding(m_alignment, size);
-    }
-
-    // Aligning pointers
-    template <typename T> bool isAligned(T* ptr) const
-    {
-        return isAligned(reinterpret_cast<uintptr_t>(ptr));
-    }
-
-    template <typename T> T* align(T* ptr) const
-    {
-        return reinterpret_cast<T*>(align(reinterpret_cast<uintptr_t>(ptr)));
-    }
-
-    template <typename T> size_t padding(T* ptr) const
-    {
-        return padding(reinterpret_cast<uintptr_t>(ptr));
-    }
-
-    // Static alignment functions
-    template <typename T> static bool isAligned(size_t alignment, T n)
-    {
-        return (n & ~(alignment-1)) == n;
-    }
-
-    template <typename T> static T align(size_t alignment, T n)
-    {
-        return (n + alignment) & ~(alignment-1);
-    }
-
-    template <typename T> static size_t padding(size_t alignment, T n)
-    {
-        return align(alignment, n) - n;
-    }
-
-private:
-    size_t m_alignment;
-};
-
-//* Alignment needed for data accessed by SIMD instructions.
-static const Alignment kSIMDAlignment(16);
-
-//* Allocate memory of `size` bytes.
-//
-// @throw std::invalid_argument
-// @throw std::bad_alloc
-void* alloc(size_t size);
-
-//* Free memory allocated by `alloc`.
-void free(void* ptr) noexcept;
-
-//* Allocate aligned memory of `size` bytes.
-//
-// @throw std::invalid_argument
-// @throw std::bad_alloc
-void* allocAligned(Alignment align, size_t size);
-
-//* Free memory allocated by `allocAligned`.
-void freeAligned(void* ptr) noexcept;
-
-//* Allocate memory for `n` elements of type `T`.
-//
-// @throw std::invalid_argument
-// @throw std::bad_alloc
-template <typename T> T* allocOf(size_t n=1)
-{
-    return static_cast<T*>(alloc(n * sizeof(T)));
-}
-
-//* Allocate aligned memory for `n` elements of type `T`.
-//
-// @throw std::invalid_argument
-// @throw std::bad_alloc
-template <typename T> T* allocAlignedOf(Alignment align, size_t n=1)
-{
-    return static_cast<T*>(allocAligned(align, n * sizeof(T)));
-}
 
 #if METHCLA_USE_BOOST_SHARED_PTR
-using boost::shared_ptr;
-using boost::make_shared;
-using boost::allocate_shared;
+    using boost::allocate_shared;
+    using boost::make_shared;
+    using boost::shared_ptr;
 #else
-using std::shared_ptr;
-using std::make_shared;
-using std::allocate_shared;
+    using std::allocate_shared;
+    using std::make_shared;
+    using std::shared_ptr;
 #endif
-} }
+}} // namespace Methcla::Memory
 
 #endif // METHCLA_MEMORY_HPP_INCLUDED

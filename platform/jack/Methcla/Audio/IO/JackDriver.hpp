@@ -18,10 +18,10 @@
 #include "Methcla/Audio/IO/Driver.hpp"
 
 #include <cstdint>
+
 #include <jack/jack.h>
 
-namespace Methcla { namespace Audio { namespace IO
-{
+namespace Methcla { namespace Audio { namespace IO {
     class JackDriver : public Driver
     {
     public:
@@ -42,16 +42,16 @@ namespace Methcla { namespace Audio { namespace IO
         static int processCallback(jack_nframes_t nframes, void* arg);
 
     private:
-        double              m_sampleRate;
-        size_t              m_numInputs;
-        size_t              m_numOutputs;
-        size_t              m_bufferSize;
-        jack_client_t*      m_jackClient;
-        jack_port_t**       m_jackInputPorts;
-        jack_port_t**       m_jackOutputPorts;
-        sample_t**          m_inputBuffers;
-        sample_t**          m_outputBuffers;
+        double         m_sampleRate;
+        size_t         m_numInputs;
+        size_t         m_numOutputs;
+        size_t         m_bufferSize;
+        jack_client_t* m_jackClient;
+        jack_port_t**  m_jackInputPorts;
+        jack_port_t**  m_jackOutputPorts;
+        sample_t**     m_inputBuffers;
+        sample_t**     m_outputBuffers;
     };
-}; }; };
+}; }; }; // namespace Methcla::Audio::IO
 
 #endif // METHCLA_AUDIO_IO_JACKDRIVER_HPP

@@ -18,7 +18,6 @@
 #include <methcla/engine.h>
 
 METHCLA_EXPORT Methcla_AudioDriver* methcla_platform_ios_remoteio_driver_new(
-    const Methcla_AudioDriverOptions* options
-    );
+    const Methcla_AudioDriverOptions* options);
 
 #endif // METHCLA_PLATFORM_IOS_H_INCLUDED

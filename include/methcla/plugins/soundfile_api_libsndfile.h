@@ -18,6 +18,7 @@
 #include <methcla/file.h>
 #include <methcla/plugin.h>
 
-METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_libsndfile(const Methcla_Host*, const char*);
+METHCLA_EXPORT const Methcla_Library*
+                     methcla_soundfile_api_libsndfile(const Methcla_Host*, const char*);
 
 #endif /* METHCLA_SOUNDFILEAPI_LIBSNDFILE_H_INCLUDED */

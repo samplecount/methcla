@@ -19,19 +19,19 @@
 using namespace Methcla::Audio;
 
 Node::Node(Environment& env, NodeId nodeId)
-    : m_env(env)
-    , m_id(nodeId)
-    , m_parent(nullptr)
-    , m_prev(nullptr)
-    , m_next(nullptr)
-    , m_doneFlags(kMethcla_NodeDoneDoNothing)
-    , m_done(false)
-{
-}
+: m_env(env)
+, m_id(nodeId)
+, m_parent(nullptr)
+, m_prev(nullptr)
+, m_next(nullptr)
+, m_doneFlags(kMethcla_NodeDoneDoNothing)
+, m_done(false)
+{}
 
 Node::~Node()
 {
-    if (m_parent) {
+    if (m_parent)
+    {
         m_parent->remove(this);
     }
 
@@ -42,9 +42,12 @@ Node::~Node()
 
 void Node::process(size_t numFrames)
 {
-    if (m_done) {
+    if (m_done)
+    {
         free();
-    } else {
+    }
+    else
+    {
         doProcess(numFrames);
     }
 }
@@ -58,13 +61,12 @@ void Node::free()
     pEnv->rtMem().free(this);
 }
 
-void Node::doProcess(size_t)
-{
-}
+void Node::doProcess(size_t) {}
 
 inline static void setDoneFreeSelf(Node* node)
 {
-    node->setDoneFlags((Methcla_NodeDoneFlags)(node->doneFlags() | kMethcla_NodeDoneFreeSelf));
+    node->setDoneFlags(
+        (Methcla_NodeDoneFlags)(node->doneFlags() | kMethcla_NodeDoneFreeSelf));
     node->setDone();
 }
 
@@ -74,7 +76,8 @@ void Node::setDone()
 
     if (flags & kMethcla_NodeDoneFreeParent)
     {
-        if (m_parent != nullptr && m_parent != env().rootNode()) {
+        if (m_parent != nullptr && m_parent != env().rootNode())
+        {
             setDoneFreeSelf(m_parent);
         }
     }
@@ -108,8 +111,8 @@ void Node::setDone()
         }
         if (flags & kMethcla_NodeDoneFreeFollowing)
         {
-             if (m_next != nullptr)
-                 setDoneFreeSelf(m_next);
+            if (m_next != nullptr)
+                setDoneFreeSelf(m_next);
         }
         if (flags & kMethcla_NodeDoneFreeSelf)
         {
@@ -117,7 +120,8 @@ void Node::setDone()
         }
     }
 
-    if (flags & kMethcla_NodeDoneNotify) {
+    if (flags & kMethcla_NodeDoneNotify)
+    {
         env().notifyNodeDone(id());
     }
 }

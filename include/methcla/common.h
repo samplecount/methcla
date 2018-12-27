@@ -25,9 +25,9 @@ extern "C" {
 #endif
 
 #if defined(__cplusplus)
-#   define METHCLA_C_LINKAGE extern "C"
+#    define METHCLA_C_LINKAGE extern "C"
 #else
-#   define METHCLA_C_LINKAGE
+#    define METHCLA_C_LINKAGE
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -42,7 +42,7 @@ extern "C" {
 #    endif
 #else
 #    if (__GNUC__ >= 4) || (defined(__clang__) && (__clang_major__ >= 4))
-#        define METHCLA_VISIBILITY __attribute__ ((visibility ("default")))
+#        define METHCLA_VISIBILITY __attribute__((visibility("default")))
 #    else
 #        define METHCLA_VISIBILITY
 #    endif
@@ -88,7 +88,8 @@ typedef enum
     kMethcla_DeviceUnavailableError = 3000,
 } Methcla_ErrorCode;
 
-METHCLA_EXPORT const char* methcla_error_code_description(Methcla_ErrorCode code);
+METHCLA_EXPORT const char*
+methcla_error_code_description(Methcla_ErrorCode code);
 
 typedef struct Methcla_Error
 {
@@ -106,7 +107,8 @@ static inline bool methcla_is_error(const Methcla_Error error)
     return error.error_code != kMethcla_NoError;
 }
 
-static inline bool methcla_error_has_code(const Methcla_Error error, Methcla_ErrorCode code)
+static inline bool methcla_error_has_code(const Methcla_Error error,
+                                          Methcla_ErrorCode   code)
 {
     return error.error_code == code;
 }
@@ -126,7 +128,8 @@ static inline const char* methcla_error_message(const Methcla_Error error)
 METHCLA_EXPORT Methcla_Error methcla_error_new(Methcla_ErrorCode code);
 
 //* Create a new Methcla_Error with a specific error code and message.
-METHCLA_EXPORT Methcla_Error methcla_error_new_with_message(Methcla_ErrorCode code, const char* message);
+METHCLA_EXPORT Methcla_Error
+               methcla_error_new_with_message(Methcla_ErrorCode code, const char* message);
 
 //* Free the resources associated with a Methcla_Error.
 METHCLA_EXPORT void methcla_error_free(Methcla_Error error);

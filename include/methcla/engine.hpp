@@ -15,66 +15,56 @@
 #ifndef METHCLA_ENGINE_HPP_INCLUDED
 #define METHCLA_ENGINE_HPP_INCLUDED
 
+#include <methcla/detail.hpp>
+#include <methcla/detail/result.hpp>
 #include <methcla/engine.h>
 #include <methcla/plugin.h>
 #include <methcla/types.h>
-
-#include <methcla/detail.hpp>
-#include <methcla/detail/result.hpp>
 
 #include <exception>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
-#include <sstream>
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 #include <oscpp/client.hpp>
-#include <oscpp/server.hpp>
 #include <oscpp/print.hpp>
+#include <oscpp/server.hpp>
 
-namespace Methcla
-{
-    static inline const char* version()
-    {
-        return methcla_version();
-    }
+namespace Methcla {
+    static inline const char* version() { return methcla_version(); }
 
-    namespace Version
-    {
-        static inline bool isPro()
-        {
-            return methcla_version_is_pro();
-        }
-    };
+    namespace Version {
+        static inline bool isPro() { return methcla_version_is_pro(); }
+    }; // namespace Version
 
-    inline static void dumpRequest(std::ostream& out, const OSCPP::Client::Packet& packet)
+    inline static void dumpRequest(std::ostream&                out,
+                                   const OSCPP::Client::Packet& packet)
     {
         out << "Request (send): " << packet << std::endl;
     }
 
-    class NodeId : public detail::Id<NodeId,int32_t>
+    class NodeId : public detail::Id<NodeId, int32_t>
     {
     public:
         NodeId(int32_t id)
-            : Id<NodeId,int32_t>(id)
-        { }
+        : Id<NodeId, int32_t>(id)
+        {}
         NodeId()
-            : NodeId(-1)
-        { }
+        : NodeId(-1)
+        {}
 
-        operator bool() const
-        {
-            return *this != NodeId();
-        }
+        operator bool() const { return *this != NodeId(); }
     };
 
-    inline static std::ostream& operator<<(std::ostream& out, const NodeId& nodeId)
+    inline static std::ostream& operator<<(std::ostream& out,
+                                           const NodeId& nodeId)
     {
         out << nodeId.id();
         return out;
@@ -86,33 +76,33 @@ namespace Methcla
         // Inheriting constructors not supported by clang 3.2
         // using NodeId::NodeId;
         GroupId(int32_t id)
-            : NodeId(id)
-        { }
+        : NodeId(id)
+        {}
         GroupId()
-            : NodeId()
-        { }
+        : NodeId()
+        {}
     };
 
     class SynthId : public NodeId
     {
     public:
         SynthId(int32_t id)
-            : NodeId(id)
-        { }
+        : NodeId(id)
+        {}
         SynthId()
-            : NodeId()
-        { }
+        : NodeId()
+        {}
     };
 
-    class AudioBusId : public detail::Id<AudioBusId,int32_t>
+    class AudioBusId : public detail::Id<AudioBusId, int32_t>
     {
     public:
         AudioBusId(int32_t id)
-            : Id<AudioBusId,int32_t>(id)
-        { }
+        : Id<AudioBusId, int32_t>(id)
+        {}
         AudioBusId()
-            : AudioBusId(0)
-        { }
+        : AudioBusId(0)
+        {}
     };
 
     // Node placement specification given a target.
@@ -123,23 +113,17 @@ namespace Methcla
 
     public:
         NodePlacement(NodeId target, Methcla_NodePlacement placement)
-            : m_target(target)
-            , m_placement(placement)
-        { }
+        : m_target(target)
+        , m_placement(placement)
+        {}
 
         NodePlacement(GroupId target)
-            : NodePlacement(target, kMethcla_NodePlacementTailOfGroup)
-        { }
+        : NodePlacement(target, kMethcla_NodePlacementTailOfGroup)
+        {}
 
-        NodeId target() const
-        {
-            return m_target;
-        }
+        NodeId target() const { return m_target; }
 
-        Methcla_NodePlacement placement() const
-        {
-            return m_placement;
-        }
+        Methcla_NodePlacement placement() const { return m_placement; }
 
         static NodePlacement head(GroupId target)
         {
@@ -167,23 +151,24 @@ namespace Methcla
         kBusMappingInternal = kMethcla_BusMappingInternal,
         kBusMappingExternal = kMethcla_BusMappingExternal,
         kBusMappingFeedback = kMethcla_BusMappingFeedback,
-        kBusMappingReplace  = kMethcla_BusMappingReplace
+        kBusMappingReplace = kMethcla_BusMappingReplace
     };
 
-    static inline BusMappingFlags operator|(BusMappingFlags a, BusMappingFlags b)
+    static inline BusMappingFlags operator|(BusMappingFlags a,
+                                            BusMappingFlags b)
     {
         return detail::combineFlags<BusMappingFlags>(a, b);
     }
 
     enum NodeDoneFlags
     {
-        kNodeDoneDoNothing       = kMethcla_NodeDoneDoNothing
-      , kNodeDoneFreeSelf        = kMethcla_NodeDoneFreeSelf
-      , kNodeDoneFreePreceeding  = kMethcla_NodeDoneFreePreceeding
-      , kNodeDoneFreeFollowing   = kMethcla_NodeDoneFreeFollowing
-      , kNodeDoneFreeAllSiblings = kMethcla_NodeDoneFreeAllSiblings
-      , kNodeDoneFreeParent      = kMethcla_NodeDoneFreeParent
-      , kNodeDoneNotify          = kMethcla_NodeDoneNotify
+        kNodeDoneDoNothing = kMethcla_NodeDoneDoNothing,
+        kNodeDoneFreeSelf = kMethcla_NodeDoneFreeSelf,
+        kNodeDoneFreePreceeding = kMethcla_NodeDoneFreePreceeding,
+        kNodeDoneFreeFollowing = kMethcla_NodeDoneFreeFollowing,
+        kNodeDoneFreeAllSiblings = kMethcla_NodeDoneFreeAllSiblings,
+        kNodeDoneFreeParent = kMethcla_NodeDoneFreeParent,
+        kNodeDoneNotify = kMethcla_NodeDoneNotify
     };
 
     static inline NodeDoneFlags operator|(NodeDoneFlags a, NodeDoneFlags b)
@@ -197,8 +182,8 @@ namespace Methcla
         size_t numSynths;
 
         NodeTreeStatistics()
-            : numGroups(0)
-            , numSynths(0)
+        : numGroups(0)
+        , numSynths(0)
         {}
     };
 
@@ -208,14 +193,11 @@ namespace Methcla
         size_t usedNumBytes;
 
         RealtimeMemoryStatistics()
-            : freeNumBytes(0)
-            , usedNumBytes(0)
+        : freeNumBytes(0)
+        , usedNumBytes(0)
         {}
 
-        size_t totalNumBytes() const
-        {
-            return freeNumBytes + usedNumBytes;
-        }
+        size_t totalNumBytes() const { return freeNumBytes + usedNumBytes; }
     };
 
     template <class Id, typename T> class ResourceIdAllocator
@@ -228,9 +210,9 @@ namespace Methcla
 
         public:
             Statistics(size_t capacity, size_t allocated)
-                : m_capacity(capacity)
-                , m_allocated(allocated)
-            { }
+            : m_capacity(capacity)
+            , m_allocated(allocated)
+            {}
             Statistics(const Statistics&) = default;
 
             size_t capacity() const { return m_capacity; }
@@ -239,11 +221,11 @@ namespace Methcla
         };
 
         ResourceIdAllocator(T minValue, size_t n)
-            : m_offset(minValue)
-            , m_bits(n)
-            , m_pos(0)
-            , m_allocated(0)
-        { }
+        : m_offset(minValue)
+        , m_bits(n)
+        , m_pos(0)
+        , m_allocated(0)
+        {}
 
         Statistics getStatistics()
         {
@@ -254,18 +236,22 @@ namespace Methcla
         Id alloc()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            for (size_t i=m_pos; i < m_bits.size(); i++) {
-                if (!m_bits[i]) {
+            for (size_t i = m_pos; i < m_bits.size(); i++)
+            {
+                if (!m_bits[i])
+                {
                     m_bits[i] = true;
-                    m_pos = (i+1) == m_bits.size() ? 0 : i+1;
+                    m_pos = (i + 1) == m_bits.size() ? 0 : i + 1;
                     m_allocated++;
                     return Id(m_offset + static_cast<T>(i));
                 }
             }
-            for (size_t i=0; i < m_pos; i++) {
-                if (!m_bits[i]) {
+            for (size_t i = 0; i < m_pos; i++)
+            {
+                if (!m_bits[i])
+                {
                     m_bits[i] = true;
-                    m_pos = i+1;
+                    m_pos = i + 1;
                     m_allocated++;
                     return Id(m_offset + static_cast<T>(i));
                 }
@@ -276,8 +262,9 @@ namespace Methcla
         void free(Id id)
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            T i = id.id() - m_offset;
-            if ((i >= 0) && (i < (T)m_bits.size()) && m_bits[i]) {
+            T                           i = id.id() - m_offset;
+            if ((i >= 0) && (i < (T)m_bits.size()) && m_bits[i])
+            {
                 m_bits[i] = false;
                 m_allocated--;
 #if 0 // Don't throw exception for now
@@ -293,7 +280,7 @@ namespace Methcla
         size_t            m_pos;
         size_t            m_allocated;
         // TODO: Make lock configurable?
-        std::mutex        m_mutex;
+        std::mutex m_mutex;
     };
 
     class PacketPool
@@ -303,22 +290,20 @@ namespace Methcla
         PacketPool& operator=(const PacketPool&) = delete;
 
         PacketPool(size_t packetSize)
-            : m_packetSize(packetSize)
-        { }
+        : m_packetSize(packetSize)
+        {}
         ~PacketPool()
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            while (!m_freeList.empty()) {
+            while (!m_freeList.empty())
+            {
                 void* ptr = m_freeList.front();
-                delete [] (char*)ptr;
+                delete[](char*) ptr;
                 m_freeList.pop_front();
             }
         }
 
-        size_t packetSize() const
-        {
-            return m_packetSize;
-        }
+        size_t packetSize() const { return m_packetSize; }
 
         void* alloc()
         {
@@ -340,37 +325,28 @@ namespace Methcla
         size_t m_packetSize;
         // TODO: Use boost::lockfree::queue for free list
         std::list<void*> m_freeList;
-        std::mutex m_mutex;
+        std::mutex       m_mutex;
     };
 
     class Packet
     {
     public:
         Packet(PacketPool& pool)
-            : m_pool(pool)
-            , m_packet(pool.alloc(), pool.packetSize())
-        { }
-        ~Packet()
-        {
-            m_pool.free(m_packet.data());
-        }
+        : m_pool(pool)
+        , m_packet(pool.alloc(), pool.packetSize())
+        {}
+        ~Packet() { m_pool.free(m_packet.data()); }
 
         Packet(const Packet&) = delete;
         Packet& operator=(const Packet&) = delete;
 
-        const OSCPP::Client::Packet& packet() const
-        {
-            return m_packet;
-        }
+        const OSCPP::Client::Packet& packet() const { return m_packet; }
 
-        OSCPP::Client::Packet& packet()
-        {
-            return m_packet;
-        }
+        OSCPP::Client::Packet& packet() { return m_packet; }
 
     private:
-        PacketPool&             m_pool;
-        OSCPP::Client::Packet   m_packet;
+        PacketPool&           m_pool;
+        OSCPP::Client::Packet m_packet;
     };
 
     class Value
@@ -383,16 +359,33 @@ namespace Methcla
             kString
         };
 
-        explicit Value(int x)                : m_type(kInt), m_int(x) {}
-        explicit Value(bool x)               : m_type(kInt), m_int(x) { }
-        explicit Value(float x)              : m_type(kFloat), m_float(x) {}
-        explicit Value(double x)             : Value((float)x) {}
-        explicit Value(const std::string& x) : m_type(kString), m_string(x) {}
-        explicit Value(const char* x)        : Value(std::string(x)) {}
+        explicit Value(int x)
+        : m_type(kInt)
+        , m_int(x)
+        {}
+        explicit Value(bool x)
+        : m_type(kInt)
+        , m_int(x)
+        {}
+        explicit Value(float x)
+        : m_type(kFloat)
+        , m_float(x)
+        {}
+        explicit Value(double x)
+        : Value((float)x)
+        {}
+        explicit Value(const std::string& x)
+        : m_type(kString)
+        , m_string(x)
+        {}
+        explicit Value(const char* x)
+        : Value(std::string(x))
+        {}
 
         void put(OSCPP::Client::Packet& packet) const
         {
-            switch (m_type) {
+            switch (m_type)
+            {
                 case kInt:
                     packet.int32(m_int);
                     break;
@@ -406,9 +399,9 @@ namespace Methcla
         }
 
     private:
-        Type m_type;
-        int m_int;
-        float m_float;
+        Type        m_type;
+        int         m_int;
+        float       m_float;
         std::string m_string;
     };
 
@@ -417,27 +410,21 @@ namespace Methcla
     template <typename T> class Optional
     {
         bool m_isSet;
-        T m_value;
+        T    m_value;
 
     public:
         Optional()
-            : m_isSet(false)
-        { }
+        : m_isSet(false)
+        {}
         Optional(const T& value)
-            : m_isSet(true)
-            , m_value(value)
-        { }
+        : m_isSet(true)
+        , m_value(value)
+        {}
         Optional(const Optional& other) = default;
 
-        bool isSet() const
-        {
-            return m_isSet;
-        }
+        bool isSet() const { return m_isSet; }
 
-        const T& value(const T& def) const
-        {
-            return isSet() ? m_value : def;
-        }
+        const T& value(const T& def) const { return isSet() ? m_value : def; }
 
         const T& value() const
         {
@@ -475,16 +462,16 @@ namespace Methcla
         std::vector<Methcla_LibraryFunction> m_pluginLibraries;
 
     public:
-        LogHandler logHandler;
-        Methcla_LogLevel logLevel = kMethcla_LogWarn;
+        LogHandler             logHandler;
+        Methcla_LogLevel       logLevel = kMethcla_LogWarn;
         Methcla_EngineLogFlags logFlags = kMethcla_EngineLogDefault;
 
-        size_t realtimeMemorySize = 1024*1024;
-        size_t maxNumNodes = 1024;
-        size_t maxNumAudioBuses = 128;
-        size_t maxNumControlBuses = 4096;
-        size_t sampleRate = 44100;
-        size_t blockSize = 64;
+        size_t                     realtimeMemorySize = 1024 * 1024;
+        size_t                     maxNumNodes = 1024;
+        size_t                     maxNumAudioBuses = 128;
+        size_t                     maxNumControlBuses = 4096;
+        size_t                     sampleRate = 44100;
+        size_t                     blockSize = 64;
         std::list<LibraryFunction> pluginLibraries;
 
         AudioDriverOptions audioDriver;
@@ -497,8 +484,8 @@ namespace Methcla
 
         EngineOptions& setLogLevel(Methcla_LogLevel logLevel)
         {
-          this->logLevel = logLevel;
-          return *this;
+            this->logLevel = logLevel;
+            return *this;
         }
 
         EngineOptions& setLogFlags(Methcla_EngineLogFlags logFlags)
@@ -524,7 +511,8 @@ namespace Methcla
             m_options.max_num_audio_buses = maxNumAudioBuses;
             m_options.log_level = logLevel;
 
-            m_pluginLibraries.assign(pluginLibraries.begin(), pluginLibraries.end());
+            m_pluginLibraries.assign(pluginLibraries.begin(),
+                                     pluginLibraries.end());
             m_pluginLibraries.push_back(nullptr);
 
             m_options.plugin_libraries = m_pluginLibraries.data();
@@ -535,34 +523,37 @@ namespace Methcla
 
     static const Methcla_Time immediately = 0.;
 
-    typedef ResourceIdAllocator<NodeId,int32_t> NodeIdAllocator;
-    typedef ResourceIdAllocator<AudioBusId,int32_t> AudioBusIdAllocator;
+    typedef ResourceIdAllocator<NodeId, int32_t>     NodeIdAllocator;
+    typedef ResourceIdAllocator<AudioBusId, int32_t> AudioBusIdAllocator;
 
     class Request;
 
     class EngineInterface
     {
     public:
-        virtual ~EngineInterface() { }
+        virtual ~EngineInterface() {}
 
-        GroupId root() const
-        {
-            return GroupId(0);
-        }
+        GroupId root() const { return GroupId(0); }
 
         virtual NodeIdAllocator& nodeIdAllocator() = 0;
 
         virtual std::unique_ptr<Packet> allocPacket() = 0;
         virtual void sendPacket(const std::unique_ptr<Packet>& packet) = 0;
 
-        inline void bundle(Methcla_Time time, std::function<void(Request&)> func);
+        inline void bundle(Methcla_Time                  time,
+                           std::function<void(Request&)> func);
 
         inline GroupId group(const NodePlacement& placement);
-        inline void freeAll(GroupId group);
-        inline SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>());
+        inline void    freeAll(GroupId group);
+        inline SynthId
+                    synth(const char* synthDef, const NodePlacement& placement,
+                          const std::vector<float>& controls,
+                          const std::list<Value>&   options = std::list<Value>());
         inline void activate(SynthId synth);
-        inline void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
-        inline void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal);
+        inline void mapInput(SynthId synth, size_t index, AudioBusId bus,
+                             BusMappingFlags flags = kBusMappingInternal);
+        inline void mapOutput(SynthId synth, size_t index, AudioBusId bus,
+                              BusMappingFlags flags = kBusMappingInternal);
         inline void set(NodeId node, size_t index, double value);
         inline void free(NodeId node);
     };
@@ -585,23 +576,22 @@ namespace Methcla
         void beginMessage()
         {
             if (m_flags.isMessage)
-                throw std::runtime_error("Cannot add more than one message to non-bundle packet");
+                throw std::runtime_error(
+                    "Cannot add more than one message to non-bundle packet");
             else if (m_flags.isBundle && m_flags.isClosed)
-                throw std::runtime_error("Cannot add message to closed top-level bundle");
+                throw std::runtime_error(
+                    "Cannot add message to closed top-level bundle");
             else if (!m_flags.isBundle)
                 m_flags.isMessage = true;
         }
 
-        OSCPP::Client::Packet& oscPacket()
-        {
-            return m_packet->packet();
-        }
+        OSCPP::Client::Packet& oscPacket() { return m_packet->packet(); }
 
     public:
         Request(EngineInterface* engine)
-            : m_engine(engine)
-            , m_packet(engine->allocPacket())
-            , m_bundleCount(0)
+        : m_engine(engine)
+        , m_packet(engine->allocPacket())
+        , m_bundleCount(0)
         {
             m_flags.isMessage = false;
             m_flags.isBundle = false;
@@ -609,23 +599,21 @@ namespace Methcla
         }
 
         Request(EngineInterface& engine)
-            : Request(&engine)
-        { }
+        : Request(&engine)
+        {}
 
         Request(const Request&) = delete;
         Request& operator=(const Request&) = delete;
 
         //* Return size of request packet in bytes.
-        size_t size() const
-        {
-            return m_packet->packet().size();
-        }
+        size_t size() const { return m_packet->packet().size(); }
 
-        void openBundle(Methcla_Time time=immediately)
+        void openBundle(Methcla_Time time = immediately)
         {
             if (m_flags.isMessage)
             {
-                throw std::runtime_error("Cannot open bundle within message packet");
+                throw std::runtime_error(
+                    "Cannot open bundle within message packet");
             }
             else
             {
@@ -640,11 +628,13 @@ namespace Methcla
         {
             if (m_flags.isMessage)
             {
-                throw std::runtime_error("closeBundle called on a message request");
+                throw std::runtime_error(
+                    "closeBundle called on a message request");
             }
             else if (m_bundleCount == 0)
             {
-                throw std::runtime_error("closeBundle without matching openBundle");
+                throw std::runtime_error(
+                    "closeBundle without matching openBundle");
             }
             else
             {
@@ -666,7 +656,8 @@ namespace Methcla
         void send()
         {
             if (m_flags.isBundle && m_bundleCount > 0)
-                throw std::runtime_error("openBundle without matching closeBundle");
+                throw std::runtime_error(
+                    "openBundle without matching closeBundle");
             m_engine->sendPacket(m_packet);
         }
 
@@ -678,9 +669,9 @@ namespace Methcla
 
             oscPacket()
                 .openMessage("/group/new", 3)
-                    .int32(nodeId.id())
-                    .int32(placement.target().id())
-                    .int32(placement.placement())
+                .int32(nodeId.id())
+                .int32(placement.target().id())
+                .int32(placement.placement())
                 .closeMessage();
 
             return GroupId(nodeId.id());
@@ -692,31 +683,36 @@ namespace Methcla
 
             oscPacket()
                 .openMessage("/group/freeAll", 1)
-                    .int32(group.id())
+                .int32(group.id())
                 .closeMessage();
         }
 
-        SynthId synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options=std::list<Value>())
+        SynthId synth(const char* synthDef, const NodePlacement& placement,
+                      const std::vector<float>& controls,
+                      const std::list<Value>&   options = std::list<Value>())
         {
             beginMessage();
 
             const NodeId nodeId(m_engine->nodeIdAllocator().alloc());
 
             oscPacket()
-                .openMessage("/synth/new", 4 + OSCPP::Tags::array(controls.size()) + OSCPP::Tags::array(options.size()))
-                    .string(synthDef)
-                    .int32(nodeId.id())
-                    .int32(placement.target().id())
-                    .int32(placement.placement())
-                    .putArray(controls.begin(), controls.end());
+                .openMessage("/synth/new",
+                             4 + OSCPP::Tags::array(controls.size()) +
+                                 OSCPP::Tags::array(options.size()))
+                .string(synthDef)
+                .int32(nodeId.id())
+                .int32(placement.target().id())
+                .int32(placement.placement())
+                .putArray(controls.begin(), controls.end());
 
-                    oscPacket().openArray();
-                        for (const auto& x : options) {
-                            x.put(oscPacket());
-                        }
-                    oscPacket().closeArray();
+            oscPacket().openArray();
+            for (const auto& x : options)
+            {
+                x.put(oscPacket());
+            }
+            oscPacket().closeArray();
 
-                oscPacket().closeMessage();
+            oscPacket().closeMessage();
 
             return SynthId(nodeId.id());
         }
@@ -731,29 +727,31 @@ namespace Methcla
                 .closeMessage();
         }
 
-        void mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+        void mapInput(SynthId synth, size_t index, AudioBusId bus,
+                      BusMappingFlags flags = kBusMappingInternal)
         {
             beginMessage();
 
             oscPacket()
                 .openMessage("/synth/map/input", 4)
-                    .int32(synth.id())
-                    .int32(static_cast<int32_t>(index))
-                    .int32(bus.id())
-                    .int32(flags)
+                .int32(synth.id())
+                .int32(static_cast<int32_t>(index))
+                .int32(bus.id())
+                .int32(flags)
                 .closeMessage();
         }
 
-        void mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags=kBusMappingInternal)
+        void mapOutput(SynthId synth, size_t index, AudioBusId bus,
+                       BusMappingFlags flags = kBusMappingInternal)
         {
             beginMessage();
 
             oscPacket()
                 .openMessage("/synth/map/output", 4)
-                    .int32(synth.id())
-                    .int32(static_cast<int32_t>(index))
-                    .int32(bus.id())
-                    .int32(flags)
+                .int32(synth.id())
+                .int32(static_cast<int32_t>(index))
+                .int32(bus.id())
+                .int32(flags)
                 .closeMessage();
         }
 
@@ -763,9 +761,9 @@ namespace Methcla
 
             oscPacket()
                 .openMessage("/node/set", 3)
-                    .int32(node.id())
-                    .int32(static_cast<int32_t>(index))
-                    .float32(value)
+                .int32(node.id())
+                .int32(static_cast<int32_t>(index))
+                .float32(value)
                 .closeMessage();
         }
 
@@ -786,13 +784,14 @@ namespace Methcla
 
             oscPacket()
                 .openMessage("/synth/property/doneFlags/set", 2)
-                    .int32(synth.id())
-                    .int32(flags)
+                .int32(synth.id())
+                .int32(flags)
                 .closeMessage();
         }
     };
 
-    void EngineInterface::bundle(Methcla_Time time, std::function<void(Request&)> func)
+    void EngineInterface::bundle(Methcla_Time                  time,
+                                 std::function<void(Request&)> func)
     {
         Request request(this);
         request.bundle(time, func);
@@ -814,7 +813,10 @@ namespace Methcla
         request.send();
     }
 
-    SynthId EngineInterface::synth(const char* synthDef, const NodePlacement& placement, const std::vector<float>& controls, const std::list<Value>& options)
+    SynthId EngineInterface::synth(const char*               synthDef,
+                                   const NodePlacement&      placement,
+                                   const std::vector<float>& controls,
+                                   const std::list<Value>&   options)
     {
         Request request(this);
         SynthId result = request.synth(synthDef, placement, controls, options);
@@ -829,14 +831,16 @@ namespace Methcla
         request.send();
     }
 
-    void EngineInterface::mapInput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags)
+    void EngineInterface::mapInput(SynthId synth, size_t index, AudioBusId bus,
+                                   BusMappingFlags flags)
     {
         Request request(this);
         request.mapInput(synth, index, bus, flags);
         request.send();
     }
 
-    void EngineInterface::mapOutput(SynthId synth, size_t index, AudioBusId bus, BusMappingFlags flags)
+    void EngineInterface::mapOutput(SynthId synth, size_t index, AudioBusId bus,
+                                    BusMappingFlags flags)
     {
         Request request(this);
         request.mapOutput(synth, index, bus, flags);
@@ -860,13 +864,14 @@ namespace Methcla
     class Engine : public EngineInterface
     {
     public:
-        Engine(EngineOptions inOptions=EngineOptions(), Methcla_AudioDriver* driver=nullptr)
-            : m_logHandler(inOptions.logHandler)
-            , m_nodeIds(1, inOptions.maxNumNodes - 1)
-            , m_audioBusIds(0, inOptions.maxNumAudioBuses)
-            , m_requestId(kMethcla_Notification+1)
-            , m_notificationHandlerId(0)
-            , m_packets(8192)
+        Engine(EngineOptions        inOptions = EngineOptions(),
+               Methcla_AudioDriver* driver = nullptr)
+        : m_logHandler(inOptions.logHandler)
+        , m_nodeIds(1, inOptions.maxNumNodes - 1)
+        , m_audioBusIds(0, inOptions.maxNumAudioBuses)
+        , m_requestId(kMethcla_Notification + 1)
+        , m_notificationHandlerId(0)
+        , m_packets(8192)
         {
             Methcla_EngineOptions& options = inOptions.options();
 
@@ -879,42 +884,31 @@ namespace Methcla
             options.packet_handler.handle = this;
             options.packet_handler.handle_packet = handlePacket;
 
-            if (driver == nullptr) {
+            if (driver == nullptr)
+            {
                 Methcla_AudioDriverOptions driverOptions(inOptions.audioDriver);
-                detail::checkReturnCode(methcla_default_audio_driver(&driverOptions, &driver));
+                detail::checkReturnCode(
+                    methcla_default_audio_driver(&driverOptions, &driver));
             }
 
             detail::checkReturnCode(
-                methcla_engine_new_with_driver(&options, driver, &m_engine)
-            );
+                methcla_engine_new_with_driver(&options, driver, &m_engine));
 
             methcla_engine_set_log_flags(m_engine, inOptions.logFlags);
         }
 
-        ~Engine()
-        {
-            methcla_engine_free(m_engine);
-        }
+        ~Engine() { methcla_engine_free(m_engine); }
 
-        operator const Methcla_Engine* () const
-        {
-            return m_engine;
-        }
+        operator const Methcla_Engine*() const { return m_engine; }
 
-        operator Methcla_Engine* ()
-        {
-            return m_engine;
-        }
+        operator Methcla_Engine*() { return m_engine; }
 
         void start()
         {
             detail::checkReturnCode(methcla_engine_start(m_engine));
         }
 
-        void stop()
-        {
-            detail::checkReturnCode(methcla_engine_stop(m_engine));
-        }
+        void stop() { detail::checkReturnCode(methcla_engine_stop(m_engine)); }
 
         Methcla_Time currentTime()
         {
@@ -936,15 +930,9 @@ namespace Methcla
             logLine(level, message.c_str());
         }
 
-        NodeIdAllocator& nodeIdAllocator() override
-        {
-            return m_nodeIds;
-        }
+        NodeIdAllocator& nodeIdAllocator() override { return m_nodeIds; }
 
-        AudioBusIdAllocator& audioBusId()
-        {
-            return m_audioBusIds;
-        }
+        AudioBusIdAllocator& audioBusId() { return m_audioBusIds; }
 
         std::unique_ptr<Packet> allocPacket() override
         {
@@ -956,13 +944,15 @@ namespace Methcla
             send(*packet);
         }
 
-        typedef std::function<bool(const OSCPP::Server::Message&)> NotificationHandler;
+        typedef std::function<bool(const OSCPP::Server::Message&)>
+                         NotificationHandler;
         typedef uint64_t NotificationHandlerId;
 
-        NotificationHandlerId addNotificationHandler(NotificationHandler handler)
+        NotificationHandlerId
+        addNotificationHandler(NotificationHandler handler)
         {
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
-            NotificationHandlerId handlerId = m_notificationHandlerId;
+            NotificationHandlerId       handlerId = m_notificationHandlerId;
             m_notificationHandlers[handlerId] = handler;
             m_notificationHandlerId++;
             return handlerId;
@@ -974,12 +964,15 @@ namespace Methcla
             m_notificationHandlers.erase(handlerId);
         }
 
-        static NotificationHandler nodeDoneHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        static NotificationHandler
+        nodeDoneHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
         {
-            return [nodeId,whenDone](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/done") {
+            return [nodeId, whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/done")
+                {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId) {
+                    if (nodeId == otherNodeId)
+                    {
                         whenDone(nodeId);
                         return true;
                     }
@@ -988,12 +981,15 @@ namespace Methcla
             };
         }
 
-        static NotificationHandler nodeEndedHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        static NotificationHandler
+        nodeEndedHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
         {
-            return [nodeId,whenDone](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/ended") {
+            return [nodeId, whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended")
+                {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId) {
+                    if (nodeId == otherNodeId)
+                    {
                         whenDone(nodeId);
                         return true;
                     }
@@ -1004,10 +1000,12 @@ namespace Methcla
 
         NotificationHandler freeNodeIdHandler(NodeId nodeId)
         {
-            return [this,nodeId](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/ended") {
+            return [this, nodeId](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended")
+                {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId) {
+                    if (nodeId == otherNodeId)
+                    {
                         nodeIdAllocator().free(nodeId);
                         return true;
                     }
@@ -1016,12 +1014,15 @@ namespace Methcla
             };
         }
 
-        NotificationHandler freeNodeIdHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
+        NotificationHandler
+        freeNodeIdHandler(NodeId nodeId, std::function<void(NodeId)> whenDone)
         {
-            return [this,nodeId,whenDone](const OSCPP::Server::Message& msg) {
-                if (msg == "/node/ended") {
+            return [this, nodeId, whenDone](const OSCPP::Server::Message& msg) {
+                if (msg == "/node/ended")
+                {
                     NodeId otherNodeId = NodeId(msg.args().int32());
-                    if (nodeId == otherNodeId) {
+                    if (nodeId == otherNodeId)
+                    {
                         nodeIdAllocator().free(nodeId);
                         whenDone(nodeId);
                         return true;
@@ -1033,7 +1034,7 @@ namespace Methcla
 
         NodeTreeStatistics getNodeTreeStatistics()
         {
-            const char* request = "/node/tree/statistics";
+            const char*             request = "/node/tree/statistics";
             const Methcla_RequestId requestId = getRequestId();
             std::unique_ptr<Packet> packet = allocPacket();
             packet->packet()
@@ -1041,14 +1042,17 @@ namespace Methcla
                 .int32(requestId)
                 .closeMessage();
             detail::Result<NodeTreeStatistics> result;
-            withRequest(requestId, packet->packet(), [&request,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                result.checkResponse(request, response);
-                OSCPP::Server::ArgStream args(response.args());
-                NodeTreeStatistics value;
-                value.numGroups = args.int32();
-                value.numSynths = args.int32();
-                result.set(value);
-            });
+            withRequest(
+                requestId, packet->packet(),
+                [&request, &result](Methcla_RequestId,
+                                    const OSCPP::Server::Message& response) {
+                    result.checkResponse(request, response);
+                    OSCPP::Server::ArgStream args(response.args());
+                    NodeTreeStatistics       value;
+                    value.numGroups = args.int32();
+                    value.numSynths = args.int32();
+                    result.set(value);
+                });
             return result.get();
         }
 
@@ -1056,36 +1060,42 @@ namespace Methcla
         {
             const char* request = "/engine/realtime-memory/statistics";
             const Methcla_RequestId requestId = getRequestId();
-            auto packet = allocPacket();
+            auto                    packet = allocPacket();
             packet->packet()
                 .openMessage(request, 1)
                 .int32(requestId)
                 .closeMessage();
             detail::Result<RealtimeMemoryStatistics> result;
-            withRequest(requestId, packet->packet(), [&request,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                result.checkResponse(request, response);
-                OSCPP::Server::ArgStream args(response.args());
-                RealtimeMemoryStatistics value;
-                value.freeNumBytes = args.int32();
-                value.usedNumBytes = args.int32();
-                result.set(value);
-            });
+            withRequest(
+                requestId, packet->packet(),
+                [&request, &result](Methcla_RequestId,
+                                    const OSCPP::Server::Message& response) {
+                    result.checkResponse(request, response);
+                    OSCPP::Server::ArgStream args(response.args());
+                    RealtimeMemoryStatistics value;
+                    value.freeNumBytes = args.int32();
+                    value.usedNumBytes = args.int32();
+                    result.set(value);
+                });
             return result.get();
         }
 
     private:
-        static void logLineCallback(void* data, Methcla_LogLevel level, const char* message)
+        static void logLineCallback(void* data, Methcla_LogLevel level,
+                                    const char* message)
         {
-            assert( data != nullptr );
+            assert(data != nullptr);
             static_cast<Engine*>(data)->m_logHandler(level, message);
         }
 
-        static void handlePacket(void* data, Methcla_RequestId requestId, const void* packet, size_t size)
+        static void handlePacket(void* data, Methcla_RequestId requestId,
+                                 const void* packet, size_t size)
         {
             if (requestId == kMethcla_Notification)
                 static_cast<Engine*>(data)->handleNotification(packet, size);
             else
-                static_cast<Engine*>(data)->handleReply(requestId, packet, size);
+                static_cast<Engine*>(data)->handleReply(requestId, packet,
+                                                        size);
         }
 
         void handleNotification(const void* packet, size_t size)
@@ -1095,14 +1105,18 @@ namespace Methcla
 
             // Broadcast notification to handlers
             std::lock_guard<std::mutex> lock(m_notificationHandlersMutex);
-            for (auto it=m_notificationHandlers.begin(); it != m_notificationHandlers.end();)
+            for (auto it = m_notificationHandlers.begin();
+                 it != m_notificationHandlers.end();)
             {
-                if (it->second(message)) it = m_notificationHandlers.erase(it);
-                else it++;
+                if (it->second(message))
+                    it = m_notificationHandlers.erase(it);
+                else
+                    it++;
             }
         }
 
-        void handleReply(Methcla_RequestId requestId, const void* packet, size_t size)
+        void handleReply(Methcla_RequestId requestId, const void* packet,
+                         size_t size)
         {
             // Parse response packet
             OSCPP::Server::Message message(OSCPP::Server::Packet(packet, size));
@@ -1128,7 +1142,8 @@ namespace Methcla
 
         void send(const void* packet, size_t size)
         {
-            detail::checkReturnCode(methcla_engine_send(m_engine, packet, size));
+            detail::checkReturnCode(
+                methcla_engine_send(m_engine, packet, size));
         }
 
         void send(const OSCPP::Client::Packet& packet)
@@ -1137,66 +1152,78 @@ namespace Methcla
             send(packet.data(), packet.size());
         }
 
-        void send(const Packet& packet)
-        {
-            send(packet.packet());
-        }
+        void send(const Packet& packet) { send(packet.packet()); }
 
         Methcla_RequestId getRequestId()
         {
             std::lock_guard<std::mutex> lock(m_requestIdMutex);
-            Methcla_RequestId result = m_requestId;
-            if (result == kMethcla_Notification) {
+            Methcla_RequestId           result = m_requestId;
+            if (result == kMethcla_Notification)
+            {
                 result++;
             }
             m_requestId = result + 1;
             return result;
         }
 
-        typedef std::function<void(Methcla_RequestId, const OSCPP::Server::Message&)> ResponseHandler;
+        typedef std::function<void(Methcla_RequestId,
+                                   const OSCPP::Server::Message&)>
+            ResponseHandler;
 
-        void addResponseHandler(Methcla_RequestId requestId, ResponseHandler handler)
+        void addResponseHandler(Methcla_RequestId requestId,
+                                ResponseHandler   handler)
         {
             std::lock_guard<std::mutex> lock(m_responseHandlersMutex);
-            if (m_responseHandlers.find(requestId) != m_responseHandlers.end()) {
-                throw std::logic_error("Methcla::Engine::addResponseHandler: Duplicate request id");
+            if (m_responseHandlers.find(requestId) != m_responseHandlers.end())
+            {
+                throw std::logic_error("Methcla::Engine::addResponseHandler: "
+                                       "Duplicate request id");
             }
             m_responseHandlers[requestId] = handler;
         }
 
-        void withRequest(Methcla_RequestId requestId, const OSCPP::Client::Packet& request, ResponseHandler handler)
+        void withRequest(Methcla_RequestId            requestId,
+                         const OSCPP::Client::Packet& request,
+                         ResponseHandler              handler)
         {
             addResponseHandler(requestId, handler);
             send(request);
         }
 
-        void execRequest(const char* requestAddress, Methcla_RequestId requestId, const OSCPP::Client::Packet& request)
+        void execRequest(const char*                  requestAddress,
+                         Methcla_RequestId            requestId,
+                         const OSCPP::Client::Packet& request)
         {
             detail::Result<void> result;
-            withRequest(requestId, request, [requestAddress,&result](Methcla_RequestId, const OSCPP::Server::Message& response){
-                result.checkResponse(requestAddress, response);
-                result.set();
-            });
+            withRequest(requestId, request,
+                        [requestAddress,
+                         &result](Methcla_RequestId,
+                                  const OSCPP::Server::Message& response) {
+                            result.checkResponse(requestAddress, response);
+                            result.set();
+                        });
             result.get();
         }
 
     private:
-        typedef std::unordered_map<Methcla_RequestId,ResponseHandler> ResponseHandlers;
-        typedef std::unordered_map<NotificationHandlerId,NotificationHandler> NotificationHandlers;
+        typedef std::unordered_map<Methcla_RequestId, ResponseHandler>
+            ResponseHandlers;
+        typedef std::unordered_map<NotificationHandlerId, NotificationHandler>
+            NotificationHandlers;
 
-        Methcla_Engine*         m_engine;
-        LogHandler              m_logHandler;
-        NodeIdAllocator         m_nodeIds;
-        AudioBusIdAllocator     m_audioBusIds;
-        Methcla_RequestId       m_requestId;
-        std::mutex              m_requestIdMutex;
-        ResponseHandlers        m_responseHandlers;
-        std::mutex              m_responseHandlersMutex;
-        NotificationHandlers    m_notificationHandlers;
-        NotificationHandlerId   m_notificationHandlerId;
-        std::mutex              m_notificationHandlersMutex;
-        PacketPool              m_packets;
+        Methcla_Engine*       m_engine;
+        LogHandler            m_logHandler;
+        NodeIdAllocator       m_nodeIds;
+        AudioBusIdAllocator   m_audioBusIds;
+        Methcla_RequestId     m_requestId;
+        std::mutex            m_requestIdMutex;
+        ResponseHandlers      m_responseHandlers;
+        std::mutex            m_responseHandlersMutex;
+        NotificationHandlers  m_notificationHandlers;
+        NotificationHandlerId m_notificationHandlerId;
+        std::mutex            m_notificationHandlersMutex;
+        PacketPool            m_packets;
     };
-};
+}; // namespace Methcla
 
 #endif // METHCLA_ENGINE_HPP_INCLUDED

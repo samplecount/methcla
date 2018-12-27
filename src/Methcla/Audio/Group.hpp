@@ -19,42 +19,42 @@
 
 namespace Methcla { namespace Audio {
 
-class Group : public Node
-{
-public:
-    const Node* first() const { return m_first; }
-    Node* first() { return m_first; }
-    const Node* last() const { return m_last; }
-    Node* last() { return m_last; }
+    class Group : public Node
+    {
+    public:
+        const Node* first() const { return m_first; }
+        Node*       first() { return m_first; }
+        const Node* last() const { return m_last; }
+        Node*       last() { return m_last; }
 
-    static Group* construct(Environment& env, NodeId nodeId);
+        static Group* construct(Environment& env, NodeId nodeId);
 
-    virtual bool isGroup() const override { return true; }
+        virtual bool isGroup() const override { return true; }
 
-    bool isEmpty() const;
+        bool isEmpty() const;
 
-    void addToHead(Node* node);
-    void addToTail(Node* node);
-    void addBefore(Node* target, Node* node);
-    void addAfter(Node* target, Node* node);
+        void addToHead(Node* node);
+        void addToTail(Node* node);
+        void addBefore(Node* target, Node* node);
+        void addAfter(Node* target, Node* node);
 
-    void freeAll();
+        void freeAll();
 
-private:
-    Group(Environment& env, NodeId nodeId);
-    ~Group();
+    private:
+        Group(Environment& env, NodeId nodeId);
+        ~Group();
 
-    virtual void doProcess(size_t numFrames) override;
+        virtual void doProcess(size_t numFrames) override;
 
-private:
-    friend class Node;
-    void remove(Node* node);
+    private:
+        friend class Node;
+        void remove(Node* node);
 
-private:
-    Node* m_first;
-    Node* m_last;
-};
+    private:
+        Node* m_first;
+        Node* m_last;
+    };
 
-} }
+}} // namespace Methcla::Audio
 
 #endif // METHCLA_AUDIO_GROUP_HPP_INCLUDED

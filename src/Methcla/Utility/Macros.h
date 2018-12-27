@@ -16,15 +16,14 @@
 #define METHCLA_UTILITY_MACROS_H_INCLUDED
 
 #if defined(__GNUC__)
-# define METHCLA_WITHOUT_WARNINGS_BEGIN \
-    _Pragma("GCC diagnostic push") \
-    _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"") \
-    _Pragma("GCC diagnostic ignored \"-Wunused-private-field\"")
-# define METHCLA_WITHOUT_WARNINGS_END \
-    _Pragma("GCC diagnostic pop")
+#    define METHCLA_WITHOUT_WARNINGS_BEGIN                           \
+        _Pragma("GCC diagnostic push")                               \
+            _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"") \
+                _Pragma("GCC diagnostic ignored \"-Wunused-private-field\"")
+#    define METHCLA_WITHOUT_WARNINGS_END _Pragma("GCC diagnostic pop")
 #else
-# define METHCLA_WITHOUT_WARNINGS_BEGIN
-# define METHCLA_WITHOUT_WARNINGS_END
+#    define METHCLA_WITHOUT_WARNINGS_BEGIN
+#    define METHCLA_WITHOUT_WARNINGS_END
 #endif
 
 #endif // METHCLA_UTILITY_MACROS_H_INCLUDED

@@ -14,17 +14,20 @@
 
 #include "synth.hpp"
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
-int main(int,char**)
+int main(int, char**)
 {
-    try {
+    try
+    {
         thaddeus::Engine engine;
         engine.startVoice(0, 0.5, 0.8);
         std::this_thread::sleep_for(std::chrono::milliseconds(60000));
         engine.stopVoice(0);
-    } catch (std::exception& e) {
+    }
+    catch (std::exception& e)
+    {
         std::cerr << "Error: " << e.what() << std::endl;
     }
     return 0;

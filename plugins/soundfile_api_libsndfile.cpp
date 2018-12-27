@@ -15,79 +15,83 @@
 #include <methcla/plugins/soundfile_api_libsndfile.h>
 // #include "Log.hpp"
 
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <random>
 
-#include <cassert>
-#include <cstdlib>
-#include <cstring>
 #include <sndfile.h>
 
-namespace
-{
-struct SoundFileHandle
-{
-    SNDFILE*          sndfile;
-    Methcla_SoundFile soundFile;
-
-    struct Destructor
+namespace {
+    struct SoundFileHandle
     {
-        void operator()(SoundFileHandle* handle)
+        SNDFILE*          sndfile;
+        Methcla_SoundFile soundFile;
+
+        struct Destructor
         {
-            if (handle != nullptr)
+            void operator()(SoundFileHandle* handle)
             {
-                if (handle->sndfile != nullptr)
-                    sf_close(handle->sndfile);
-                free(handle);
+                if (handle != nullptr)
+                {
+                    if (handle->sndfile != nullptr)
+                        sf_close(handle->sndfile);
+                    free(handle);
+                }
+            }
+        };
+
+        typedef std::unique_ptr<SoundFileHandle, Destructor> Ref;
+
+        Methcla_Error error()
+        {
+            if (sndfile == nullptr)
+            {
+                return methcla_error_new_with_message(kMethcla_UnspecifiedError,
+                                                      sf_strerror(nullptr));
+            }
+            else
+            {
+                int code = sf_error(sndfile);
+                if (code == SF_ERR_NO_ERROR)
+                    return methcla_no_error();
+                return methcla_error_new_with_message(convertErrorCode(code),
+                                                      sf_strerror(sndfile));
             }
         }
+
+    private:
+        Methcla_ErrorCode convertErrorCode(int sfcode)
+        {
+            switch (sfcode)
+            {
+                case SF_ERR_UNRECOGNISED_FORMAT:
+                    return kMethcla_UnsupportedDataFormatError;
+                case SF_ERR_SYSTEM:
+                    return kMethcla_SystemError;
+                case SF_ERR_MALFORMED_FILE:
+                    return kMethcla_InvalidFileError;
+                case SF_ERR_UNSUPPORTED_ENCODING:
+                    return kMethcla_UnsupportedFileTypeError;
+            }
+
+            return kMethcla_UnspecifiedError;
+        }
     };
-
-    typedef std::unique_ptr<SoundFileHandle,Destructor> Ref;
-
-    Methcla_Error error()
-    {
-        if (sndfile == nullptr)
-        {
-            return methcla_error_new_with_message(kMethcla_UnspecifiedError, sf_strerror(nullptr));
-        }
-        else
-        {
-            int code = sf_error(sndfile);
-            if (code == SF_ERR_NO_ERROR)
-                return methcla_no_error();
-            return methcla_error_new_with_message(convertErrorCode(code), sf_strerror(sndfile));
-        }
-    }
-
-private:
-    Methcla_ErrorCode convertErrorCode(int sfcode)
-    {
-        switch (sfcode)
-        {
-            case SF_ERR_UNRECOGNISED_FORMAT:
-                return kMethcla_UnsupportedDataFormatError;
-            case SF_ERR_SYSTEM:
-                return kMethcla_SystemError;
-            case SF_ERR_MALFORMED_FILE:
-                return kMethcla_InvalidFileError;
-            case SF_ERR_UNSUPPORTED_ENCODING:
-                return kMethcla_UnsupportedFileTypeError;
-        }
-
-        return kMethcla_UnspecifiedError;
-    }
-};
 
 } // namespace
 
 extern "C" {
-    static Methcla_Error soundfile_close(const Methcla_SoundFile*);
-    static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
-    static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
-    static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*, size_t, size_t*);
-    static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*, Methcla_FileMode, Methcla_SoundFile**, Methcla_SoundFileInfo*);
+static Methcla_Error soundfile_close(const Methcla_SoundFile*);
+static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
+static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
+static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*,
+                                          size_t, size_t*);
+static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*,
+                                    Methcla_FileMode, Methcla_SoundFile**,
+                                    Methcla_SoundFileInfo*);
 } // extern "C"
 
 static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
@@ -96,28 +100,35 @@ static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFrames)
+static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
+                                    int64_t                  numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
-    sf_count_t n = sf_seek(handle->sndfile, static_cast<sf_count_t>(numFrames), SEEK_SET);
+    sf_count_t       n =
+        sf_seek(handle->sndfile, static_cast<sf_count_t>(numFrames), SEEK_SET);
     return n >= 0 ? methcla_no_error() : handle->error();
 }
 
-static Methcla_Error soundfile_tell(const Methcla_SoundFile* file, int64_t* numFrames)
+static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
+                                    int64_t*                 numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
-    sf_count_t n = sf_seek(handle->sndfile, 0, SEEK_CUR);
-    if (n < 0) return handle->error();
+    sf_count_t       n = sf_seek(handle->sndfile, 0, SEEK_CUR);
+    if (n < 0)
+        return handle->error();
     *numFrames = static_cast<int64_t>(n);
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer, size_t inNumFrames, size_t* outNumFrames)
+static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
+                                          float* buffer, size_t inNumFrames,
+                                          size_t* outNumFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
 
     sf_count_t n = sf_readf_float(handle->sndfile, buffer, inNumFrames);
-    if (n < 0) return handle->error();
+    if (n < 0)
+        return handle->error();
     assert(n <= (sf_count_t)inNumFrames);
 
     *outNumFrames = n;
@@ -127,7 +138,8 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* 
 
 static bool convertMode(Methcla_FileMode mode, int* outMode)
 {
-    switch (mode) {
+    switch (mode)
+    {
         case kMethcla_FileModeRead:
             *outMode = SFM_READ;
             return true;
@@ -138,7 +150,10 @@ static bool convertMode(Methcla_FileMode mode, int* outMode)
     return true;
 }
 
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path, Methcla_FileMode mode, Methcla_SoundFile** outFile, Methcla_SoundFileInfo* info)
+static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*,
+                                    const char* path, Methcla_FileMode mode,
+                                    Methcla_SoundFile**    outFile,
+                                    Methcla_SoundFileInfo* info)
 {
     if (path == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
@@ -148,7 +163,8 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
     if (!convertMode(mode, &sfmode))
         return methcla_error_new(kMethcla_ArgumentError);
 
-    SoundFileHandle* handle = static_cast<SoundFileHandle*>(std::malloc(sizeof(SoundFileHandle)));
+    SoundFileHandle* handle =
+        static_cast<SoundFileHandle*>(std::malloc(sizeof(SoundFileHandle)));
     if (handle == nullptr)
         return methcla_error_new(kMethcla_MemoryError);
 
@@ -176,20 +192,19 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* pat
         info->samplerate = sfinfo.samplerate;
     }
 
-    // METHCLA_PRINT_DEBUG("soundfile_open: %s %lld %u %u", path, info->frames, info->channels, info->samplerate);
+    // METHCLA_PRINT_DEBUG("soundfile_open: %s %lld %u %u", path, info->frames,
+    // info->channels, info->samplerate);
 
     handleRef.release();
 
     return methcla_no_error();
 }
 
-static const Methcla_SoundFileAPI kSoundFileAPI = {
-    nullptr,
-    nullptr,
-    soundfile_open
-};
+static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
+                                                   soundfile_open};
 
-METHCLA_EXPORT const Methcla_Library* methcla_soundfile_api_libsndfile(const Methcla_Host* host, const char*)
+METHCLA_EXPORT const Methcla_Library*
+                     methcla_soundfile_api_libsndfile(const Methcla_Host* host, const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
     return nullptr;

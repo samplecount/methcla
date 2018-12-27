@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <methcla/plugins/node-control.h>
 #include <methcla/plugin.hpp>
+#include <methcla/plugins/node-control.h>
 
 #include <cmath>
 
@@ -40,15 +40,13 @@ class DoneAfter
     bool   m_done;
 
 public:
-    DoneAfter(const World<DoneAfter>& world, const Methcla_SynthDef*, const DoneAfterOptions& options)
-        : m_numFramesLeft((double)options.m_seconds * world.sampleRate())
-        , m_done(false)
-    {
-    }
+    DoneAfter(const World<DoneAfter>& world, const Methcla_SynthDef*,
+              const DoneAfterOptions& options)
+    : m_numFramesLeft((double)options.m_seconds * world.sampleRate())
+    , m_done(false)
+    {}
 
-    void connect(DoneAfterPorts::Port, void*)
-    {
-    }
+    void connect(DoneAfterPorts::Port, void*) {}
 
     void process(const World<DoneAfter>& world, size_t numFrames)
     {
@@ -64,7 +62,8 @@ public:
     }
 };
 
-static StaticSynthDef<DoneAfter,DoneAfterOptions,DoneAfterPorts> kDoneAfterDef;
+static StaticSynthDef<DoneAfter, DoneAfterOptions, DoneAfterPorts>
+    kDoneAfterDef;
 
 // LinearEnvelope
 
@@ -90,8 +89,8 @@ class ASREnvelopePorts
 public:
     enum Port
     {
-        kInput
-      , kOutput
+        kInput,
+        kOutput
     };
 
     static constexpr size_t numPorts() { return 2; }
@@ -100,9 +99,12 @@ public:
     {
         switch (port)
         {
-            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
-            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
-            default: throw std::runtime_error("Invalid port index");
+            case kInput:
+                return Methcla::Plugin::PortDescriptor::audioInput();
+            case kOutput:
+                return Methcla::Plugin::PortDescriptor::audioOutput();
+            default:
+                throw std::runtime_error("Invalid port index");
         }
     }
 };
@@ -126,12 +128,13 @@ class ASREnvelope
     float* m_ports[ASREnvelopePorts::numPorts()];
 
 public:
-    ASREnvelope(const World<ASREnvelope>& world, const Methcla_SynthDef*, const ASREnvelopeOptions& options)
-        : m_options(options)
-        , m_state(kAttackPhase)
-        , m_numFramesLeft((size_t)(options.attackTime * world.sampleRate() + 0.5f))
-        , m_slope(m_options.sustainLevel / m_numFramesLeft)
-        , m_level(0.f)
+    ASREnvelope(const World<ASREnvelope>& world, const Methcla_SynthDef*,
+                const ASREnvelopeOptions& options)
+    : m_options(options)
+    , m_state(kAttackPhase)
+    , m_numFramesLeft((size_t)(options.attackTime * world.sampleRate() + 0.5f))
+    , m_slope(m_options.sustainLevel / m_numFramesLeft)
+    , m_level(0.f)
     {
         std::fill(m_ports, m_ports + ASREnvelopePorts::numPorts(), nullptr);
     }
@@ -144,11 +147,12 @@ public:
     void process(const World<ASREnvelope>& world, size_t numFrames)
     {
         const float* input = m_ports[ASREnvelopePorts::kInput];
-        float* output = m_ports[ASREnvelopePorts::kOutput];
+        float*       output = m_ports[ASREnvelopePorts::kOutput];
 
         if (m_state == kDone)
         {
-            for (size_t k=0; k < numFrames; k++) {
+            for (size_t k = 0; k < numFrames; k++)
+            {
                 output[k] = 0.f;
             }
         }
@@ -158,9 +162,10 @@ public:
 
             while (outFrame < numFrames)
             {
-                const size_t n = std::min(numFrames - outFrame, m_numFramesLeft);
+                const size_t n =
+                    std::min(numFrames - outFrame, m_numFramesLeft);
 
-                for (size_t k=0; k < n; k++)
+                for (size_t k = 0; k < n; k++)
                 {
                     output[outFrame] = input[outFrame] * m_level;
                     m_level += m_slope;
@@ -174,13 +179,15 @@ public:
                     if (m_state == kAttackPhase)
                     {
                         m_state = kSustainPhase;
-                        m_numFramesLeft = m_options.sustainTime * world.sampleRate();
+                        m_numFramesLeft =
+                            m_options.sustainTime * world.sampleRate();
                         m_slope = 0.f;
                     }
                     else if (m_state == kSustainPhase)
                     {
                         m_state = kReleasePhase;
-                        m_numFramesLeft = m_options.releaseTime * world.sampleRate();
+                        m_numFramesLeft =
+                            m_options.releaseTime * world.sampleRate();
                         m_slope = -(m_level / m_numFramesLeft);
                     }
                     else
@@ -192,14 +199,16 @@ public:
                 }
             }
 
-            for (size_t k=outFrame; k < numFrames; k++) {
+            for (size_t k = outFrame; k < numFrames; k++)
+            {
                 output[k] = 0.f;
             }
         }
     }
 };
 
-static StaticSynthDef<ASREnvelope,ASREnvelopeOptions,ASREnvelopePorts> kASREnvelopeDef;
+static StaticSynthDef<ASREnvelope, ASREnvelopeOptions, ASREnvelopePorts>
+    kASREnvelopeDef;
 
 // ExponentialFade
 
@@ -223,8 +232,8 @@ class ExponentialFadePorts
 public:
     enum Port
     {
-        kInput
-      , kOutput
+        kInput,
+        kOutput
     };
 
     static constexpr size_t numPorts() { return 2; }
@@ -233,16 +242,20 @@ public:
     {
         switch (port)
         {
-            case kInput:  return Methcla::Plugin::PortDescriptor::audioInput();
-            case kOutput: return Methcla::Plugin::PortDescriptor::audioOutput();
-            default: throw std::runtime_error("Invalid port index");
+            case kInput:
+                return Methcla::Plugin::PortDescriptor::audioInput();
+            case kOutput:
+                return Methcla::Plugin::PortDescriptor::audioOutput();
+            default:
+                throw std::runtime_error("Invalid port index");
         }
     }
 };
 
 class ExponentialFade
 {
-    enum State {
+    enum State
+    {
         kRunning,
         kDone
     };
@@ -254,11 +267,14 @@ class ExponentialFade
     float* m_ports[ExponentialFadePorts::numPorts()];
 
 public:
-    ExponentialFade(const World<ExponentialFade>& world, const Methcla_SynthDef*, const ExponentialFadeOptions& options)
-        : m_state(kRunning)
-        , m_numFramesLeft((size_t)(options.duration * world.sampleRate() + 0.5f))
-        , m_growth(std::pow(options.endLevel / options.startLevel, 1.0 / m_numFramesLeft))
-        , m_level(options.startLevel)
+    ExponentialFade(const World<ExponentialFade>& world,
+                    const Methcla_SynthDef*,
+                    const ExponentialFadeOptions& options)
+    : m_state(kRunning)
+    , m_numFramesLeft((size_t)(options.duration * world.sampleRate() + 0.5f))
+    , m_growth(std::pow(options.endLevel / options.startLevel,
+                        1.0 / m_numFramesLeft))
+    , m_level(options.startLevel)
     {
         std::fill(m_ports, m_ports + ExponentialFadePorts::numPorts(), nullptr);
     }
@@ -271,32 +287,37 @@ public:
     void process(const World<ExponentialFade>& world, size_t numFrames)
     {
         const float* input = m_ports[ExponentialFadePorts::kInput];
-        float* output = m_ports[ExponentialFadePorts::kOutput];
+        float*       output = m_ports[ExponentialFadePorts::kOutput];
 
         if (m_numFramesLeft == 0)
         {
-            if (m_state == kRunning) {
+            if (m_state == kRunning)
+            {
                 m_state = kDone;
                 world.synthDone(this);
             }
-            for (size_t k=0; k < numFrames; k++) {
+            for (size_t k = 0; k < numFrames; k++)
+            {
                 output[k] = m_level * input[k];
             }
         }
         else
         {
             const size_t n = std::min(numFrames, m_numFramesLeft);
-            for (size_t k=0; k < n; k++) {
+            for (size_t k = 0; k < n; k++)
+            {
                 output[k] = m_level * input[k];
                 m_level *= m_growth;
             }
-            for (size_t k=n; k < numFrames; k++) {
+            for (size_t k = n; k < numFrames; k++)
+            {
                 output[k] = m_level * input[k];
             }
 
             m_numFramesLeft -= n;
 
-            if (m_numFramesLeft == 0) {
+            if (m_numFramesLeft == 0)
+            {
                 m_state = kDone;
                 world.synthDone(this);
             }
@@ -304,13 +325,17 @@ public:
     }
 };
 
-static StaticSynthDef<ExponentialFade,ExponentialFadeOptions,ExponentialFadePorts> kExponentialFade;
+static StaticSynthDef<ExponentialFade, ExponentialFadeOptions,
+                      ExponentialFadePorts>
+    kExponentialFade;
 
 // Library
 
-static const Methcla_Library library = { NULL, NULL };
+static const Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT const Methcla_Library* methcla_plugins_node_control(const Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT const Methcla_Library*
+                     methcla_plugins_node_control(const Methcla_Host* host,
+                                                  const char* /* bundlePath */)
 {
     kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);

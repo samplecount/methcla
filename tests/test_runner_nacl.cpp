@@ -15,15 +15,14 @@
 #include "Methcla/Utility/Macros.h"
 
 METHCLA_WITHOUT_WARNINGS_BEGIN
-# define CATCH_CONFIG_RUNNER
-# include <catch.hpp>
+#define CATCH_CONFIG_RUNNER
+#include <catch.hpp>
 METHCLA_WITHOUT_WARNINGS_END
 
+#include "catch_callback_reporter.hpp"
 #include "ppapi/cpp/instance.h"
 #include "ppapi/cpp/module.h"
 #include "ppapi/cpp/var.h"
-
-#include "catch_callback_reporter.hpp"
 
 #include <string>
 
@@ -31,15 +30,16 @@ class MethclaTestInstance : public pp::Instance
 {
 public:
     explicit MethclaTestInstance(PP_Instance instance)
-        : pp::Instance(instance)
+    : pp::Instance(instance)
     {}
 
 private:
     virtual void HandleMessage(const pp::Var& var_message)
     {
-        Catch::registerCallbackReporter("callback", [this](const std::string& str) {
-            this->PostMessage(pp::Var(str));
-        });
+        Catch::registerCallbackReporter("callback",
+                                        [this](const std::string& str) {
+                                            this->PostMessage(pp::Var(str));
+                                        });
 
         Catch::Session session; // There must be exactly once instance
         session.configData().reporterName = "callback";
@@ -58,10 +58,6 @@ public:
     }
 };
 
-namespace pp
-{
-    Module* CreateModule()
-    {
-        return new MethclaTestModule();
-    }
-}
+namespace pp {
+    Module* CreateModule() { return new MethclaTestModule(); }
+} // namespace pp

@@ -17,32 +17,28 @@
 
 using namespace Methcla::Audio;
 
-#define METHCLA_ASSERT_NODE_IS_BLANK(node) \
-    BOOST_ASSERT(node != nullptr); \
+#define METHCLA_ASSERT_NODE_IS_BLANK(node)   \
+    BOOST_ASSERT(node != nullptr);           \
     BOOST_ASSERT(node->m_parent == nullptr); \
-    BOOST_ASSERT(node->m_prev == nullptr); \
-    BOOST_ASSERT(node->m_next == nullptr); \
+    BOOST_ASSERT(node->m_prev == nullptr);   \
+    BOOST_ASSERT(node->m_next == nullptr);
 
-#define METHCLA_ASSERT_NODE_IS_LINKED(node) \
-    BOOST_ASSERT(m_first != nullptr); \
-    BOOST_ASSERT(m_last != nullptr); \
-    BOOST_ASSERT(node != nullptr); \
-    BOOST_ASSERT(node->m_parent == this); \
+#define METHCLA_ASSERT_NODE_IS_LINKED(node)                   \
+    BOOST_ASSERT(m_first != nullptr);                         \
+    BOOST_ASSERT(m_last != nullptr);                          \
+    BOOST_ASSERT(node != nullptr);                            \
+    BOOST_ASSERT(node->m_parent == this);                     \
     BOOST_ASSERT(node->m_prev != nullptr || node == m_first); \
-    BOOST_ASSERT(node->m_next != nullptr || node == m_last); \
+    BOOST_ASSERT(node->m_next != nullptr || node == m_last);  \
     BOOST_ASSERT(m_first != m_last || (m_first == node && node == m_last));
 
 Group::Group(Environment& env, NodeId nodeId)
-    : Node(env, nodeId)
-    , m_first(nullptr)
-    , m_last(nullptr)
-{
-}
+: Node(env, nodeId)
+, m_first(nullptr)
+, m_last(nullptr)
+{}
 
-Group::~Group()
-{
-    freeAll();
-}
+Group::~Group() { freeAll(); }
 
 Group* Group::construct(Environment& env, NodeId nodeId)
 {
@@ -52,8 +48,10 @@ Group* Group::construct(Environment& env, NodeId nodeId)
 void Group::doProcess(size_t numFrames)
 {
     Node* node = m_first;
-    while (node != nullptr) {
-        // Store pointer to next node because current node might be destroyed by done action after process.
+    while (node != nullptr)
+    {
+        // Store pointer to next node because current node might be destroyed by
+        // done action after process.
         Node* nextNode = node->m_next;
         node->process(numFrames);
         node = nextNode;
@@ -67,13 +65,15 @@ void Group::addToHead(Node* node)
     node->m_parent = this;
     node->m_next = m_first;
 
-    if (m_first != nullptr) {
+    if (m_first != nullptr)
+    {
         m_first->m_prev = node;
     }
 
     m_first = node;
 
-    if (m_last == nullptr) {
+    if (m_last == nullptr)
+    {
         m_last = node;
     }
 
@@ -87,13 +87,15 @@ void Group::addToTail(Node* node)
     node->m_parent = this;
     node->m_prev = m_last;
 
-    if (m_last != nullptr) {
+    if (m_last != nullptr)
+    {
         m_last->m_next = node;
     }
 
     m_last = node;
 
-    if (m_first == nullptr) {
+    if (m_first == nullptr)
+    {
         m_first = node;
     }
 
@@ -110,10 +112,13 @@ void Group::addBefore(Node* target, Node* node)
     target->m_prev = node;
     node->m_next = target;
 
-    if (target == m_first) {
+    if (target == m_first)
+    {
         BOOST_ASSERT(node->m_prev == nullptr);
         m_first = node;
-    } else {
+    }
+    else
+    {
         BOOST_ASSERT(node->m_prev != nullptr);
         node->m_prev->m_next = node;
     }
@@ -131,10 +136,13 @@ void Group::addAfter(Node* target, Node* node)
     target->m_next = node;
     node->m_prev = target;
 
-    if (target == m_last) {
+    if (target == m_last)
+    {
         BOOST_ASSERT(node->m_next == nullptr);
         m_last = node;
-    } else {
+    }
+    else
+    {
         BOOST_ASSERT(node->m_next != nullptr);
         node->m_next->m_prev = node;
     }
@@ -146,21 +154,29 @@ void Group::remove(Node* node)
 {
     METHCLA_ASSERT_NODE_IS_LINKED(node);
 
-    if (node == m_first) {
+    if (node == m_first)
+    {
         m_first = node->m_next;
-        if (m_first != nullptr) {
+        if (m_first != nullptr)
+        {
             m_first->m_prev = nullptr;
         }
-    } else {
+    }
+    else
+    {
         node->m_prev->m_next = node->m_next;
     }
 
-    if (node == m_last) {
+    if (node == m_last)
+    {
         m_last = node->m_prev;
-        if (m_last != nullptr) {
+        if (m_last != nullptr)
+        {
             m_last->m_next = nullptr;
         }
-    } else {
+    }
+    else
+    {
         node->m_next->m_prev = node->m_prev;
     }
 
@@ -178,8 +194,10 @@ bool Group::isEmpty() const
 void Group::freeAll()
 {
     Node* node = m_first;
-    while (node != nullptr) {
-        // Store pointer to next node because current node might be destroyed by done action after process.
+    while (node != nullptr)
+    {
+        // Store pointer to next node because current node might be destroyed by
+        // done action after process.
         Node* nextNode = node->m_next;
         node->free();
         node = nextNode;

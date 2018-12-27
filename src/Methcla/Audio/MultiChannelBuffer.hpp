@@ -22,107 +22,97 @@
 
 namespace Methcla { namespace Audio {
 
-class MultiChannelBuffer
-{
-public:
-    MultiChannelBuffer(size_t numChannels, size_t numFrames)
+    class MultiChannelBuffer
+    {
+    public:
+        MultiChannelBuffer(size_t numChannels, size_t numFrames)
         : m_numChannels(numChannels)
         , m_numFrames(numFrames)
         , m_data(makeBuffers(m_numChannels, m_numFrames))
-    { }
+        {}
 
-    ~MultiChannelBuffer()
-    {
-        freeBuffers(m_numChannels, m_data);
-    }
+        ~MultiChannelBuffer() { freeBuffers(m_numChannels, m_data); }
 
-    size_t numChannels() const
-    {
-        return m_numChannels;
-    }
+        size_t numChannels() const { return m_numChannels; }
 
-    size_t numFrames() const
-    {
-        return m_numFrames;
-    }
+        size_t numFrames() const { return m_numFrames; }
 
-    size_t numSamples() const
-    {
-        return numChannels() * numFrames();
-    }
+        size_t numSamples() const { return numChannels() * numFrames(); }
 
-    Methcla_AudioSample* const* data()
-    {
-        return m_data;
-    }
+        Methcla_AudioSample* const* data() { return m_data; }
 
-    const Methcla_AudioSample* const* data() const
-    {
-        return m_data;
-    }
+        const Methcla_AudioSample* const* data() const { return m_data; }
 
-    void deinterleave(const Methcla_AudioSample* src, size_t srcFrames)
-    {
-        Methcla::Audio::deinterleave(data(), src, numChannels(), std::min(numFrames(), srcFrames));
-    }
-
-    void deinterleave(const Methcla_AudioSample* src)
-    {
-        deinterleave(src, numFrames());
-    }
-
-    void interleave(Methcla_AudioSample* dst, size_t dstFrames) const
-    {
-        Methcla::Audio::interleave(dst, data(), numChannels(), std::min(numFrames(), dstFrames));
-    }
-
-    void interleave(Methcla_AudioSample* dst) const
-    {
-        Methcla::Audio::interleave(dst, data(), numChannels(), numFrames());
-    }
-
-    void zero()
-    {
-        for (size_t i=0; i < numChannels(); i++)
+        void deinterleave(const Methcla_AudioSample* src, size_t srcFrames)
         {
-            std::memset(data()[i], 0, numFrames() * sizeof(Methcla_AudioSample));
+            Methcla::Audio::deinterleave(data(), src, numChannels(),
+                                         std::min(numFrames(), srcFrames));
         }
-    }
 
-    inline static Methcla_AudioSample** makeBuffers(size_t numChannels, size_t numFrames)
-    {
-        if (numChannels > 0)
+        void deinterleave(const Methcla_AudioSample* src)
         {
-            Methcla_AudioSample** buffers = Methcla::Memory::allocOf<Methcla_AudioSample*>(numChannels);
-            for (size_t i=0; i < numChannels; i++)
+            deinterleave(src, numFrames());
+        }
+
+        void interleave(Methcla_AudioSample* dst, size_t dstFrames) const
+        {
+            Methcla::Audio::interleave(dst, data(), numChannels(),
+                                       std::min(numFrames(), dstFrames));
+        }
+
+        void interleave(Methcla_AudioSample* dst) const
+        {
+            Methcla::Audio::interleave(dst, data(), numChannels(), numFrames());
+        }
+
+        void zero()
+        {
+            for (size_t i = 0; i < numChannels(); i++)
             {
-                buffers[i] = numFrames > 0
-                    ? Methcla::Memory::allocAlignedOf<Methcla_AudioSample>(Methcla::Memory::kSIMDAlignment, numFrames)
-                    : nullptr;
+                std::memset(data()[i], 0,
+                            numFrames() * sizeof(Methcla_AudioSample));
             }
-            return buffers;
         }
-        return nullptr;
-    }
 
-    inline static void freeBuffers(size_t numChannels, Methcla_AudioSample** buffers)
-    {
-        if (numChannels > 0 && buffers != nullptr)
+        inline static Methcla_AudioSample** makeBuffers(size_t numChannels,
+                                                        size_t numFrames)
         {
-            for (size_t i=0; i < numChannels; i++)
+            if (numChannels > 0)
             {
-                Methcla::Memory::freeAligned(buffers[i]);
+                Methcla_AudioSample** buffers =
+                    Methcla::Memory::allocOf<Methcla_AudioSample*>(numChannels);
+                for (size_t i = 0; i < numChannels; i++)
+                {
+                    buffers[i] =
+                        numFrames > 0
+                            ? Methcla::Memory::allocAlignedOf<
+                                  Methcla_AudioSample>(
+                                  Methcla::Memory::kSIMDAlignment, numFrames)
+                            : nullptr;
+                }
+                return buffers;
             }
-            Memory::free(buffers);
+            return nullptr;
         }
-    }
 
-private:
-    size_t                m_numChannels;
-    size_t                m_numFrames;
-    Methcla_AudioSample** m_data;
-};
+        inline static void freeBuffers(size_t                numChannels,
+                                       Methcla_AudioSample** buffers)
+        {
+            if (numChannels > 0 && buffers != nullptr)
+            {
+                for (size_t i = 0; i < numChannels; i++)
+                {
+                    Methcla::Memory::freeAligned(buffers[i]);
+                }
+                Memory::free(buffers);
+            }
+        }
 
-} }
+    private:
+        size_t                m_numChannels;
+        size_t                m_numFrames;
+        Methcla_AudioSample** m_data;
+    };
+
+}}     // namespace Methcla::Audio
 #endif // METHCLA_AUDIO_MULTICHANNELBUFFER_HPP_INCLUDED
-

@@ -1,5 +1,5 @@
 // Copyright 2012-2013 Samplecount S.L.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,10 +13,6 @@
 // limitations under the License.
 
 #include "Engine.hpp"
-
-#include <methcla/platform/pepper.hpp>
-#include <methcla/plugins/soundfile_api_libsndfile.h>
-
 #include "ppapi/cpp/audio.h"
 #include "ppapi/cpp/input_event.h"
 #include "ppapi/cpp/instance.h"
@@ -24,9 +20,8 @@
 #include "ppapi/cpp/var.h"
 #include "ppapi/cpp/var_dictionary.h"
 
-#include <nacl_io/nacl_io.h>
-#include <stdio.h>
-#include <sys/mount.h>
+#include <methcla/platform/pepper.hpp>
+#include <methcla/plugins/soundfile_api_libsndfile.h>
 
 #include <cmath>
 #include <memory>
@@ -34,74 +29,70 @@
 #include <thread>
 #include <unordered_map>
 
+#include <nacl_io/nacl_io.h>
+#include <stdio.h>
+#include <sys/mount.h>
+
 namespace Methcla { namespace Examples { namespace Sampler {
 
-class SamplerInstance : public pp::Instance
-{
-    std::unique_ptr<Engine> m_engine;
-
-public:
-    explicit SamplerInstance(PP_Instance instance)
-        : pp::Instance(instance)
-    {}
-
-    virtual ~SamplerInstance() {}
-
-    virtual bool Init(uint32_t argc, const char* argn[], const char* argv[]) override;
-    virtual void HandleMessage(const pp::Var& var_message) override;
-};
-
-class SamplerModule : public pp::Module
-{
-public:
-    SamplerModule() : pp::Module() {}
-    ~SamplerModule() {}
-
-    virtual pp::Instance* CreateInstance(PP_Instance instance)
+    class SamplerInstance : public pp::Instance
     {
-        return new SamplerInstance(instance);
-    }
-};
+        std::unique_ptr<Engine> m_engine;
 
-} } }
+    public:
+        explicit SamplerInstance(PP_Instance instance)
+        : pp::Instance(instance)
+        {}
+
+        virtual ~SamplerInstance() {}
+
+        virtual bool Init(uint32_t argc, const char* argn[],
+                          const char* argv[]) override;
+        virtual void HandleMessage(const pp::Var& var_message) override;
+    };
+
+    class SamplerModule : public pp::Module
+    {
+    public:
+        SamplerModule()
+        : pp::Module()
+        {}
+        ~SamplerModule() {}
+
+        virtual pp::Instance* CreateInstance(PP_Instance instance)
+        {
+            return new SamplerInstance(instance);
+        }
+    };
+
+}}} // namespace Methcla::Examples::Sampler
 
 using namespace Methcla::Examples::Sampler;
 
-static std::unordered_map<std::string,std::string> argumentMap(
-    uint32_t argc,
-    const char* argn[],
-    const char* argv[])
+static std::unordered_map<std::string, std::string>
+argumentMap(uint32_t argc, const char* argn[], const char* argv[])
 {
-    std::unordered_map<std::string,std::string> result;
-    for (uint32_t i=0; i < argc; i++)
+    std::unordered_map<std::string, std::string> result;
+    for (uint32_t i = 0; i < argc; i++)
         result[argn[i]] = argv[i];
     return result;
 }
 
-bool SamplerInstance::Init(uint32_t argc,
-                           const char* argn[],
+bool SamplerInstance::Init(uint32_t argc, const char* argn[],
                            const char* argv[])
 {
-    nacl_io_init_ppapi(
-        pp_instance(),
-        pp::Module::Get()->get_browser_interface()
-    );
+    nacl_io_init_ppapi(pp_instance(),
+                       pp::Module::Get()->get_browser_interface());
 
     // umount("/");
     // mount("", "/", "memfs", 0, "");
-    mount(
-        "http://localhost:3000/sampler",
-        "/http",
-        "httpfs",
-        0,
-        ""
-    );
+    mount("http://localhost:3000/sampler", "/http", "httpfs", 0, "");
 
     mount("",                                       // source
           "/sounds",                                // target
           "html5fs",                                // filesystemtype
           0,                                        // mountflags
-          "type=PERSISTENT,expected_size=3268608");  // data
+          "type=PERSISTENT,expected_size=3268608"); // data
 
     return true;
 }
@@ -109,7 +100,8 @@ bool SamplerInstance::Init(uint32_t argc,
 static size_t copyFile(const char* inputFileName, const char* outputFileName)
 {
     auto inputFile = std::shared_ptr<FILE>(fopen(inputFileName, "rb"), fclose);
-    auto outputFile = std::shared_ptr<FILE>(fopen(outputFileName, "wb"), fclose);
+    auto outputFile =
+        std::shared_ptr<FILE>(fopen(outputFileName, "wb"), fclose);
 
     size_t numBytesRead = 0;
 
@@ -131,7 +123,8 @@ static size_t copyFile(const char* inputFileName, const char* outputFileName)
 
         while (true)
         {
-            const size_t nr = fread(buffer.data(), 1, buffer.size(), inputFile.get());
+            const size_t nr =
+                fread(buffer.data(), 1, buffer.size(), inputFile.get());
             if (nr == 0)
             {
                 if (feof(inputFile.get()))
@@ -166,7 +159,8 @@ static size_t copyFile(const char* inputFileName, const char* outputFileName)
 
 static size_t readFile(const std::string& inputFileName)
 {
-    auto inputFile = std::shared_ptr<FILE>(fopen(inputFileName.c_str(), "rb"), fclose);
+    auto inputFile =
+        std::shared_ptr<FILE>(fopen(inputFileName.c_str(), "rb"), fclose);
 
     size_t numBytesRead = 0;
 
@@ -182,7 +176,8 @@ static size_t readFile(const std::string& inputFileName)
 
         while (true)
         {
-            const size_t nr = fread(buffer.data(), 1, buffer.size(), inputFile.get());
+            const size_t nr =
+                fread(buffer.data(), 1, buffer.size(), inputFile.get());
             if (nr == 0)
             {
                 if (feof(inputFile.get()))
@@ -202,28 +197,29 @@ static size_t readFile(const std::string& inputFileName)
     return numBytesRead;
 }
 
-
 void SamplerInstance::HandleMessage(const pp::Var& var_message)
 {
     if (var_message.is_dictionary())
     {
         pp::VarDictionary msg(var_message);
-        std::string type(msg.Get(pp::Var("type")).AsString());
+        std::string       type(msg.Get(pp::Var("type")).AsString());
         if (type == "copyFiles")
         {
-            std::thread([this,type]{
-                for (auto sound : { "157965", "45394", "209331" })
+            std::thread([this, type] {
+                for (auto sound : {"157965", "45394", "209331"})
                 {
-                    const std::string inputFileName(std::string("/http/sounds/") + sound);
-                    const std::string outputFileName(std::string("/sounds/") + sound);
+                    const std::string inputFileName(
+                        std::string("/http/sounds/") + sound);
+                    const std::string outputFileName(std::string("/sounds/") +
+                                                     sound);
 
                     try
                     {
-                        size_t numBytes = copyFile(inputFileName.c_str(), outputFileName.c_str());
+                        size_t numBytes = copyFile(inputFileName.c_str(),
+                                                   outputFileName.c_str());
                         std::stringstream s;
-                        s << "Copied " << numBytes
-                          << " bytes from " << inputFileName
-                          << " to " << outputFileName;
+                        s << "Copied " << numBytes << " bytes from "
+                          << inputFileName << " to " << outputFileName;
                         PostMessage(s.str());
                     }
                     catch (std::exception& e)
@@ -239,21 +235,27 @@ void SamplerInstance::HandleMessage(const pp::Var& var_message)
         }
         else if (type == "createEngine")
         {
-            try {
-                std::thread([this,type]{
+            try
+            {
+                std::thread([this, type] {
                     Engine::Options options;
-                    options.engineOptions.logHandler = [this](Methcla_LogLevel, const char* message) {
-                        PostMessage(pp::Var(message));
-                    };
+                    options.engineOptions.logHandler =
+                        [this](Methcla_LogLevel, const char* message) {
+                            PostMessage(pp::Var(message));
+                        };
                     options.engineOptions.logFlags = kMethcla_EngineLogDebug;
-                    options.engineOptions.addLibrary(methcla_soundfile_api_libsndfile);
+                    options.engineOptions.addLibrary(
+                        methcla_soundfile_api_libsndfile);
                     // options.soundDir = "/sounds/";
-                    options.sounds = { "/sounds/157965", "/sounds/45394", "/sounds/209331" };
+                    options.sounds = {"/sounds/157965", "/sounds/45394",
+                                      "/sounds/209331"};
 
                     Methcla_AudioDriverOptions audioDriverOptions;
                     methcla_audio_driver_options_init(&audioDriverOptions);
-                    options.audioDriver = methcla_platform_pepper_audio_driver_new(&audioDriverOptions, this);
-                    
+                    options.audioDriver =
+                        methcla_platform_pepper_audio_driver_new(
+                            &audioDriverOptions, this);
+
                     m_engine = std::unique_ptr<Engine>(new Engine(options));
 
                     pp::VarDictionary response;
@@ -282,13 +284,13 @@ void SamplerInstance::HandleMessage(const pp::Var& var_message)
                 if (type == "startVoice")
                 {
                     const int32_t sound = msg.Get(pp::Var("sound")).AsInt();
-                    const double amp    = msg.Get(pp::Var("amp")).AsDouble();
-                    const double rate   = msg.Get(pp::Var("rate")).AsDouble();
+                    const double  amp = msg.Get(pp::Var("amp")).AsDouble();
+                    const double  rate = msg.Get(pp::Var("rate")).AsDouble();
                     m_engine->startVoice(voiceId, sound, amp, rate);
                 }
                 else if (type == "updateVoice")
                 {
-                    const double amp  = msg.Get(pp::Var("amp")).AsDouble();
+                    const double amp = msg.Get(pp::Var("amp")).AsDouble();
                     const double rate = msg.Get(pp::Var("rate")).AsDouble();
                     m_engine->updateVoice(voiceId, amp, rate);
                 }
@@ -303,4 +305,4 @@ void SamplerInstance::HandleMessage(const pp::Var& var_message)
 
 namespace pp {
     Module* CreateModule() { return new SamplerModule(); }
-}  // namespace pp
+} // namespace pp

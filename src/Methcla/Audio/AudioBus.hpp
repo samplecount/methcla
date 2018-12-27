@@ -21,78 +21,63 @@
 
 namespace Methcla { namespace Audio {
 
-BOOST_STRONG_TYPEDEF(uint32_t, AudioBusId);
+    BOOST_STRONG_TYPEDEF(uint32_t, AudioBusId);
 
-class AudioBus
-{
-public:
-    // class Lock
-    // {
-    // public:
-    //     void lock() { }
-    //     void try_lock() { }
-    //     void unlock() { }
-    //
-    //     void lock_shared() { }
-    //     bool try_lock_shared() { return true; }
-    //     void unlock_shared() { }
-    // };
-
-    // typedef boost::intrusive_ptr<AudioBus> Handle;
-
-public:
-    AudioBus(sample_t* data, Epoch epoch);
-    virtual ~AudioBus();
-
-    AudioBus(const AudioBus&) = delete;
-    AudioBus& operator=(const AudioBus&) = delete;
-
-    // Lock& lock() { return m_lock; }
-
-    const Epoch& epoch() const
+    class AudioBus
     {
-        return m_epoch;
-    }
+    public:
+        // class Lock
+        // {
+        // public:
+        //     void lock() { }
+        //     void try_lock() { }
+        //     void unlock() { }
+        //
+        //     void lock_shared() { }
+        //     bool try_lock_shared() { return true; }
+        //     void unlock_shared() { }
+        // };
 
-    void setEpoch(const Epoch& epoch)
+        // typedef boost::intrusive_ptr<AudioBus> Handle;
+
+    public:
+        AudioBus(sample_t* data, Epoch epoch);
+        virtual ~AudioBus();
+
+        AudioBus(const AudioBus&) = delete;
+        AudioBus& operator=(const AudioBus&) = delete;
+
+        // Lock& lock() { return m_lock; }
+
+        const Epoch& epoch() const { return m_epoch; }
+
+        void setEpoch(const Epoch& epoch) { m_epoch = epoch; }
+
+        sample_t* data() { return m_data; }
+
+    protected:
+        void setData(sample_t* data) { m_data = data; }
+
+    private:
+        // Lock        m_lock;
+        Epoch     m_epoch;
+        sample_t* m_data;
+    };
+
+    class ExternalAudioBus : public AudioBus
     {
-        m_epoch = epoch;
-    }
+    public:
+        ExternalAudioBus(Epoch epoch);
+        void setData(sample_t* data) { AudioBus::setData(data); }
+    };
 
-    sample_t* data()
+    class InternalAudioBus : public AudioBus
     {
-        return m_data;
-    }
+    public:
+        InternalAudioBus(size_t numFrames, Epoch epoch);
+        virtual ~InternalAudioBus();
+    };
 
-protected:
-    void setData(sample_t* data)
-    {
-        m_data = data;
-    }
-
-private:
-    // Lock        m_lock;
-    Epoch       m_epoch;
-    sample_t*   m_data;
-};
-
-class ExternalAudioBus : public AudioBus
-{
-public:
-    ExternalAudioBus(Epoch epoch);
-    void setData(sample_t* data)
-    {
-        AudioBus::setData(data);
-    }
-};
-
-class InternalAudioBus : public AudioBus
-{
-public:
-    InternalAudioBus(size_t numFrames, Epoch epoch);
-    virtual ~InternalAudioBus();
-};
-
-} }
+}} // namespace Methcla::Audio
 
 #endif // METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED

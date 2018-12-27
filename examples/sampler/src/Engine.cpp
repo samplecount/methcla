@@ -16,37 +16,39 @@
 
 #include <methcla/file.hpp>
 #include <methcla/plugins/disksampler.h>
-#include <methcla/plugins/sampler.h>
 #include <methcla/plugins/node-control.h>
 #include <methcla/plugins/patch-cable.h>
+#include <methcla/plugins/sampler.h>
 
 #include <sstream>
 #include <stdexcept>
+
 #include <tinydir.h>
 
 using namespace Methcla::Examples::Sampler;
 
 Sound::Sound(const Methcla::Engine& engine, const std::string& path)
-    : m_path(path)
+: m_path(path)
 {
     Methcla::SoundFile file(engine, path);
     m_duration = (double)file.info().frames / (double)file.info().samplerate;
 }
 
 // Return a list of sounds in directory path.
-static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string& path)
+static std::vector<Sound> loadSounds(Methcla::Engine&   engine,
+                                     const std::string& path)
 {
-    engine.logLine(kMethcla_LogDebug, std::string("Loading sounds from ") + path);
+    engine.logLine(kMethcla_LogDebug,
+                   std::string("Loading sounds from ") + path);
 
     std::vector<Sound> result;
 
     tinydir_dir dir;
-    int err = tinydir_open(&dir, path.c_str());
+    int         err = tinydir_open(&dir, path.c_str());
     if (err != 0)
     {
         std::stringstream s;
-        s << "Couldn't open directory " << path
-          << ": " << strerror(errno);
+        s << "Couldn't open directory " << path << ": " << strerror(errno);
         throw std::runtime_error(s.str());
     }
 
@@ -55,16 +57,24 @@ static std::vector<Sound> loadSounds(Methcla::Engine& engine, const std::string&
         tinydir_file file;
         tinydir_readfile(&dir, &file);
         std::stringstream s;
-        s << "readfile: " << file.path << " " << file.name << " " << file.is_dir << " " << file.is_reg;
+        s << "readfile: " << file.path << " " << file.name << " " << file.is_dir
+          << " " << file.is_reg;
         engine.logLine(kMethcla_LogDebug, s.str());
-        if (!file.is_dir) {
-            try {
-                engine.logLine(kMethcla_LogDebug, std::string("Loading sound ") + path + "/" + std::string(file.name));
-                result.push_back(Sound(engine, path + "/" + std::string(file.name)));
-            } catch (std::exception& e) {
+        if (!file.is_dir)
+        {
+            try
+            {
+                engine.logLine(kMethcla_LogDebug,
+                               std::string("Loading sound ") + path + "/" +
+                                   std::string(file.name));
+                result.push_back(
+                    Sound(engine, path + "/" + std::string(file.name)));
+            }
+            catch (std::exception& e)
+            {
                 std::stringstream s;
-                s << "Exception while registering sound "
-                  << file.name << ": " << e.what();
+                s << "Exception while registering sound " << file.name << ": "
+                  << e.what();
                 engine.logLine(kMethcla_LogError, s.str());
             }
         }
@@ -83,15 +93,15 @@ static const char* samplerPlugin(bool useDisk)
 }
 
 Engine::Engine(Options inOptions)
-    : m_engine(nullptr)
-    , m_useDisk(true)
+: m_engine(nullptr)
+, m_useDisk(true)
 {
     Methcla::EngineOptions options(inOptions.engineOptions);
     options.audioDriver.bufferSize = 256;
     options.addLibrary(methcla_plugins_node_control)
-           .addLibrary(methcla_plugins_patch_cable)
-           .addLibrary(methcla_plugins_sampler)
-           .addLibrary(methcla_plugins_disksampler);
+        .addLibrary(methcla_plugins_patch_cable)
+        .addLibrary(methcla_plugins_sampler)
+        .addLibrary(methcla_plugins_disksampler);
 
     // Create the engine with a set of plugins.
     m_engine = new Methcla::Engine(options, inOptions.audioDriver);
@@ -106,41 +116,41 @@ Engine::Engine(Options inOptions)
 
     m_voiceGroup = engine().group(engine().root());
 
-    std::cout << "Using " << samplerPlugin(m_useDisk) << " for sample playback" << std::endl;
+    std::cout << "Using " << samplerPlugin(m_useDisk) << " for sample playback"
+              << std::endl;
 
-//    for (auto bus : { 0, 1 })
-//    {
-//        Methcla::Request request(engine());
-//        request.openBundle(Methcla::immediately);
-//        auto synth = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, engine().root(), {});
-//        request.activate(synth);
-//        request.mapInput(synth, 0, Methcla::AudioBusId(bus));
-//        request.mapOutput(synth, 0, Methcla::AudioBusId(bus), Methcla::kBusMappingExternal);
-//        request.closeBundle();
-//        request.send();
-//        m_patchCables.push_back(synth);
-//    }
+    //    for (auto bus : { 0, 1 })
+    //    {
+    //        Methcla::Request request(engine());
+    //        request.openBundle(Methcla::immediately);
+    //        auto synth = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI,
+    //        engine().root(), {}); request.activate(synth);
+    //        request.mapInput(synth, 0, Methcla::AudioBusId(bus));
+    //        request.mapOutput(synth, 0, Methcla::AudioBusId(bus),
+    //        Methcla::kBusMappingExternal); request.closeBundle();
+    //        request.send();
+    //        m_patchCables.push_back(synth);
+    //    }
 }
 
 Engine::~Engine()
 {
     engine().free(m_voiceGroup);
-    for (auto synth : m_patchCables) {
+    for (auto synth : m_patchCables)
+    {
         engine().free(synth);
     }
     delete m_engine;
 }
 
-size_t Engine::numSounds() const
-{
-    return m_sounds.size();
-}
+size_t Engine::numSounds() const { return m_sounds.size(); }
 
 void Engine::useDisk(bool flag)
 {
     if (flag && !Methcla::Version::isPro())
     {
-        m_engine->logLine(kMethcla_LogWarn, "Disk streaming is only available in Methcla Pro!");
+        m_engine->logLine(kMethcla_LogWarn,
+                          "Disk streaming is only available in Methcla Pro!");
     }
     else
     {
@@ -153,7 +163,7 @@ static Methcla_Time kLatency = 0.003;
 static float mapRate(float value)
 {
     const float numOctaves = 4.f;
-    return expmap(1.f/numOctaves, numOctaves, 0.f, 1.f, value);
+    return expmap(1.f / numOctaves, numOctaves, 0.f, 1.f, value);
 }
 
 void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
@@ -163,59 +173,63 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 
     if (soundIndex < m_sounds.size())
     {
-        const Sound& sound = m_sounds[soundIndex];
+        const Sound&     sound = m_sounds[soundIndex];
         Methcla::Request request(engine());
         request.openBundle(Methcla::immediately);
-            // Allocate two buses
-            Methcla::AudioBusId bus1 = m_engine->audioBusId().alloc();
-            Methcla::AudioBusId bus2 = m_engine->audioBusId().alloc();
+        // Allocate two buses
+        Methcla::AudioBusId bus1 = m_engine->audioBusId().alloc();
+        Methcla::AudioBusId bus2 = m_engine->audioBusId().alloc();
 
-            // Create synth and map outputs to buses
-            const Methcla::SynthId synth = request.synth(
-                samplerPlugin(m_useDisk),
-                m_voiceGroup,
-                { 1, 48000./44100. },
-                { Methcla::Value(sound.path())
-                , Methcla::Value(false) }
-            );
-            request.mapOutput(synth, 0, bus1);
-            request.mapOutput(synth, 1, bus2);
-//            request.mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
-//            request.mapOutput(synth, 1, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
+        // Create synth and map outputs to buses
+        const Methcla::SynthId synth = request.synth(
+            samplerPlugin(m_useDisk), m_voiceGroup, {1, 48000. / 44100.},
+            {Methcla::Value(sound.path()), Methcla::Value(false)});
+        request.mapOutput(synth, 0, bus1);
+        request.mapOutput(synth, 1, bus2);
+        //            request.mapOutput(synth, 0, Methcla::AudioBusId(0),
+        //            Methcla::kBusMappingExternal); request.mapOutput(synth, 1,
+        //            Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
 
-            // Envelope options
-            const std::list<Methcla::Value> envOptions =
-                { Methcla::Value(0.05f)
-                , Methcla::Value(1.f)
-                , Methcla::Value(1.f)
-                , Methcla::Value(1.5f)
-                };
+        // Envelope options
+        const std::list<Methcla::Value> envOptions = {
+            Methcla::Value(0.05f), Methcla::Value(1.f), Methcla::Value(1.f),
+            Methcla::Value(1.5f)};
 
-//            auto envelope1 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
-            auto envelope1 = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
-            request.mapInput(envelope1, 0, bus1);
-            request.mapOutput(envelope1, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
-            request.whenDone(envelope1, Methcla::kNodeDoneFreeSelf|Methcla::kNodeDoneFreePreceeding);
+        //            auto envelope1 =
+        //            request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI,
+        //            m_voiceGroup, {}, envOptions);
+        auto envelope1 =
+            request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
+        request.mapInput(envelope1, 0, bus1);
+        request.mapOutput(envelope1, 0, Methcla::AudioBusId(0),
+                          Methcla::kBusMappingExternal);
+        request.whenDone(envelope1, Methcla::kNodeDoneFreeSelf |
+                                        Methcla::kNodeDoneFreePreceeding);
 
-//            auto envelope2 = request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI, m_voiceGroup, {}, envOptions);
-            auto envelope2 = request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
-            request.mapInput(envelope2, 0, bus2);
-            request.mapOutput(envelope2, 0, Methcla::AudioBusId(1), Methcla::kBusMappingExternal);
-            request.whenDone(envelope2, Methcla::kNodeDoneFreeSelf);
+        //            auto envelope2 =
+        //            request.synth(METHCLA_PLUGINS_ASR_ENVELOPE_URI,
+        //            m_voiceGroup, {}, envOptions);
+        auto envelope2 =
+            request.synth(METHCLA_PLUGINS_PATCH_CABLE_URI, m_voiceGroup, {});
+        request.mapInput(envelope2, 0, bus2);
+        request.mapOutput(envelope2, 0, Methcla::AudioBusId(1),
+                          Methcla::kBusMappingExternal);
+        request.whenDone(envelope2, Methcla::kNodeDoneFreeSelf);
 
-            request.openBundle(engine().currentTime() + kLatency);
-                request.activate(synth);
-                request.activate(envelope1);
-                request.activate(envelope2);
-            request.closeBundle();
+        request.openBundle(engine().currentTime() + kLatency);
+        request.activate(synth);
+        request.activate(envelope1);
+        request.activate(envelope2);
+        request.closeBundle();
         request.closeBundle();
 
         m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(synth));
-//        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1));
-//        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2, [this,bus1,bus2](Methcla::NodeId){
-//            m_engine->audioBusId().free(bus1);
-//            m_engine->audioBusId().free(bus2);
-//        }));
+        //        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope1));
+        //        m_engine->addNotificationHandler(m_engine->freeNodeIdHandler(envelope2,
+        //        [this,bus1,bus2](Methcla::NodeId){
+        //            m_engine->audioBusId().free(bus1);
+        //            m_engine->audioBusId().free(bus2);
+        //        }));
 
         request.send();
         m_voices[voice] = synth;
@@ -230,20 +244,21 @@ void Engine::startVoice(VoiceId voice, size_t soundIndex, float amp, float rate)
 
 void Engine::updateVoice(VoiceId voice, float amp, float rate)
 {
-//    auto it = m_voices.find(voice);
-//    assert( it != m_voices.end() );
-//    const float rate = mapRate(param);
-//    m_engine->set(it->second, 1, rate);
-//    std::cout << "Synth " << it->second.id()
-//              << " param=" << param
-//              << " rate=" << rate
-//              << std::endl;
+    //    auto it = m_voices.find(voice);
+    //    assert( it != m_voices.end() );
+    //    const float rate = mapRate(param);
+    //    m_engine->set(it->second, 1, rate);
+    //    std::cout << "Synth " << it->second.id()
+    //              << " param=" << param
+    //              << " rate=" << rate
+    //              << std::endl;
 }
 
 void Engine::stopVoice(VoiceId voice)
 {
     auto it = m_voices.find(voice);
-    if (it != m_voices.end()) {
+    if (it != m_voices.end())
+    {
         Methcla::Request request(engine());
         request.openBundle(engine().currentTime() + kLatency);
         request.free(it->second);

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "methcla_tests.hpp"
-
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
+
+#include "methcla_tests.hpp"
 
 #include <atomic>
 #include <iostream>
@@ -25,7 +25,8 @@
 static std::string gInputFileDirectory = "tests/input";
 static std::string gOutputFileDirectory = "tests/output";
 
-void Methcla::Tests::initialize(std::string inputFileDirectory, std::string outputFileDirectory)
+void Methcla::Tests::initialize(std::string inputFileDirectory,
+                                std::string outputFileDirectory)
 {
     gInputFileDirectory = inputFileDirectory;
     gOutputFileDirectory = outputFileDirectory;
@@ -41,45 +42,46 @@ std::string Methcla::Tests::outputFile(const std::string& name)
     return gOutputFileDirectory + "/" + name;
 }
 
-namespace test_Methcla_Utility_Worker
-{
+namespace test_Methcla_Utility_Worker {
     struct Command
     {
-        void perform() { }
+        void perform() {}
     };
-};
+}; // namespace test_Methcla_Utility_Worker
 
 namespace Methcla { namespace Test {
 
-// Synchronize logging
-class Log
-{
-public:
-    Log()
-        : m_lock(s_mutex)
-    { }
-
-    template <typename T> Log& operator<<(const T& /* x */)
+    // Synchronize logging
+    class Log
     {
-        // std::cout << x << std::endl;
-        return *this;
-    }
+    public:
+        Log()
+        : m_lock(s_mutex)
+        {}
 
-private:
-    std::lock_guard<std::mutex> m_lock;
-    static std::mutex s_mutex;
-};
+        template <typename T> Log& operator<<(const T& /* x */)
+        {
+            // std::cout << x << std::endl;
+            return *this;
+        }
 
-std::mutex Log::s_mutex;
-} }
+    private:
+        std::lock_guard<std::mutex> m_lock;
+        static std::mutex           s_mutex;
+    };
+
+    std::mutex Log::s_mutex;
+}} // namespace Methcla::Test
 
 TEST(Methcla_Utility_Semaphore, Constructor)
 {
-    for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
+    for (size_t n : {1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000})
+    {
         Methcla::Utility::Semaphore sem(n);
-        size_t count(0);
+        size_t                      count(0);
 
-        for (size_t i=0; i < n; i++) {
+        for (size_t i = 0; i < n; i++)
+        {
             sem.wait();
             count++;
         }
@@ -90,17 +92,20 @@ TEST(Methcla_Utility_Semaphore, Constructor)
 
 TEST(Methcla_Utility_Semaphore, Post_wait)
 {
-    for (size_t n : { 1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000 }) {
+    for (size_t n : {1, 2, 3, 10, 20, 50, 100, 1000, 1024, 10000})
+    {
         Methcla::Utility::Semaphore sem;
-        std::atomic<size_t> count(0);
+        std::atomic<size_t>         count(0);
 
-        std::thread thread([&](){
-            for (size_t i=0; i < n; i++) {
+        std::thread thread([&]() {
+            for (size_t i = 0; i < n; i++)
+            {
                 count++;
                 sem.post();
             }
         });
-        for (size_t i=0; i < n; i++) {
+        for (size_t i = 0; i < n; i++)
+        {
             sem.wait();
         }
         EXPECT_EQ(count.load(), n);
@@ -116,15 +121,15 @@ TEST(Methcla_Utility_Worker, Queue_overflow_should_throw)
 
     Methcla::Utility::Worker<Command> worker(queueSize, false);
 
-    for (size_t i=0; i < worker.maxCapacity(); i++) {
+    for (size_t i = 0; i < worker.maxCapacity(); i++)
+    {
         worker.sendToWorker(Command());
     }
 
     ASSERT_ANY_THROW(worker.sendToWorker(Command()));
 }
 
-namespace test_Methcla_Utility_WorkerThread
-{
+namespace test_Methcla_Utility_WorkerThread {
     struct Command
     {
         void perform()
@@ -134,11 +139,11 @@ namespace test_Methcla_Utility_WorkerThread
             Methcla::Test::Log() << "POST " << m_id;
         }
 
-        size_t m_id;
-        std::atomic<size_t>* m_count;
+        size_t                       m_id;
+        std::atomic<size_t>*         m_count;
         Methcla::Utility::Semaphore* m_sem;
     };
-};
+}; // namespace test_Methcla_Utility_WorkerThread
 
 TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
 {
@@ -146,15 +151,17 @@ TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
 
     const size_t queueSize = 16;
 
-    for (size_t threadCount=1; threadCount <= 4; threadCount++) {
+    for (size_t threadCount = 1; threadCount <= 4; threadCount++)
+    {
         Methcla::Test::Log() << "threads " << threadCount;
 
         Methcla::Utility::WorkerThread<Command> worker(queueSize, threadCount);
 
-        std::atomic<size_t> count(0);
+        std::atomic<size_t>         count(0);
         Methcla::Utility::Semaphore sem;
 
-        for (size_t i=0; i < worker.maxCapacity(); i++) {
+        for (size_t i = 0; i < worker.maxCapacity(); i++)
+        {
             Command cmd;
             cmd.m_id = i;
             cmd.m_count = &count;
@@ -162,7 +169,8 @@ TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
             worker.sendToWorker(cmd);
         }
 
-        for (size_t i=0; i < worker.maxCapacity(); i++) {
+        for (size_t i = 0; i < worker.maxCapacity(); i++)
+        {
             sem.wait();
             Methcla::Test::Log() << "WAIT " << i << " " << count.load();
         }
@@ -177,11 +185,11 @@ TEST(Methcla_Memory_Manager, Alloc_free_should_be_noop)
 {
     const size_t memSize = 8192;
     const size_t allocSize = 33;
-    auto mem = new Methcla::Memory::RTMemoryManager(memSize);
-    for (size_t i=0; i < memSize/allocSize; i++)
+    auto         mem = new Methcla::Memory::RTMemoryManager(memSize);
+    for (size_t i = 0; i < memSize / allocSize; i++)
     {
         void* ptr = mem->alloc(allocSize);
-        ASSERT_TRUE( ptr != nullptr );
+        ASSERT_TRUE(ptr != nullptr);
         mem->free(ptr);
     }
     Methcla::Memory::RTMemoryManager::Statistics stats(mem->statistics());

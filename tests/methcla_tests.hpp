@@ -17,41 +17,40 @@
 
 #include <cmath>
 #include <limits>
-#include <string>
 #include <sstream>
-#include <vector>
+#include <string>
 #include <thread>
+#include <vector>
 
 #if defined(__native_client__)
-# include <chrono>
+#    include <chrono>
 #else
-# include <time.h>
+#    include <time.h>
 #endif
 
 #include "gtest/gtest.h"
 
 // Code from http://stackoverflow.com/a/29155677
-namespace testing
-{
-    namespace internal
+namespace testing { namespace internal {
+    enum GTestColor
     {
-        enum GTestColor
-        {
-            COLOR_DEFAULT,
-            COLOR_RED,
-            COLOR_GREEN,
-            COLOR_YELLOW
-        };
+        COLOR_DEFAULT,
+        COLOR_RED,
+        COLOR_GREEN,
+        COLOR_YELLOW
+    };
 
-        extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
-    }
-}
+    extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
+}} // namespace testing::internal
 
-#define PRINTF(...) \
-    do { \
-        testing::internal::ColoredPrintf(testing::internal::COLOR_GREEN, "[          ] "); \
-        testing::internal::ColoredPrintf(testing::internal::COLOR_YELLOW, __VA_ARGS__); \
-    } while(0)
+#define PRINTF(...)                                                       \
+    do                                                                    \
+    {                                                                     \
+        testing::internal::ColoredPrintf(testing::internal::COLOR_GREEN,  \
+                                         "[          ] ");                \
+        testing::internal::ColoredPrintf(testing::internal::COLOR_YELLOW, \
+                                         __VA_ARGS__);                    \
+    } while (0)
 
 #define TEST_COUT Methcla::Tests::TestCout()
 
@@ -61,18 +60,17 @@ namespace Methcla { namespace Tests {
     class TestCout : public std::stringstream
     {
     public:
-        ~TestCout()
-        {
-            PRINTF("%s", str().c_str());
-        }
+        ~TestCout() { PRINTF("%s", str().c_str()); }
     };
 
-    void initialize(std::string inputFileDirectory, std::string outputFileDirectory);
+    void initialize(std::string inputFileDirectory,
+                    std::string outputFileDirectory);
 
     std::string inputFile(const std::string& name);
     std::string outputFile(const std::string& name);
 
-    template <typename T> bool nearlyEqual(T a, T b, T epsilon=std::numeric_limits<T>::epsilon())
+    template <typename T>
+    bool nearlyEqual(T a, T b, T epsilon = std::numeric_limits<T>::epsilon())
     {
         const T absA = std::fabs(a);
         const T absB = std::fabs(b);
@@ -83,7 +81,8 @@ namespace Methcla { namespace Tests {
             // Shortcut, handles infinities
             return true;
         }
-        else if (a == 0 || b == 0 || diff < std::numeric_limits<T>::denorm_min())
+        else if (a == 0 || b == 0 ||
+                 diff < std::numeric_limits<T>::denorm_min())
         {
             // a or b is zero or both are extremely close to it
             // relative error is less meaningful here
@@ -103,16 +102,17 @@ namespace Methcla { namespace Tests {
 
         double rms = 0.;
 
-        for (size_t i=0; i < n; i++)
+        for (size_t i = 0; i < n; i++)
         {
             double x = a[i] - b[i];
             rms += x * x;
         }
 
-        return sqrt(rms/(double)n);
+        return sqrt(rms / (double)n);
     }
 
-    template <typename T> double rmsError(const std::vector<T>& a, const std::vector<T>& b)
+    template <typename T>
+    double rmsError(const std::vector<T>& a, const std::vector<T>& b)
     {
         return rmsError<T>(a.data(), b.data(), std::min(a.size(), b.size()));
     }
@@ -128,6 +128,6 @@ namespace Methcla { namespace Tests {
         std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
 #endif
     }
-} }
+}} // namespace Methcla::Tests
 
 #endif // METHCLA_TESTS_HPP_INCLUDED
