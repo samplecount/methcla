@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/samplecount/methcla.svg?branch=develop)](https://travis-ci.org/samplecount/methcla)
+
 # Methcla - Mobile sound engine
 
 Methcla is a light-weight, efficient sound engine for mobile devices, see our [website](http://methc.la) for the full picture.
