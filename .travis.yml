@@ -5,6 +5,15 @@ script:
 - cmake ..
 - cmake --build . --config Release
 - ctest --config Release
+addons:
+  apt:
+    packages:
+    - libsndfile1-dev
+    - libmpg123-dev
+  homebrew:
+    packages:
+    - libsndfile
+    - mpg123
 matrix:
   include:
     - os: linux
