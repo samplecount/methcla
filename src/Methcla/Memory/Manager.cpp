@@ -32,9 +32,9 @@ RTMemoryManager::RTMemoryManager(size_t poolSize)
 : m_memory(nullptr)
 , m_pool(nullptr)
 {
-    const size_t allocSize = tlsf_overhead() + poolSize;
+    const size_t allocSize = tlsf_size() + tlsf_pool_overhead() + poolSize;
     m_memory = Memory::alloc(allocSize);
-    m_pool = tlsf_create(m_memory, allocSize);
+    m_pool = tlsf_create_with_pool(m_memory, allocSize);
     if (m_pool == nullptr)
     {
         Memory::free(m_memory);
@@ -101,23 +101,26 @@ void RTMemoryManager::freeAligned(void* ptr) noexcept
 #endif
 }
 
-static void collectStatistics(void* /* ptr */, size_t size, int used,
-                              void* user)
-{
-    auto stats = static_cast<RTMemoryManager::Statistics*>(user);
-    if (used)
-        stats->usedNumBytes += size;
-    else
-        stats->freeNumBytes += size;
-}
+namespace {
+    void collectStatistics(void* /* ptr */, size_t size, int used, void* user)
+    {
+        auto stats = static_cast<RTMemoryManager::Statistics*>(user);
+        if (used)
+            stats->usedNumBytes += size;
+        else
+            stats->freeNumBytes += size;
+    }
+} // namespace
 
 RTMemoryManager::Statistics RTMemoryManager::statistics() const
 {
+    assert(tlsf_check(m_pool) == 0);
+
     Statistics stats;
-    stats.freeNumBytes = 0;
-    stats.usedNumBytes = 0;
+
 #if !METHCLA_NO_RT_MEMORY
-    tlsf_walk_heap(m_pool, collectStatistics, &stats);
+    tlsf_walk_pool(tlsf_get_pool(m_pool), collectStatistics, &stats);
 #endif
+
     return stats;
 }

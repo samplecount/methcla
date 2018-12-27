@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Utility/MessageQueue.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
@@ -19,6 +20,7 @@
 
 #include <atomic>
 #include <iostream>
+#include <list>
 #include <mutex>
 #include <thread>
 
@@ -179,20 +181,41 @@ TEST(Methcla_Utility_WorkerThread, All_commands_should_be_executed)
     }
 }
 
-#include "Methcla/Memory/Manager.hpp"
-
 TEST(Methcla_Memory_Manager, Alloc_free_should_be_noop)
 {
-    const size_t memSize = 8192;
-    const size_t allocSize = 33;
-    auto         mem = new Methcla::Memory::RTMemoryManager(memSize);
-    for (size_t i = 0; i < memSize / allocSize; i++)
+    const size_t     memSize = 8192;
+    const size_t     allocSize = 33;
+    auto             mem = new Methcla::Memory::RTMemoryManager(memSize);
+    std::list<void*> ptrs;
+    while (true)
     {
-        void* ptr = mem->alloc(allocSize);
-        ASSERT_TRUE(ptr != nullptr);
+        try
+        {
+            void* ptr = mem->alloc(allocSize);
+            ASSERT_TRUE(ptr != nullptr);
+            ptrs.push_back(ptr);
+        }
+        catch (std::bad_alloc)
+        {
+            break;
+        }
+    }
+    {
+        Methcla::Memory::RTMemoryManager::Statistics stats(mem->statistics());
+        // usedNumBytes is greater than ptrs.size() * allocSize due to memory
+        // allocation overhead.
+        EXPECT_GT(stats.usedNumBytes, ptrs.size() * allocSize);
+        // Note that freeNumBytes is less than memSize - usedNumBytes due to
+        // memory allocation overhead.
+        EXPECT_LT(stats.freeNumBytes, memSize - stats.usedNumBytes);
+    }
+    for (auto ptr : ptrs)
+    {
         mem->free(ptr);
     }
-    Methcla::Memory::RTMemoryManager::Statistics stats(mem->statistics());
-    ASSERT_EQ(stats.freeNumBytes, memSize);
-    ASSERT_EQ(stats.usedNumBytes, 0u);
+    {
+        Methcla::Memory::RTMemoryManager::Statistics stats(mem->statistics());
+        EXPECT_EQ(stats.freeNumBytes, memSize);
+        EXPECT_EQ(stats.usedNumBytes, 0u);
+    }
 }

@@ -96,15 +96,15 @@ namespace Methcla { namespace Memory {
 
         struct Statistics
         {
-            size_t freeNumBytes;
-            size_t usedNumBytes;
+            size_t freeNumBytes = 0;
+            size_t usedNumBytes = 0;
         };
 
         Statistics statistics() const;
 
     private:
-        void*     m_memory;
-        tlsf_pool m_pool;
+        void*  m_memory;
+        tlsf_t m_pool;
     };
 
     template <class T, class Allocator> class AllocatedBase
