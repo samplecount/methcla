@@ -13,6 +13,7 @@ add_executable(methcla_tests
 
 target_include_directories(methcla_tests PRIVATE
     ../src
+    ../external_libraries/boost
 )
 
 target_link_libraries(methcla_tests PRIVATE
@@ -30,7 +31,8 @@ add_executable(methcla_engine_tests
 )
 
 target_include_directories(methcla_engine_tests PRIVATE
-    ../src
+    ../src # For Methcla/Utility/Macros.h
+    ../external_libraries/boost
     ../external_libraries/gtest
 )
 
