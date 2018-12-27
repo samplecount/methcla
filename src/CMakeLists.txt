@@ -68,3 +68,8 @@ target_include_directories(methcla PRIVATE
 )
 
 target_link_libraries(methcla PUBLIC tlsf)
+
+if (LINUX)
+    target_link_libraries(methcla PUBLIC pthread)
+endif ()
+
