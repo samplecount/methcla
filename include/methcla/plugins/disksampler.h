@@ -17,7 +17,6 @@
 
 #include <methcla/plugin.h>
 
-#define METHCLA_PLUGINS_DISKSAMPLER "methcla_plugins_disksampler"
 METHCLA_EXPORT const Methcla_Library* methcla_plugins_disksampler(const Methcla_Host*, const char*);
 #define METHCLA_PLUGINS_DISKSAMPLER_URI METHCLA_PLUGINS_URI "/disksampler"
 
