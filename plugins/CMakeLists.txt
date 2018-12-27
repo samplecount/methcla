@@ -5,10 +5,16 @@ set(plugins
     sampler.cpp
     sine.c
     soundfile_api_dummy.cpp
-    soundfile_api_extaudiofile.cpp
     soundfile_api_libsndfile.cpp
     soundfile_api_mpg123.cpp
 )
+
+if (APPLE)
+    set(plugins
+        ${plugins}
+        soundfile_api_extaudiofile.cpp
+    )
+endif ()
 
 foreach(plugin ${plugins})
     get_filename_component(plugin_target ${plugin} NAME_WE)
