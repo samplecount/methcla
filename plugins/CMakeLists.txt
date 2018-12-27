@@ -15,6 +15,7 @@ foreach(plugin ${plugins})
     add_library(${plugin_target} ${plugin})
     target_include_directories(${plugin_target} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
         $<INSTALL_INTERFACE:include>
     )
 endforeach ()

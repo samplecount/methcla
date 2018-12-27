@@ -56,6 +56,7 @@ add_library(methcla ${sources})
 
 target_include_directories(methcla PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
     $<INSTALL_INTERFACE:include>
 )
 

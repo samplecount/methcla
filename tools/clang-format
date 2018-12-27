@@ -3,8 +3,8 @@
 
 function source_files()
 {
-    git ls-files --full-name --recurse-submodules \
-        | awk '(/^external_libraries\/oscpp/ || !/^external_libraries/) && /\.(h|hpp|cpp|m|M)$/'
+    git ls-tree -r HEAD --name-only \
+        | awk '!/^external_libraries/ && /\.(h|hpp|cpp|m|M)$/'
 }
 
 function clang_format()
