@@ -1,7 +1,7 @@
 language: cpp
 script:
-- cmake --build
-- ctest
+- cmake --build . --config Release
+- ctest --config Release
 matrix:
   include:
     - os: linux
