@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <methcla/plugin.hpp>
-#include <methcla/plugins/patch-cable.h>
+#include <methcla/plugins/patch_cable.h>
 
 #include <algorithm>
 #include <cmath>

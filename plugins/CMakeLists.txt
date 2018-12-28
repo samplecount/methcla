@@ -1,7 +1,7 @@
 set(plugins
     disksampler.cpp
-    node-control.cpp
-    patch-cable.cpp
+    node_control.cpp
+    patch_cable.cpp
     sampler.cpp
     sine.c
     soundfile_api_dummy.cpp
@@ -17,8 +17,10 @@ if (APPLE)
 endif ()
 
 foreach(plugin ${plugins})
-    get_filename_component(plugin_target ${plugin} NAME_WE)
+    get_filename_component(plugin_target_base ${plugin} NAME_WE)
+    set(plugin_target "methcla_plugin_${plugin_target_base}")
     add_library(${plugin_target} ${plugin})
+    set_target_properties(${plugin_target} PROPERTIES PREFIX "")
     target_include_directories(${plugin_target} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
@@ -34,4 +36,3 @@ foreach(plugin ${plugins})
         )
     endif ()
 endforeach ()
-

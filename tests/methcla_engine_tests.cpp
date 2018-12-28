@@ -16,7 +16,7 @@
 
 #include <methcla/engine.h>
 #include <methcla/engine.hpp>
-#include <methcla/plugins/node-control.h>
+#include <methcla/plugins/node_control.h>
 #include <methcla/plugins/sine.h>
 
 #include "gtest/gtest.h"

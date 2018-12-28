@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <methcla/plugin.hpp>
-#include <methcla/plugins/node-control.h>
+#include <methcla/plugins/node_control.h>
 
 #include <cmath>
 

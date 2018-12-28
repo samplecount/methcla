@@ -23,7 +23,7 @@ target_include_directories(methcla_tests PRIVATE
 target_link_libraries(methcla_tests PRIVATE
     gtest
     methcla
-    sine
+    methcla_plugin_sine
 )
 
 add_test(methcla_tests methcla_tests)
@@ -42,8 +42,8 @@ target_include_directories(methcla_engine_tests PRIVATE
 target_link_libraries(methcla_engine_tests PRIVATE
     gtest
     methcla
-    node-control
-    sine
+    methcla_plugin_node_control
+    methcla_plugin_sine
 )
 
 add_test(methcla_engine_tests methcla_engine_tests)
