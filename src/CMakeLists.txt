@@ -60,10 +60,15 @@ target_include_directories(methcla PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(methcla PRIVATE
+target_include_directories(methcla
+    PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ../external_libraries
+)
+
+target_include_directories(methcla
+    SYSTEM PRIVATE
     ../external_libraries/boost
 )
 
@@ -72,4 +77,3 @@ target_link_libraries(methcla PUBLIC tlsf)
 if (LINUX)
     target_link_libraries(methcla PUBLIC pthread)
 endif ()
-

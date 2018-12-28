@@ -26,9 +26,7 @@
 
 #include <methcla/log.hpp>
 
-METHCLA_WITHOUT_WARNINGS_BEGIN
 #include <boost/heap/priority_queue.hpp>
-METHCLA_WITHOUT_WARNINGS_END
 
 #include <atomic>
 #include <cassert>
