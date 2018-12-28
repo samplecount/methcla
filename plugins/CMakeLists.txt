@@ -24,5 +24,14 @@ foreach(plugin ${plugins})
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
         $<INSTALL_INTERFACE:include>
     )
+    if (plugin MATCHES ".*\.c$")
+        # C99 doesn't allow to not declare a parameter name
+        set(c99_warnings -Wno-unused-parameter)
+        target_compile_options(${plugin_target} PRIVATE
+          "$<$<CXX_COMPILER_ID:Clang>:${c99_warnings}>"
+          "$<$<CXX_COMPILER_ID:AppleClang>:${c99_warnings}>"
+          "$<$<CXX_COMPILER_ID:GNU>:${c99_warnings}>"
+        )
+    endif ()
 endforeach ()
 

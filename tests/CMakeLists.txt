@@ -6,6 +6,10 @@ target_include_directories(gtest PUBLIC
     ../external_libraries/gtest
 )
 
+target_compile_options(gtest PRIVATE
+    -Wno-missing-field-initializers
+    -Wno-unused-const-variable)
+
 add_executable(methcla_tests
     test_runner_console.cpp
     methcla_tests.cpp
@@ -26,7 +30,6 @@ add_test(methcla_tests methcla_tests)
 
 add_executable(methcla_engine_tests
     test_runner_console.cpp
-    ../external_libraries/gtest/gtest-all.cc
     methcla_engine_tests.cpp
 )
 

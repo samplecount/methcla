@@ -57,11 +57,6 @@ static inline bool isValidNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
     return nodeId >= 0 && (size_t)nodeId < nodes.size();
 }
 
-static inline bool isUsedNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
-{
-    return isValidNodeId(nodes, nodeId) && nodes[nodeId] != nullptr;
-}
-
 static inline void checkNodeIdIsValid(const std::vector<Node*>& nodes,
                                       NodeId                    nodeId)
 {

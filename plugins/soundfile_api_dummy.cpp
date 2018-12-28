@@ -111,12 +111,12 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_write_float(const Methcla_SoundFile* file,
-                                           const float*             buffer,
-                                           size_t                   inNumFrames,
+static Methcla_Error soundfile_write_float(const Methcla_SoundFile* /*file*/,
+                                           const float* /*buffer*/,
+                                           size_t  inNumFrames,
                                            size_t* outNumFrames)
 {
-    SoundFileHandle* handle = (SoundFileHandle*)file->handle;
+    // SoundFileHandle* handle = (SoundFileHandle*)file->handle;
 
     // TODO: Check the mode file was opened with
 
@@ -133,8 +133,9 @@ static Methcla_Error soundfile_write_float(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api,
-                                    const char* path, Methcla_FileMode mode,
+static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* /*api*/,
+                                    const char* path, Methcla_FileMode /*mode*/
+                                    ,
                                     Methcla_SoundFile**    outFile,
                                     Methcla_SoundFileInfo* info)
 {
@@ -161,6 +162,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api,
     file->seek = soundfile_seek;
     file->tell = soundfile_tell;
     file->read_float = soundfile_read_float;
+    file->write_float = soundfile_write_float;
 
     *outFile = file;
 

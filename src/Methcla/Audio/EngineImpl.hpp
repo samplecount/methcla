@@ -21,11 +21,14 @@
 #include "Methcla/Memory.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Platform.hpp"
+#include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
 #include <methcla/log.hpp>
 
+METHCLA_WITHOUT_WARNINGS_BEGIN
 #include <boost/heap/priority_queue.hpp>
+METHCLA_WITHOUT_WARNINGS_END
 
 #include <atomic>
 #include <cassert>

@@ -131,8 +131,8 @@ namespace {
         float* m_ports[AmplifierPorts::numPorts()];
 
     public:
-        Amplifier(const World<Amplifier>& world, const Methcla_SynthDef*,
-                  const AmplifierOptions& options)
+        Amplifier(const World<Amplifier>&, const Methcla_SynthDef*,
+                  const AmplifierOptions&)
         {}
 
         void connect(AmplifierPorts::Port port, void* data)
@@ -140,7 +140,7 @@ namespace {
             m_ports[port] = static_cast<float*>(data);
         }
 
-        void process(const World<Amplifier>& world, size_t numFrames)
+        void process(const World<Amplifier>&, size_t numFrames)
         {
             const float* const input = m_ports[AmplifierPorts::kInput];
             float*             output = m_ports[AmplifierPorts::kOutput];

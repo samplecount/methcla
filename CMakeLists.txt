@@ -8,6 +8,18 @@ endif ()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
 
+set(warnings
+    -Wall
+    -Wextra
+    -Wstrict-aliasing
+    -Werror)
+
+add_compile_options(
+  "$<$<CXX_COMPILER_ID:Clang>:${warnings}>"
+  "$<$<CXX_COMPILER_ID:AppleClang>:${warnings}>"
+  "$<$<CXX_COMPILER_ID:GNU>:${warnings}>"
+)
+
 enable_testing()
 
 add_subdirectory(plugins)
