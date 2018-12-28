@@ -4,7 +4,7 @@
 function source_files()
 {
     git ls-tree -r HEAD --name-only \
-        | awk '!/^external_libraries/ && /\.(h|hpp|cpp|m|M)$/'
+        | awk '!/^external_libraries/ && /\.(h|hpp|c|cpp|m|M)$/'
 }
 
 function clang_format()
