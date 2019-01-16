@@ -29,10 +29,10 @@ namespace Methcla { namespace Plugin {
 
     template <class Synth> class World
     {
-        const Methcla_World* m_context;
+        Methcla_World* m_context;
 
     public:
-        World(const Methcla_World* context)
+        World(Methcla_World* context)
         : m_context(context)
         {}
 
@@ -41,7 +41,10 @@ namespace Methcla { namespace Plugin {
             return methcla_world_samplerate(m_context);
         }
 
-        size_t blockSize() const { return methcla_world_block_size(m_context); }
+        size_t blockSize() const
+        {
+            return methcla_world_block_size(m_context);
+        }
 
         Methcla_Time currentTime() const
         {
@@ -58,7 +61,10 @@ namespace Methcla { namespace Plugin {
             return methcla_world_alloc_aligned(m_context, alignment, size);
         }
 
-        void free(void* ptr) { methcla_world_free(m_context, ptr); }
+        void free(void* ptr)
+        {
+            methcla_world_free(m_context, ptr);
+        }
 
         void performCommand(Methcla_HostPerformFunction perform, void* data)
         {
@@ -80,10 +86,10 @@ namespace Methcla { namespace Plugin {
 
     class HostContext
     {
-        const Methcla_Host* m_context;
+        Methcla_Host* m_context;
 
     public:
-        HostContext(const Methcla_Host* context)
+        HostContext(Methcla_Host* context)
         : m_context(context)
         {}
 
@@ -102,7 +108,10 @@ namespace Methcla { namespace Plugin {
         {
         };
 
-        static size_t numPorts() { return 0; }
+        static size_t numPorts()
+        {
+            return 0;
+        }
 
         static Methcla_PortDescriptor descriptor(Port)
         {
@@ -153,7 +162,8 @@ namespace Methcla { namespace Plugin {
 
     struct NoOptions
     {
-        NoOptions(OSCPP::Server::ArgStream) {}
+        NoOptions(OSCPP::Server::ArgStream)
+        {}
     };
 
     template <class Options, class PortDescriptor> class StaticSynthOptions
@@ -189,13 +199,14 @@ namespace Methcla { namespace Plugin {
         template <class Synth, bool Condition> class IfSynthDefHasActivate
         {
         public:
-            static inline void exec(const Methcla_World*, Synth*) {}
+            static inline void exec(Methcla_World*, Synth*)
+            {}
         };
 
         template <class Synth> class IfSynthDefHasActivate<Synth, true>
         {
         public:
-            static inline void exec(const Methcla_World* context, Synth* synth)
+            static inline void exec(Methcla_World* context, Synth* synth)
             {
                 synth->activate(World<Synth>(context));
             }
@@ -204,13 +215,14 @@ namespace Methcla { namespace Plugin {
         template <class Synth, bool Condition> class IfSynthDefHasCleanup
         {
         public:
-            static inline void exec(const Methcla_World*, Synth*) {}
+            static inline void exec(Methcla_World*, Synth*)
+            {}
         };
 
         template <class Synth> class IfSynthDefHasCleanup<Synth, true>
         {
         public:
-            static inline void exec(const Methcla_World* context, Synth* synth)
+            static inline void exec(Methcla_World* context, Synth* synth)
             {
                 synth->cleanup(World<Synth>(context));
             }
@@ -228,7 +240,7 @@ namespace Methcla { namespace Plugin {
               SynthDefFlags Flags = kSynthDefDefaultFlags>
     class SynthDef
     {
-        static void construct(const Methcla_World*        context,
+        static void construct(Methcla_World*              context,
                               const Methcla_SynthDef*     synthDef,
                               const Methcla_SynthOptions* options,
                               Methcla_Synth*              synth)
@@ -247,7 +259,7 @@ namespace Methcla { namespace Plugin {
                 static_cast<typename PortDescriptor::Port>(port), data);
         }
 
-        static void activate(const Methcla_World* context, Methcla_Synth* synth)
+        static void activate(Methcla_World* context, Methcla_Synth* synth)
         {
             detail::IfSynthDefHasActivate<
                 Synth, (Flags & kSynthDefHasActivate) ==
@@ -256,14 +268,14 @@ namespace Methcla { namespace Plugin {
                                                            synth));
         }
 
-        static void process(const Methcla_World* context, Methcla_Synth* synth,
+        static void process(Methcla_World* context, Methcla_Synth* synth,
                             size_t numFrames)
         {
             static_cast<Synth*>(synth)->process(World<Synth>(context),
                                                 numFrames);
         }
 
-        static void destroy(const Methcla_World* context, Methcla_Synth* synth)
+        static void destroy(Methcla_World* context, Methcla_Synth* synth)
         {
             // Call cleanup method
             detail::IfSynthDefHasActivate<
@@ -276,7 +288,7 @@ namespace Methcla { namespace Plugin {
         }
 
     public:
-        void operator()(const Methcla_Host* host, const char* uri)
+        void operator()(Methcla_Host* host, const char* uri)
         {
             static const Methcla_SynthDef kSynthDef = {
                 uri,

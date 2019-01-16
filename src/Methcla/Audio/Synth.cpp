@@ -63,7 +63,11 @@ Synth::Synth(Environment& env, NodeId nodeId, const SynthDef& synthDef,
     assert(kBufferAlignment.isAligned(m_audioBuffers));
 }
 
-Synth::~Synth() { m_synthDef.destroy(env(), m_synth); }
+Synth::~Synth()
+{
+    Methcla_World world(env());
+    m_synthDef.destroy(&world, m_synth);
+}
 
 Synth* Synth::construct(Environment& env, NodeId nodeId,
                         const SynthDef&          synthDef,
@@ -160,7 +164,8 @@ Synth* Synth::fromSynth(Methcla_Synth* synth)
 
 void Synth::construct(const Methcla_SynthOptions* synthOptions)
 {
-    m_synthDef.construct(env(), synthOptions, m_synth);
+    Methcla_World world(env());
+    m_synthDef.construct(&world, synthOptions, m_synth);
 }
 
 void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
@@ -238,7 +243,10 @@ template <class T> struct IfIndex
     : m_index(index)
     {}
 
-    inline bool operator()(const T& x) const { return x.index() == m_index; }
+    inline bool operator()(const T& x) const
+    {
+        return x.index() == m_index;
+    }
 
 private:
     Methcla_PortCount m_index;
@@ -293,7 +301,8 @@ void Synth::activate(double sampleOffset)
     if (m_flags.state == kStateInactive)
     {
         m_sampleOffset = sampleOffset;
-        m_synthDef.activate(env(), m_synth);
+        Methcla_World world(env());
+        m_synthDef.activate(&world, m_synth);
         m_flags.state = kStateActivating;
     }
 }
@@ -332,7 +341,8 @@ void Synth::doProcess(size_t numFrames)
             x.read(env, numFrames, inputBuffers + x.index() * blockSize);
         }
 
-        m_synthDef.process(env, m_synth, numFrames);
+        Methcla_World world(env);
+        m_synthDef.process(&world, m_synth, numFrames);
 
         for (size_t i = 0; i < numAudioOutputs(); i++)
         {
@@ -362,7 +372,8 @@ void Synth::doProcess(size_t numFrames)
                    sampleOffset);
         }
 
-        m_synthDef.process(env, m_synth, remainingFrames);
+        Methcla_World world(env);
+        m_synthDef.process(&world, m_synth, remainingFrames);
 
         for (size_t i = 0; i < numAudioOutputs(); i++)
         {

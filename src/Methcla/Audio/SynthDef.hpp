@@ -43,7 +43,10 @@ namespace Methcla { namespace Audio {
         SynthDef(const SynthDef&) = delete;
         SynthDef& operator=(const SynthDef&) = delete;
 
-        inline const char* uri() const { return m_descriptor->uri; }
+        inline const char* uri() const
+        {
+            return m_descriptor->uri;
+        }
 
         inline size_t instanceSize() const
         {
@@ -59,10 +62,10 @@ namespace Methcla { namespace Audio {
         bool portDescriptor(const Methcla_SynthOptions* options, size_t index,
                             Methcla_PortDescriptor* port) const;
 
-        void construct(const Methcla_World*        world,
+        void construct(Methcla_World*              world,
                        const Methcla_SynthOptions* options,
                        Methcla_Synth*              synth) const;
-        void destroy(const Methcla_World* world, Methcla_Synth* synth) const;
+        void destroy(Methcla_World* world, Methcla_Synth* synth) const;
 
         inline void connect(Methcla_Synth* synth, Methcla_PortCount port,
                             void* data) const
@@ -70,14 +73,13 @@ namespace Methcla { namespace Audio {
             m_descriptor->connect(synth, port, data);
         }
 
-        inline void activate(const Methcla_World* world,
-                             Methcla_Synth*       synth) const
+        inline void activate(Methcla_World* world, Methcla_Synth* synth) const
         {
             if (m_descriptor->activate)
                 m_descriptor->activate(world, synth);
         }
 
-        inline void process(const Methcla_World* world, Methcla_Synth* synth,
+        inline void process(Methcla_World* world, Methcla_Synth* synth,
                             size_t numFrames) const
         {
             m_descriptor->process(world, synth, numFrames);
@@ -98,7 +100,7 @@ namespace Methcla { namespace Audio {
     {
     public:
         PluginLibrary(
-            const Methcla_Library*                       lib,
+            Methcla_Library*                             lib,
             Memory::shared_ptr<Methcla::Plugin::Library> plugin = nullptr);
         ~PluginLibrary();
 
@@ -106,7 +108,7 @@ namespace Methcla { namespace Audio {
         PluginLibrary& operator=(const PluginLibrary&) = delete;
 
     private:
-        const Methcla_Library*                       m_lib;
+        Methcla_Library*                             m_lib;
         Memory::shared_ptr<Methcla::Plugin::Library> m_plugin;
     };
 
@@ -119,12 +121,11 @@ namespace Methcla { namespace Audio {
         PluginManager& operator=(const PluginManager&) = delete;
 
         //* Load plugins from static functions.
-        void loadPlugins(const Methcla_Host*                       host,
+        void loadPlugins(Methcla_Host*                             host,
                          const std::list<Methcla_LibraryFunction>& funcs);
 
         //* Load plugins from directory.
-        void loadPlugins(const Methcla_Host* host,
-                         const std::string&  directory);
+        void loadPlugins(Methcla_Host* host, const std::string& directory);
 
     private:
         typedef std::list<Memory::shared_ptr<PluginLibrary>> Libraries;

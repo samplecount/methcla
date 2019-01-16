@@ -19,8 +19,8 @@
 
 #include <methcla/plugin.h>
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_sampler(const Methcla_Host*, const char*);
+METHCLA_EXPORT Methcla_Library* methcla_plugins_sampler(Methcla_Host*,
+                                                        const char*);
 #define METHCLA_PLUGINS_SAMPLER_URI METHCLA_PLUGINS_URI "/sampler"
 
 #endif /* METHCLA_PLUGINS_SAMPLER_H_INCLUDED */

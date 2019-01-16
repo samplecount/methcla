@@ -49,7 +49,7 @@ static bool port_descriptor(const Methcla_SynthOptions*,
     return false;
 }
 
-static void construct(const Methcla_World*, const Methcla_SynthDef*,
+static void construct(Methcla_World*, const Methcla_SynthDef*,
                       const Methcla_SynthOptions*, Methcla_Synth* synth)
 {
     PatchCable* self = static_cast<PatchCable*>(synth);
@@ -62,8 +62,7 @@ static void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data)
     self->ports[port] = static_cast<float*>(data);
 }
 
-static void process(const Methcla_World*, Methcla_Synth* synth,
-                    size_t numFrames)
+static void process(Methcla_World*, Methcla_Synth* synth, size_t numFrames)
 {
     PatchCable* self = static_cast<PatchCable*>(synth);
 
@@ -107,7 +106,10 @@ namespace {
             kGain
         };
 
-        static constexpr size_t numPorts() { return 3; }
+        static constexpr size_t numPorts()
+        {
+            return 3;
+        }
 
         static Methcla_PortDescriptor descriptor(Port port)
         {
@@ -176,11 +178,10 @@ namespace {
 
 // Library initialization
 
-static const Methcla_Library library = {NULL, NULL};
+static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_patch_cable(const Methcla_Host* host,
-                                                 const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+               methcla_plugins_patch_cable(Methcla_Host* host, const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
     kAmplifierDef(host, METHCLA_PLUGINS_AMPLIFIER_URI);

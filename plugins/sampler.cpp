@@ -57,21 +57,21 @@ namespace {
         char*   path;
     };
 
-    // Declare callback with C linkage
+    // Declare callbacks with C linkage
     extern "C" {
     static bool port_descriptor(const Methcla_SynthOptions*, Methcla_PortCount,
                                 Methcla_PortDescriptor*);
     static void configure(const void*, size_t, const void*, size_t,
                           Methcla_SynthOptions*);
 
-    static void construct(const Methcla_World*, const Methcla_SynthDef*,
+    static void construct(Methcla_World*, const Methcla_SynthDef*,
                           const Methcla_SynthOptions*, Methcla_Synth*);
 
-    static void destroy(const Methcla_World*, Methcla_Synth*);
+    static void destroy(Methcla_World*, Methcla_Synth*);
 
     static void connect(Methcla_Synth*, Methcla_PortCount, void*);
 
-    static void process(const Methcla_World*, Methcla_Synth*, size_t);
+    static void process(Methcla_World*, Methcla_Synth*, size_t);
     }
 
     bool port_descriptor(const Methcla_SynthOptions* /* options */
@@ -111,7 +111,7 @@ namespace {
             argStream.atEnd() ? -1 : std::max(0, argStream.int32());
     }
 
-    static void set_buffer(const Methcla_World* world, void* data)
+    static void set_buffer(Methcla_World* world, void* data)
     {
         LoadMessage* msg = (LoadMessage*)data;
         msg->synth->buffer = msg->buffer;
@@ -120,7 +120,7 @@ namespace {
         methcla_world_free(world, msg);
     }
 
-    static void load_sound_file(const Methcla_Host* context, void* data)
+    static void load_sound_file(Methcla_Host* context, void* data)
     {
         LoadMessage* msg = (LoadMessage*)data;
         assert(msg != nullptr);
@@ -171,12 +171,12 @@ namespace {
         methcla_host_perform_command(context, set_buffer, msg);
     }
 
-    static void free_buffer_cb(const Methcla_Host* context, void* data)
+    static void free_buffer_cb(Methcla_Host* context, void* data)
     {
         methcla_host_free(context, data);
     }
 
-    static void freeBuffer(const Methcla_World* world, Synth* self)
+    static void freeBuffer(Methcla_World* world, Synth* self)
     {
         if (self->buffer)
         {
@@ -185,7 +185,7 @@ namespace {
         }
     }
 
-    static void construct(const Methcla_World* world,
+    static void construct(Methcla_World* world,
                           const Methcla_SynthDef* /* synthDef */
                           ,
                           const Methcla_SynthOptions* inOptions,
@@ -212,7 +212,7 @@ namespace {
         methcla_world_perform_command(world, load_sound_file, msg);
     }
 
-    static void destroy(const Methcla_World* world, Methcla_Synth* synth)
+    static void destroy(Methcla_World* world, Methcla_Synth* synth)
     {
         Synth* self = (Synth*)synth;
         freeBuffer(world, self);
@@ -325,7 +325,7 @@ namespace {
         return k;
     }
 
-    static inline void process_interp(const Methcla_World* world, Synth* self,
+    static inline void process_interp(Methcla_World* world, Synth* self,
                                       size_t numFrames, float amp, float rate,
                                       const float* buffer, float* out0,
                                       float* out1)
@@ -368,7 +368,7 @@ namespace {
         self->phase = phase;
     }
 
-    static void process(const Methcla_World* world, Methcla_Synth* synth,
+    static void process(Methcla_World* world, Methcla_Synth* synth,
                         size_t numFrames)
     {
         Synth*       self = (Synth*)synth;
@@ -403,12 +403,12 @@ namespace {
                                                 process,
                                                 destroy};
 
-    static const Methcla_Library library = {NULL, NULL};
+    static Methcla_Library library = {NULL, NULL};
 
 } // namespace
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_sampler(const Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+               methcla_plugins_sampler(Methcla_Host* host, const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
     return &library;

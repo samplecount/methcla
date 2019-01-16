@@ -46,11 +46,20 @@ static void throwErrorWith(Methcla_ErrorCode                       code,
     throwError(code, stream.str());
 }
 
-template <class T> const char* nodeTypeName() { return "node"; }
+template <class T> const char* nodeTypeName()
+{
+    return "node";
+}
 
-template <> const char* nodeTypeName<Group>() { return "group"; }
+template <> const char* nodeTypeName<Group>()
+{
+    return "group";
+}
 
-template <> const char* nodeTypeName<Synth>() { return "synth"; }
+template <> const char* nodeTypeName<Synth>()
+{
+    return "synth";
+}
 
 static inline bool isValidNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
 {
@@ -255,7 +264,8 @@ void EnvironmentImpl::init(const Environment::Options& options)
     m_rootNode = Group::construct(*m_owner, NodeId(0));
     addNode(m_nodes, m_rootNode);
     // Load plugins
-    m_plugins.loadPlugins(*m_owner, options.pluginLibraries);
+    Methcla_Host host(*m_owner);
+    m_plugins.loadPlugins(&host, options.pluginLibraries);
 }
 
 void EnvironmentImpl::process(Methcla_Time currentTime, size_t numFrames,

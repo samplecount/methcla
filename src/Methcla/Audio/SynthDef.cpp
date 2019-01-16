@@ -42,7 +42,10 @@ SynthDef::SynthDef(const Methcla_SynthDef* synthDef)
                     : nullptr;
 }
 
-SynthDef::~SynthDef() { delete[] static_cast<char*>(m_options); }
+SynthDef::~SynthDef()
+{
+    delete[] static_cast<char*>(m_options);
+}
 
 const Methcla_SynthOptions*
 SynthDef::configure(OSCPP::Server::ArgStream options) const
@@ -65,36 +68,39 @@ bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index,
     return m_descriptor->port_descriptor(options, index, port);
 }
 
-void SynthDef::construct(const Methcla_World*        world,
+void SynthDef::construct(Methcla_World*              world,
                          const Methcla_SynthOptions* options,
                          Methcla_Synth*              synth) const
 {
     m_descriptor->construct(world, m_descriptor, options, synth);
 }
 
-void SynthDef::destroy(const Methcla_World* world, Methcla_Synth* synth) const
+void SynthDef::destroy(Methcla_World* world, Methcla_Synth* synth) const
 {
     if (m_descriptor->destroy)
         m_descriptor->destroy(world, synth);
 }
 
 PluginLibrary::PluginLibrary(
-    const Methcla_Library*                       lib,
-    Memory::shared_ptr<Methcla::Plugin::Library> plugin)
+    Methcla_Library* lib, Memory::shared_ptr<Methcla::Plugin::Library> plugin)
 : m_lib(lib)
 , m_plugin(plugin)
 {}
 
-PluginLibrary::~PluginLibrary() { methcla_library_destroy(m_lib); }
+PluginLibrary::~PluginLibrary()
+{
+    methcla_library_destroy(m_lib);
+}
 
-PluginManager::PluginManager() {}
+PluginManager::PluginManager()
+{}
 
-void PluginManager::loadPlugins(const Methcla_Host*                       host,
+void PluginManager::loadPlugins(Methcla_Host*                             host,
                                 const std::list<Methcla_LibraryFunction>& funcs)
 {
     for (auto f : funcs)
     {
-        const Methcla_Library* lib = f(host, ".");
+        Methcla_Library* lib = f(host, ".");
         if (lib != nullptr)
         {
             m_libs.push_back(Memory::make_shared<PluginLibrary>(lib));
@@ -102,7 +108,7 @@ void PluginManager::loadPlugins(const Methcla_Host*                       host,
     }
 }
 
-void PluginManager::loadPlugins(const Methcla_Host* /*host*/,
+void PluginManager::loadPlugins(Methcla_Host* /*host*/,
                                 const std::string& /*directory*/)
 {
     std::cout << "PluginManager::loadPlugins not yet implemented" << std::endl;

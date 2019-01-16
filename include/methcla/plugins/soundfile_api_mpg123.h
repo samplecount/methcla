@@ -18,7 +18,7 @@
 #include <methcla/file.h>
 #include <methcla/plugin.h>
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_soundfile_api_mpg123(const Methcla_Host*, const char*);
+METHCLA_EXPORT Methcla_Library* methcla_soundfile_api_mpg123(Methcla_Host*,
+                                                             const char*);
 
 #endif /* METHCLA_SOUNDFILEAPI_MPG123_H_INCLUDED */

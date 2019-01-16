@@ -203,8 +203,8 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*,
 static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
                                                    soundfile_open};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_soundfile_api_libsndfile(const Methcla_Host* host, const char*)
+METHCLA_EXPORT Methcla_Library*
+               methcla_soundfile_api_libsndfile(Methcla_Host* host, const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
     return nullptr;

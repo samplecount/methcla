@@ -19,8 +19,8 @@
 
 #include <methcla/plugin.h>
 
-METHCLA_EXPORT const Methcla_Library* methcla_plugins_sine(const Methcla_Host*,
-                                                           const char*);
+METHCLA_EXPORT Methcla_Library* methcla_plugins_sine(Methcla_Host*,
+                                                     const char*);
 #define METHCLA_PLUGINS_SINE_URI METHCLA_PLUGINS_URI "/sine"
 
 #endif /* METHCLA_PLUGINS_SINE_H_INCLUDED */

@@ -195,7 +195,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*,
     return methcla_no_error();
 }
 
-static void methcla_mpg123_library_destroy(const Methcla_Library*)
+static void methcla_mpg123_library_destroy(Methcla_Library*)
 {
     mpg123_exit();
 }
@@ -203,11 +203,11 @@ static void methcla_mpg123_library_destroy(const Methcla_Library*)
 static const Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {nullptr, "mp3",
                                                           soundfile_open};
 
-static const Methcla_Library kLibrary_mpg123 = {nullptr,
-                                                methcla_mpg123_library_destroy};
+static Methcla_Library kLibrary_mpg123 = {nullptr,
+                                          methcla_mpg123_library_destroy};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_soundfile_api_mpg123(const Methcla_Host* host, const char*)
+METHCLA_EXPORT Methcla_Library* methcla_soundfile_api_mpg123(Methcla_Host* host,
+                                                             const char*)
 {
     if (mpg123_init() != MPG123_OK)
         return nullptr;

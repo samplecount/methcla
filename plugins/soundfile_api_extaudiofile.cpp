@@ -418,8 +418,8 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path,
 static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
                                                    soundfile_open};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_soundfile_api_extaudiofile(const Methcla_Host* host, const char*)
+METHCLA_EXPORT Methcla_Library*
+               methcla_soundfile_api_extaudiofile(Methcla_Host* host, const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
     return nullptr;

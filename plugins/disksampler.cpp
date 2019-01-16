@@ -137,31 +137,52 @@ public:
         strncpy(m_path, path, FILENAME_MAX - 1);
     }
 
-    bool isValid() const { return m_buffer != nullptr && m_file; }
+    bool isValid() const
+    {
+        return m_buffer != nullptr && m_file;
+    }
 
     StateVar state() const
     {
         return static_cast<StateVar>(m_state.load(std::memory_order_acquire));
     }
 
-    bool loop() const { return m_loop; }
+    bool loop() const
+    {
+        return m_loop;
+    }
 
-    uint64_t fileFrames() const { return m_fileFrames < 0 ? 0 : m_fileFrames; }
+    uint64_t fileFrames() const
+    {
+        return m_fileFrames < 0 ? 0 : m_fileFrames;
+    }
 
-    size_t bufferChannels() const { return m_channels; }
+    size_t bufferChannels() const
+    {
+        return m_channels;
+    }
 
-    size_t bufferFrames() const { return m_bufferFrames; }
+    size_t bufferFrames() const
+    {
+        return m_bufferFrames;
+    }
 
-    size_t transferFrames() const { return m_transferFrames; }
+    size_t transferFrames() const
+    {
+        return m_transferFrames;
+    }
 
-    const float* buffer() const { return m_buffer; }
+    const float* buffer() const
+    {
+        return m_buffer;
+    }
 
-    void initBuffer(const Methcla_World* world)
+    void initBuffer(Methcla_World* world)
     {
         performCommand(world, initBufferCallback);
     }
 
-    inline void release(const Methcla_World* world)
+    inline void release(Methcla_World* world)
     {
         assert(m_refCount > 0);
         m_refCount--;
@@ -171,15 +192,21 @@ public:
         }
     }
 
-    inline void finish() { setState(kFinished); }
+    inline void finish()
+    {
+        setState(kFinished);
+    }
 
-    void fillBuffer(const Methcla_World* world)
+    void fillBuffer(Methcla_World* world)
     {
         setState(kFilling);
         performCommand(world, fillBufferCallback);
     }
 
-    size_t readPos() const { return m_readPos.load(std::memory_order_relaxed); }
+    size_t readPos() const
+    {
+        return m_readPos.load(std::memory_order_relaxed);
+    }
 
     void setReadPos(size_t readPos)
     {
@@ -191,9 +218,15 @@ public:
         return m_writePos.load(std::memory_order_acquire);
     }
 
-    double filePhase() const { return m_filePhase; }
+    double filePhase() const
+    {
+        return m_filePhase;
+    }
 
-    double bufferPhase() const { return m_bufferPhase; }
+    double bufferPhase() const
+    {
+        return m_bufferPhase;
+    }
 
     void setPhase(double filePhase, double bufferPhase)
     {
@@ -212,19 +245,22 @@ public:
     }
 
 private:
-    ~State() { delete[] m_buffer; }
+    ~State()
+    {
+        delete[] m_buffer;
+    }
 
     void setState(StateVar newState)
     {
         m_state.store(newState, std::memory_order_release);
     }
 
-    static void freeCallback(const Methcla_World* world, void* data)
+    static void freeCallback(Methcla_World* world, void* data)
     {
         methcla_world_free(world, data);
     }
 
-    static void destroyCallback(const Methcla_Host* host, void* data)
+    static void destroyCallback(Methcla_Host* host, void* data)
     {
         // Call destructor
         static_cast<State*>(data)->~State();
@@ -232,25 +268,24 @@ private:
         methcla_host_perform_command(host, freeCallback, data);
     }
 
-    static void releaseCallback(const Methcla_World* world, void* data)
+    static void releaseCallback(Methcla_World* world, void* data)
     {
         static_cast<State*>(data)->release(world);
     }
 
     // Release from host context
-    void release(const Methcla_Host* host)
+    void release(Methcla_Host* host)
     {
         methcla_host_perform_command(host, releaseCallback, this);
     }
 
-    void performCommand(const Methcla_World*        world,
-                        Methcla_HostPerformFunction func)
+    void performCommand(Methcla_World* world, Methcla_HostPerformFunction func)
     {
         m_refCount++;
         methcla_world_perform_command(world, func, this);
     }
 
-    void initBuffer(const Methcla_Host* host)
+    void initBuffer(Methcla_Host* host)
     {
         try
         {
@@ -343,12 +378,12 @@ private:
         release(host);
     }
 
-    static void initBufferCallback(const Methcla_Host* host, void* data)
+    static void initBufferCallback(Methcla_Host* host, void* data)
     {
         static_cast<State*>(data)->initBuffer(host);
     }
 
-    inline void fillBuffer(const Methcla_Host* host)
+    inline void fillBuffer(Methcla_Host* host)
     {
         const size_t writePos = m_writePos.load(std::memory_order_relaxed);
 
@@ -399,7 +434,7 @@ private:
         release(host);
     }
 
-    static void fillBufferCallback(const Methcla_Host* host, void* data)
+    static void fillBufferCallback(Methcla_Host* host, void* data)
     {
         static_cast<State*>(data)->fillBuffer(host);
     }
@@ -417,11 +452,11 @@ static bool disksampler_port_descriptor(const Methcla_SynthOptions*,
                                         Methcla_PortDescriptor*);
 static void disksampler_configure(const void*, size_t, const void*, size_t,
                                   Methcla_SynthOptions*);
-static void disksampler_construct(const Methcla_World*, const Methcla_SynthDef*,
+static void disksampler_construct(Methcla_World*, const Methcla_SynthDef*,
                                   const Methcla_SynthOptions*, Methcla_Synth*);
-static void disksampler_destroy(const Methcla_World*, Methcla_Synth*);
+static void disksampler_destroy(Methcla_World*, Methcla_Synth*);
 static void disksampler_connect(Methcla_Synth*, Methcla_PortCount, void* data);
-static void disksampler_process(const Methcla_World*, Methcla_Synth*, size_t);
+static void disksampler_process(Methcla_World*, Methcla_Synth*, size_t);
 }
 
 bool disksampler_port_descriptor(const Methcla_SynthOptions* /* options */,
@@ -472,7 +507,7 @@ void disksampler_configure(const void* tags, size_t tags_size, const void* args,
     //           << options->frames << "\n";
 }
 
-void disksampler_construct(const Methcla_World* world,
+void disksampler_construct(Methcla_World* world,
                            const Methcla_SynthDef* /* synthDef */,
                            const Methcla_SynthOptions* inOptions,
                            Methcla_Synth*              synth)
@@ -495,7 +530,7 @@ void disksampler_construct(const Methcla_World* world,
     }
 }
 
-void disksampler_destroy(const Methcla_World* world, Methcla_Synth* synth)
+void disksampler_destroy(Methcla_World* world, Methcla_Synth* synth)
 {
     State* state = static_cast<DiskSampler*>(synth)->state;
     if (state)
@@ -508,7 +543,7 @@ void disksampler_connect(Methcla_Synth* synth, Methcla_PortCount index,
     ((DiskSampler*)synth)->ports[index] = (float*)data;
 }
 
-static void reportUnderrun(const Methcla_World* world, size_t numFramesNeeded,
+static void reportUnderrun(Methcla_World* world, size_t numFramesNeeded,
                            size_t numFramesProvided)
 {
     Methcla::Plugin::World<DiskSampler>(world).log(kMethcla_LogWarn)
@@ -517,7 +552,7 @@ static void reportUnderrun(const Methcla_World* world, size_t numFramesNeeded,
         << ", missing " << numFramesNeeded - numFramesProvided;
 }
 
-static inline size_t process_disk(const Methcla_World* world, DiskSampler* self,
+static inline size_t process_disk(Methcla_World* world, DiskSampler* self,
                                   size_t numFrames, float amp,
                                   const float* buffer, float* out0, float* out1,
                                   StateVar state)
@@ -783,7 +818,7 @@ inline size_t resample(float* out0, float* out1, size_t numFrames,
     return k;
 }
 
-static inline size_t process_disk_interp(const Methcla_World* world,
+static inline size_t process_disk_interp(Methcla_World* world,
                                          DiskSampler* self, size_t numFrames,
                                          float amp, float rate,
                                          const float* buffer, float* out0,
@@ -898,7 +933,7 @@ static inline size_t process_memory_interp(DiskSampler* self, size_t numFrames,
     return numFramesProduced;
 }
 
-static void process(const Methcla_World* world, Methcla_Synth* synth,
+static void process(Methcla_World* world, Methcla_Synth* synth,
                     size_t numFrames, bool withInterp)
 {
     DiskSampler* self = static_cast<DiskSampler*>(synth);
@@ -957,8 +992,8 @@ static void process(const Methcla_World* world, Methcla_Synth* synth,
     }
 }
 
-static void disksampler_process(const Methcla_World* world,
-                                Methcla_Synth* synth, size_t numFrames)
+static void disksampler_process(Methcla_World* world, Methcla_Synth* synth,
+                                size_t numFrames)
 {
     process(world, synth, numFrames,
             METHCLA_PLUGINS_DISKSAMPLER_USE_RESAMPLING);
@@ -976,11 +1011,10 @@ static const Methcla_SynthDef kDiskSamplerDef = {
     disksampler_process,
     disksampler_destroy};
 
-static const Methcla_Library kDiskSamplerLibrary = {nullptr, nullptr};
+static Methcla_Library kDiskSamplerLibrary = {nullptr, nullptr};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_disksampler(const Methcla_Host* host,
-                                                 const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+               methcla_plugins_disksampler(Methcla_Host* host, const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &kDiskSamplerDef);
     return &kDiskSamplerLibrary;

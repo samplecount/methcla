@@ -46,7 +46,8 @@ public:
     , m_done(false)
     {}
 
-    void connect(DoneAfterPorts::Port, void*) {}
+    void connect(DoneAfterPorts::Port, void*)
+    {}
 
     void process(const World<DoneAfter>& world, size_t numFrames)
     {
@@ -93,7 +94,10 @@ public:
         kOutput
     };
 
-    static constexpr size_t numPorts() { return 2; }
+    static constexpr size_t numPorts()
+    {
+        return 2;
+    }
 
     static Methcla_PortDescriptor descriptor(Port port)
     {
@@ -236,7 +240,10 @@ public:
         kOutput
     };
 
-    static constexpr size_t numPorts() { return 2; }
+    static constexpr size_t numPorts()
+    {
+        return 2;
+    }
 
     static Methcla_PortDescriptor descriptor(Port port)
     {
@@ -331,11 +338,10 @@ static StaticSynthDef<ExponentialFade, ExponentialFadeOptions,
 
 // Library
 
-static const Methcla_Library library = {NULL, NULL};
+static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_node_control(const Methcla_Host* host,
-                                                  const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+               methcla_plugins_node_control(Methcla_Host* host, const char* /* bundlePath */)
 {
     kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);

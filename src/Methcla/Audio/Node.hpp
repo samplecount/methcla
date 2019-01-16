@@ -37,33 +37,72 @@ namespace Methcla { namespace Audio {
         Node& operator=(const Node&) = delete;
 
         //* Access environment.
-        const Environment& env() const { return m_env; }
-        Environment&       env() { return m_env; }
+        const Environment& env() const
+        {
+            return m_env;
+        }
+        Environment& env()
+        {
+            return m_env;
+        }
 
         //* Return unique id.
-        NodeId id() const { return m_id; }
+        NodeId id() const
+        {
+            return m_id;
+        }
 
         //* Return true if this node is a group.
-        virtual bool isGroup() const { return false; }
+        virtual bool isGroup() const
+        {
+            return false;
+        }
         //* Return true if this node is a synth.
-        virtual bool isSynth() const { return false; }
+        virtual bool isSynth() const
+        {
+            return false;
+        }
 
         //* Return the node's parent group or nullptr if it's the root node.
-        const Group* parent() const { return m_parent; }
-        Group*       parent() { return m_parent; }
+        const Group* parent() const
+        {
+            return m_parent;
+        }
+        Group* parent()
+        {
+            return m_parent;
+        }
 
-        const Node* prev() const { return m_prev; }
-        Node*       prev() { return m_prev; }
+        const Node* prev() const
+        {
+            return m_prev;
+        }
+        Node* prev()
+        {
+            return m_prev;
+        }
 
-        const Node* next() const { return m_next; }
-        Node*       next() { return m_next; }
+        const Node* next() const
+        {
+            return m_next;
+        }
+        Node* next()
+        {
+            return m_next;
+        }
 
         // Process a number of frames.
         void process(size_t numFrames);
 
-        Methcla_NodeDoneFlags doneFlags() const { return m_doneFlags; }
+        Methcla_NodeDoneFlags doneFlags() const
+        {
+            return m_doneFlags;
+        }
 
-        void setDoneFlags(Methcla_NodeDoneFlags flags) { m_doneFlags = flags; }
+        void setDoneFlags(Methcla_NodeDoneFlags flags)
+        {
+            m_doneFlags = flags;
+        }
 
         void setDone();
 

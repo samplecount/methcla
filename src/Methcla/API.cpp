@@ -41,9 +41,15 @@ public:
     : m_driver(driver)
     {}
 
-    ~Methcla_AudioDriver() { delete m_driver; }
+    ~Methcla_AudioDriver()
+    {
+        delete m_driver;
+    }
 
-    Methcla::Audio::IO::Driver* driver() { return m_driver; }
+    Methcla::Audio::IO::Driver* driver()
+    {
+        return m_driver;
+    }
 
 private:
     Methcla::Audio::IO::Driver* m_driver;
@@ -122,19 +128,37 @@ public:
                 engineOptions));
     }
 
-    const Methcla::Audio::Environment* env() const { return m_env.get(); }
-    Methcla::Audio::Environment*       env() { return m_env.get(); }
+    const Methcla::Audio::Environment& env() const
+    {
+        return *m_env;
+    }
+    Methcla::Audio::Environment& env()
+    {
+        return *m_env;
+    }
 
     const Methcla::Audio::IO::Driver* driver() const
     {
         return m_driver->driver();
     }
-    Methcla::Audio::IO::Driver* driver() { return m_driver->driver(); }
+    Methcla::Audio::IO::Driver* driver()
+    {
+        return m_driver->driver();
+    }
 
-    void start() { driver()->start(); }
-    void stop() { driver()->stop(); }
+    void start()
+    {
+        driver()->start();
+    }
+    void stop()
+    {
+        driver()->stop();
+    }
 
-    ~Methcla_Engine() { stop(); }
+    ~Methcla_Engine()
+    {
+        stop();
+    }
 
 private:
     static void processCallback(void* data, Methcla_Time currentTime,
@@ -158,31 +182,41 @@ Methcla::Audio::IO::Driver* Methcla::API::getDriver(Methcla_Engine* engine)
 
 #define METHCLA_API_TRY try
 
-#define METHCLA_API_CATCH                                                      \
-    catch (Methcla::Error & e)                                                 \
-    {                                                                          \
-        return methcla_error_new_with_message(e.errorCode(), e.what());        \
-    }                                                                          \
-    catch (std::bad_alloc) { return methcla_error_new(kMethcla_MemoryError); } \
-    catch (std::invalid_argument & e)                                          \
-    {                                                                          \
-        return methcla_error_new_with_message(kMethcla_ArgumentError,          \
-                                              e.what());                       \
-    }                                                                          \
-    catch (std::logic_error & e)                                               \
-    {                                                                          \
-        return methcla_error_new_with_message(kMethcla_LogicError, e.what());  \
-    }                                                                          \
-    catch (std::exception & e)                                                 \
-    {                                                                          \
-        return methcla_error_new_with_message(kMethcla_UnspecifiedError,       \
-                                              e.what());                       \
-    }                                                                          \
-    catch (...) { return methcla_error_new(kMethcla_UnspecifiedError); }
+#define METHCLA_API_CATCH                                                     \
+    catch (Methcla::Error & e)                                                \
+    {                                                                         \
+        return methcla_error_new_with_message(e.errorCode(), e.what());       \
+    }                                                                         \
+    catch (std::bad_alloc)                                                    \
+    {                                                                         \
+        return methcla_error_new(kMethcla_MemoryError);                       \
+    }                                                                         \
+    catch (std::invalid_argument & e)                                         \
+    {                                                                         \
+        return methcla_error_new_with_message(kMethcla_ArgumentError,         \
+                                              e.what());                      \
+    }                                                                         \
+    catch (std::logic_error & e)                                              \
+    {                                                                         \
+        return methcla_error_new_with_message(kMethcla_LogicError, e.what()); \
+    }                                                                         \
+    catch (std::exception & e)                                                \
+    {                                                                         \
+        return methcla_error_new_with_message(kMethcla_UnspecifiedError,      \
+                                              e.what());                      \
+    }                                                                         \
+    catch (...)                                                               \
+    {                                                                         \
+        return methcla_error_new(kMethcla_UnspecifiedError);                  \
+    }
 
-const char* methcla_version() { return kMethclaVersion; }
+const char* methcla_version()
+{
+    return kMethclaVersion;
+}
 
-static void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t) {}
+static void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t)
+{}
 
 METHCLA_EXPORT void
 methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options)
@@ -243,7 +277,10 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
         delete driver;
         return methcla_error_new(kMethcla_ArgumentError);
     }
-    METHCLA_API_TRY { *engine = new Methcla_Engine(options, driver); }
+    METHCLA_API_TRY
+    {
+        *engine = new Methcla_Engine(options, driver);
+    }
     METHCLA_API_CATCH;
     return methcla_no_error();
 }
@@ -265,7 +302,10 @@ METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
     // cout << "Methcla_Engine_start" << endl;
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
-    METHCLA_API_TRY { engine->start(); }
+    METHCLA_API_TRY
+    {
+        engine->start();
+    }
     METHCLA_API_CATCH;
     return methcla_no_error();
 }
@@ -275,7 +315,10 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
     // cout << "Methcla_Engine_stop" << endl;
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
-    METHCLA_API_TRY { engine->stop(); }
+    METHCLA_API_TRY
+    {
+        engine->stop();
+    }
     METHCLA_API_CATCH;
     return methcla_no_error();
 }
@@ -283,14 +326,14 @@ METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
 METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine*        engine,
                                                  Methcla_EngineLogFlags flags)
 {
-    engine->env()->setLogFlags(flags);
+    engine->env().setLogFlags(flags);
 }
 
 METHCLA_EXPORT void methcla_engine_log_line(Methcla_Engine*  engine,
                                             Methcla_LogLevel level,
                                             const char*      message)
 {
-    engine->env()->logLineNRT(level, message);
+    engine->env().logLineNRT(level, message);
 }
 
 METHCLA_EXPORT uint64_t methcla_time_to_uint64(Methcla_Time time)
@@ -326,7 +369,10 @@ METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine,
         return methcla_error_new(kMethcla_ArgumentError);
     if (size == 0)
         return methcla_error_new(kMethcla_ArgumentError);
-    METHCLA_API_TRY { engine->env()->send(packet, size); }
+    METHCLA_API_TRY
+    {
+        engine->env().send(packet, size);
+    }
     METHCLA_API_CATCH;
     return methcla_no_error();
 }
@@ -345,8 +391,8 @@ METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(
         return methcla_error_new(kMethcla_ArgumentError);
     if (info == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
-    const Methcla_Host* host = static_cast<const Methcla_Host*>(*engine->env());
-    return methcla_host_soundfile_open(host, path, mode, file, info);
+    Methcla_Host host(engine->env());
+    return methcla_host_soundfile_open(&host, path, mode, file, info);
 }
 
 METHCLA_EXPORT const char*

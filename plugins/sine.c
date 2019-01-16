@@ -68,8 +68,7 @@ static bool port_descriptor(const Methcla_SynthOptions* options,
 //     fprintf(stderr, "SINE_FREQ [NRT]: %f\n", *sine->ports[kSine_freq]);
 // }
 
-static void construct(const Methcla_World*        world,
-                      const Methcla_SynthDef*     synthDef,
+static void construct(Methcla_World* world, const Methcla_SynthDef* synthDef,
                       const Methcla_SynthOptions* options, Methcla_Synth* synth)
 {
     Sine* sine = (Sine*)synth;
@@ -83,7 +82,7 @@ static void connect(Methcla_Synth* synth, Methcla_PortCount port, void* data)
     ((Sine*)synth)->ports[port] = (float*)data;
 }
 
-static void process(const Methcla_World* world, Methcla_Synth* synth,
+static void process(Methcla_World* world, Methcla_Synth* synth,
                     size_t numFrames)
 {
     Sine* sine = (Sine*)synth;
@@ -114,10 +113,10 @@ static const Methcla_SynthDef descriptor = {METHCLA_PLUGINS_SINE_URI,
                                             process,
                                             NULL};
 
-static const Methcla_Library library = {NULL, NULL};
+static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_sine(const Methcla_Host* host, const char* bundlePath)
+METHCLA_EXPORT Methcla_Library* methcla_plugins_sine(Methcla_Host* host,
+                                                     const char*   bundlePath)
 {
     methcla_host_register_synthdef(host, &descriptor);
     return &library;

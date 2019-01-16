@@ -30,18 +30,17 @@ using namespace Methcla::Audio;
 
 namespace {
 
-    METHCLA_C_LINKAGE void methcla_api_host_notify(const Methcla_Host* host,
-                                                   const void*         packet,
-                                                   size_t              size)
+    METHCLA_C_LINKAGE void
+    methcla_api_host_notify(Methcla_Host* host, const void* packet, size_t size)
     {
         assert(host);
         assert(host->handle);
         static_cast<Environment*>(host->handle)->notify(packet, size);
     }
 
-    METHCLA_C_LINKAGE void methcla_api_host_log_line(const Methcla_Host* host,
-                                                     Methcla_LogLevel    level,
-                                                     const char* message)
+    METHCLA_C_LINKAGE void methcla_api_host_log_line(Methcla_Host*    host,
+                                                     Methcla_LogLevel level,
+                                                     const char*      message)
     {
         assert(host);
         assert(host->handle);
@@ -50,7 +49,7 @@ namespace {
     }
 
     METHCLA_C_LINKAGE void
-    methcla_api_host_register_synthdef(const Methcla_Host*     host,
+    methcla_api_host_register_synthdef(Methcla_Host*           host,
                                        const Methcla_SynthDef* synthDef)
     {
         assert(host && host->handle);
@@ -59,15 +58,14 @@ namespace {
     }
 
     METHCLA_C_LINKAGE void
-    methcla_api_host_register_soundfile_api(const Methcla_Host*         host,
+    methcla_api_host_register_soundfile_api(Methcla_Host*               host,
                                             const Methcla_SoundFileAPI* api)
     {
         assert(host && host->handle && api);
         static_cast<Environment*>(host->handle)->registerSoundFileAPI(api);
     }
 
-    METHCLA_C_LINKAGE void* methcla_api_host_alloc(const Methcla_Host*,
-                                                   size_t size)
+    METHCLA_C_LINKAGE void* methcla_api_host_alloc(Methcla_Host*, size_t size)
     {
         try
         {
@@ -80,14 +78,13 @@ namespace {
         return nullptr;
     }
 
-    METHCLA_C_LINKAGE void methcla_api_host_free(const Methcla_Host*, void* ptr)
+    METHCLA_C_LINKAGE void methcla_api_host_free(Methcla_Host*, void* ptr)
     {
         Memory::free(ptr);
     }
 
-    METHCLA_C_LINKAGE void* methcla_api_host_alloc_aligned(const Methcla_Host*,
-                                                           size_t alignment,
-                                                           size_t size)
+    METHCLA_C_LINKAGE void*
+    methcla_api_host_alloc_aligned(Methcla_Host*, size_t alignment, size_t size)
     {
         try
         {
@@ -100,7 +97,7 @@ namespace {
         return nullptr;
     }
 
-    METHCLA_C_LINKAGE void methcla_api_host_free_aligned(const Methcla_Host*,
+    METHCLA_C_LINKAGE void methcla_api_host_free_aligned(Methcla_Host*,
                                                          void* ptr)
     {
         Memory::freeAligned(ptr);
@@ -214,8 +211,8 @@ namespace {
         return static_cast<Environment*>(world->handle)->currentTime();
     }
 
-    METHCLA_C_LINKAGE void* methcla_api_world_alloc(const Methcla_World* world,
-                                                    size_t               size)
+    METHCLA_C_LINKAGE void* methcla_api_world_alloc(Methcla_World* world,
+                                                    size_t         size)
     {
         assert(world && world->handle);
         try
@@ -231,16 +228,16 @@ namespace {
         return nullptr;
     }
 
-    METHCLA_C_LINKAGE void methcla_api_world_free(const Methcla_World* world,
-                                                  void*                ptr)
+    METHCLA_C_LINKAGE void methcla_api_world_free(Methcla_World* world,
+                                                  void*          ptr)
     {
         assert(world && world->handle);
         return static_cast<Environment*>(world->handle)->rtMem().free(ptr);
     }
 
     METHCLA_C_LINKAGE void*
-    methcla_api_world_alloc_aligned(const Methcla_World* world,
-                                    size_t alignment, size_t size)
+    methcla_api_world_alloc_aligned(Methcla_World* world, size_t alignment,
+                                    size_t size)
     {
         assert(world && world->handle);
         try
@@ -256,8 +253,8 @@ namespace {
         return nullptr;
     }
 
-    METHCLA_C_LINKAGE void
-    methcla_api_world_free_aligned(const Methcla_World* world, void* ptr)
+    METHCLA_C_LINKAGE void methcla_api_world_free_aligned(Methcla_World* world,
+                                                          void*          ptr)
     {
         assert(world && world->handle);
         return static_cast<Environment*>(world->handle)
@@ -265,16 +262,16 @@ namespace {
             .freeAligned(ptr);
     }
 
-    METHCLA_C_LINKAGE void
-    methcla_api_world_log_line(const Methcla_World* world,
-                               Methcla_LogLevel level, const char* message)
+    METHCLA_C_LINKAGE void methcla_api_world_log_line(Methcla_World*   world,
+                                                      Methcla_LogLevel level,
+                                                      const char*      message)
     {
         assert(world);
         assert(world->handle);
         static_cast<Environment*>(world->handle)->logLineRT(level, message);
     }
 
-    METHCLA_C_LINKAGE void methcla_api_world_synth_done(const Methcla_World*,
+    METHCLA_C_LINKAGE void methcla_api_world_synth_done(Methcla_World*,
                                                         Methcla_Synth* synth)
     {
         assert(synth != nullptr);
@@ -283,10 +280,10 @@ namespace {
 } // namespace
 
 extern "C" {
-static void methcla_api_host_perform_command(const Methcla_Host*,
+static void methcla_api_host_perform_command(Methcla_Host*,
                                              Methcla_WorldPerformFunction,
                                              void*);
-static void methcla_api_world_perform_command(const Methcla_World*,
+static void methcla_api_world_perform_command(Methcla_World*,
                                               Methcla_HostPerformFunction,
                                               void*);
 }
@@ -296,33 +293,22 @@ Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
                          Worker* worker)
 : m_sampleRate(options.sampleRate)
 , m_blockSize(options.blockSize)
+// Methcla_Host interface
+, m_host({this, methcla_api_host_register_synthdef,
+          methcla_api_host_register_soundfile_api, methcla_api_host_alloc,
+          methcla_api_host_free, methcla_api_host_alloc_aligned,
+          methcla_api_host_free_aligned, methcla_api_host_soundfile_open,
+          methcla_api_host_perform_command, methcla_api_host_notify,
+          methcla_api_host_log_line})
+
+// Methcla_World interface
+, m_world({this, methcla_api_world_samplerate, methcla_api_world_block_size,
+           methcla_api_world_current_time, methcla_api_world_alloc,
+           methcla_api_world_free, methcla_api_world_alloc_aligned,
+           methcla_api_world_free_aligned, methcla_api_world_perform_command,
+           methcla_api_world_log_line, methcla_api_world_synth_done})
+
 {
-    // Initialize Methcla_Host interface
-    m_host = {this,
-              methcla_api_host_register_synthdef,
-              methcla_api_host_register_soundfile_api,
-              methcla_api_host_alloc,
-              methcla_api_host_free,
-              methcla_api_host_alloc_aligned,
-              methcla_api_host_free_aligned,
-              methcla_api_host_soundfile_open,
-              methcla_api_host_perform_command,
-              methcla_api_host_notify,
-              methcla_api_host_log_line};
-
-    // Initialize Methcla_World interface
-    m_world = {this,
-               methcla_api_world_samplerate,
-               methcla_api_world_block_size,
-               methcla_api_world_current_time,
-               methcla_api_world_alloc,
-               methcla_api_world_free,
-               methcla_api_world_alloc_aligned,
-               methcla_api_world_free_aligned,
-               methcla_api_world_perform_command,
-               methcla_api_world_log_line,
-               methcla_api_world_synth_done};
-
     m_impl = new EnvironmentImpl(this, logHandler, packetHandler, options,
                                  messageQueue, worker);
     m_impl->init(options);
@@ -333,15 +319,27 @@ Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
         << "Methcla engine (version " << methcla_version() << ")";
 }
 
-Environment::~Environment() { delete m_impl; }
+Environment::~Environment()
+{
+    delete m_impl;
+}
 
 //* Convert environment to Methcla_Host.
-Environment::operator const Methcla_Host*() const { return &m_host; }
+Environment::operator const Methcla_Host&() const
+{
+    return m_host;
+}
 
-Group* Environment::rootNode() { return m_impl->rootNode(); }
+Group* Environment::rootNode()
+{
+    return m_impl->rootNode();
+}
 
 //* Convert environment to Methcla_World.
-Environment::operator const Methcla_World*() const { return &m_world; }
+Environment::operator const Methcla_World&() const
+{
+    return m_world;
+}
 
 size_t Environment::numAudioBuses() const
 {
@@ -373,11 +371,20 @@ AudioBus* Environment::externalAudioInput(AudioBusId id)
     return m_impl->m_externalAudioInputs.at(id).get();
 }
 
-Memory::RTMemoryManager& Environment::rtMem() { return m_impl->rtMem(); }
+Memory::RTMemoryManager& Environment::rtMem()
+{
+    return m_impl->rtMem();
+}
 
-Epoch Environment::epoch() const { return m_impl->m_epoch; }
+Epoch Environment::epoch() const
+{
+    return m_impl->m_epoch;
+}
 
-Methcla_Time Environment::currentTime() const { return m_impl->currentTime(); }
+Methcla_Time Environment::currentTime() const
+{
+    return m_impl->currentTime();
+}
 
 void Environment::send(const void* packet, size_t size)
 {
@@ -427,7 +434,10 @@ void Environment::notifyNodeDone(NodeId nodeId)
     m_impl->notifyNodeDone(nodeId);
 }
 
-void Environment::nodeEnded(NodeId nodeId) { m_impl->nodeEnded(nodeId); }
+void Environment::nodeEnded(NodeId nodeId)
+{
+    m_impl->nodeEnded(nodeId);
+}
 
 void Environment::reply(Methcla_RequestId requestId, const void* packet,
                         size_t size)
@@ -486,12 +496,13 @@ static void perform_worldCommand(Environment* env, void* data)
 {
     CallbackData<Methcla_WorldPerformFunction>* self =
         (CallbackData<Methcla_WorldPerformFunction>*)data;
-    self->func(*env, self->arg);
+    Methcla_World world(*env);
+    self->func(&world, self->arg);
     env->sendToWorker(perform_nrt_free, self);
 }
 
 static void methcla_api_host_perform_command(
-    const Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
+    Methcla_Host* host, Methcla_WorldPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(host->handle);
     CallbackData<Methcla_WorldPerformFunction>* callbackData =
@@ -505,12 +516,13 @@ static void perform_hostCommand(Environment* env, void* data)
 {
     CallbackData<Methcla_HostPerformFunction>* self =
         (CallbackData<Methcla_HostPerformFunction>*)data;
-    self->func(*env, self->arg);
+    Methcla_Host host(*env);
+    self->func(&host, self->arg);
     env->sendFromWorker(perform_rt_free, self);
 }
 
 static void methcla_api_world_perform_command(
-    const Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
+    Methcla_World* world, Methcla_HostPerformFunction perform, void* data)
 {
     Environment* env = static_cast<Environment*>(world->handle);
     CallbackData<Methcla_HostPerformFunction>* callbackData =

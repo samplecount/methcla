@@ -99,16 +99,22 @@ namespace Methcla { namespace Audio {
         Environment& operator=(const Environment&) = delete;
 
         //* Convert environment to Methcla_Host.
-        operator const Methcla_Host*() const;
+        operator const Methcla_Host&() const;
 
         //* Convert environment to Methcla_World.
-        operator const Methcla_World*() const;
+        operator const Methcla_World&() const;
 
         //* Return the root group node.
         Group* rootNode();
 
-        double sampleRate() const { return m_sampleRate; }
-        size_t blockSize() const { return m_blockSize; }
+        double sampleRate() const
+        {
+            return m_sampleRate;
+        }
+        size_t blockSize() const
+        {
+            return m_blockSize;
+        }
 
         //* Return number of external audio outputs.
         size_t numExternalAudioOutputs() const;
@@ -199,11 +205,11 @@ namespace Methcla { namespace Audio {
         void nodeEnded(NodeId nodeId);
 
     private:
-        EnvironmentImpl* m_impl;
-        const double     m_sampleRate;
-        const size_t     m_blockSize;
-        Methcla_Host     m_host;
-        Methcla_World    m_world;
+        EnvironmentImpl*    m_impl;
+        const double        m_sampleRate;
+        const size_t        m_blockSize;
+        const Methcla_Host  m_host;
+        const Methcla_World m_world;
     };
 }} // namespace Methcla::Audio
 
