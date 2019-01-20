@@ -58,8 +58,8 @@ namespace {
     }
 
     METHCLA_C_LINKAGE void
-    methcla_api_host_register_soundfile_api(Methcla_Host*               host,
-                                            const Methcla_SoundFileAPI* api)
+    methcla_api_host_register_soundfile_api(Methcla_Host*         host,
+                                            Methcla_SoundFileAPI* api)
     {
         assert(host && host->handle && api);
         static_cast<Environment*>(host->handle)->registerSoundFileAPI(api);
@@ -164,7 +164,9 @@ namespace {
                 matchExtension(split((*it)->valid_file_extensions, ','),
                                takeExtension(path)))
             {
-                Methcla_Error result = (*it)->open(*it, path, mode, file, info);
+                Methcla_SoundFileAPI api(**it);
+                const Methcla_Error  result =
+                    api.open(&api, path, mode, file, info);
                 if (methcla_is_ok(result))
                 {
                     assert(file != nullptr);

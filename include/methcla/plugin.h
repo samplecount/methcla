@@ -235,8 +235,8 @@ struct Methcla_Host
                               const Methcla_SynthDef* synthDef);
 
     //* Register sound file API.
-    void (*register_soundfile_api)(Methcla_Host*               host,
-                                   const Methcla_SoundFileAPI* api);
+    void (*register_soundfile_api)(Methcla_Host*         host,
+                                   Methcla_SoundFileAPI* api);
 
     //* Allocate a block of memory
     void* (*alloc)(Methcla_Host* context, size_t size);
@@ -280,8 +280,8 @@ methcla_host_register_synthdef(Methcla_Host*           host,
 }
 
 static inline void
-methcla_host_register_soundfile_api(Methcla_Host*               host,
-                                    const Methcla_SoundFileAPI* api)
+methcla_host_register_soundfile_api(Methcla_Host*         host,
+                                    Methcla_SoundFileAPI* api)
 {
     assert(host && host->register_soundfile_api && api);
     host->register_soundfile_api(host, api);

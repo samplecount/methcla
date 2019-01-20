@@ -53,24 +53,23 @@ struct SoundFileHandle
 };
 
 extern "C" {
-static Methcla_Error soundfile_close(const Methcla_SoundFile*);
-static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
-static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*,
-                                          size_t, size_t*);
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*,
+static Methcla_Error soundfile_close(Methcla_SoundFile*);
+static Methcla_Error soundfile_seek(Methcla_SoundFile*, int64_t);
+static Methcla_Error soundfile_tell(Methcla_SoundFile*, int64_t*);
+static Methcla_Error soundfile_read_float(Methcla_SoundFile*, float*, size_t,
+                                          size_t*);
+static Methcla_Error soundfile_open(Methcla_SoundFileAPI*, const char*,
                                     Methcla_FileMode, Methcla_SoundFile**,
                                     Methcla_SoundFileInfo*);
 } // extern "C"
 
-static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
+static Methcla_Error soundfile_close(Methcla_SoundFile* file)
 {
     SoundFileHandle::Destructor()(static_cast<SoundFileHandle*>(file->handle));
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
-                                    int64_t                  numFrames)
+static Methcla_Error soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
     off_t            n = mpg123_seek(handle->handle,
@@ -79,8 +78,7 @@ static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
     return n >= 0 ? methcla_no_error() : handle->error();
 }
 
-static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
-                                    int64_t*                 numFrames)
+static Methcla_Error soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
 {
     SoundFileHandle* handle = static_cast<SoundFileHandle*>(file->handle);
     off_t            n = mpg123_tell(handle->handle);
@@ -90,7 +88,7 @@ static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
+static Methcla_Error soundfile_read_float(Methcla_SoundFile* file,
                                           float* buffer, size_t inNumFrames,
                                           size_t* outNumFrames)
 {
@@ -117,8 +115,8 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*,
-                                    const char* path, Methcla_FileMode mode,
+static Methcla_Error soundfile_open(Methcla_SoundFileAPI*, const char* path,
+                                    Methcla_FileMode       mode,
                                     Methcla_SoundFile**    outFile,
                                     Methcla_SoundFileInfo* info)
 {
@@ -200,8 +198,8 @@ static void methcla_mpg123_library_destroy(Methcla_Library*)
     mpg123_exit();
 }
 
-static const Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {nullptr, "mp3",
-                                                          soundfile_open};
+static Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {nullptr, "mp3",
+                                                    soundfile_open};
 
 static Methcla_Library kLibrary_mpg123 = {nullptr,
                                           methcla_mpg123_library_destroy};

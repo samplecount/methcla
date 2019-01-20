@@ -43,23 +43,22 @@ struct SoundFileHandle
 };
 
 extern "C" {
-static Methcla_Error soundfile_close(const Methcla_SoundFile* file);
-static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
-                                    int64_t                  numFrames);
-static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
-                                    int64_t*                 numFrames);
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
+static Methcla_Error soundfile_close(Methcla_SoundFile* file);
+static Methcla_Error soundfile_seek(Methcla_SoundFile* file, int64_t numFrames);
+static Methcla_Error soundfile_tell(Methcla_SoundFile* file,
+                                    int64_t*           numFrames);
+static Methcla_Error soundfile_read_float(Methcla_SoundFile* file,
                                           float* buffer, size_t inNumFrames,
                                           size_t* outNumFrames);
-static Methcla_Error soundfile_write_float(const Methcla_SoundFile*,
-                                           const float*, size_t, size_t*);
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* api,
-                                    const char* path, Methcla_FileMode mode,
+static Methcla_Error soundfile_write_float(Methcla_SoundFile*, const float*,
+                                           size_t, size_t*);
+static Methcla_Error soundfile_open(Methcla_SoundFileAPI* api, const char* path,
+                                    Methcla_FileMode       mode,
                                     Methcla_SoundFile**    outFile,
                                     Methcla_SoundFileInfo* info);
 } // extern "C"
 
-static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
+static Methcla_Error soundfile_close(Methcla_SoundFile* file)
 {
     SoundFileHandle* handle = (SoundFileHandle*)file->handle;
     std::cerr << "soundfile_close " << file << " " << handle << std::endl;
@@ -67,8 +66,7 @@ static Methcla_Error soundfile_close(const Methcla_SoundFile* file)
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
-                                    int64_t                  numFrames)
+static Methcla_Error soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
 {
     SoundFileHandle* handle = (SoundFileHandle*)file->handle;
     int64_t          prevPos = handle->pos;
@@ -80,8 +78,7 @@ static Methcla_Error soundfile_seek(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
-                                    int64_t*                 numFrames)
+static Methcla_Error soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
 {
     SoundFileHandle* handle = (SoundFileHandle*)file->handle;
     *numFrames = handle->numFrames;
@@ -89,7 +86,7 @@ static Methcla_Error soundfile_tell(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
+static Methcla_Error soundfile_read_float(Methcla_SoundFile* file,
                                           float* buffer, size_t inNumFrames,
                                           size_t* outNumFrames)
 {
@@ -111,7 +108,7 @@ static Methcla_Error soundfile_read_float(const Methcla_SoundFile* file,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_write_float(const Methcla_SoundFile* /*file*/,
+static Methcla_Error soundfile_write_float(Methcla_SoundFile* /*file*/,
                                            const float* /*buffer*/,
                                            size_t  inNumFrames,
                                            size_t* outNumFrames)
@@ -133,7 +130,7 @@ static Methcla_Error soundfile_write_float(const Methcla_SoundFile* /*file*/,
     return methcla_no_error();
 }
 
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* /*api*/,
+static Methcla_Error soundfile_open(Methcla_SoundFileAPI* /*api*/,
                                     const char* path, Methcla_FileMode /*mode*/
                                     ,
                                     Methcla_SoundFile**    outFile,
@@ -176,8 +173,7 @@ static Methcla_Error soundfile_open(const Methcla_SoundFileAPI* /*api*/,
     return methcla_no_error();
 }
 
-static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
-                                                   soundfile_open};
+static Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr, soundfile_open};
 
 METHCLA_EXPORT Methcla_Library* methcla_soundfile_api_dummy(Methcla_Host* host,
                                                             const char*)

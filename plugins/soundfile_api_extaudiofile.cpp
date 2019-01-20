@@ -31,19 +31,19 @@ struct SoundFileHandle
 };
 
 extern "C" {
-static Methcla_Error soundfile_close(const Methcla_SoundFile*);
-static Methcla_Error soundfile_seek(const Methcla_SoundFile*, int64_t);
-static Methcla_Error soundfile_tell(const Methcla_SoundFile*, int64_t*);
-static Methcla_Error soundfile_read_float(const Methcla_SoundFile*, float*,
-                                          size_t, size_t*);
-static Methcla_Error soundfile_write_float(const Methcla_SoundFile*,
-                                           const float*, size_t, size_t*);
-static Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char*,
+static Methcla_Error soundfile_close(Methcla_SoundFile*);
+static Methcla_Error soundfile_seek(Methcla_SoundFile*, int64_t);
+static Methcla_Error soundfile_tell(Methcla_SoundFile*, int64_t*);
+static Methcla_Error soundfile_read_float(Methcla_SoundFile*, float*, size_t,
+                                          size_t*);
+static Methcla_Error soundfile_write_float(Methcla_SoundFile*, const float*,
+                                           size_t, size_t*);
+static Methcla_Error soundfile_open(Methcla_SoundFileAPI*, const char*,
                                     Methcla_FileMode, Methcla_SoundFile**,
                                     Methcla_SoundFileInfo*);
 }
 
-Methcla_Error soundfile_close(const Methcla_SoundFile* file)
+Methcla_Error soundfile_close(Methcla_SoundFile* file)
 {
     //    std::cout << "extAudioFile_close " << file << " " << file->handle <<
     //    std::endl;
@@ -57,7 +57,7 @@ Methcla_Error soundfile_close(const Methcla_SoundFile* file)
     return methcla_no_error();
 }
 
-Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFrames)
+Methcla_Error soundfile_seek(Methcla_SoundFile* file, int64_t numFrames)
 {
     ExtAudioFileRef extFile = ((SoundFileHandle*)file->handle)->file;
     if (extFile == nullptr)
@@ -70,7 +70,7 @@ Methcla_Error soundfile_seek(const Methcla_SoundFile* file, int64_t numFrames)
     return methcla_no_error();
 }
 
-Methcla_Error soundfile_tell(const Methcla_SoundFile* file, int64_t* numFrames)
+Methcla_Error soundfile_tell(Methcla_SoundFile* file, int64_t* numFrames)
 {
     ExtAudioFileRef extFile = ((SoundFileHandle*)file->handle)->file;
     if (extFile == nullptr)
@@ -101,7 +101,7 @@ AudioStreamBasicDescription floatClientFormat(double sampleRate,
     return clientFormat;
 }
 
-Methcla_Error soundfile_read_float(const Methcla_SoundFile* file, float* buffer,
+Methcla_Error soundfile_read_float(Methcla_SoundFile* file, float* buffer,
                                    size_t inNumFrames, size_t* outNumFrames)
 {
     if (file == nullptr || buffer == nullptr || outNumFrames == nullptr)
@@ -149,7 +149,7 @@ static void convert32(void* dst, const float* src, size_t n)
     }
 }
 
-Methcla_Error soundfile_write_float(const Methcla_SoundFile* file,
+Methcla_Error soundfile_write_float(Methcla_SoundFile* file,
                                     const float* buffer, size_t inNumFrames,
                                     size_t* outNumFrames)
 {
@@ -234,18 +234,24 @@ public:
     CFRef(T ref)
     : m_ref(ref)
     {}
-    ~CFRef() { CFRelease(m_ref); }
+    ~CFRef()
+    {
+        CFRelease(m_ref);
+    }
 
     CFRef(const CFRef<T>& other) = delete;
     CFRef<T>& operator=(const CFRef<T>& other) = delete;
 
-    operator T() { return m_ref; }
+    operator T()
+    {
+        return m_ref;
+    }
 
 private:
     T m_ref;
 };
 
-Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path,
+Methcla_Error soundfile_open(Methcla_SoundFileAPI*, const char* path,
                              Methcla_FileMode mode, Methcla_SoundFile** outFile,
                              Methcla_SoundFileInfo* info)
 {
@@ -415,8 +421,7 @@ Methcla_Error soundfile_open(const Methcla_SoundFileAPI*, const char* path,
     return methcla_no_error();
 }
 
-static const Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr,
-                                                   soundfile_open};
+static Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr, soundfile_open};
 
 METHCLA_EXPORT Methcla_Library*
                methcla_soundfile_api_extaudiofile(Methcla_Host* host, const char*)

@@ -62,14 +62,13 @@ typedef struct Methcla_SoundFile Methcla_SoundFile;
 struct Methcla_SoundFile
 {
     void* handle;
-    Methcla_Error (*close)(const Methcla_SoundFile* file);
-    Methcla_Error (*seek)(const Methcla_SoundFile* file, int64_t numFrames);
-    Methcla_Error (*tell)(const Methcla_SoundFile* file, int64_t* numFrames);
-    Methcla_Error (*read_float)(const Methcla_SoundFile* file, float* buffer,
+    Methcla_Error (*close)(Methcla_SoundFile* file);
+    Methcla_Error (*seek)(Methcla_SoundFile* file, int64_t numFrames);
+    Methcla_Error (*tell)(Methcla_SoundFile* file, int64_t* numFrames);
+    Methcla_Error (*read_float)(Methcla_SoundFile* file, float* buffer,
                                 size_t numFrames, size_t* outNumFrames);
-    Methcla_Error (*write_float)(const Methcla_SoundFile* file,
-                                 const float* buffer, size_t numFrames,
-                                 size_t* outNumFrames);
+    Methcla_Error (*write_float)(Methcla_SoundFile* file, const float* buffer,
+                                 size_t numFrames, size_t* outNumFrames);
 };
 
 typedef struct Methcla_SoundFileAPI Methcla_SoundFileAPI;
@@ -78,7 +77,7 @@ struct Methcla_SoundFileAPI
 {
     void*       handle;
     const char* valid_file_extensions;
-    Methcla_Error (*open)(const Methcla_SoundFileAPI* api, const char* path,
+    Methcla_Error (*open)(Methcla_SoundFileAPI* api, const char* path,
                           Methcla_FileMode mode, Methcla_SoundFile** file,
                           Methcla_SoundFileInfo* info);
 };
