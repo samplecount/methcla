@@ -29,7 +29,7 @@ namespace Methcla { namespace Plugin {
     class Library
     {
     public:
-        virtual ~Library() {}
+        virtual ~Library();
         virtual Function symbol(const std::string& name) = 0;
     };
 
@@ -37,7 +37,7 @@ namespace Methcla { namespace Plugin {
     class Loader
     {
     public:
-        virtual ~Loader() {}
+        virtual ~Loader();
         virtual Memory::shared_ptr<Library> open(const std::string& path) = 0;
     };
 

@@ -6,7 +6,10 @@
 
 using namespace Methcla::Plugin;
 
-void clear_dlerror() { dlerror(); }
+void clear_dlerror()
+{
+    dlerror();
+}
 
 void check_dlerror()
 {
@@ -27,3 +30,9 @@ Function dlfunc(void* handle, const char* name)
     check_dlerror();
     return g;
 }
+
+Library::~Library()
+{}
+
+Loader::~Loader()
+{}

@@ -42,6 +42,8 @@ set(sources
     Methcla/Platform.hpp
     Methcla/Plugin/Loader.cpp
     Methcla/Plugin/Loader.hpp
+    Methcla/Plugin/Manager.cpp
+    Methcla/Plugin/Manager.hpp
     Methcla/Utility/Hash.hpp
     Methcla/Utility/Macros.h
     Methcla/Utility/MessageQueue.hpp

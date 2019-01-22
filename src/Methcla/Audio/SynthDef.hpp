@@ -16,7 +16,6 @@
 #define METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 
 #include "Methcla/Memory.hpp"
-#include "Methcla/Plugin/Loader.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
 #include <methcla/engine.h>
@@ -94,43 +93,6 @@ namespace Methcla { namespace Audio {
                                Utility::Hash::cstr_hash,
                                Utility::Hash::cstr_equal>
         SynthDefMap;
-
-    //* Plugin library.
-    class PluginLibrary
-    {
-    public:
-        PluginLibrary(
-            Methcla_Library*                             lib,
-            Memory::shared_ptr<Methcla::Plugin::Library> plugin = nullptr);
-        ~PluginLibrary();
-
-        PluginLibrary(const PluginLibrary&) = delete;
-        PluginLibrary& operator=(const PluginLibrary&) = delete;
-
-    private:
-        Methcla_Library*                             m_lib;
-        Memory::shared_ptr<Methcla::Plugin::Library> m_plugin;
-    };
-
-    class PluginManager
-    {
-    public:
-        PluginManager();
-
-        PluginManager(const PluginManager&) = delete;
-        PluginManager& operator=(const PluginManager&) = delete;
-
-        //* Load plugins from static functions.
-        void loadPlugins(Methcla_Host*                             host,
-                         const std::list<Methcla_LibraryFunction>& funcs);
-
-        //* Load plugins from directory.
-        void loadPlugins(Methcla_Host* host, const std::string& directory);
-
-    private:
-        typedef std::list<Memory::shared_ptr<PluginLibrary>> Libraries;
-        Libraries                                            m_libs;
-    };
 
 }} // namespace Methcla::Audio
 

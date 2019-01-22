@@ -21,6 +21,7 @@
 #include "Methcla/Memory.hpp"
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Platform.hpp"
+#include "Methcla/Plugin/Manager.hpp"
 #include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
@@ -90,9 +91,15 @@ namespace Methcla { namespace Audio {
             Methcla::Memory::free(m_refs);
         }
 
-        void* packet() { return m_packet; }
+        void* packet()
+        {
+            return m_packet;
+        }
 
-        size_t size() const { return m_size; }
+        size_t size() const
+        {
+            return m_size;
+        }
 
         void retain()
         {
@@ -121,9 +128,15 @@ namespace Methcla { namespace Audio {
             , m_data(data)
             {}
 
-            Methcla_Time time() const { return m_time; }
+            Methcla_Time time() const
+            {
+                return m_time;
+            }
 
-            const T& data() const { return m_data; }
+            const T& data() const
+            {
+                return m_data;
+            }
 
             bool operator==(const Item& other) const
             {
@@ -178,7 +191,10 @@ namespace Methcla { namespace Audio {
             }
         }
 
-        bool isEmpty() const { return m_queue.empty(); }
+        bool isEmpty() const
+        {
+            return m_queue.empty();
+        }
 
         Methcla_Time time() const
         {
@@ -216,7 +232,7 @@ namespace Methcla { namespace Audio {
         LogHandler    m_logHandler;
         PacketHandler m_packetHandler;
 
-        PluginManager           m_plugins;
+        Plugin::Manager         m_plugins;
         Memory::RTMemoryManager m_rtMem;
 
         typedef Utility::MessageQueue<Request*>             MessageQueue;
@@ -269,16 +285,25 @@ namespace Methcla { namespace Audio {
         // Initialization that has to take place after constructor returns
         void init(const Environment::Options& options);
 
-        Group* rootNode() { return m_rootNode; }
+        Group* rootNode()
+        {
+            return m_rootNode;
+        }
 
         bool isValid(NodeId nodeId) const
         {
             return nodeId >= 0 && (size_t)nodeId < m_nodes.size();
         }
 
-        Methcla_Time currentTime() const { return m_currentTime; }
+        Methcla_Time currentTime() const
+        {
+            return m_currentTime;
+        }
 
-        Memory::RTMemoryManager& rtMem() { return m_rtMem; }
+        Memory::RTMemoryManager& rtMem()
+        {
+            return m_rtMem;
+        }
 
         void registerSynthDef(const Methcla_SynthDef* def);
         const Memory::shared_ptr<SynthDef>& synthDef(const char* uri) const;
@@ -356,7 +381,10 @@ namespace Methcla { namespace Audio {
             : m_nodeId(nodeId)
             {}
 
-            NodeId nodeId() const { return m_nodeId; }
+            NodeId nodeId() const
+            {
+                return m_nodeId;
+            }
         };
 
         class NodeDoneNotification : public NodeNotification
