@@ -148,7 +148,7 @@ namespace Methcla { namespace Audio {
         void registerSynthDef(const Methcla_SynthDef* synthDef);
 
         //* Lookup SynthDef
-        const Memory::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+        const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
 
         //* Sound file API registration
         void registerSoundFileAPI(const Methcla_SoundFileAPI* api);

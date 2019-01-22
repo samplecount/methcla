@@ -15,7 +15,6 @@
 #ifndef METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 #define METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
 
-#include "Methcla/Memory.hpp"
 #include "Methcla/Utility/Hash.hpp"
 
 #include <methcla/engine.h>
@@ -89,7 +88,7 @@ namespace Methcla { namespace Audio {
         Methcla_SynthOptions*   m_options; // Only access from one thread
     };
 
-    typedef std::unordered_map<const char*, Memory::shared_ptr<SynthDef>,
+    typedef std::unordered_map<const char*, std::shared_ptr<SynthDef>,
                                Utility::Hash::cstr_hash,
                                Utility::Hash::cstr_equal>
         SynthDefMap;

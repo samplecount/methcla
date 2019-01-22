@@ -473,7 +473,7 @@ void Environment::registerSynthDef(const Methcla_SynthDef* def)
     m_impl->registerSynthDef(def);
 }
 
-const Memory::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
+const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const
 {
     return m_impl->synthDef(uri);
 }

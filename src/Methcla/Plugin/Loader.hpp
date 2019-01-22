@@ -15,8 +15,6 @@
 #ifndef METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 #define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
 
-#include "Methcla/Memory.hpp"
-
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -38,7 +36,7 @@ namespace Methcla { namespace Plugin {
     {
     public:
         virtual ~Loader();
-        virtual Memory::shared_ptr<Library> open(const std::string& path) = 0;
+        virtual std::shared_ptr<Library> open(const std::string& path) = 0;
     };
 
 }} // namespace Methcla::Plugin

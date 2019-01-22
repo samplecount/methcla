@@ -20,16 +20,6 @@
 #include <cstdint>
 #include <stdexcept>
 
-// METHCLA_USE_BOOST_SHARED_PTR was needed for PNaCl,
-// probably not needed anymore.
-
-#if METHCLA_USE_BOOST_SHARED_PTR
-#    include <boost/make_shared.hpp>
-#    include <boost/shared_ptr.hpp>
-#else
-#    include <memory>
-#endif
-
 namespace Methcla { namespace Memory {
 
     class Alignment
@@ -45,7 +35,10 @@ namespace Methcla { namespace Memory {
 
         Alignment(const Alignment&) = default;
 
-        operator size_t() const { return m_alignment; }
+        operator size_t() const
+        {
+            return m_alignment;
+        }
 
         template <typename T> bool isAligned(T size) const
         {
@@ -138,15 +131,6 @@ namespace Methcla { namespace Memory {
         return static_cast<T*>(allocAligned(align, n * sizeof(T)));
     }
 
-#if METHCLA_USE_BOOST_SHARED_PTR
-    using boost::allocate_shared;
-    using boost::make_shared;
-    using boost::shared_ptr;
-#else
-    using std::allocate_shared;
-    using std::make_shared;
-    using std::shared_ptr;
-#endif
 }} // namespace Methcla::Memory
 
 #endif // METHCLA_MEMORY_HPP_INCLUDED

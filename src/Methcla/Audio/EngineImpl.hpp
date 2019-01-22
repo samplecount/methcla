@@ -258,10 +258,9 @@ namespace Methcla { namespace Audio {
 
         Scheduler<ScheduledBundle> m_scheduler;
 
-        std::vector<Memory::shared_ptr<ExternalAudioBus>> m_externalAudioInputs;
-        std::vector<Memory::shared_ptr<ExternalAudioBus>>
-                                                  m_externalAudioOutputs;
-        std::vector<Memory::shared_ptr<AudioBus>> m_internalAudioBuses;
+        std::vector<std::shared_ptr<ExternalAudioBus>> m_externalAudioInputs;
+        std::vector<std::shared_ptr<ExternalAudioBus>> m_externalAudioOutputs;
+        std::vector<std::shared_ptr<AudioBus>>         m_internalAudioBuses;
 
         Epoch        m_epoch;
         Methcla_Time m_currentTime;
@@ -306,7 +305,7 @@ namespace Methcla { namespace Audio {
         }
 
         void registerSynthDef(const Methcla_SynthDef* def);
-        const Memory::shared_ptr<SynthDef>& synthDef(const char* uri) const;
+        const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
 
         void process(Methcla_Time currentTime, size_t numFrames,
                      const sample_t* const* inputs, sample_t* const* outputs);

@@ -52,8 +52,8 @@ namespace Methcla { namespace Plugin {
             Library& operator=(const Library&) = delete;
 
         private:
-            Methcla_Library*                    m_lib;
-            Memory::shared_ptr<Plugin::Library> m_plugin;
+            Methcla_Library*                 m_lib;
+            std::shared_ptr<Plugin::Library> m_plugin;
         };
 
     private:

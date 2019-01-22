@@ -24,7 +24,7 @@ void Manager::loadPlugins(Methcla_Host*                             host,
         Methcla_Library* lib = f(host, ".");
         if (lib != nullptr)
         {
-            m_libs.push_back(Memory::make_shared<Library>(lib));
+            m_libs.push_back(std::make_shared<Library>(lib));
         }
     }
 }

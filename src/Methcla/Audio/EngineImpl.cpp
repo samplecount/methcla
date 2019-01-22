@@ -31,7 +31,7 @@
 
 using namespace Methcla;
 using namespace Methcla::Audio;
-using namespace Methcla::Memory;
+using Methcla::Memory::RTMemoryManager;
 
 static void throwError(Methcla_ErrorCode code, const std::string& msg)
 {
@@ -232,20 +232,20 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, LogHandler logHandler,
     for (size_t i = 0; i < options.numHardwareInputChannels; i++)
     {
         m_externalAudioInputs.push_back(
-            Memory::make_shared<ExternalAudioBus>(prevEpoch));
+            std::make_shared<ExternalAudioBus>(prevEpoch));
     }
 
     m_externalAudioOutputs.reserve(options.numHardwareOutputChannels);
     for (size_t i = 0; i < options.numHardwareOutputChannels; i++)
     {
         m_externalAudioOutputs.push_back(
-            Memory::make_shared<ExternalAudioBus>(prevEpoch));
+            std::make_shared<ExternalAudioBus>(prevEpoch));
     }
 
     for (size_t i = 0; i < options.maxNumAudioBuses; i++)
     {
-        m_internalAudioBuses.push_back(Memory::make_shared<InternalAudioBus>(
-            options.blockSize, prevEpoch));
+        m_internalAudioBuses.push_back(
+            std::make_shared<InternalAudioBus>(options.blockSize, prevEpoch));
     }
 }
 
@@ -472,7 +472,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
             Methcla_NodePlacement nodePlacement =
                 Methcla_NodePlacement(args.int32());
 
-            const shared_ptr<SynthDef> def = m_owner->synthDef(defName);
+            const std::shared_ptr<SynthDef> def = m_owner->synthDef(defName);
 
             auto synthControls =
                 args.atEnd() ? OSCPP::Server::ArgStream() : args.array();
@@ -760,11 +760,12 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
 
 void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 {
-    auto synthDef = Memory::make_shared<SynthDef>(def);
+    auto synthDef = std::make_shared<SynthDef>(def);
     m_synthDefs[synthDef->uri()] = synthDef;
 }
 
-const shared_ptr<SynthDef>& EnvironmentImpl::synthDef(const char* uri) const
+const std::shared_ptr<SynthDef>&
+EnvironmentImpl::synthDef(const char* uri) const
 {
     auto it = m_synthDefs.find(uri);
     if (it == m_synthDefs.end())
