@@ -31,6 +31,12 @@ extern "C" {
 
 #define METHCLA_PLUGINS_URI "http://methc.la/plugins"
 
+#if METHCLA_STATIC_PLUGIN
+#    define METHCLA_PLUGIN_LOAD(func) func
+#else
+#    define METHCLA_PLUGIN_LOAD(func) methcla_plugin_load
+#endif // METHCLA_STATIC_PLUGIN
+
 //* Realtime interface.
 typedef struct Methcla_World Methcla_World;
 

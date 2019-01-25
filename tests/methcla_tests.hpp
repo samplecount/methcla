@@ -57,10 +57,15 @@ namespace testing { namespace internal {
 #define TEST_DESCRIPTION(desc) RecordProperty("description", desc)
 
 namespace Methcla { namespace Tests {
+    extern std::vector<std::string> gPluginDirectories;
+
     class TestCout : public std::stringstream
     {
     public:
-        ~TestCout() { PRINTF("%s", str().c_str()); }
+        ~TestCout()
+        {
+            PRINTF("%s", str().c_str());
+        }
     };
 
     void initialize(std::string inputFileDirectory,

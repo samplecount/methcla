@@ -1,6 +1,9 @@
 configure_file(Methcla/Version.h.in Methcla/Version.h ESCAPE_QUOTES)
 
-add_library(tlsf ../external_libraries/tlsf/tlsf.c)
+set(METHCLA_PLUGIN_EXTENSION "${CMAKE_SHARED_MODULE_SUFFIX}")
+configure_file(Methcla/Config.h.in Methcla/Config.h)
+
+add_library(tlsf OBJECT ../external_libraries/tlsf/tlsf.c)
 
 target_include_directories(tlsf PUBLIC
     ../external_libraries/tlsf
@@ -51,7 +54,6 @@ set(sources
     Methcla/Utility/Semaphore.cpp
     Methcla/Utility/Semaphore.hpp
     Methcla/Utility/WorkerInterface.hpp
-    
 )
 
 add_library(methcla ${sources})
@@ -67,6 +69,7 @@ target_include_directories(methcla
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ../external_libraries
+    ../external_libraries/tinydir
 )
 
 target_include_directories(methcla
@@ -74,7 +77,10 @@ target_include_directories(methcla
     ../external_libraries/boost
 )
 
-target_link_libraries(methcla PUBLIC tlsf)
+target_link_libraries(methcla
+    PRIVATE
+    tlsf
+    driver_rtaudio)
 
 if (LINUX)
     target_link_libraries(methcla PUBLIC pthread)

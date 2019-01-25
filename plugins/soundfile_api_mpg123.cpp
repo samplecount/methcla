@@ -204,8 +204,9 @@ static Methcla_SoundFileAPI kSoundFileAPI_mpg123 = {nullptr, "mp3",
 static Methcla_Library kLibrary_mpg123 = {nullptr,
                                           methcla_mpg123_library_destroy};
 
-METHCLA_EXPORT Methcla_Library* methcla_soundfile_api_mpg123(Methcla_Host* host,
-                                                             const char*)
+METHCLA_EXPORT Methcla_Library*
+               METHCLA_PLUGIN_LOAD(methcla_soundfile_api_mpg123)(Methcla_Host* host,
+                                                      const char*)
 {
     if (mpg123_init() != MPG123_OK)
         return nullptr;

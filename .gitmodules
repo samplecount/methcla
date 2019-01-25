@@ -9,3 +9,6 @@
 [submodule "external_libraries/rtaudio"]
 	path = external_libraries/rtaudio
 	url = https://github.com/thestk/rtaudio.git
+[submodule "external_libraries/tinydir"]
+	path = external_libraries/tinydir
+	url = https://github.com/cxong/tinydir.git

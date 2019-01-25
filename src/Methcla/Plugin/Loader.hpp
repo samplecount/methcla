@@ -39,6 +39,8 @@ namespace Methcla { namespace Plugin {
         virtual std::shared_ptr<Library> open(const std::string& path) = 0;
     };
 
+    std::unique_ptr<Loader> defaultLoader();
+
 }} // namespace Methcla::Plugin
 
 #endif // METHCLA_PLUGIN_LOADER_HPP_INCLUDED

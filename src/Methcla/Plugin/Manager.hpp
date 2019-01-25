@@ -27,7 +27,7 @@ namespace Methcla { namespace Plugin {
     class Manager
     {
     public:
-        Manager();
+        Manager(std::unique_ptr<Loader>&& loader);
 
         Manager(const Manager&) = delete;
         Manager& operator=(const Manager&) = delete;
@@ -59,6 +59,7 @@ namespace Methcla { namespace Plugin {
     private:
         typedef std::list<std::shared_ptr<Library>> Libraries;
         Libraries                                   m_libs;
+        std::unique_ptr<Loader>                     m_loader;
     };
 
 }} // namespace Methcla::Plugin

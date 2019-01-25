@@ -33,6 +33,7 @@ using namespace Methcla::Audio::IO;
 
 RtAudioDriver::RtAudioDriver(Options options)
 : Driver(options)
+, m_audio(RtAudio::MACOSX_CORE)
 , m_sampleRate(0)
 , m_isOpen(false)
 , m_isRunning(false)
@@ -106,9 +107,15 @@ RtAudioDriver::RtAudioDriver(Options options)
         new MultiChannelBuffer(oParams.nChannels, bufferFrames));
 }
 
-RtAudioDriver::~RtAudioDriver() { stop(); }
+RtAudioDriver::~RtAudioDriver()
+{
+    stop();
+}
 
-double RtAudioDriver::sampleRate() const { return m_sampleRate; }
+double RtAudioDriver::sampleRate() const
+{
+    return m_sampleRate;
+}
 
 size_t RtAudioDriver::numInputs() const
 {
@@ -120,7 +127,10 @@ size_t RtAudioDriver::numOutputs() const
     return m_outputBuffer->numChannels();
 }
 
-size_t RtAudioDriver::bufferSize() const { return m_outputBuffer->numFrames(); }
+size_t RtAudioDriver::bufferSize() const
+{
+    return m_outputBuffer->numFrames();
+}
 
 void RtAudioDriver::start()
 {
@@ -140,7 +150,10 @@ void RtAudioDriver::stop()
     }
 }
 
-Methcla_Time RtAudioDriver::currentTime() { return m_audio.getStreamTime(); }
+Methcla_Time RtAudioDriver::currentTime()
+{
+    return m_audio.getStreamTime();
+}
 
 int RtAudioDriver::processCallback(void* outputBuffer, void* inputBuffer,
                                    unsigned int numFrames, double streamTime,

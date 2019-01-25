@@ -23,6 +23,14 @@
 
 using namespace Methcla::Tests;
 
+namespace {
+    Methcla::EngineOptions defaultEngineOptions()
+    {
+        return Methcla::EngineOptions().addPluginDirectories(
+            Methcla::Tests::gPluginDirectories);
+    }
+} // namespace
+
 TEST(Methcla_Engine, Creation_and_destruction)
 {
     std::unique_ptr<Methcla::Engine> engine;
@@ -53,8 +61,8 @@ TEST(Methcla_Request,
 
 TEST(Methcla_Engine, Node_tree_should_contain_only_root_node_after_startup)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine(
-        Methcla::EngineOptions().addLibrary(methcla_plugins_sine)));
+    auto engine = std::unique_ptr<Methcla::Engine>(
+        new Methcla::Engine(defaultEngineOptions()));
     // engine->setLogFlags(kMethcla_EngineLogRequests);
     engine->start();
     // Methcla::Request request(*engine);
@@ -69,9 +77,7 @@ TEST(Methcla_Engine, Node_tree_should_contain_only_root_node_after_startup)
 TEST(Methcla_Engine, kMethcla_NodeDoneFlags_should_free_the_specified_nodes)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(Methcla::EngineOptions()
-                                .addLibrary(methcla_plugins_sine)
-                                .addLibrary(methcla_plugins_node_control)));
+        new Methcla::Engine(defaultEngineOptions()));
 
     engine->start();
 
@@ -159,9 +165,7 @@ TEST(Methcla_Engine, kMethcla_NodeDoneFlags_should_free_the_specified_nodes)
 TEST(Methcla_Engine, Node_ended_notification)
 {
     auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(Methcla::EngineOptions()
-                                .addLibrary(methcla_plugins_sine)
-                                .addLibrary(methcla_plugins_node_control)));
+        new Methcla::Engine(defaultEngineOptions()));
 
     engine->start();
 

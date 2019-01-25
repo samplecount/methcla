@@ -1013,8 +1013,9 @@ static const Methcla_SynthDef kDiskSamplerDef = {
 
 static Methcla_Library kDiskSamplerLibrary = {nullptr, nullptr};
 
-METHCLA_EXPORT Methcla_Library*
-               methcla_plugins_disksampler(Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library* METHCLA_PLUGIN_LOAD(
+    methcla_plugins_disksampler)(Methcla_Host* host,
+                                 const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &kDiskSamplerDef);
     return &kDiskSamplerLibrary;

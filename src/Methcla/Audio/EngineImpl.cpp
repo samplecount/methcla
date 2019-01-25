@@ -209,6 +209,7 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, LogHandler logHandler,
 : m_owner(owner)
 , m_logHandler(logHandler)
 , m_packetHandler(listener)
+, m_plugins(Methcla::Plugin::defaultLoader())
 , m_rtMem(options.realtimeMemorySize)
 , m_requests(messageQueue == nullptr
                  ? new Utility::MessageQueue<Request*>(kQueueSize)
@@ -265,6 +266,10 @@ void EnvironmentImpl::init(const Environment::Options& options)
     addNode(m_nodes, m_rootNode);
     // Load plugins
     Methcla_Host host(*m_owner);
+    for (const auto& dir : options.pluginDirectories)
+    {
+        m_plugins.loadPlugins(&host, dir);
+    }
     m_plugins.loadPlugins(&host, options.pluginLibraries);
 }
 

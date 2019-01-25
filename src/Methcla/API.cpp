@@ -25,7 +25,6 @@
 #include <methcla/plugins/sine.h>
 
 #include <cstdlib>
-#include <cstring>
 #include <functional>
 #include <iostream>
 #include <new>
@@ -82,6 +81,16 @@ Methcla::API::convertOptions(const Methcla_EngineOptions* options)
         }
     }
 
+    if (options->plugin_directories != nullptr)
+    {
+        const char* const* it = options->plugin_directories;
+        while (*it != nullptr)
+        {
+            result.pluginDirectories.push_back(*it);
+            it++;
+        }
+    }
+
     return result;
 }
 
@@ -104,9 +113,6 @@ public:
     {
         Methcla::Audio::Environment::Options engineOptions =
             Methcla::API::convertOptions(options);
-
-        // Register sine plugin by default
-        engineOptions.pluginLibraries.push_front(methcla_plugins_sine);
 
         m_driver = std::unique_ptr<Methcla_AudioDriver>(driver);
         m_driver->driver()->setProcessCallback(processCallback, this);
@@ -393,81 +399,4 @@ METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(
         return methcla_error_new(kMethcla_ArgumentError);
     Methcla_Host host(engine->env());
     return methcla_host_soundfile_open(&host, path, mode, file, info);
-}
-
-METHCLA_EXPORT const char*
-methcla_error_code_description(Methcla_ErrorCode code)
-{
-    switch (code)
-    {
-        case kMethcla_NoError:
-            return "No error";
-
-        /* Generic error codes */
-        case kMethcla_UnspecifiedError:
-            return "Unspecified error";
-        case kMethcla_LogicError:
-            return "Logic error";
-        case kMethcla_ArgumentError:
-            return "Invalid argument";
-        case kMethcla_MemoryError:
-            return "Out of memory";
-        case kMethcla_UnimplementedError:
-            return "Operation not implemented";
-        case kMethcla_SystemError:
-            return "Generic operating system error";
-
-        /* Engine errors */
-        case kMethcla_SynthDefNotFoundError:
-            return "SynthDef not found";
-        case kMethcla_NodeIdError:
-            return "Invalid node id";
-        case kMethcla_NodeTypeError:
-            return "Invalid node type";
-
-        /* File errors */
-        case kMethcla_FileNotFoundError:
-            return "File not found";
-        case kMethcla_FileExistsError:
-            return "File already exists";
-        case kMethcla_PermissionsError:
-            return "Insufficient file permissions";
-        case kMethcla_UnsupportedFileTypeError:
-            return "Unsupported file type";
-        case kMethcla_UnsupportedDataFormatError:
-            return "Unsupported data format";
-        case kMethcla_InvalidFileError:
-            return "Malformed file contents";
-
-        /* Audio driver errors */
-        case kMethcla_DeviceUnavailableError:
-            return "Audio device not available";
-    }
-
-    return "Invalid Methcla_ErrorCode value";
-}
-
-METHCLA_EXPORT Methcla_Error methcla_error_new(Methcla_ErrorCode code)
-{
-    Methcla_Error result;
-    result.error_code = code;
-    result.error_message = nullptr;
-    return result;
-}
-
-//* Create a new Methcla_Error with a specific error code and message.
-METHCLA_EXPORT Methcla_Error
-               methcla_error_new_with_message(Methcla_ErrorCode code, const char* message)
-{
-    Methcla_Error result;
-    result.error_code = code;
-    result.error_message = strdup(message);
-    return result;
-}
-
-//* Free the resources associated with a Methcla_Error.
-METHCLA_EXPORT void methcla_error_free(Methcla_Error error)
-{
-    if (error.error_message != nullptr)
-        free(error.error_message);
 }

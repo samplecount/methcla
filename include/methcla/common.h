@@ -19,6 +19,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -49,6 +51,9 @@ extern "C" {
 #endif
 
 #define METHCLA_EXPORT METHCLA_C_LINKAGE METHCLA_VISIBILITY
+
+//* Audio sample type
+typedef float Methcla_AudioSample;
 
 //* Time in seconds.
 typedef double Methcla_Time;
@@ -88,8 +93,56 @@ typedef enum
     kMethcla_DeviceUnavailableError = 3000,
 } Methcla_ErrorCode;
 
-METHCLA_EXPORT const char*
-methcla_error_code_description(Methcla_ErrorCode code);
+static inline const char* methcla_error_code_description(Methcla_ErrorCode code)
+{
+    switch (code)
+    {
+        case kMethcla_NoError:
+            return "No error";
+
+        /* Generic error codes */
+        case kMethcla_UnspecifiedError:
+            return "Unspecified error";
+        case kMethcla_LogicError:
+            return "Logic error";
+        case kMethcla_ArgumentError:
+            return "Invalid argument";
+        case kMethcla_MemoryError:
+            return "Out of memory";
+        case kMethcla_UnimplementedError:
+            return "Operation not implemented";
+        case kMethcla_SystemError:
+            return "Generic operating system error";
+
+        /* Engine errors */
+        case kMethcla_SynthDefNotFoundError:
+            return "SynthDef not found";
+        case kMethcla_NodeIdError:
+            return "Invalid node id";
+        case kMethcla_NodeTypeError:
+            return "Invalid node type";
+
+        /* File errors */
+        case kMethcla_FileNotFoundError:
+            return "File not found";
+        case kMethcla_FileExistsError:
+            return "File already exists";
+        case kMethcla_PermissionsError:
+            return "Insufficient file permissions";
+        case kMethcla_UnsupportedFileTypeError:
+            return "Unsupported file type";
+        case kMethcla_UnsupportedDataFormatError:
+            return "Unsupported data format";
+        case kMethcla_InvalidFileError:
+            return "Malformed file contents";
+
+        /* Audio driver errors */
+        case kMethcla_DeviceUnavailableError:
+            return "Audio device not available";
+    }
+
+    return "Invalid Methcla_ErrorCode value";
+}
 
 typedef struct Methcla_Error
 {
@@ -125,25 +178,38 @@ static inline const char* methcla_error_message(const Methcla_Error error)
 
 //* Create a new Methcla_Error with a specific error code.
 //  The error message is set to NULL.
-METHCLA_EXPORT Methcla_Error methcla_error_new(Methcla_ErrorCode code);
+static inline Methcla_Error methcla_error_new(Methcla_ErrorCode code)
+{
+    Methcla_Error result;
+    result.error_code = code;
+    result.error_message = NULL;
+    return result;
+}
 
 //* Create a new Methcla_Error with a specific error code and message.
-METHCLA_EXPORT Methcla_Error
-               methcla_error_new_with_message(Methcla_ErrorCode code, const char* message);
+static inline Methcla_Error
+methcla_error_new_with_message(Methcla_ErrorCode code, const char* message)
+{
+    Methcla_Error result;
+    result.error_code = code;
+    result.error_message = strdup(message);
+    return result;
+}
 
 //* Free the resources associated with a Methcla_Error.
-METHCLA_EXPORT void methcla_error_free(Methcla_Error error);
+static inline void methcla_error_free(Methcla_Error error)
+{
+    if (error.error_message != NULL)
+    {
+        free(error.error_message);
+    }
+}
 
 //* Return a Methcla_Error indicating that no error has occurred.
 static inline Methcla_Error methcla_no_error()
 {
     return methcla_error_new(kMethcla_NoError);
 }
-
-//* Audio sample type
-typedef float Methcla_AudioSample;
-
-METHCLA_EXPORT void methcla_init();
 
 #if defined(__cplusplus)
 }

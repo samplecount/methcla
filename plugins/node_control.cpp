@@ -340,8 +340,9 @@ static StaticSynthDef<ExponentialFade, ExponentialFadeOptions,
 
 static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT Methcla_Library*
-               methcla_plugins_node_control(Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library* METHCLA_PLUGIN_LOAD(
+    methcla_plugins_node_control)(Methcla_Host* host,
+                                  const char* /* bundlePath */)
 {
     kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);

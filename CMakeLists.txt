@@ -22,7 +22,7 @@ add_compile_options(
 
 enable_testing()
 
+add_subdirectory(platform)
 add_subdirectory(plugins)
 add_subdirectory(src)
 add_subdirectory(tests)
-

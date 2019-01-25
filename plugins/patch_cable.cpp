@@ -180,8 +180,9 @@ namespace {
 
 static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT Methcla_Library*
-               methcla_plugins_patch_cable(Methcla_Host* host, const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library* METHCLA_PLUGIN_LOAD(
+    methcla_plugins_patch_cable)(Methcla_Host* host,
+                                 const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &descriptor);
     kAmplifierDef(host, METHCLA_PLUGINS_AMPLIFIER_URI);

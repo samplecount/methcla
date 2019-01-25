@@ -1,4 +1,4 @@
-// Copyright 2013-2019 Samplecount S.L.
+// Copyright 2019 Samplecount S.L.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "gtest/gtest.h"
+#ifndef METHCLA_CONFIG_H_INCLUDED
+#define METHCLA_CONFIG_H_INCLUDED
 
-int main(int argc, char** argv)
-{
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+#define METHCLA_PLUGIN_EXTENSION "${METHCLA_PLUGIN_EXTENSION}"
+
+#endif // METHCLA_CONFIG_H_INCLUDED

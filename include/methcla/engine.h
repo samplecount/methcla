@@ -98,6 +98,9 @@ struct Methcla_EngineOptions
 
     //* NULL terminated array of plugin library functions.
     Methcla_LibraryFunction* plugin_libraries;
+
+    //* NULL terminated array of plugin directories.
+    const char* const* plugin_directories;
 };
 
 METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);

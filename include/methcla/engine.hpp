@@ -38,10 +38,16 @@
 #include <oscpp/server.hpp>
 
 namespace Methcla {
-    static inline const char* version() { return methcla_version(); }
+    static inline const char* version()
+    {
+        return methcla_version();
+    }
 
     namespace Version {
-        static inline bool isPro() { return methcla_version_is_pro(); }
+        static inline bool isPro()
+        {
+            return methcla_version_is_pro();
+        }
     }; // namespace Version
 
     inline static void dumpRequest(std::ostream&                out,
@@ -60,7 +66,10 @@ namespace Methcla {
         : NodeId(-1)
         {}
 
-        operator bool() const { return *this != NodeId(); }
+        operator bool() const
+        {
+            return *this != NodeId();
+        }
     };
 
     inline static std::ostream& operator<<(std::ostream& out,
@@ -121,9 +130,15 @@ namespace Methcla {
         : NodePlacement(target, kMethcla_NodePlacementTailOfGroup)
         {}
 
-        NodeId target() const { return m_target; }
+        NodeId target() const
+        {
+            return m_target;
+        }
 
-        Methcla_NodePlacement placement() const { return m_placement; }
+        Methcla_NodePlacement placement() const
+        {
+            return m_placement;
+        }
 
         static NodePlacement head(GroupId target)
         {
@@ -197,7 +212,10 @@ namespace Methcla {
         , usedNumBytes(0)
         {}
 
-        size_t totalNumBytes() const { return freeNumBytes + usedNumBytes; }
+        size_t totalNumBytes() const
+        {
+            return freeNumBytes + usedNumBytes;
+        }
     };
 
     template <class Id, typename T> class ResourceIdAllocator
@@ -215,9 +233,18 @@ namespace Methcla {
             {}
             Statistics(const Statistics&) = default;
 
-            size_t capacity() const { return m_capacity; }
-            size_t allocated() const { return m_allocated; }
-            size_t available() const { return capacity() - allocated(); }
+            size_t capacity() const
+            {
+                return m_capacity;
+            }
+            size_t allocated() const
+            {
+                return m_allocated;
+            }
+            size_t available() const
+            {
+                return capacity() - allocated();
+            }
         };
 
         ResourceIdAllocator(T minValue, size_t n)
@@ -303,7 +330,10 @@ namespace Methcla {
             }
         }
 
-        size_t packetSize() const { return m_packetSize; }
+        size_t packetSize() const
+        {
+            return m_packetSize;
+        }
 
         void* alloc()
         {
@@ -335,14 +365,23 @@ namespace Methcla {
         : m_pool(pool)
         , m_packet(pool.alloc(), pool.packetSize())
         {}
-        ~Packet() { m_pool.free(m_packet.data()); }
+        ~Packet()
+        {
+            m_pool.free(m_packet.data());
+        }
 
         Packet(const Packet&) = delete;
         Packet& operator=(const Packet&) = delete;
 
-        const OSCPP::Client::Packet& packet() const { return m_packet; }
+        const OSCPP::Client::Packet& packet() const
+        {
+            return m_packet;
+        }
 
-        OSCPP::Client::Packet& packet() { return m_packet; }
+        OSCPP::Client::Packet& packet()
+        {
+            return m_packet;
+        }
 
     private:
         PacketPool&           m_pool;
@@ -422,9 +461,15 @@ namespace Methcla {
         {}
         Optional(const Optional& other) = default;
 
-        bool isSet() const { return m_isSet; }
+        bool isSet() const
+        {
+            return m_isSet;
+        }
 
-        const T& value(const T& def) const { return isSet() ? m_value : def; }
+        const T& value(const T& def) const
+        {
+            return isSet() ? m_value : def;
+        }
 
         const T& value() const
         {
@@ -458,8 +503,8 @@ namespace Methcla {
 
     class EngineOptions
     {
-        Methcla_EngineOptions                m_options;
         std::vector<Methcla_LibraryFunction> m_pluginLibraries;
+        std::vector<const char*>             m_pluginDirectories;
 
     public:
         LogHandler             logHandler;
@@ -473,6 +518,7 @@ namespace Methcla {
         size_t                     sampleRate = 44100;
         size_t                     blockSize = 64;
         std::list<LibraryFunction> pluginLibraries;
+        std::list<std::string>     pluginDirectories;
 
         AudioDriverOptions audioDriver;
 
@@ -500,24 +546,43 @@ namespace Methcla {
             return *this;
         }
 
-        Methcla_EngineOptions& options()
+        EngineOptions&
+        addPluginDirectories(const std::vector<std::string>& directories)
         {
-            methcla_engine_options_init(&m_options);
+            pluginDirectories.insert(pluginDirectories.end(),
+                                     directories.begin(), directories.end());
+            return *this;
+        }
 
-            m_options.sample_rate = sampleRate;
-            m_options.block_size = blockSize;
-            m_options.realtime_memory_size = realtimeMemorySize;
-            m_options.max_num_nodes = maxNumNodes;
-            m_options.max_num_audio_buses = maxNumAudioBuses;
-            m_options.log_level = logLevel;
+    private:
+        friend class Engine;
+
+        Methcla_EngineOptions options()
+        {
+            Methcla_EngineOptions result;
+
+            methcla_engine_options_init(&result);
+
+            result.sample_rate = sampleRate;
+            result.block_size = blockSize;
+            result.realtime_memory_size = realtimeMemorySize;
+            result.max_num_nodes = maxNumNodes;
+            result.max_num_audio_buses = maxNumAudioBuses;
+            result.log_level = logLevel;
 
             m_pluginLibraries.assign(pluginLibraries.begin(),
                                      pluginLibraries.end());
             m_pluginLibraries.push_back(nullptr);
+            result.plugin_libraries = m_pluginLibraries.data();
 
-            m_options.plugin_libraries = m_pluginLibraries.data();
+            m_pluginDirectories.resize(pluginDirectories.size());
+            std::transform(pluginDirectories.begin(), pluginDirectories.end(),
+                           m_pluginDirectories.begin(),
+                           [](const std::string& x) { return x.c_str(); });
+            m_pluginDirectories.push_back(nullptr);
+            result.plugin_directories = m_pluginDirectories.data();
 
-            return m_options;
+            return result;
         }
     };
 
@@ -531,9 +596,13 @@ namespace Methcla {
     class EngineInterface
     {
     public:
-        virtual ~EngineInterface() {}
+        virtual ~EngineInterface()
+        {}
 
-        GroupId root() const { return GroupId(0); }
+        GroupId root() const
+        {
+            return GroupId(0);
+        }
 
         virtual NodeIdAllocator& nodeIdAllocator() = 0;
 
@@ -585,7 +654,10 @@ namespace Methcla {
                 m_flags.isMessage = true;
         }
 
-        OSCPP::Client::Packet& oscPacket() { return m_packet->packet(); }
+        OSCPP::Client::Packet& oscPacket()
+        {
+            return m_packet->packet();
+        }
 
     public:
         Request(EngineInterface* engine)
@@ -606,7 +678,10 @@ namespace Methcla {
         Request& operator=(const Request&) = delete;
 
         //* Return size of request packet in bytes.
-        size_t size() const { return m_packet->packet().size(); }
+        size_t size() const
+        {
+            return m_packet->packet().size();
+        }
 
         void openBundle(Methcla_Time time = immediately)
         {
@@ -873,7 +948,7 @@ namespace Methcla {
         , m_notificationHandlerId(0)
         , m_packets(8192)
         {
-            Methcla_EngineOptions& options = inOptions.options();
+            Methcla_EngineOptions options(inOptions.options());
 
             if (m_logHandler != nullptr)
             {
@@ -897,18 +972,30 @@ namespace Methcla {
             methcla_engine_set_log_flags(m_engine, inOptions.logFlags);
         }
 
-        ~Engine() { methcla_engine_free(m_engine); }
+        ~Engine()
+        {
+            methcla_engine_free(m_engine);
+        }
 
-        operator const Methcla_Engine*() const { return m_engine; }
+        operator const Methcla_Engine*() const
+        {
+            return m_engine;
+        }
 
-        operator Methcla_Engine*() { return m_engine; }
+        operator Methcla_Engine*()
+        {
+            return m_engine;
+        }
 
         void start()
         {
             detail::checkReturnCode(methcla_engine_start(m_engine));
         }
 
-        void stop() { detail::checkReturnCode(methcla_engine_stop(m_engine)); }
+        void stop()
+        {
+            detail::checkReturnCode(methcla_engine_stop(m_engine));
+        }
 
         Methcla_Time currentTime()
         {
@@ -930,9 +1017,15 @@ namespace Methcla {
             logLine(level, message.c_str());
         }
 
-        NodeIdAllocator& nodeIdAllocator() override { return m_nodeIds; }
+        NodeIdAllocator& nodeIdAllocator() override
+        {
+            return m_nodeIds;
+        }
 
-        AudioBusIdAllocator& audioBusId() { return m_audioBusIds; }
+        AudioBusIdAllocator& audioBusId()
+        {
+            return m_audioBusIds;
+        }
 
         std::unique_ptr<Packet> allocPacket() override
         {
@@ -1152,7 +1245,10 @@ namespace Methcla {
             send(packet.data(), packet.size());
         }
 
-        void send(const Packet& packet) { send(packet.packet()); }
+        void send(const Packet& packet)
+        {
+            send(packet.packet());
+        }
 
         Methcla_RequestId getRequestId()
         {
