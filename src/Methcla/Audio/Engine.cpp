@@ -388,9 +388,9 @@ Methcla_Time Environment::currentTime() const
     return m_impl->currentTime();
 }
 
-void Environment::send(const void* packet, size_t size)
+void Environment::send(const Methcla_OSCPacket& packet)
 {
-    m_impl->m_requests->send(new Request(this, packet, size));
+    m_impl->m_requests->send(new Request(this, packet.data, packet.size));
 }
 
 bool Environment::hasPendingCommands() const

@@ -154,9 +154,8 @@ METHCLA_EXPORT Methcla_Time methcla_time_from_uint64(uint64_t time);
 METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine);
 
 //* Send an OSC packet to the engine.
-METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine,
-                                                 const void*     packet,
-                                                 size_t          size);
+METHCLA_EXPORT Methcla_Error
+               methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet);
 
 //* Open a sound file.
 METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(

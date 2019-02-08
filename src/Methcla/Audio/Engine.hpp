@@ -140,7 +140,7 @@ namespace Methcla { namespace Audio {
         Methcla_Time currentTime() const;
 
         //* Send an OSC request to the engine.
-        void send(const void* packet, size_t size);
+        void send(const Methcla_OSCPacket& packet);
 
         //* Return true if there are any pending scheduled commands.
         bool hasPendingCommands() const;

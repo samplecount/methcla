@@ -1233,16 +1233,16 @@ namespace Methcla {
             }
         }
 
-        void send(const void* packet, size_t size)
+        void send(const Methcla_OSCPacket* packet)
         {
-            detail::checkReturnCode(
-                methcla_engine_send(m_engine, packet, size));
+            detail::checkReturnCode(methcla_engine_send(m_engine, packet));
         }
 
         void send(const OSCPP::Client::Packet& packet)
         {
             // dumpRequest(std::cout, packet);
-            send(packet.data(), packet.size());
+            Methcla_OSCPacket p{packet.data(), packet.size()};
+            send(&p);
         }
 
         void send(const Packet& packet)

@@ -365,19 +365,18 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine)
     return engine == nullptr ? 0. : engine->driver()->currentTime();
 }
 
-METHCLA_EXPORT Methcla_Error methcla_engine_send(Methcla_Engine* engine,
-                                                 const void*     packet,
-                                                 size_t          size)
+METHCLA_EXPORT Methcla_Error
+               methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet)
 {
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
     if (packet == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
-    if (size == 0)
+    if (packet->size == 0)
         return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_API_TRY
     {
-        engine->env().send(packet, size);
+        engine->env().send(*packet);
     }
     METHCLA_API_CATCH;
     return methcla_no_error();
