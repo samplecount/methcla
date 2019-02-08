@@ -8,12 +8,14 @@ script:
 addons:
   apt:
     packages:
-    - libsndfile1-dev
     - libmpg123-dev
+    - librtaudio-dev
+    - libsndfile1-dev
   homebrew:
     packages:
     - libsndfile
     - mpg123
+    - rt-audio
 matrix:
   include:
     - os: linux
