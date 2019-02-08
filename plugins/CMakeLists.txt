@@ -9,16 +9,14 @@ set(plugins
     soundfile_api_dummy
 )
 
-pkg_check_modules(sndfile sndfile REQUIRED)
-if (${sndfile_FOUND})
+pkg_check_modules(soundfile_api_libsndfile sndfile REQUIRED)
+if (${soundfile_api_libsndfile_FOUND})
     list(APPEND plugins soundfile_api_libsndfile)
-    set(soundfile_api_libsndfile_LIBRARIES ${sndfile_LIBRARIES})
 endif ()
 
-pkg_check_modules(mpg123 libmpg123 REQUIRED)
-if (${mpg123_FOUND})
+pkg_check_modules(soundfile_api_mpg123 libmpg123 REQUIRED)
+if (${soundfile_api_mpg123_FOUND})
     list(APPEND plugins soundfile_api_mpg123)
-    set(soundfile_api_mpg123_LIBRARIES ${mpg123_LIBRARIES})
 endif ()
 
 if (APPLE)
@@ -50,5 +48,7 @@ foreach(plugin ${plugins})
           "$<$<CXX_COMPILER_ID:GNU>:${c99_warnings}>"
         )
     endif ()
-    target_link_libraries(${plugin_target} "${${plugin_target_base}_LIBRARIES}")
+    target_link_options(${plugin_target} PUBLIC "${${plugin_target_base}_LDFLAGS}")
+    target_link_libraries(${plugin_target} PUBLIC "${${plugin_target_base}_LIBRARIES}")
+    target_compile_options(${plugin_target} PRIVATE "${${plugin_target_base}_CFLAGS}")
 endforeach ()
