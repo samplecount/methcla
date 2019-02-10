@@ -48,7 +48,13 @@ foreach(plugin ${plugins})
           "$<$<CXX_COMPILER_ID:GNU>:${c99_warnings}>"
         )
     endif ()
-    target_link_options(${plugin_target} PUBLIC "${${plugin_target_base}_LDFLAGS}")
-    target_link_libraries(${plugin_target} PUBLIC "${${plugin_target_base}_LIBRARIES}")
-    target_compile_options(${plugin_target} PRIVATE "${${plugin_target_base}_CFLAGS}")
+    target_compile_options(${plugin_target}
+        PRIVATE
+        "${${plugin_target_base}_CFLAGS}"
+    )
+    target_link_libraries(${plugin_target}
+        PUBLIC
+        "${${plugin_target_base}_LDFLAGS}"
+        "${${plugin_target_base}_LIBRARIES}"
+    )
 endforeach ()
