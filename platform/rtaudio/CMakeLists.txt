@@ -1,5 +1,5 @@
 find_path(rtaudio_INCLUDES RtAudio.h)
-find_library(rtaudio_LIBS rtaudio_static)
+find_library(rtaudio_LIBRARIES rtaudio)
 
 add_library(driver_rtaudio STATIC
     Methcla/Audio/IO/RtAudioDriver
@@ -16,4 +16,4 @@ target_include_directories(driver_rtaudio
 )
 
 target_include_directories(driver_rtaudio PRIVATE ${rtaudio_INCLUDES})
-target_link_libraries(driver_rtaudio ${rtaudio_LIBS})
+target_link_libraries(driver_rtaudio ${rtaudio_LIBRARIES})
