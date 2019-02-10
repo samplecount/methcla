@@ -78,12 +78,14 @@ target_include_directories(methcla
 )
 
 target_link_libraries(methcla
-    PUBLIC
-    dl
     PRIVATE
     tlsf
     driver_rtaudio)
 
 if (LINUX)
-    target_link_libraries(methcla PUBLIC pthread)
+    target_link_libraries(methcla
+        PUBLIC
+        dl
+        pthread
+    )
 endif ()
