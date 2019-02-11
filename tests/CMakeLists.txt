@@ -31,7 +31,6 @@ add_executable(methcla_tests
 target_include_directories(methcla_tests PRIVATE
     ../src
     ../external_libraries/boost
-    ../external_libraries/tlsf
 )
 
 target_link_libraries(methcla_tests PRIVATE

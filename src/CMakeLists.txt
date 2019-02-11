@@ -3,12 +3,6 @@ configure_file(Methcla/Version.h.in Methcla/Version.h ESCAPE_QUOTES)
 set(METHCLA_PLUGIN_EXTENSION "${CMAKE_SHARED_MODULE_SUFFIX}")
 configure_file(Methcla/Config.h.in Methcla/Config.h)
 
-add_library(tlsf OBJECT ../external_libraries/tlsf/tlsf.c)
-
-target_include_directories(tlsf PUBLIC
-    ../external_libraries/tlsf
-)
-
 set(sources
     Methcla/API.cpp
     Methcla/API.hpp

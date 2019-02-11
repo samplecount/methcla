@@ -11,9 +11,15 @@ target_include_directories(driver_rtaudio
     ../../include
     ../../external_libraries/boost
     ../../external_libraries/oscpp/include
-    ../../external_libraries/tlsf
     ../../src
 )
 
-target_include_directories(driver_rtaudio PRIVATE ${rtaudio_INCLUDES})
-target_link_libraries(driver_rtaudio ${rtaudio_LIBRARIES})
+target_include_directories(driver_rtaudio
+    PRIVATE
+    ${rtaudio_INCLUDES}
+)
+
+target_link_libraries(driver_rtaudio
+    PUBLIC
+    ${rtaudio_LIBRARIES}
+)

@@ -23,8 +23,6 @@
 #include <cassert>
 #include <cstddef>
 
-#include <tlsf.h>
-
 namespace Methcla { namespace Memory {
 
     class Allocator
@@ -103,8 +101,8 @@ namespace Methcla { namespace Memory {
         Statistics statistics() const;
 
     private:
-        void*  m_memory;
-        tlsf_t m_pool;
+        void* m_memory;
+        void* m_pool;
     };
 
     template <class T, class Allocator> class AllocatedBase
@@ -150,7 +148,10 @@ namespace Methcla { namespace Memory {
         {
             return super::alloc(alloc, size);
         }
-        void  operator delete(void* ptr, Allocator&) { super::destroy(ptr); }
+        void operator delete(void* ptr, Allocator&)
+        {
+            super::destroy(ptr);
+        }
         void* operator new(size_t size, Allocator& alloc, size_t additional)
         {
             return super::alloc(alloc, size + additional);
@@ -159,7 +160,10 @@ namespace Methcla { namespace Memory {
         {
             super::destroy(ptr);
         }
-        void operator delete(void* ptr) { super::destroy(ptr); }
+        void operator delete(void* ptr)
+        {
+            super::destroy(ptr);
+        }
     };
 }} // namespace Methcla::Memory
 

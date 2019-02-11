@@ -17,6 +17,8 @@
 #include <new>       // std::bad_alloc
 #include <stdexcept> // std::invalid_argument
 
+#include <tlsf.h>
+
 // Set to 1 to disable the realtime memory manager.
 #define METHCLA_NO_RT_MEMORY 0
 
