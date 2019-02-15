@@ -82,28 +82,51 @@ typedef struct Methcla_PacketHandler
 
 typedef struct Methcla_EngineOptions Methcla_EngineOptions;
 
-struct Methcla_EngineOptions
-{
-    Methcla_LogHandler    log_handler;
-    Methcla_PacketHandler packet_handler;
+METHCLA_EXPORT Methcla_Error
+               methcla_engine_options_new(Methcla_EngineOptions** engine_options);
 
-    size_t sample_rate;
-    size_t block_size;
+METHCLA_EXPORT void
+methcla_engine_options_free(Methcla_EngineOptions* engine_options);
 
-    size_t realtime_memory_size;
-    size_t max_num_nodes;
-    size_t max_num_audio_buses;
+METHCLA_EXPORT void
+methcla_engine_options_set_log_handler(Methcla_EngineOptions* engine_options,
+                                       Methcla_LogHandler     log_handler);
 
-    Methcla_LogLevel log_level;
+METHCLA_EXPORT void
+methcla_engine_options_set_packet_handler(Methcla_EngineOptions* engine_options,
+                                          Methcla_PacketHandler packet_handler);
 
-    //* NULL terminated array of plugin library functions.
-    Methcla_LibraryFunction* plugin_libraries;
+METHCLA_EXPORT void
+methcla_engine_options_set_sample_rate(Methcla_EngineOptions* engine_options,
+                                       size_t                 sample_rate);
 
-    //* NULL terminated array of plugin directories.
-    const char* const* plugin_directories;
-};
+METHCLA_EXPORT void
+methcla_engine_options_set_block_size(Methcla_EngineOptions* engine_options,
+                                      size_t                 block_size);
 
-METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options);
+METHCLA_EXPORT void methcla_engine_options_set_realtime_memory_size(
+    Methcla_EngineOptions* engine_options, size_t realtime_memory_size);
+
+METHCLA_EXPORT void
+methcla_engine_options_set_max_num_nodes(Methcla_EngineOptions* engine_options,
+                                         size_t                 max_num_nodes);
+
+METHCLA_EXPORT void methcla_engine_options_set_max_num_audio_buses(
+    Methcla_EngineOptions* engine_options, size_t max_num_audio_buses);
+
+METHCLA_EXPORT void
+methcla_engine_options_set_log_level(Methcla_EngineOptions* engine_options,
+                                     Methcla_LogLevel       log_level);
+
+//* NULL terminated array of plugin library functions.
+METHCLA_EXPORT void methcla_engine_options_set_plugin_libraries(
+    Methcla_EngineOptions*   engine_options,
+    Methcla_LibraryFunction* plugin_libraries);
+
+//* NULL terminated array of plugin directories.
+METHCLA_EXPORT void methcla_engine_options_set_plugin_directories(
+    Methcla_EngineOptions* engine_options,
+    const char* const*     plugin_directories);
 
 //* Abstract type for the sound engine.
 typedef struct Methcla_Engine Methcla_Engine;
@@ -136,8 +159,9 @@ enum Methcla_EngineLogFlags
 };
 
 //* Set flags for debug logging.
-METHCLA_EXPORT void methcla_engine_set_log_flags(Methcla_Engine*        engine,
-                                                 Methcla_EngineLogFlags flags);
+METHCLA_EXPORT void
+methcla_engine_set_log_flags(Methcla_Engine*             engine,
+                             enum Methcla_EngineLogFlags flags);
 
 //* Log a line using the registered log handler.
 METHCLA_EXPORT void methcla_engine_log_line(Methcla_Engine*  engine,

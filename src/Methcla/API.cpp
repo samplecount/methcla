@@ -33,6 +33,27 @@
 
 #include <oscpp/server.hpp>
 
+struct Methcla_EngineOptions
+{
+    Methcla_LogHandler    log_handler;
+    Methcla_PacketHandler packet_handler;
+
+    size_t sample_rate;
+    size_t block_size;
+
+    size_t realtime_memory_size;
+    size_t max_num_nodes;
+    size_t max_num_audio_buses;
+
+    Methcla_LogLevel log_level;
+
+    //* NULL terminated array of plugin library functions.
+    Methcla_LibraryFunction* plugin_libraries;
+
+    //* NULL terminated array of plugin directories.
+    const char* const* plugin_directories;
+};
+
 struct Methcla_AudioDriver
 {
 public:
@@ -259,12 +280,106 @@ static Methcla_PacketHandler defaultPacketHandler()
     return handler;
 }
 
-METHCLA_EXPORT void methcla_engine_options_init(Methcla_EngineOptions* options)
+METHCLA_EXPORT Methcla_Error
+               methcla_engine_options_new(Methcla_EngineOptions** engine_options)
 {
+    if (engine_options == nullptr)
+        return methcla_error_new(kMethcla_ArgumentError);
+
+    METHCLA_API_TRY
+    {
+        *engine_options = new Methcla_EngineOptions;
+    }
+    METHCLA_API_CATCH
+
+    Methcla_EngineOptions* options = *engine_options;
     memset(options, 0, sizeof(Methcla_EngineOptions));
     options->log_handler = Methcla::Platform::defaultLogHandler();
     options->packet_handler = defaultPacketHandler();
     options->log_level = kMethcla_LogWarn;
+
+    return methcla_no_error();
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_free(Methcla_EngineOptions* engine_options)
+{
+    try
+    {
+        delete engine_options;
+    }
+    catch (...)
+    {}
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_log_handler(Methcla_EngineOptions* engine_options,
+                                       Methcla_LogHandler     log_handler)
+{
+    engine_options->log_handler = log_handler;
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_packet_handler(Methcla_EngineOptions* engine_options,
+                                          Methcla_PacketHandler  packet_handler)
+{
+    engine_options->packet_handler = packet_handler;
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_sample_rate(Methcla_EngineOptions* engine_options,
+                                       size_t                 sample_rate)
+{
+    engine_options->sample_rate = sample_rate;
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_block_size(Methcla_EngineOptions* engine_options,
+                                      size_t                 block_size)
+{
+    engine_options->block_size = block_size;
+}
+
+METHCLA_EXPORT void methcla_engine_options_set_realtime_memory_size(
+    Methcla_EngineOptions* engine_options, size_t realtime_memory_size)
+{
+    engine_options->realtime_memory_size = realtime_memory_size;
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_max_num_nodes(Methcla_EngineOptions* engine_options,
+                                         size_t                 max_num_nodes)
+{
+    engine_options->max_num_nodes = max_num_nodes;
+}
+
+METHCLA_EXPORT void methcla_engine_options_set_max_num_audio_buses(
+    Methcla_EngineOptions* engine_options, size_t max_num_audio_buses)
+{
+    engine_options->max_num_audio_buses = max_num_audio_buses;
+}
+
+METHCLA_EXPORT void
+methcla_engine_options_set_log_level(Methcla_EngineOptions* engine_options,
+                                     Methcla_LogLevel       log_level)
+{
+    engine_options->log_level = log_level;
+}
+
+//* NULL terminated array of plugin library functions.
+METHCLA_EXPORT void methcla_engine_options_set_plugin_libraries(
+    Methcla_EngineOptions*   engine_options,
+    Methcla_LibraryFunction* plugin_libraries)
+{
+    engine_options->plugin_libraries = plugin_libraries;
+}
+
+//* NULL terminated array of plugin directories.
+METHCLA_EXPORT void methcla_engine_options_set_plugin_directories(
+    Methcla_EngineOptions* engine_options,
+    const char* const*     plugin_directories)
+{
+    engine_options->plugin_directories = plugin_directories;
 }
 
 METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(

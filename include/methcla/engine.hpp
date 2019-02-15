@@ -557,32 +557,37 @@ namespace Methcla {
     private:
         friend class Engine;
 
-        Methcla_EngineOptions options()
+        std::shared_ptr<Methcla_EngineOptions> options()
         {
-            Methcla_EngineOptions result;
+            Methcla_EngineOptions* result = nullptr;
 
-            methcla_engine_options_init(&result);
+            detail::checkReturnCode(methcla_engine_options_new(&result));
 
-            result.sample_rate = sampleRate;
-            result.block_size = blockSize;
-            result.realtime_memory_size = realtimeMemorySize;
-            result.max_num_nodes = maxNumNodes;
-            result.max_num_audio_buses = maxNumAudioBuses;
-            result.log_level = logLevel;
+            methcla_engine_options_set_sample_rate(result, sampleRate);
+            methcla_engine_options_set_block_size(result, blockSize);
+            methcla_engine_options_set_realtime_memory_size(result,
+                                                            realtimeMemorySize);
+            methcla_engine_options_set_max_num_nodes(result, maxNumNodes);
+            methcla_engine_options_set_max_num_audio_buses(result,
+                                                           maxNumAudioBuses);
+            methcla_engine_options_set_log_level(result, logLevel);
 
             m_pluginLibraries.assign(pluginLibraries.begin(),
                                      pluginLibraries.end());
             m_pluginLibraries.push_back(nullptr);
-            result.plugin_libraries = m_pluginLibraries.data();
+            methcla_engine_options_set_plugin_libraries(
+                result, m_pluginLibraries.data());
 
             m_pluginDirectories.resize(pluginDirectories.size());
             std::transform(pluginDirectories.begin(), pluginDirectories.end(),
                            m_pluginDirectories.begin(),
                            [](const std::string& x) { return x.c_str(); });
             m_pluginDirectories.push_back(nullptr);
-            result.plugin_directories = m_pluginDirectories.data();
+            methcla_engine_options_set_plugin_directories(
+                result, m_pluginDirectories.data());
 
-            return result;
+            return std::shared_ptr<Methcla_EngineOptions>(
+                result, methcla_engine_options_free);
         }
     };
 
@@ -948,16 +953,16 @@ namespace Methcla {
         , m_notificationHandlerId(0)
         , m_packets(8192)
         {
-            Methcla_EngineOptions options(inOptions.options());
+            auto options(inOptions.options());
 
             if (m_logHandler != nullptr)
             {
-                options.log_handler.handle = this;
-                options.log_handler.log_line = logLineCallback;
+                methcla_engine_options_set_log_handler(options.get(),
+                                                       {this, logLineCallback});
             }
 
-            options.packet_handler.handle = this;
-            options.packet_handler.handle_packet = handlePacket;
+            methcla_engine_options_set_packet_handler(options.get(),
+                                                      {this, handlePacket});
 
             if (driver == nullptr)
             {
@@ -966,8 +971,8 @@ namespace Methcla {
                     methcla_default_audio_driver(&driverOptions, &driver));
             }
 
-            detail::checkReturnCode(
-                methcla_engine_new_with_driver(&options, driver, &m_engine));
+            detail::checkReturnCode(methcla_engine_new_with_driver(
+                options.get(), driver, &m_engine));
 
             methcla_engine_set_log_flags(m_engine, inOptions.logFlags);
         }
