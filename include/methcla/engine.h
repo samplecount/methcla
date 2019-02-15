@@ -41,20 +41,28 @@ static inline bool methcla_version_is_pro()
 }
 
 //* Common audio driver options.
-typedef struct Methcla_AudioDriverOptions
-{
-    int sample_rate;
-    int num_inputs;
-    int num_outputs;
-    int buffer_size;
-} Methcla_AudioDriverOptions;
+typedef struct Methcla_AudioDriverOptions Methcla_AudioDriverOptions;
+
+METHCLA_EXPORT Methcla_Error methcla_audio_driver_options_new(
+    Methcla_AudioDriverOptions** audio_driver_options);
+
+METHCLA_EXPORT void methcla_audio_driver_options_free(
+    Methcla_AudioDriverOptions* audio_driver_options);
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_sample_rate(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t sample_rate);
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_buffer_size(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t buffer_size);
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_num_inputs(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t num_inputs);
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_num_outputs(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t num_outputs);
 
 //* Abstract audio driver type.
 typedef struct Methcla_AudioDriver Methcla_AudioDriver;
-
-//* Initialize audio options.
-METHCLA_EXPORT void
-methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options);
 
 //* Return default audio driver for this platform.
 METHCLA_EXPORT Methcla_Error methcla_default_audio_driver(

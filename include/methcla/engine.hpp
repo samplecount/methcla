@@ -466,6 +466,11 @@ namespace Methcla {
             return m_isSet;
         }
 
+        operator bool() const
+        {
+            return isSet();
+        }
+
         const T& value(const T& def) const
         {
             return isSet() ? m_value : def;
@@ -489,15 +494,33 @@ namespace Methcla {
         Optional<size_t> numOutputs;
         Optional<size_t> bufferSize;
 
-        operator Methcla_AudioDriverOptions() const
+        std::shared_ptr<Methcla_AudioDriverOptions> build() const
         {
-            Methcla_AudioDriverOptions result;
-            methcla_audio_driver_options_init(&result);
-            result.sample_rate = static_cast<int>(sampleRate.value(-1));
-            result.num_inputs = static_cast<int>(numInputs.value(-1));
-            result.num_outputs = static_cast<int>(numOutputs.value(-1));
-            result.buffer_size = static_cast<int>(bufferSize.value(-1));
-            return result;
+            Methcla_AudioDriverOptions* options = nullptr;
+            detail::checkReturnCode(methcla_audio_driver_options_new(&options));
+            if (sampleRate)
+            {
+                methcla_audio_driver_options_set_sample_rate(
+                    options, sampleRate.value());
+            }
+            if (numInputs)
+            {
+                methcla_audio_driver_options_set_num_inputs(options,
+                                                            numInputs.value());
+            }
+            if (numOutputs)
+            {
+                methcla_audio_driver_options_set_num_outputs(
+                    options, numOutputs.value());
+            }
+            if (bufferSize)
+            {
+                methcla_audio_driver_options_set_buffer_size(
+                    options, bufferSize.value());
+            }
+
+            return std::shared_ptr<Methcla_AudioDriverOptions>(
+                options, methcla_audio_driver_options_free);
         }
     };
 
@@ -966,9 +989,10 @@ namespace Methcla {
 
             if (driver == nullptr)
             {
-                Methcla_AudioDriverOptions driverOptions(inOptions.audioDriver);
+                std::shared_ptr<Methcla_AudioDriverOptions> driverOptions(
+                    inOptions.audioDriver.build());
                 detail::checkReturnCode(
-                    methcla_default_audio_driver(&driverOptions, &driver));
+                    methcla_default_audio_driver(driverOptions.get(), &driver));
             }
 
             detail::checkReturnCode(methcla_engine_new_with_driver(

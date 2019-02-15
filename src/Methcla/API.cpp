@@ -33,26 +33,13 @@
 
 #include <oscpp/server.hpp>
 
-struct Methcla_EngineOptions
+typedef struct Methcla_AudioDriverOptions
 {
-    Methcla_LogHandler    log_handler;
-    Methcla_PacketHandler packet_handler;
-
-    size_t sample_rate;
-    size_t block_size;
-
-    size_t realtime_memory_size;
-    size_t max_num_nodes;
-    size_t max_num_audio_buses;
-
-    Methcla_LogLevel log_level;
-
-    //* NULL terminated array of plugin library functions.
-    Methcla_LibraryFunction* plugin_libraries;
-
-    //* NULL terminated array of plugin directories.
-    const char* const* plugin_directories;
-};
+    int sample_rate;
+    int num_inputs;
+    int num_outputs;
+    int buffer_size;
+} Methcla_AudioDriverOptions;
 
 struct Methcla_AudioDriver
 {
@@ -80,6 +67,38 @@ Methcla::API::wrapAudioDriver(Methcla::Audio::IO::Driver* driver)
 {
     return new Methcla_AudioDriver(driver);
 }
+
+Methcla::Audio::IO::Driver::Options
+Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
+{
+    Methcla::Audio::IO::Driver::Options result;
+    result.sampleRate = options->sample_rate;
+    result.numInputs = options->num_inputs;
+    result.numOutputs = options->num_outputs;
+    result.bufferSize = options->buffer_size;
+    return result;
+}
+
+struct Methcla_EngineOptions
+{
+    Methcla_LogHandler    log_handler;
+    Methcla_PacketHandler packet_handler;
+
+    size_t sample_rate;
+    size_t block_size;
+
+    size_t realtime_memory_size;
+    size_t max_num_nodes;
+    size_t max_num_audio_buses;
+
+    Methcla_LogLevel log_level;
+
+    //* NULL terminated array of plugin library functions.
+    Methcla_LibraryFunction* plugin_libraries;
+
+    //* NULL terminated array of plugin directories.
+    const char* const* plugin_directories;
+};
 
 Methcla::Audio::Environment::Options
 Methcla::API::convertOptions(const Methcla_EngineOptions* options)
@@ -112,17 +131,6 @@ Methcla::API::convertOptions(const Methcla_EngineOptions* options)
         }
     }
 
-    return result;
-}
-
-Methcla::Audio::IO::Driver::Options
-Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
-{
-    Methcla::Audio::IO::Driver::Options result;
-    result.sampleRate = options->sample_rate;
-    result.numInputs = options->num_inputs;
-    result.numOutputs = options->num_outputs;
-    result.bufferSize = options->buffer_size;
     return result;
 }
 
@@ -245,13 +253,61 @@ const char* methcla_version()
 static void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t)
 {}
 
-METHCLA_EXPORT void
-methcla_audio_driver_options_init(Methcla_AudioDriverOptions* options)
+METHCLA_EXPORT Methcla_Error methcla_audio_driver_options_new(
+    Methcla_AudioDriverOptions** audio_driver_options)
 {
+    if (audio_driver_options == nullptr)
+        return methcla_error_new(kMethcla_ArgumentError);
+
+    METHCLA_API_TRY
+    {
+        *audio_driver_options = new Methcla_AudioDriverOptions;
+    }
+    METHCLA_API_CATCH
+
+    Methcla_AudioDriverOptions* options = *audio_driver_options;
+
     options->sample_rate = -1;
     options->num_inputs = -1;
     options->num_outputs = -1;
     options->buffer_size = -1;
+
+    return methcla_no_error();
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_free(
+    Methcla_AudioDriverOptions* audio_driver_options)
+{
+    try
+    {
+        delete audio_driver_options;
+    }
+    catch (...)
+    {}
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_sample_rate(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t sample_rate)
+{
+    audio_driver_options->sample_rate = sample_rate;
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_buffer_size(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t buffer_size)
+{
+    audio_driver_options->buffer_size = buffer_size;
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_num_inputs(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t num_inputs)
+{
+    audio_driver_options->num_inputs = num_inputs;
+}
+
+METHCLA_EXPORT void methcla_audio_driver_options_set_num_outputs(
+    Methcla_AudioDriverOptions* audio_driver_options, size_t num_outputs)
+{
+    audio_driver_options->num_outputs = num_outputs;
 }
 
 METHCLA_EXPORT Methcla_Error methcla_default_audio_driver(
