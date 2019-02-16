@@ -79,19 +79,27 @@ Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
     return result;
 }
 
+namespace {
+    void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t)
+    {}
+
+    constexpr Methcla_PacketHandler kDefaultPacketHandler = {nullptr,
+                                                             nullPacketHandler};
+} // namespace
+
 struct Methcla_EngineOptions
 {
-    Methcla_LogHandler    log_handler;
-    Methcla_PacketHandler packet_handler;
+    Methcla_LogHandler    log_handler = Methcla::Platform::defaultLogHandler();
+    Methcla_PacketHandler packet_handler = kDefaultPacketHandler;
 
-    size_t sample_rate;
-    size_t block_size;
+    size_t sample_rate = 44100;
+    size_t block_size = 64;
 
-    size_t realtime_memory_size;
-    size_t max_num_nodes;
-    size_t max_num_audio_buses;
+    size_t realtime_memory_size = 1024 * 1024;
+    size_t max_num_nodes = 1024;
+    size_t max_num_audio_buses = 1024;
 
-    Methcla_LogLevel log_level;
+    Methcla_LogLevel log_level = kMethcla_LogWarn;
 
     //* NULL terminated array of plugin library functions.
     Methcla_LibraryFunction* plugin_libraries;
@@ -250,9 +258,6 @@ const char* methcla_version()
     return kMethclaVersion;
 }
 
-static void nullPacketHandler(void*, Methcla_RequestId, const void*, size_t)
-{}
-
 METHCLA_EXPORT Methcla_Error methcla_audio_driver_options_new(
     Methcla_AudioDriverOptions** audio_driver_options)
 {
@@ -328,14 +333,6 @@ METHCLA_EXPORT Methcla_Error methcla_default_audio_driver(
     return methcla_no_error();
 }
 
-static Methcla_PacketHandler defaultPacketHandler()
-{
-    Methcla_PacketHandler handler;
-    handler.handle = nullptr;
-    handler.handle_packet = nullPacketHandler;
-    return handler;
-}
-
 METHCLA_EXPORT Methcla_Error
                methcla_engine_options_new(Methcla_EngineOptions** engine_options)
 {
@@ -347,12 +344,6 @@ METHCLA_EXPORT Methcla_Error
         *engine_options = new Methcla_EngineOptions;
     }
     METHCLA_API_CATCH
-
-    Methcla_EngineOptions* options = *engine_options;
-    memset(options, 0, sizeof(Methcla_EngineOptions));
-    options->log_handler = Methcla::Platform::defaultLogHandler();
-    options->packet_handler = defaultPacketHandler();
-    options->log_level = kMethcla_LogWarn;
 
     return methcla_no_error();
 }
