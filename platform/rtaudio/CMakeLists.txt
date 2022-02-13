@@ -1,5 +1,6 @@
-find_path(rtaudio_INCLUDES RtAudio.h)
-find_library(rtaudio_LIBRARIES rtaudio)
+find_package(PkgConfig)
+
+pkg_check_modules(rtaudio rtaudio REQUIRED IMPORTED_TARGET)
 
 add_library(driver_rtaudio STATIC
     Methcla/Audio/IO/RtAudioDriver
@@ -14,12 +15,7 @@ target_include_directories(driver_rtaudio
     ../../src
 )
 
-target_include_directories(driver_rtaudio
-    PRIVATE
-    ${rtaudio_INCLUDES}
-)
-
 target_link_libraries(driver_rtaudio
     PUBLIC
-    ${rtaudio_LIBRARIES}
+    PkgConfig::rtaudio
 )
