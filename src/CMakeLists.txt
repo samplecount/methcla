@@ -74,10 +74,16 @@ target_include_directories(methcla
     ../external_libraries/boost
 )
 
+if(METHCLA_ENABLE_RTAUDIO)
+    set(methcla_driver driver_rtaudio)
+else()
+    set(methcla_driver driver_dummy)
+endif()
+
 target_link_libraries(methcla
     PRIVATE
     tlsf
-    driver_rtaudio)
+    ${methcla_driver})
 
 if (LINUX)
     target_link_libraries(methcla
