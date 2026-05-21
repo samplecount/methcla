@@ -85,6 +85,11 @@ target_link_libraries(methcla
     tlsf
     ${methcla_driver})
 
+# GCC 13 false positives triggered by boost::lockfree::spsc_queue template instantiation
+target_compile_options(methcla PRIVATE
+    "$<$<CXX_COMPILER_ID:GNU>:-Wno-array-bounds;-Wno-stringop-overflow>"
+)
+
 if (LINUX)
     target_link_libraries(methcla
         PUBLIC
