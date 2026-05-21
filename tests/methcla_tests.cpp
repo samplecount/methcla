@@ -195,7 +195,7 @@ TEST(Methcla_Memory_Manager, Alloc_free_should_be_noop)
             ASSERT_TRUE(ptr != nullptr);
             ptrs.push_back(ptr);
         }
-        catch (std::bad_alloc)
+        catch (std::bad_alloc&)
         {
             break;
         }
