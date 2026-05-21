@@ -1,0 +1,47 @@
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cxx: g++
+            preset: debug
+            build_type: Debug
+          - os: ubuntu-latest
+            cxx: g++
+            preset: release
+            build_type: Release
+          - os: ubuntu-latest
+            cxx: clang++
+            preset: debug
+            build_type: Debug
+          - os: ubuntu-latest
+            cxx: clang++
+            preset: release
+            build_type: Release
+          - os: macos-latest
+            preset: debug
+            build_type: Debug
+          - os: macos-latest
+            preset: release
+            build_type: Release
+    runs-on: ${{ matrix.os }}
+    env:
+      CXX: ${{ matrix.cxx }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y libsndfile1-dev
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libsndfile
+      - run: cmake --preset ${{ matrix.preset }} -DMETHCLA_ENABLE_RTAUDIO=OFF
+      - run: cmake --build build/${{ matrix.preset }} --config ${{ matrix.build_type }}
+      - run: ctest --test-dir build/${{ matrix.preset }} -C ${{ matrix.build_type }} --output-on-failure
