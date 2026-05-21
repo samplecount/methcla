@@ -230,7 +230,7 @@ Methcla::Audio::IO::Driver* Methcla::API::getDriver(Methcla_Engine* engine)
     {                                                                         \
         return methcla_error_new_with_message(e.errorCode(), e.what());       \
     }                                                                         \
-    catch (std::bad_alloc)                                                    \
+    catch (std::bad_alloc&)                                                   \
     {                                                                         \
         return methcla_error_new(kMethcla_MemoryError);                       \
     }                                                                         \

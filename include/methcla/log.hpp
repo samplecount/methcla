@@ -62,7 +62,6 @@ namespace Methcla {
                 catch (...)
                 {
                     delete m_stream;
-                    throw;
                 }
             }
         }

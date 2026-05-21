@@ -71,9 +71,9 @@ namespace {
         {
             return Memory::alloc(size);
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {}
-        catch (std::bad_alloc)
+        catch (std::bad_alloc&)
         {}
         return nullptr;
     }
@@ -90,9 +90,9 @@ namespace {
         {
             return Memory::allocAligned(Memory::Alignment(alignment), size);
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {}
-        catch (std::bad_alloc)
+        catch (std::bad_alloc&)
         {}
         return nullptr;
     }
@@ -224,9 +224,9 @@ namespace {
                 ->rtMem()
                 .alloc(size);
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {}
-        catch (std::bad_alloc)
+        catch (std::bad_alloc&)
         {}
         return nullptr;
     }
@@ -249,9 +249,9 @@ namespace {
                 ->rtMem()
                 .allocAligned(alignment, size);
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {}
-        catch (std::bad_alloc)
+        catch (std::bad_alloc&)
         {}
         return nullptr;
     }

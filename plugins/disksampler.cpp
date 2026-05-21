@@ -427,7 +427,7 @@ private:
                 }
             }
         }
-        catch (std::exception)
+        catch (std::exception&)
         {
             finish();
         }
