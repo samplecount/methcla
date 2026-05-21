@@ -85,9 +85,9 @@ target_link_libraries(methcla
     tlsf
     ${methcla_driver})
 
-# GCC 13 false positives triggered by boost::lockfree::spsc_queue template instantiation
+# GCC false positives triggered by third-party headers (boost::lockfree, tinydir)
 target_compile_options(methcla PRIVATE
-    "$<$<CXX_COMPILER_ID:GNU>:-Wno-array-bounds;-Wno-stringop-overflow>"
+    "$<$<CXX_COMPILER_ID:GNU>:-Wno-array-bounds;-Wno-stringop-overflow;-Wno-restrict>"
 )
 
 if (LINUX)
