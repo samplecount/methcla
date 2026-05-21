@@ -28,6 +28,6 @@ _Avoid_: voice, instance, node (overloaded with the Node base class)
 A multi-channel buffer used for audio routing between Synths inside the Engine.
 _Avoid_: channel, buffer, bus (acceptable shorthand in code)
 
-**soundfile API**:
+**Soundfile API**:
 A Plugin category that provides file I/O capabilities to other Plugins (disksampler, sampler). Multiple soundfile API Plugins may be registered; the Engine selects by capability. Platform implementations: ExtAudioFile (macOS), libsndfile (Linux).
 _Avoid_: audio file backend, file reader
