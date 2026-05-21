@@ -2,13 +2,15 @@ add_library(gtest
     ../external_libraries/gtest/gtest-all.cc
 )
 
-target_include_directories(gtest PUBLIC
+target_include_directories(gtest SYSTEM PUBLIC
     ../external_libraries/gtest
 )
 
 target_compile_options(gtest PRIVATE
     -Wno-missing-field-initializers
-    -Wno-unused-const-variable)
+    -Wno-unused-const-variable
+    -Wno-deprecated-copy
+    -Wno-uninitialized-const-pointer)
 
 # =============================================================================
 # Plugin directories
@@ -30,6 +32,8 @@ add_executable(methcla_tests
 
 target_include_directories(methcla_tests PRIVATE
     ../src
+)
+target_include_directories(methcla_tests SYSTEM PRIVATE
     ../external_libraries/boost
 )
 
@@ -51,9 +55,10 @@ add_executable(methcla_engine_tests
 
 target_include_directories(methcla_engine_tests PRIVATE
     .
-    ../src # For Methcla/Utility/Macros.h
+    ../src
+)
+target_include_directories(methcla_engine_tests SYSTEM PRIVATE
     ../external_libraries/boost
-    ../external_libraries/gtest
 )
 
 target_link_libraries(methcla_engine_tests PRIVATE

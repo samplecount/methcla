@@ -19,9 +19,9 @@
 #include "Methcla/Memory.hpp"
 #include "Methcla/Platform.hpp"
 
-#include <boost/algorithm/string.hpp>
-
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -124,7 +124,8 @@ namespace {
     std::string toLower(const std::string& s)
     {
         std::string result(s);
-        boost::algorithm::to_lower(result);
+        std::transform(result.begin(), result.end(), result.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return result;
     }
 

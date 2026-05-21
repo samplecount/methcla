@@ -82,20 +82,15 @@ RtAudioDriver::RtAudioDriver(Options options)
     unsigned int bufferFrames =
         options.bufferSize == -1 ? kDefaultBufferSize : options.bufferSize;
 
-    try
-    {
-        RtAudio::StreamOptions streamOptions;
-        streamOptions.flags =
-            RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
-        m_audio.openStream(&oParams, iParamsPtr, RTAUDIO_FLOAT32, sampleRate,
-                           &bufferFrames, processCallback, this);
-        m_sampleRate = m_audio.getStreamSampleRate();
-        m_isOpen = true;
-    }
-    catch (RtAudioError& e)
-    {
-        throw std::runtime_error(e.what());
-    }
+    RtAudio::StreamOptions streamOptions;
+    streamOptions.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
+    const RtAudioErrorType err = m_audio.openStream(
+        &oParams, iParamsPtr, RTAUDIO_FLOAT32, sampleRate,
+        &bufferFrames, processCallback, this, &streamOptions);
+    if (err != RTAUDIO_NO_ERROR)
+        throw std::runtime_error("RtAudioDriver: Failed to open audio stream");
+    m_sampleRate = m_audio.getStreamSampleRate();
+    m_isOpen = true;
 
     if (iParamsPtr)
     {

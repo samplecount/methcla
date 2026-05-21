@@ -1,22 +1,22 @@
 find_package(PkgConfig)
 
 set(plugins
-    disksampler
-    node_control
-    patch_cable
-    sampler
+    disksampler.cpp
+    node_control.cpp
+    patch_cable.cpp
+    sampler.cpp
     sine.c
-    soundfile_api_dummy
+    soundfile_api_dummy.cpp
 )
 
 pkg_check_modules(soundfile_api_libsndfile sndfile REQUIRED)
 if (${soundfile_api_libsndfile_FOUND})
-    list(APPEND plugins soundfile_api_libsndfile)
+    list(APPEND plugins soundfile_api_libsndfile.cpp)
 endif ()
 
 pkg_check_modules(soundfile_api_mpg123 libmpg123 REQUIRED)
 if (${soundfile_api_mpg123_FOUND})
-    list(APPEND plugins soundfile_api_mpg123)
+    list(APPEND plugins soundfile_api_mpg123.cpp)
 endif ()
 
 if (APPLE)
@@ -26,7 +26,7 @@ if (APPLE)
         ${CoreFoundation_LIB}
         ${AudioToolbox_LIB}
     )
-    list(APPEND plugins soundfile_api_extaudiofile)
+    list(APPEND plugins soundfile_api_extaudiofile.cpp)
 endif ()
 
 foreach(plugin ${plugins})
@@ -36,8 +36,10 @@ foreach(plugin ${plugins})
     set_target_properties(${plugin_target} PROPERTIES PREFIX "")
     target_include_directories(${plugin_target} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
         $<INSTALL_INTERFACE:include>
+    )
+    target_include_directories(${plugin_target} SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
     )
     if (plugin MATCHES ".*\.c$")
         # C99 doesn't allow to not declare a parameter name

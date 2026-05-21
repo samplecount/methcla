@@ -19,3 +19,4 @@ engine/tests/output/*
 .stack-work
 xcuserdata/
 *.xcworkspace/
+.scratch/

@@ -17,23 +17,23 @@
 #ifndef METHCLA_TYPES_H_INCLUDED
 #define METHCLA_TYPES_H_INCLUDED
 
-enum Methcla_NodePlacement
+typedef enum Methcla_NodePlacement
 {
     kMethcla_NodePlacementHeadOfGroup,
     kMethcla_NodePlacementTailOfGroup,
     kMethcla_NodePlacementBeforeNode,
     kMethcla_NodePlacementAfterNode
-};
+} Methcla_NodePlacement;
 
-enum Methcla_BusMappingFlags
+typedef enum Methcla_BusMappingFlags
 {
     kMethcla_BusMappingInternal = 0x00,
     kMethcla_BusMappingExternal = 0x01,
     kMethcla_BusMappingFeedback = 0x02,
     kMethcla_BusMappingReplace = 0x04
-};
+} Methcla_BusMappingFlags;
 
-enum Methcla_NodeDoneFlags
+typedef enum Methcla_NodeDoneFlags
 {
     kMethcla_NodeDoneDoNothing = 0x00,
     kMethcla_NodeDoneFreeSelf = 0x01,
@@ -42,6 +42,6 @@ enum Methcla_NodeDoneFlags
     kMethcla_NodeDoneFreeAllSiblings = 0x08,
     kMethcla_NodeDoneFreeParent = 0x10,
     kMethcla_NodeDoneNotify = 0x20
-};
+} Methcla_NodeDoneFlags;
 
 #endif /* METHCLA_TYPES_H_INCLUDED */
