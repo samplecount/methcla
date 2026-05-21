@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues live as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues for `samplecount/methcla`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
