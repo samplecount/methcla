@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <cmath>
 
 #include <oscpp/server.hpp>
 

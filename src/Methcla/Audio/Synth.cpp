@@ -17,6 +17,7 @@
 #include <boost/type_traits/alignment_of.hpp>
 
 #include <algorithm>
+#include <cmath>
 
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
