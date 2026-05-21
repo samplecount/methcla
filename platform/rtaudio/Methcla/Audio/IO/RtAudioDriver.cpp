@@ -84,7 +84,7 @@ RtAudioDriver::RtAudioDriver(Options options)
 
     RtAudio::StreamOptions streamOptions;
     streamOptions.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
-    RtAudioErrorType err = m_audio.openStream(
+    const RtAudioErrorType err = m_audio.openStream(
         &oParams, iParamsPtr, RTAUDIO_FLOAT32, sampleRate,
         &bufferFrames, processCallback, this, &streamOptions);
     if (err != RTAUDIO_NO_ERROR)

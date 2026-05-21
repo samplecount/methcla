@@ -4,6 +4,8 @@
 
 Issues live as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
 
+**Do not commit `.scratch/` to the repository.** It is local working state. Add it to `.gitignore`.
+
 ### Triage labels
 
 Uses the default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
