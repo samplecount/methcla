@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 using namespace Methcla::Audio;

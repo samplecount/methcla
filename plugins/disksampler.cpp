@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 #include <oscpp/server.hpp>
 

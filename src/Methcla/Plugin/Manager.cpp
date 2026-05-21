@@ -2,6 +2,8 @@
 
 #include <tinydir.h>
 
+#include <stdexcept>
+
 using namespace Methcla::Plugin;
 
 Manager::Library::Library(Methcla_Library*                 lib,

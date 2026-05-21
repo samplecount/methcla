@@ -29,6 +29,8 @@
 #include <oscpp/print.hpp>
 #include <oscpp/util.hpp>
 
+#include <stdexcept>
+
 using namespace Methcla;
 using namespace Methcla::Audio;
 using Methcla::Memory::RTMemoryManager;

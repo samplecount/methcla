@@ -24,6 +24,7 @@
 #include <array>
 #include <atomic>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 

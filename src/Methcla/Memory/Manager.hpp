@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <stdexcept>
 
 namespace Methcla { namespace Memory {
 

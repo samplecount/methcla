@@ -33,6 +33,7 @@
 #include <cassert>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 // OSC request with reference counting.

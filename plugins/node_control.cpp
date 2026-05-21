@@ -16,6 +16,7 @@
 #include <methcla/plugins/node_control.h>
 
 #include <cmath>
+#include <stdexcept>
 
 using namespace Methcla::Plugin;
 
