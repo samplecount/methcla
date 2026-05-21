@@ -93,6 +93,7 @@ target_compile_options(methcla PRIVATE
 if (LINUX)
     target_link_libraries(methcla
         PUBLIC
+        atomic
         dl
         pthread
     )
