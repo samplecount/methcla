@@ -14,11 +14,6 @@ if (${soundfile_api_libsndfile_FOUND})
     list(APPEND plugins soundfile_api_libsndfile.cpp)
 endif ()
 
-pkg_check_modules(soundfile_api_mpg123 libmpg123 REQUIRED)
-if (${soundfile_api_mpg123_FOUND})
-    list(APPEND plugins soundfile_api_mpg123.cpp)
-endif ()
-
 if (APPLE)
     find_library(CoreFoundation_LIB CoreFoundation)
     find_library(AudioToolbox_LIB AudioToolbox)

@@ -9,8 +9,8 @@
 #import "AppDelegate.h"
 #import "Engine.hpp"
 
+#include <methcla/plugins/soundfile_api_extaudiofile.h>
 #include <methcla/plugins/soundfile_api_libsndfile.h>
-#include <methcla/plugins/soundfile_api_mpg123.h>
 #include <vector>
 
 using namespace Methcla::Examples::Sampler;
@@ -129,7 +129,7 @@ inline NSString* resourcePath(NSString* component)
 {
     Engine::Options options;
     options.engineOptions.audioDriver.bufferSize = 128;
-    options.engineOptions.addLibrary(methcla_soundfile_api_mpg123);
+    options.engineOptions.addLibrary(methcla_soundfile_api_extaudiofile);
     options.engineOptions.addLibrary(methcla_soundfile_api_libsndfile);
 
     NSArray* sounds = openFiles();
