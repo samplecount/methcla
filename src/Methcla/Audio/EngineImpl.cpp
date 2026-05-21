@@ -29,6 +29,7 @@
 #include <oscpp/print.hpp>
 #include <oscpp/util.hpp>
 
+#include <functional>
 #include <stdexcept>
 
 using namespace Methcla;
