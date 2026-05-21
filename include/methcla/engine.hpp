@@ -22,6 +22,7 @@
 #include <methcla/types.h>
 
 #include <exception>
+#include <functional>
 #include <iostream>
 #include <list>
 #include <memory>
