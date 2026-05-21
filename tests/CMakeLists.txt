@@ -6,11 +6,7 @@ target_include_directories(gtest SYSTEM PUBLIC
     ../external_libraries/gtest
 )
 
-target_compile_options(gtest PRIVATE
-    -Wno-missing-field-initializers
-    -Wno-unused-const-variable
-    -Wno-deprecated-copy
-    -Wno-uninitialized-const-pointer)
+target_compile_options(gtest PRIVATE -w)
 
 # =============================================================================
 # Plugin directories
