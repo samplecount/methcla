@@ -61,7 +61,6 @@ target_include_directories(methcla
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ../external_libraries/tinydir
     ../external_libraries
 )
 
@@ -80,6 +79,7 @@ target_link_libraries(methcla
     PUBLIC
     oscpp
     PRIVATE
+    tinydir
     tlsf
     ${methcla_driver})
 
