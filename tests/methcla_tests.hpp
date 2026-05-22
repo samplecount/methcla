@@ -16,6 +16,7 @@
 #define METHCLA_TESTS_HPP_INCLUDED
 
 #include <cmath>
+#include <cstdio>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -30,26 +31,11 @@
 
 #include "gtest/gtest.h"
 
-// Code from http://stackoverflow.com/a/29155677
-namespace testing { namespace internal {
-    enum GTestColor
-    {
-        COLOR_DEFAULT,
-        COLOR_RED,
-        COLOR_GREEN,
-        COLOR_YELLOW
-    };
-
-    extern void ColoredPrintf(GTestColor color, const char* fmt, ...);
-}} // namespace testing::internal
-
-#define PRINTF(...)                                                       \
-    do                                                                    \
-    {                                                                     \
-        testing::internal::ColoredPrintf(testing::internal::COLOR_GREEN,  \
-                                         "[          ] ");                \
-        testing::internal::ColoredPrintf(testing::internal::COLOR_YELLOW, \
-                                         __VA_ARGS__);                    \
+#define PRINTF(...)                      \
+    do                                   \
+    {                                    \
+        printf("[          ] ");         \
+        printf(__VA_ARGS__);             \
     } while (0)
 
 #define TEST_COUT Methcla::Tests::TestCout()
