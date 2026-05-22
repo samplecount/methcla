@@ -60,7 +60,7 @@ namespace Methcla {
     class NodeId : public detail::Id<NodeId, int32_t>
     {
     public:
-        NodeId(int32_t id)
+        explicit NodeId(int32_t id)
         : Id<NodeId, int32_t>(id)
         {}
         NodeId()
@@ -85,7 +85,7 @@ namespace Methcla {
     public:
         // Inheriting constructors not supported by clang 3.2
         // using NodeId::NodeId;
-        GroupId(int32_t id)
+        explicit GroupId(int32_t id)
         : NodeId(id)
         {}
         GroupId()
@@ -96,7 +96,7 @@ namespace Methcla {
     class SynthId : public NodeId
     {
     public:
-        SynthId(int32_t id)
+        explicit SynthId(int32_t id)
         : NodeId(id)
         {}
         SynthId()
@@ -107,7 +107,7 @@ namespace Methcla {
     class AudioBusId : public detail::Id<AudioBusId, int32_t>
     {
     public:
-        AudioBusId(int32_t id)
+        explicit AudioBusId(int32_t id)
         : Id<AudioBusId, int32_t>(id)
         {}
         AudioBusId()
