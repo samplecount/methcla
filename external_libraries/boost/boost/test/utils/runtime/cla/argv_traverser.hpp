@@ -17,10 +17,11 @@
 
 // Boost.Test Runtime parameters
 #include <boost/test/utils/runtime/fwd.hpp>
+#include <cstring>
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 namespace cla {
 
@@ -47,7 +48,7 @@ public:
     /// Returns new argc
     int         remainder()
     {
-        return m_argc;
+        return static_cast<int>(m_argc);
     }
 
     /// Returns true, if we reached end on input
@@ -98,7 +99,7 @@ private:
 
 } // namespace cla
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

@@ -10,7 +10,7 @@
 // serialization/map.hpp:
 // serialization for stl map templates
 
-// (C) Copyright 2002-2014 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002-2014 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -21,18 +21,19 @@
 
 #include <boost/config.hpp>
 
-#include <boost/archive/detail/basic_iarchive.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/collection_size_type.hpp>
 #include <boost/serialization/item_version_type.hpp>
+#include <boost/serialization/library_version_type.hpp>
 #include <boost/serialization/detail/stack_constructor.hpp>
 
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/collections_save_imp.hpp>
 #include <boost/serialization/split_free.hpp>
+#include <boost/move/utility_core.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
 
 ////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -42,14 +43,14 @@ template<class Archive, class Container>
 inline void load_map_collection(Archive & ar, Container &s)
 {
     s.clear();
-    const boost::archive::library_version_type library_version(
+    const methcla_boost::serialization::library_version_type library_version(
         ar.get_library_version()
     );
     // retrieve number of elements
     item_version_type item_version(0);
     collection_size_type count;
     ar >> BOOST_SERIALIZATION_NVP(count);
-    if(boost::archive::library_version_type(3) < library_version){
+    if(methcla_boost::serialization::library_version_type(3) < library_version){
         ar >> BOOST_SERIALIZATION_NVP(item_version);
     }
     typename Container::iterator hint;
@@ -57,11 +58,12 @@ inline void load_map_collection(Archive & ar, Container &s)
     while(count-- > 0){
         typedef typename Container::value_type type;
         detail::stack_construct<Archive, type> t(ar, item_version);
-        // borland fails silently w/o full namespace
-        ar >> boost::serialization::make_nvp("item", t.reference());
-        typename Container::iterator result = s.insert(hint, t.reference());
+        ar >> methcla_boost::serialization::make_nvp("item", t.reference());
+        typename Container::iterator result =
+            s.insert(hint, methcla_boost::move(t.reference()));
         ar.reset_object_address(& (result->second), & t.reference().second);
         hint = result;
+        ++hint;
     }
 }
 
@@ -72,9 +74,9 @@ inline void save(
     const std::map<Key, Type, Compare, Allocator> &t,
     const unsigned int /* file_version */
 ){
-    boost::serialization::stl::save_collection<
-        Archive, 
-        std::map<Key, Type, Compare, Allocator> 
+    methcla_boost::serialization::stl::save_collection<
+        Archive,
+        std::map<Key, Type, Compare, Allocator>
     >(ar, t);
 }
 
@@ -95,7 +97,7 @@ inline void serialize(
     std::map<Key, Type, Compare, Allocator> &t,
     const unsigned int file_version
 ){
-    boost::serialization::split_free(ar, t, file_version);
+    methcla_boost::serialization::split_free(ar, t, file_version);
 }
 
 // multimap
@@ -105,9 +107,9 @@ inline void save(
     const std::multimap<Key, Type, Compare, Allocator> &t,
     const unsigned int /* file_version */
 ){
-    boost::serialization::stl::save_collection<
-        Archive, 
-        std::multimap<Key, Type, Compare, Allocator> 
+    methcla_boost::serialization::stl::save_collection<
+        Archive,
+        std::multimap<Key, Type, Compare, Allocator>
     >(ar, t);
 }
 
@@ -128,10 +130,10 @@ inline void serialize(
     std::multimap<Key, Type, Compare, Allocator> &t,
     const unsigned int file_version
 ){
-    boost::serialization::split_free(ar, t, file_version);
+    methcla_boost::serialization::split_free(ar, t, file_version);
 }
 
 } // serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_SERIALIZATION_MAP_HPP

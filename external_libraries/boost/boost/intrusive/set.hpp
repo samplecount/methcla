@@ -19,14 +19,18 @@
 #include <boost/intrusive/detail/mpl.hpp>
 #include <boost/intrusive/rbtree.hpp>
 #include <boost/move/utility_core.hpp>
-#include <boost/static_assert.hpp>
 
 #if defined(BOOST_HAS_PRAGMA_ONCE)
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
+
+#if !defined(BOOST_INTRUSIVE_DOXYGEN_INVOKED)
+template<class ValueTraits, class VoidOrKeyOfValue, class Compare, class SizeType, bool ConstantTimeSize, typename HeaderHolder>
+class multiset_impl;
+#endif
 
 //! The class template set is an intrusive container, that mimics most of
 //! the interface of std::set as described in the C++ standard.
@@ -83,13 +87,17 @@ class set_impl
    static const bool constant_time_size = tree_type::constant_time_size;
 
    public:
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(const key_compare &,const value_traits &)
-   explicit set_impl( const key_compare &cmp = key_compare()
-                    , const value_traits &v_traits = value_traits())
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree()
+   set_impl()
+      :  tree_type()
+   {}
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(const key_compare &,const value_traits &)
+   explicit set_impl( const key_compare &cmp, const value_traits &v_traits = value_traits())
       :  tree_type(cmp, v_traits)
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(bool,Iterator,Iterator,const key_compare &,const value_traits &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(bool,Iterator,Iterator,const key_compare &,const value_traits &)
    template<class Iterator>
    set_impl( Iterator b, Iterator e
            , const key_compare &cmp = key_compare()
@@ -97,83 +105,92 @@ class set_impl
       : tree_type(true, b, e, cmp, v_traits)
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(rbtree &&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(rbtree &&)
    set_impl(BOOST_RV_REF(set_impl) x)
       :  tree_type(BOOST_MOVE_BASE(tree_type, x))
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::operator=(rbtree &&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::operator=(rbtree &&)
    set_impl& operator=(BOOST_RV_REF(set_impl) x)
    {  return static_cast<set_impl&>(tree_type::operator=(BOOST_MOVE_BASE(tree_type, x))); }
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
-   //! @copydoc ::boost::intrusive::rbtree::~rbtree()
+   //! @copydoc ::methcla_boost::intrusive::rbtree::~rbtree()
    ~set_impl();
 
-   //! @copydoc ::boost::intrusive::rbtree::begin()
-   iterator begin();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::begin()
+   iterator begin() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::begin()const
-   const_iterator begin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::begin()const
+   const_iterator begin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::cbegin()const
-   const_iterator cbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::cbegin()const
+   const_iterator cbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::end()
-   iterator end();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::end()
+   iterator end() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::end()const
-   const_iterator end() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::end()const
+   const_iterator end() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::cend()const
-   const_iterator cend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::cend()const
+   const_iterator cend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rbegin()
-   reverse_iterator rbegin();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbegin()
+   reverse_iterator rbegin() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rbegin()const
-   const_reverse_iterator rbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbegin()const
+   const_reverse_iterator rbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::crbegin()const
-   const_reverse_iterator crbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::crbegin()const
+   const_reverse_iterator crbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rend()
-   reverse_iterator rend();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rend()
+   reverse_iterator rend() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rend()const
-   const_reverse_iterator rend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rend()const
+   const_reverse_iterator rend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::crend()const
-   const_reverse_iterator crend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::crend()const
+   const_reverse_iterator crend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_end_iterator(iterator)
-   static set_impl &container_from_end_iterator(iterator end_iterator);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::root()
+   iterator root() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_end_iterator(const_iterator)
-   static const set_impl &container_from_end_iterator(const_iterator end_iterator);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::root()const
+   const_iterator root() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_iterator(iterator)
-   static set_impl &container_from_iterator(iterator it);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::croot()const
+   const_iterator croot() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_iterator(const_iterator)
-   static const set_impl &container_from_iterator(const_iterator it);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_end_iterator(iterator)
+   static set_impl &container_from_end_iterator(iterator end_iterator) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::key_comp()const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_end_iterator(const_iterator)
+   static const set_impl &container_from_end_iterator(const_iterator end_iterator) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_iterator(iterator)
+   static set_impl &container_from_iterator(iterator it) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_iterator(const_iterator)
+   static const set_impl &container_from_iterator(const_iterator it) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::key_comp()const
    key_compare key_comp() const;
 
-   //! @copydoc ::boost::intrusive::rbtree::value_comp()const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::value_comp()const
    value_compare value_comp() const;
 
-   //! @copydoc ::boost::intrusive::rbtree::empty()const
-   bool empty() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::empty()const
+   bool empty() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::size()const
-   size_type size() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::size()const
+   size_type size() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::swap
+   //! @copydoc ::methcla_boost::intrusive::rbtree::swap
    void swap(set_impl& other);
 
-   //! @copydoc ::boost::intrusive::rbtree::clone_from(const rbtree&,Cloner,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clone_from(const rbtree&,Cloner,Disposer)
    template <class Cloner, class Disposer>
    void clone_from(const set_impl &src, Cloner cloner, Disposer disposer);
 
@@ -183,159 +200,170 @@ class set_impl
 
    #endif   //#ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::clone_from(rbtree&&,Cloner,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clone_from(rbtree&&,Cloner,Disposer)
    template <class Cloner, class Disposer>
    void clone_from(BOOST_RV_REF(set_impl) src, Cloner cloner, Disposer disposer)
    {  tree_type::clone_from(BOOST_MOVE_BASE(tree_type, src), cloner, disposer);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique(reference)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique(reference)
    std::pair<iterator, bool> insert(reference value)
    {  return tree_type::insert_unique(value);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique(const_iterator,reference)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique(const_iterator,reference)
    iterator insert(const_iterator hint, reference value)
    {  return tree_type::insert_unique(hint, value);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique_check(const KeyType&,KeyTypeKeyCompare,insert_commit_data&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique_check(const key_type&,insert_commit_data&)
+   std::pair<iterator, bool> insert_check
+      (const key_type &key, insert_commit_data &commit_data)
+   {  return tree_type::insert_unique_check(key, commit_data); }
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique_check(const_iterator,const key_type&,insert_commit_data&)
+   std::pair<iterator, bool> insert_check
+      (const_iterator hint, const key_type &key
+      ,insert_commit_data &commit_data)
+   {  return tree_type::insert_unique_check(hint, key, commit_data); }
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique_check(const KeyType&,KeyTypeKeyCompare,insert_commit_data&)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator, bool> insert_check
       (const KeyType &key, KeyTypeKeyCompare comp, insert_commit_data &commit_data)
    {  return tree_type::insert_unique_check(key, comp, commit_data); }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique_check(const_iterator,const KeyType&,KeyTypeKeyCompare,insert_commit_data&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique_check(const_iterator,const KeyType&,KeyTypeKeyCompare,insert_commit_data&)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator, bool> insert_check
       (const_iterator hint, const KeyType &key
       ,KeyTypeKeyCompare comp, insert_commit_data &commit_data)
    {  return tree_type::insert_unique_check(hint, key, comp, commit_data); }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique(Iterator,Iterator)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique(Iterator,Iterator)
    template<class Iterator>
    void insert(Iterator b, Iterator e)
    {  tree_type::insert_unique(b, e);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_unique_commit
-   iterator insert_commit(reference value, const insert_commit_data &commit_data)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_unique_commit
+   iterator insert_commit(reference value, const insert_commit_data &commit_data) BOOST_NOEXCEPT
    {  return tree_type::insert_unique_commit(value, commit_data);  }
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
-   //! @copydoc ::boost::intrusive::rbtree::insert_before
-   iterator insert_before(const_iterator pos, reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_before
+   iterator insert_before(const_iterator pos, reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::push_back
-   void push_back(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::push_back
+   void push_back(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::push_front
-   void push_front(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::push_front
+   void push_front(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const_iterator)
-   iterator erase(const_iterator i);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const_iterator)
+   iterator erase(const_iterator i) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const_iterator,const_iterator)
-   iterator erase(const_iterator b, const_iterator e);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const_iterator,const_iterator)
+   iterator erase(const_iterator b, const_iterator e) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const key_type &)
    size_type erase(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    size_type erase(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const_iterator,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const_iterator,Disposer)
    template<class Disposer>
-   iterator erase_and_dispose(const_iterator i, Disposer disposer);
+   iterator erase_and_dispose(const_iterator i, Disposer disposer) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const_iterator,const_iterator,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const_iterator,const_iterator,Disposer)
    template<class Disposer>
-   iterator erase_and_dispose(const_iterator b, const_iterator e, Disposer disposer);
+   iterator erase_and_dispose(const_iterator b, const_iterator e, Disposer disposer) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const key_type &, Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const key_type &, Disposer)
    template<class Disposer>
    size_type erase_and_dispose(const key_type &key, Disposer disposer);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const KeyType&,KeyTypeKeyCompare,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const KeyType&,KeyTypeKeyCompare,Disposer)
    template<class KeyType, class KeyTypeKeyCompare, class Disposer>
    size_type erase_and_dispose(const KeyType& key, KeyTypeKeyCompare comp, Disposer disposer);
 
-   //! @copydoc ::boost::intrusive::rbtree::clear
-   void clear();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clear
+   void clear() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::clear_and_dispose
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clear_and_dispose
    template<class Disposer>
-   void clear_and_dispose(Disposer disposer);
+   void clear_and_dispose(Disposer disposer) BOOST_NOEXCEPT;
 
    #endif   //   #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::count(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::count(const key_type &)const
    size_type count(const key_type &key) const
    {  return static_cast<size_type>(this->tree_type::find(key) != this->tree_type::cend()); }
 
-   //! @copydoc ::boost::intrusive::rbtree::count(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::count(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    size_type count(const KeyType& key, KeyTypeKeyCompare comp) const
    {  return static_cast<size_type>(this->tree_type::find(key, comp) != this->tree_type::cend()); }
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const key_type &)
    iterator lower_bound(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator lower_bound(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const key_type &)const
    const_iterator lower_bound(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator lower_bound(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const key_type &)
    iterator upper_bound(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator upper_bound(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const key_type &)const
    const_iterator upper_bound(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator upper_bound(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const key_type &)
    iterator find(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator find(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const key_type &)const
    const_iterator find(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator find(const KeyType& key, KeyTypeKeyCompare comp) const;
 
    #endif   //   #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const key_type &)
    std::pair<iterator,iterator> equal_range(const key_type &key)
    {  return this->tree_type::lower_bound_range(key); }
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator,iterator> equal_range(const KeyType& key, KeyTypeKeyCompare comp)
    {  return this->tree_type::equal_range(key, comp); }
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const key_type &)const
    std::pair<const_iterator, const_iterator>
       equal_range(const key_type &key) const
    {  return this->tree_type::lower_bound_range(key); }
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<const_iterator, const_iterator>
       equal_range(const KeyType& key, KeyTypeKeyCompare comp) const
@@ -343,47 +371,67 @@ class set_impl
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)
    std::pair<iterator,iterator> bounded_range
       (const key_type &lower_key, const key_type &upper_key, bool left_closed, bool right_closed);
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator,iterator> bounded_range
       (const KeyType& lower_key, const KeyType& upper_key, KeyTypeKeyCompare comp, bool left_closed, bool right_closed);
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)const
    std::pair<const_iterator, const_iterator>
       bounded_range(const key_type &lower_key, const key_type &upper_key, bool left_closed, bool right_closed) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)const
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<const_iterator, const_iterator> bounded_range
          (const KeyType& lower_key, const KeyType& upper_key, KeyTypeKeyCompare comp, bool left_closed, bool right_closed) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::s_iterator_to(reference)
-   static iterator s_iterator_to(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::s_iterator_to(reference)
+   static iterator s_iterator_to(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::s_iterator_to(const_reference)
-   static const_iterator s_iterator_to(const_reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::s_iterator_to(const_reference)
+   static const_iterator s_iterator_to(const_reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::iterator_to(reference)
-   iterator iterator_to(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::iterator_to(reference)
+   iterator iterator_to(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::iterator_to(const_reference)const
-   const_iterator iterator_to(const_reference value) const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::iterator_to(const_reference)const
+   const_iterator iterator_to(const_reference value) const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::init_node(reference)
-   static void init_node(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::init_node(reference)
+   static void init_node(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::unlink_leftmost_without_rebalance
-   pointer unlink_leftmost_without_rebalance();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::unlink_leftmost_without_rebalance
+   pointer unlink_leftmost_without_rebalance() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::replace_node
-   void replace_node(iterator replace_this, reference with_this);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::replace_node
+   void replace_node(iterator replace_this, reference with_this) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::remove_node
-   void remove_node(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::remove_node
+   void remove_node(reference value) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::merge_unique
+   template<class ...Options2>
+   void merge(set<T, Options2...> &source);
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::merge_unique
+   template<class ...Options2>
+   void merge(multiset<T, Options2...> &source);
+
+   #else
+
+   template<class Compare2>
+   void merge(set_impl<ValueTraits, VoidOrKeyOfValue, Compare2, SizeType, ConstantTimeSize, HeaderHolder> &source)
+   {  return tree_type::merge_unique(source);  }
+
+
+   template<class Compare2>
+   void merge(multiset_impl<ValueTraits, VoidOrKeyOfValue, Compare2, SizeType, ConstantTimeSize, HeaderHolder> &source)
+   {  return tree_type::merge_unique(source);  }
+
    #endif   //#ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 };
 
@@ -474,45 +522,52 @@ class set
    typedef typename Base::const_iterator     const_iterator;
 
    //Assert if passed value traits are compatible with the type
-   BOOST_STATIC_ASSERT((detail::is_same<typename value_traits::value_type, T>::value));
+   BOOST_INTRUSIVE_STATIC_ASSERT((detail::is_same<typename value_traits::value_type, T>::value));
 
-   explicit set( const key_compare &cmp = key_compare()
-               , const value_traits &v_traits = value_traits())
+   inline set()
+      :  Base()
+   {}
+
+   inline explicit set( const key_compare &cmp, const value_traits &v_traits = value_traits())
       :  Base(cmp, v_traits)
    {}
 
    template<class Iterator>
-   set( Iterator b, Iterator e
+   inline set( Iterator b, Iterator e
       , const key_compare &cmp = key_compare()
       , const value_traits &v_traits = value_traits())
       :  Base(b, e, cmp, v_traits)
    {}
 
-   set(BOOST_RV_REF(set) x)
+   inline set(BOOST_RV_REF(set) x)
       :  Base(BOOST_MOVE_BASE(Base, x))
    {}
 
-   set& operator=(BOOST_RV_REF(set) x)
+   inline set& operator=(BOOST_RV_REF(set) x)
    {  return static_cast<set &>(this->Base::operator=(BOOST_MOVE_BASE(Base, x)));  }
 
    template <class Cloner, class Disposer>
-   void clone_from(const set &src, Cloner cloner, Disposer disposer)
+   inline void clone_from(const set &src, Cloner cloner, Disposer disposer)
    {  Base::clone_from(src, cloner, disposer);  }
 
    template <class Cloner, class Disposer>
-   void clone_from(BOOST_RV_REF(set) src, Cloner cloner, Disposer disposer)
+   inline void clone_from(BOOST_RV_REF(set) src, Cloner cloner, Disposer disposer)
    {  Base::clone_from(BOOST_MOVE_BASE(Base, src), cloner, disposer);  }
 
-   static set &container_from_end_iterator(iterator end_iterator)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static set &container_from_end_iterator(iterator end_iterator) BOOST_NOEXCEPT
    {  return static_cast<set &>(Base::container_from_end_iterator(end_iterator));   }
 
-   static const set &container_from_end_iterator(const_iterator end_iterator)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static const set &container_from_end_iterator(const_iterator end_iterator) BOOST_NOEXCEPT
    {  return static_cast<const set &>(Base::container_from_end_iterator(end_iterator));   }
 
-   static set &container_from_iterator(iterator it)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static set &container_from_iterator(iterator it) BOOST_NOEXCEPT
    {  return static_cast<set &>(Base::container_from_iterator(it));   }
 
-   static const set &container_from_iterator(const_iterator it)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static const set &container_from_iterator(const_iterator it) BOOST_NOEXCEPT
    {  return static_cast<const set &>(Base::container_from_iterator(it));   }
 };
 
@@ -573,13 +628,17 @@ class multiset_impl
    static const bool constant_time_size = tree_type::constant_time_size;
 
    public:
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(const key_compare &,const value_traits &)
-   explicit multiset_impl( const key_compare &cmp = key_compare()
-                         , const value_traits &v_traits = value_traits())
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree()
+   multiset_impl()
+      :  tree_type()
+   {}
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(const key_compare &,const value_traits &)
+   explicit multiset_impl( const key_compare &cmp, const value_traits &v_traits = value_traits())
       :  tree_type(cmp, v_traits)
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(bool,Iterator,Iterator,const key_compare &,const value_traits &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(bool,Iterator,Iterator,const key_compare &,const value_traits &)
    template<class Iterator>
    multiset_impl( Iterator b, Iterator e
                 , const key_compare &cmp = key_compare()
@@ -587,83 +646,92 @@ class multiset_impl
       : tree_type(false, b, e, cmp, v_traits)
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::rbtree(rbtree &&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbtree(rbtree &&)
    multiset_impl(BOOST_RV_REF(multiset_impl) x)
       :  tree_type(BOOST_MOVE_BASE(tree_type, x))
    {}
 
-   //! @copydoc ::boost::intrusive::rbtree::operator=(rbtree &&)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::operator=(rbtree &&)
    multiset_impl& operator=(BOOST_RV_REF(multiset_impl) x)
    {  return static_cast<multiset_impl&>(tree_type::operator=(BOOST_MOVE_BASE(tree_type, x))); }
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
-   //! @copydoc ::boost::intrusive::rbtree::~rbtree()
+   //! @copydoc ::methcla_boost::intrusive::rbtree::~rbtree()
    ~multiset_impl();
 
-   //! @copydoc ::boost::intrusive::rbtree::begin()
-   iterator begin();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::begin()
+   iterator begin() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::begin()const
-   const_iterator begin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::begin()const
+   const_iterator begin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::cbegin()const
-   const_iterator cbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::cbegin()const
+   const_iterator cbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::end()
-   iterator end();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::end()
+   iterator end() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::end()const
-   const_iterator end() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::end()const
+   const_iterator end() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::cend()const
-   const_iterator cend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::cend()const
+   const_iterator cend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rbegin()
-   reverse_iterator rbegin();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbegin()
+   reverse_iterator rbegin() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rbegin()const
-   const_reverse_iterator rbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rbegin()const
+   const_reverse_iterator rbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::crbegin()const
-   const_reverse_iterator crbegin() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::crbegin()const
+   const_reverse_iterator crbegin() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rend()
-   reverse_iterator rend();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rend()
+   reverse_iterator rend() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::rend()const
-   const_reverse_iterator rend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::rend()const
+   const_reverse_iterator rend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::crend()const
-   const_reverse_iterator crend() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::crend()const
+   const_reverse_iterator crend() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_end_iterator(iterator)
-   static multiset_impl &container_from_end_iterator(iterator end_iterator);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::root()
+   iterator root() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_end_iterator(const_iterator)
-   static const multiset_impl &container_from_end_iterator(const_iterator end_iterator);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::root()const
+   const_iterator root() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_iterator(iterator)
-   static multiset_impl &container_from_iterator(iterator it);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::croot()const
+   const_iterator croot() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::container_from_iterator(const_iterator)
-   static const multiset_impl &container_from_iterator(const_iterator it);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_end_iterator(iterator)
+   static multiset_impl &container_from_end_iterator(iterator end_iterator) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::key_comp()const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_end_iterator(const_iterator)
+   static const multiset_impl &container_from_end_iterator(const_iterator end_iterator) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_iterator(iterator)
+   static multiset_impl &container_from_iterator(iterator it) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::container_from_iterator(const_iterator)
+   static const multiset_impl &container_from_iterator(const_iterator it) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::key_comp()const
    key_compare key_comp() const;
 
-   //! @copydoc ::boost::intrusive::rbtree::value_comp()const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::value_comp()const
    value_compare value_comp() const;
 
-   //! @copydoc ::boost::intrusive::rbtree::empty()const
-   bool empty() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::empty()const
+   bool empty() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::size()const
-   size_type size() const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::size()const
+   size_type size() const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::swap
+   //! @copydoc ::methcla_boost::intrusive::rbtree::swap
    void swap(multiset_impl& other);
 
-   //! @copydoc ::boost::intrusive::rbtree::clone_from(const rbtree&,Cloner,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clone_from(const rbtree&,Cloner,Disposer)
    template <class Cloner, class Disposer>
    void clone_from(const multiset_impl &src, Cloner cloner, Disposer disposer);
 
@@ -673,176 +741,195 @@ class multiset_impl
 
    #endif   //#ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
-   //! @copydoc ::boost::intrusive::rbtree::clone_from(rbtree&&,Cloner,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clone_from(rbtree&&,Cloner,Disposer)
    template <class Cloner, class Disposer>
    void clone_from(BOOST_RV_REF(multiset_impl) src, Cloner cloner, Disposer disposer)
    {  tree_type::clone_from(BOOST_MOVE_BASE(tree_type, src), cloner, disposer);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_equal(reference)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_equal(reference)
    iterator insert(reference value)
    {  return tree_type::insert_equal(value);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_equal(const_iterator,reference)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_equal(const_iterator,reference)
    iterator insert(const_iterator hint, reference value)
    {  return tree_type::insert_equal(hint, value);  }
 
-   //! @copydoc ::boost::intrusive::rbtree::insert_equal(Iterator,Iterator)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_equal(Iterator,Iterator)
    template<class Iterator>
    void insert(Iterator b, Iterator e)
    {  tree_type::insert_equal(b, e);  }
 
    #ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
-   //! @copydoc ::boost::intrusive::rbtree::insert_before
-   iterator insert_before(const_iterator pos, reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::insert_before
+   iterator insert_before(const_iterator pos, reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::push_back
-   void push_back(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::push_back
+   void push_back(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::push_front
-   void push_front(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::push_front
+   void push_front(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const_iterator)
-   iterator erase(const_iterator i);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const_iterator)
+   iterator erase(const_iterator i) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const_iterator,const_iterator)
-   iterator erase(const_iterator b, const_iterator e);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const_iterator,const_iterator)
+   iterator erase(const_iterator b, const_iterator e) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const key_type &)
    size_type erase(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    size_type erase(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const_iterator,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const_iterator,Disposer)
    template<class Disposer>
-   iterator erase_and_dispose(const_iterator i, Disposer disposer);
+   iterator erase_and_dispose(const_iterator i, Disposer disposer) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const_iterator,const_iterator,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const_iterator,const_iterator,Disposer)
    template<class Disposer>
-   iterator erase_and_dispose(const_iterator b, const_iterator e, Disposer disposer);
+   iterator erase_and_dispose(const_iterator b, const_iterator e, Disposer disposer) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const key_type &, Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const key_type &, Disposer)
    template<class Disposer>
    size_type erase_and_dispose(const key_type &key, Disposer disposer);
 
-   //! @copydoc ::boost::intrusive::rbtree::erase_and_dispose(const KeyType&,KeyTypeKeyCompare,Disposer)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::erase_and_dispose(const KeyType&,KeyTypeKeyCompare,Disposer)
    template<class KeyType, class KeyTypeKeyCompare, class Disposer>
    size_type erase_and_dispose(const KeyType& key, KeyTypeKeyCompare comp, Disposer disposer);
 
-   //! @copydoc ::boost::intrusive::rbtree::clear
-   void clear();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clear
+   void clear() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::clear_and_dispose
+   //! @copydoc ::methcla_boost::intrusive::rbtree::clear_and_dispose
    template<class Disposer>
-   void clear_and_dispose(Disposer disposer);
+   void clear_and_dispose(Disposer disposer) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::count(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::count(const key_type &)const
    size_type count(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::count(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::count(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    size_type count(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const key_type &)
    iterator lower_bound(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator lower_bound(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const key_type &)const
    const_iterator lower_bound(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::lower_bound(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator lower_bound(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const key_type &)
    iterator upper_bound(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator upper_bound(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const key_type &)const
    const_iterator upper_bound(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::upper_bound(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator upper_bound(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const key_type &)
    iterator find(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    iterator find(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const key_type &)const
    const_iterator find(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::find(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    const_iterator find(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const key_type &)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const key_type &)
    std::pair<iterator,iterator> equal_range(const key_type &key);
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator,iterator> equal_range(const KeyType& key, KeyTypeKeyCompare comp);
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const key_type &)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const key_type &)const
    std::pair<const_iterator, const_iterator>
       equal_range(const key_type &key) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::equal_range(const KeyType&,KeyTypeKeyCompare)const
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<const_iterator, const_iterator>
       equal_range(const KeyType& key, KeyTypeKeyCompare comp) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)
    std::pair<iterator,iterator> bounded_range
       (const key_type &lower_key, const key_type &upper_key, bool left_closed, bool right_closed);
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<iterator,iterator> bounded_range
       (const KeyType& lower_key, const KeyType& upper_key, KeyTypeKeyCompare comp, bool left_closed, bool right_closed);
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const key_type &,const key_type &,bool,bool)const
    std::pair<const_iterator, const_iterator>
       bounded_range(const key_type &lower_key, const key_type &upper_key, bool left_closed, bool right_closed) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)const
+   //! @copydoc ::methcla_boost::intrusive::rbtree::bounded_range(const KeyType&,const KeyType&,KeyTypeKeyCompare,bool,bool)const
    template<class KeyType, class KeyTypeKeyCompare>
    std::pair<const_iterator, const_iterator> bounded_range
          (const KeyType& lower_key, const KeyType& upper_key, KeyTypeKeyCompare comp, bool left_closed, bool right_closed) const;
 
-   //! @copydoc ::boost::intrusive::rbtree::s_iterator_to(reference)
-   static iterator s_iterator_to(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::s_iterator_to(reference)
+   static iterator s_iterator_to(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::s_iterator_to(const_reference)
-   static const_iterator s_iterator_to(const_reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::s_iterator_to(const_reference)
+   static const_iterator s_iterator_to(const_reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::iterator_to(reference)
-   iterator iterator_to(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::iterator_to(reference)
+   iterator iterator_to(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::iterator_to(const_reference)const
-   const_iterator iterator_to(const_reference value) const;
+   //! @copydoc ::methcla_boost::intrusive::rbtree::iterator_to(const_reference)const
+   const_iterator iterator_to(const_reference value) const BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::init_node(reference)
-   static void init_node(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::init_node(reference)
+   static void init_node(reference value) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::unlink_leftmost_without_rebalance
-   pointer unlink_leftmost_without_rebalance();
+   //! @copydoc ::methcla_boost::intrusive::rbtree::unlink_leftmost_without_rebalance
+   pointer unlink_leftmost_without_rebalance() BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::replace_node
-   void replace_node(iterator replace_this, reference with_this);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::replace_node
+   void replace_node(iterator replace_this, reference with_this) BOOST_NOEXCEPT;
 
-   //! @copydoc ::boost::intrusive::rbtree::remove_node
-   void remove_node(reference value);
+   //! @copydoc ::methcla_boost::intrusive::rbtree::remove_node
+   void remove_node(reference value) BOOST_NOEXCEPT;
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::merge_equal
+   template<class ...Options2>
+   void merge(multiset<T, Options2...> &source);
+
+   //! @copydoc ::methcla_boost::intrusive::rbtree::merge_equal
+   template<class ...Options2>
+   void merge(set<T, Options2...> &source);
+
+   #else
+
+   template<class Compare2>
+   void merge(multiset_impl<ValueTraits, VoidOrKeyOfValue, Compare2, SizeType, ConstantTimeSize, HeaderHolder> &source)
+   {  return tree_type::merge_equal(source);  }
+
+   template<class Compare2>
+   void merge(set_impl<ValueTraits, VoidOrKeyOfValue, Compare2, SizeType, ConstantTimeSize, HeaderHolder> &source)
+   {  return tree_type::merge_equal(source);  }
+
    #endif   //#ifdef BOOST_INTRUSIVE_DOXYGEN_INVOKED
 };
 
@@ -934,52 +1021,59 @@ class multiset
    typedef typename Base::const_iterator     const_iterator;
 
    //Assert if passed value traits are compatible with the type
-   BOOST_STATIC_ASSERT((detail::is_same<typename value_traits::value_type, T>::value));
+   BOOST_INTRUSIVE_STATIC_ASSERT((detail::is_same<typename value_traits::value_type, T>::value));
 
-   multiset( const key_compare &cmp = key_compare()
-           , const value_traits &v_traits = value_traits())
+   inline multiset()
+      :  Base()
+   {}
+
+   inline explicit multiset( const key_compare &cmp, const value_traits &v_traits = value_traits())
       :  Base(cmp, v_traits)
    {}
 
    template<class Iterator>
-   multiset( Iterator b, Iterator e
+   inline multiset( Iterator b, Iterator e
            , const key_compare &cmp = key_compare()
            , const value_traits &v_traits = value_traits())
       :  Base(b, e, cmp, v_traits)
    {}
 
-   multiset(BOOST_RV_REF(multiset) x)
+   inline multiset(BOOST_RV_REF(multiset) x)
       :  Base(BOOST_MOVE_BASE(Base, x))
    {}
 
-   multiset& operator=(BOOST_RV_REF(multiset) x)
+   inline multiset& operator=(BOOST_RV_REF(multiset) x)
    {  return static_cast<multiset &>(this->Base::operator=(BOOST_MOVE_BASE(Base, x)));  }
 
    template <class Cloner, class Disposer>
-   void clone_from(const multiset &src, Cloner cloner, Disposer disposer)
+   inline void clone_from(const multiset &src, Cloner cloner, Disposer disposer)
    {  Base::clone_from(src, cloner, disposer);  }
 
    template <class Cloner, class Disposer>
-   void clone_from(BOOST_RV_REF(multiset) src, Cloner cloner, Disposer disposer)
+   inline void clone_from(BOOST_RV_REF(multiset) src, Cloner cloner, Disposer disposer)
    {  Base::clone_from(BOOST_MOVE_BASE(Base, src), cloner, disposer);  }
 
-   static multiset &container_from_end_iterator(iterator end_iterator)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static multiset &container_from_end_iterator(iterator end_iterator) BOOST_NOEXCEPT
    {  return static_cast<multiset &>(Base::container_from_end_iterator(end_iterator));   }
 
-   static const multiset &container_from_end_iterator(const_iterator end_iterator)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static const multiset &container_from_end_iterator(const_iterator end_iterator) BOOST_NOEXCEPT
    {  return static_cast<const multiset &>(Base::container_from_end_iterator(end_iterator));   }
 
-   static multiset &container_from_iterator(iterator it)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static multiset &container_from_iterator(iterator it) BOOST_NOEXCEPT
    {  return static_cast<multiset &>(Base::container_from_iterator(it));   }
 
-   static const multiset &container_from_iterator(const_iterator it)
+   BOOST_INTRUSIVE_NO_DANGLING
+   inline static const multiset &container_from_iterator(const_iterator it) BOOST_NOEXCEPT
    {  return static_cast<const multiset &>(Base::container_from_iterator(it));   }
 };
 
 #endif
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #include <boost/intrusive/detail/config_end.hpp>
 

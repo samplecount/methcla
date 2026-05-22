@@ -44,7 +44,7 @@ namespace std{
 
 class polymorphic_base
 {
-    friend class boost::serialization::access;
+    friend class methcla_boost::serialization::access;
     template<class Archive>
     void serialize(Archive & /* ar */, const unsigned int /* file_version */){
     }
@@ -63,7 +63,7 @@ BOOST_CLASS_EXPORT(polymorphic_base)
 
 class polymorphic_derived1 : public polymorphic_base
 {
-    friend class boost::serialization::access;
+    friend class methcla_boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int  /* file_version */){
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(polymorphic_base);
@@ -79,15 +79,15 @@ BOOST_CLASS_TYPE_INFO(
 BOOST_CLASS_EXPORT(polymorphic_derived1)
 
 const char * polymorphic_derived1::get_key() const {
-    const boost::serialization::extended_type_info *eti
-        = boost::serialization::type_info_implementation<polymorphic_derived1>
+    const methcla_boost::serialization::extended_type_info *eti
+        = methcla_boost::serialization::type_info_implementation<polymorphic_derived1>
             ::type::get_instance();
     return eti->get_key();
 }
 
 class polymorphic_derived2 : public polymorphic_base
 {
-    friend class boost::serialization::access;
+    friend class methcla_boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int /* file_version */){
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(polymorphic_base);
@@ -99,15 +99,15 @@ public:
 // note the mixing of type_info systems is supported.
 BOOST_CLASS_TYPE_INFO(
     polymorphic_derived2,
-    boost::serialization::extended_type_info_typeid<polymorphic_derived2>
+    methcla_boost::serialization::extended_type_info_typeid<polymorphic_derived2>
 )
 
 BOOST_CLASS_EXPORT(polymorphic_derived2)
 
 const char * polymorphic_derived2::get_key() const {
     // use the exported key as the identifier
-    const boost::serialization::extended_type_info *eti
-        = boost::serialization::type_info_implementation<polymorphic_derived2>
+    const methcla_boost::serialization::extended_type_info *eti
+        = methcla_boost::serialization::type_info_implementation<polymorphic_derived2>
         ::type::get_instance();
     return eti->get_key();
 }
@@ -124,7 +124,7 @@ void save_derived(const char *testfile)
     oa << BOOST_SERIALIZATION_NVP(rd1);
     oa << BOOST_SERIALIZATION_NVP(rd2);
 
-    // the above opereration registers the derived classes as a side
+    // the above operation registers the derived classes as a side
     // effect.  Hence, instances can now be correctly serialized through
     // a base class pointer.
     polymorphic_base *rb1 =  rd1;
@@ -148,9 +148,9 @@ void load_derived(const char *testfile)
     ia >> BOOST_SERIALIZATION_NVP(rd1);
 
     BOOST_CHECK_MESSAGE(
-        boost::serialization::type_info_implementation<polymorphic_derived1>
+        methcla_boost::serialization::type_info_implementation<polymorphic_derived1>
             ::type::get_instance()
-        == boost::serialization::type_info_implementation<polymorphic_derived1>
+        == methcla_boost::serialization::type_info_implementation<polymorphic_derived1>
             ::type::get_derived_extended_type_info(*rd1),
         "restored pointer d1 not of correct type"
     );
@@ -158,9 +158,9 @@ void load_derived(const char *testfile)
     ia >> BOOST_SERIALIZATION_NVP(rd2);
 
     BOOST_CHECK_MESSAGE(
-        boost::serialization::type_info_implementation<polymorphic_derived2>
+        methcla_boost::serialization::type_info_implementation<polymorphic_derived2>
             ::type::get_instance()
-        == boost::serialization::type_info_implementation<polymorphic_derived2>
+        == methcla_boost::serialization::type_info_implementation<polymorphic_derived2>
             ::type::get_derived_extended_type_info(*rd2),
         "restored pointer d2 not of correct type"
     );
@@ -168,7 +168,7 @@ void load_derived(const char *testfile)
     polymorphic_base *rb1 = NULL;
     polymorphic_base *rb2 = NULL;
 
-    // the above opereration registers the derived classes as a side
+    // the above operation registers the derived classes as a side
     // effect.  Hence, instances can now be correctly serialized through
     // a base class pointer.
     ia >> BOOST_SERIALIZATION_NVP(rb1);
@@ -179,9 +179,9 @@ void load_derived(const char *testfile)
     );
 
     BOOST_CHECK_MESSAGE(
-        boost::serialization::type_info_implementation<polymorphic_derived1>
+        methcla_boost::serialization::type_info_implementation<polymorphic_derived1>
             ::type::get_instance()
-        == boost::serialization::type_info_implementation<polymorphic_base>
+        == methcla_boost::serialization::type_info_implementation<polymorphic_base>
             ::type::get_derived_extended_type_info(*rb1),
         "restored pointer b1 not of correct type"
     );
@@ -194,9 +194,9 @@ void load_derived(const char *testfile)
     );
 
     BOOST_CHECK_MESSAGE(
-        boost::serialization::type_info_implementation<polymorphic_derived2>
+        methcla_boost::serialization::type_info_implementation<polymorphic_derived2>
             ::type::get_instance()
-        == boost::serialization::type_info_implementation<polymorphic_base>
+        == methcla_boost::serialization::type_info_implementation<polymorphic_base>
             ::type::get_derived_extended_type_info(*rb2),
         "restored pointer b2 not of correct type"
     );
@@ -208,7 +208,7 @@ void load_derived(const char *testfile)
 int
 test_main( int /* argc */, char* /* argv */[] )
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     
     BOOST_REQUIRE(NULL != testfile);
 

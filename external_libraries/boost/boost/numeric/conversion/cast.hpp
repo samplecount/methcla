@@ -23,7 +23,7 @@
 
 #include <boost/detail/workaround.hpp>
 
-#if BOOST_WORKAROUND(BOOST_MSVC, < 1300) || BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x582))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x582))
 
 #  include<boost/numeric/conversion/detail/old_numeric_cast.hpp>
 
@@ -33,28 +33,28 @@
 #include <boost/numeric/conversion/converter.hpp>
 #include <boost/numeric/conversion/numeric_cast_traits.hpp>
 
-namespace boost
+namespace methcla_boost
 {
     template <typename Target, typename Source> 
     inline Target numeric_cast( Source arg )
     {
         typedef numeric::conversion_traits<Target, Source>   conv_traits;
         typedef numeric::numeric_cast_traits<Target, Source> cast_traits;
-        typedef boost::numeric::converter
+        typedef methcla_boost::numeric::converter
             <
                 Target,
                 Source, 
                 conv_traits,
                 typename cast_traits::overflow_policy, 
                 typename cast_traits::rounding_policy, 
-                boost::numeric::raw_converter< conv_traits >,
+                methcla_boost::numeric::raw_converter< conv_traits >,
                 typename cast_traits::range_checking_policy
             > converter;
         return converter::convert(arg);
     }
     
     using numeric::bad_numeric_cast;
-} // namespace boost
+} // namespace methcla_boost
 
 #endif
 

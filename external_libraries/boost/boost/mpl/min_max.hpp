@@ -18,7 +18,7 @@
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/aux_/na_spec.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<
       typename BOOST_MPL_AUX_NA_PARAM(N1)

@@ -14,7 +14,7 @@
 
 #ifdef BOOST_HAS_NOTHROW_COPY
 
-#if defined(BOOST_CLANG) || defined(__GNUC__) || defined(__ghs__) || defined(__CODEGEARC__) || defined(__SUNPRO_CC)
+#if defined(BOOST_CLANG) || defined(__GNUC__) || defined(__ghs__) || defined(BOOST_CODEGEARC) || defined(__SUNPRO_CC)
 #include <boost/type_traits/is_volatile.hpp>
 #include <boost/type_traits/is_copy_constructible.hpp>
 #include <boost/type_traits/is_reference.hpp>
@@ -31,7 +31,7 @@
 #endif
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 template <class T> struct has_nothrow_copy_constructor : public integral_constant<bool, BOOST_HAS_NOTHROW_COPY(T)>{};
 
@@ -40,26 +40,26 @@ template <class T> struct has_nothrow_copy_constructor : public integral_constan
 #include <boost/type_traits/declval.hpp>
 #include <boost/type_traits/is_copy_constructible.hpp>
 
-namespace boost{
+namespace methcla_boost{
 
 namespace detail{
 
 template <class T, bool b>
-struct has_nothrow_copy_constructor_imp : public boost::integral_constant<bool, false>{};
+struct has_nothrow_copy_constructor_imp : public methcla_boost::integral_constant<bool, false>{};
 template <class T>
-struct has_nothrow_copy_constructor_imp<T, true> : public boost::integral_constant<bool, noexcept(T(boost::declval<const T&>()))>{};
+struct has_nothrow_copy_constructor_imp<T, true> : public methcla_boost::integral_constant<bool, noexcept(T(methcla_boost::declval<const T&>()))>{};
 
 }
 
-template <class T> struct has_nothrow_copy_constructor : public detail::has_nothrow_copy_constructor_imp<T, boost::is_copy_constructible<T>::value>{};
+template <class T> struct has_nothrow_copy_constructor : public detail::has_nothrow_copy_constructor_imp<T, methcla_boost::is_copy_constructible<T>::value>{};
 
 #else
 
 #include <boost/type_traits/has_trivial_copy.hpp>
 
-namespace boost{
+namespace methcla_boost{
 
-template <class T> struct has_nothrow_copy_constructor : public integral_constant<bool, ::boost::has_trivial_copy<T>::value>{};
+template <class T> struct has_nothrow_copy_constructor : public integral_constant<bool, ::methcla_boost::has_trivial_copy<T>::value>{};
 
 #endif
 
@@ -77,6 +77,6 @@ template <> struct has_nothrow_copy_constructor<void const volatile> : public fa
 
 template <class T> struct has_nothrow_copy : public has_nothrow_copy_constructor<T>{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_HAS_NOTHROW_COPY_HPP_INCLUDED

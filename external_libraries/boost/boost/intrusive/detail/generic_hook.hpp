@@ -26,9 +26,9 @@
 #include <boost/intrusive/detail/mpl.hpp>
 #include <boost/intrusive/detail/assert.hpp>
 #include <boost/intrusive/detail/node_holder.hpp>
-#include <boost/static_assert.hpp>
+#include <boost/intrusive/detail/algo_type.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 /// @cond
@@ -40,7 +40,7 @@ struct link_dispatch
 {};
 
 template<class Hook>
-void destructor_impl(Hook &hook, detail::link_dispatch<safe_link>)
+inline void destructor_impl(Hook &hook, detail::link_dispatch<safe_link>)
 {  //If this assertion raises, you might have destroyed an object
    //while it was still inserted in a container that is alive.
    //If so, remove the object from the container before destroying it.
@@ -48,11 +48,11 @@ void destructor_impl(Hook &hook, detail::link_dispatch<safe_link>)
 }
 
 template<class Hook>
-void destructor_impl(Hook &hook, detail::link_dispatch<auto_unlink>)
+inline void destructor_impl(Hook &hook, detail::link_dispatch<auto_unlink>)
 {  hook.unlink();  }
 
 template<class Hook>
-void destructor_impl(Hook &, detail::link_dispatch<normal_link>)
+inline void destructor_impl(Hook &, detail::link_dispatch<normal_link>)
 {}
 
 }  //namespace detail {
@@ -120,7 +120,8 @@ struct hooktags_impl
 /// @endcond
 
 template
-   < class NodeAlgorithms
+   < methcla_boost::intrusive::algo_types Algo
+   , class NodeTraits
    , class Tag
    , link_mode_type LinkMode
    , base_hook_type BaseHookType
@@ -135,20 +136,20 @@ class generic_hook
    //from the hook.
    : public detail::if_c
       < detail::is_same<Tag, member_tag>::value
-      , typename NodeAlgorithms::node
-      , node_holder<typename NodeAlgorithms::node, Tag, BaseHookType>
+      , typename NodeTraits::node
+      , node_holder<typename NodeTraits::node, Tag, BaseHookType>
       >::type
    //If this is the a default-tagged base hook derive from a class that
    //will define an special internal typedef. Containers will be able to detect this
    //special typedef and obtain generic_hook's internal types in order to deduce
    //value_traits for this hook.
    , public hook_tags_definer
-      < generic_hook<NodeAlgorithms, Tag, LinkMode, BaseHookType>
-      , detail::is_same<Tag, dft_tag>::value*BaseHookType>
+      < generic_hook<Algo, NodeTraits, Tag, LinkMode, BaseHookType>
+      , detail::is_same<Tag, dft_tag>::value ? BaseHookType : NoBaseHookId>
    /// @endcond
 {
    /// @cond
-   typedef          NodeAlgorithms                    node_algorithms;
+   typedef typename get_algo<Algo, NodeTraits>::type  node_algorithms;
    typedef typename node_algorithms::node             node;
    typedef typename node_algorithms::node_ptr         node_ptr;
    typedef typename node_algorithms::const_node_ptr   const_node_ptr;
@@ -156,57 +157,73 @@ class generic_hook
    public:
 
    typedef hooktags_impl
-      < typename NodeAlgorithms::node_traits
+      < NodeTraits
       , Tag, LinkMode, BaseHookType>                  hooktags;
 
-   node_ptr this_ptr()
+   inline node_ptr this_ptr() BOOST_NOEXCEPT
    {  return pointer_traits<node_ptr>::pointer_to(static_cast<node&>(*this)); }
 
-   const_node_ptr this_ptr() const
+   inline const_node_ptr this_ptr() const BOOST_NOEXCEPT
    {  return pointer_traits<const_node_ptr>::pointer_to(static_cast<const node&>(*this)); }
 
    public:
    /// @endcond
 
-   generic_hook()
+   inline generic_hook() BOOST_NOEXCEPT
+   #if defined(BOOST_INTRUSIVE_CONCEPTS_BASED_OVERLOADING)
+      requires (LinkMode != normal_link)
+   #endif
    {
-      if(hooktags::safemode_or_autounlink){
+      BOOST_IF_CONSTEXPR(hooktags::safemode_or_autounlink){
          node_algorithms::init(this->this_ptr());
       }
    }
 
-   generic_hook(const generic_hook& )
+   #if !defined(BOOST_INTRUSIVE_DOXYGEN_INVOKED) && defined(BOOST_INTRUSIVE_CONCEPTS_BASED_OVERLOADING)
+   //Default destructor for normal links (allows conditional triviality)
+   generic_hook() requires (LinkMode == normal_link) = default;
+   #endif
+
+   inline generic_hook(const generic_hook& ) BOOST_NOEXCEPT
    {
-      if(hooktags::safemode_or_autounlink){
+      BOOST_IF_CONSTEXPR(hooktags::safemode_or_autounlink){
          node_algorithms::init(this->this_ptr());
       }
    }
 
-   generic_hook& operator=(const generic_hook& )
+   inline generic_hook& operator=(const generic_hook& ) BOOST_NOEXCEPT
    {  return *this;  }
 
-   ~generic_hook()
+   inline ~generic_hook()
+   #if defined(BOOST_INTRUSIVE_CONCEPTS_BASED_OVERLOADING)
+      requires (LinkMode != normal_link)
+   #endif
    {
       destructor_impl
          (*this, detail::link_dispatch<hooktags::link_mode>());
    }
 
-   void swap_nodes(generic_hook &other)
+   #if !defined(BOOST_INTRUSIVE_DOXYGEN_INVOKED) && defined(BOOST_INTRUSIVE_CONCEPTS_BASED_OVERLOADING)
+   //Default destructor for normal links (allows conditional triviality)
+   ~generic_hook() requires (LinkMode == normal_link) = default;
+   #endif
+
+   inline void swap_nodes(generic_hook &other) BOOST_NOEXCEPT
    {
       node_algorithms::swap_nodes
          (this->this_ptr(), other.this_ptr());
    }
 
-   bool is_linked() const
+   inline bool is_linked() const BOOST_NOEXCEPT
    {
       //is_linked() can be only used in safe-mode or auto-unlink
-      BOOST_STATIC_ASSERT(( hooktags::safemode_or_autounlink ));
+      BOOST_INTRUSIVE_STATIC_ASSERT(( hooktags::safemode_or_autounlink ));
       return !node_algorithms::unique(this->this_ptr());
    }
 
-   void unlink()
+   inline void unlink() BOOST_NOEXCEPT
    {
-      BOOST_STATIC_ASSERT(( (int)hooktags::link_mode == (int)auto_unlink ));
+      BOOST_INTRUSIVE_STATIC_ASSERT(( (int)hooktags::link_mode == (int)auto_unlink ));
       node_ptr n(this->this_ptr());
       if(!node_algorithms::inited(n)){
          node_algorithms::unlink(n);
@@ -216,6 +233,6 @@ class generic_hook
 };
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #endif //BOOST_INTRUSIVE_GENERIC_HOOK_HPP

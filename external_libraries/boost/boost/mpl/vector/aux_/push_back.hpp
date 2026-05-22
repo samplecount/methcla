@@ -22,7 +22,7 @@
 #   include <boost/mpl/vector/aux_/item.hpp>
 #   include <boost/mpl/vector/aux_/tag.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<>
 struct push_back_impl< aux::vector_tag >

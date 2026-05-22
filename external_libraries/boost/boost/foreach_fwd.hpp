@@ -20,25 +20,25 @@ enum boost_foreach_argument_dependent_lookup_hack
     boost_foreach_argument_dependent_lookup_hack_value
 };
 
-namespace boost
+namespace methcla_boost
 {
 
 namespace foreach
 {
     ///////////////////////////////////////////////////////////////////////////////
-    // boost::foreach::tag
+    // methcla_boost::foreach::tag
     //
     typedef boost_foreach_argument_dependent_lookup_hack tag;
 
     ///////////////////////////////////////////////////////////////////////////////
-    // boost::foreach::is_lightweight_proxy
+    // methcla_boost::foreach::is_lightweight_proxy
     //   Specialize this for user-defined collection types if they are inexpensive to copy.
     //   This tells BOOST_FOREACH it can avoid the rvalue/lvalue detection stuff.
     template<typename T>
     struct is_lightweight_proxy;
 
     ///////////////////////////////////////////////////////////////////////////////
-    // boost::foreach::is_noncopyable
+    // methcla_boost::foreach::is_noncopyable
     //   Specialize this for user-defined collection types if they cannot be copied.
     //   This also tells BOOST_FOREACH to avoid the rvalue/lvalue detection stuff.
     template<typename T>
@@ -46,6 +46,6 @@ namespace foreach
 
 } // namespace foreach
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif

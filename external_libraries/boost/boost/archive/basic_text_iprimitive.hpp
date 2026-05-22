@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // basic_text_iprimitive.hpp
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -24,36 +24,33 @@
 // in such cases.   So we can't use basic_ostream<IStream::char_type> but rather
 // use two template parameters
 
-#include <boost/assert.hpp>
 #include <locale>
 #include <cstddef> // size_t
 
 #include <boost/config.hpp>
 #if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
-    using ::size_t; 
+namespace std{
+    using ::size_t;
     #if ! defined(BOOST_DINKUMWARE_STDLIB) && ! defined(__SGI_STL_PORT)
         using ::locale;
     #endif
 } // namespace std
 #endif
 
+#include <boost/io/ios_state.hpp>
+#include <boost/static_assert.hpp>
+
 #include <boost/detail/workaround.hpp>
 #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
 #include <boost/archive/dinkumware.hpp>
 #endif
-
-#include <boost/limits.hpp>
-#include <boost/io/ios_state.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/static_assert.hpp>
-
 #include <boost/serialization/throw_exception.hpp>
+#include <boost/archive/codecvt_null.hpp>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/archive/basic_streambuf_locale_saver.hpp>
 #include <boost/archive/detail/abi_prefix.hpp> // must be the last header
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////////////////////////////////////////////////////////////////////
@@ -71,9 +68,17 @@ protected:
     io::ios_precision_saver precision_saver;
 
     #ifndef BOOST_NO_STD_LOCALE
-    boost::scoped_ptr<std::locale> archive_locale;
-    basic_streambuf_locale_saver<
-        typename IStream::char_type, 
+    // note order! - if you change this, libstd++ will fail!
+    // a) create new locale with new codecvt facet
+    // b) save current locale
+    // c) change locale to new one
+    // d) use stream buffer
+    // e) change locale back to original
+    // f) destroy new codecvt facet
+    methcla_boost::archive::codecvt_null<typename IStream::char_type> codecvt_null_facet;
+    std::locale archive_locale;
+    basic_istream_locale_saver<
+        typename IStream::char_type,
         typename IStream::traits_type
     > locale_saver;
     #endif
@@ -83,7 +88,7 @@ protected:
     {
         if(is >> t)
             return;
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::input_stream_error)
         );
     }
@@ -116,9 +121,9 @@ protected:
         t = i;
     }
     #endif
-    BOOST_ARCHIVE_OR_WARCHIVE_DECL 
+    BOOST_ARCHIVE_OR_WARCHIVE_DECL
     basic_text_iprimitive(IStream  &is, bool no_codecvt);
-    BOOST_ARCHIVE_OR_WARCHIVE_DECL 
+    BOOST_ARCHIVE_OR_WARCHIVE_DECL
     ~basic_text_iprimitive();
 public:
     BOOST_ARCHIVE_OR_WARCHIVE_DECL void
@@ -130,7 +135,7 @@ public:
 #endif
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/archive/detail/abi_suffix.hpp> // pop pragmas
 

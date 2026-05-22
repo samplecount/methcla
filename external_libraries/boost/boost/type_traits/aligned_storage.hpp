@@ -15,20 +15,20 @@
 
 #include <cstddef> // for std::size_t
 
-#include "boost/config.hpp"
-#include "boost/detail/workaround.hpp"
-#include "boost/type_traits/alignment_of.hpp"
-#include "boost/type_traits/type_with_alignment.hpp"
-#include "boost/type_traits/is_pod.hpp"
-#include "boost/type_traits/conditional.hpp"
+#include <boost/config.hpp>
+#include <boost/detail/workaround.hpp>
+#include <boost/type_traits/alignment_of.hpp>
+#include <boost/type_traits/type_with_alignment.hpp>
+#include <boost/type_traits/is_pod.hpp>
+#include <boost/type_traits/conditional.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 namespace detail { namespace aligned_storage {
 
 BOOST_STATIC_CONSTANT(
       std::size_t
-    , alignment_of_max_align = ::boost::alignment_of<boost::detail::max_align>::value
+    , alignment_of_max_align = ::methcla_boost::alignment_of<methcla_boost::detail::max_align>::value
     );
 
 //
@@ -44,7 +44,7 @@ struct aligned_storage_imp
     {
         char buf[size_];
 
-        typename ::boost::type_with_alignment<alignment_>::type align_;
+        typename ::methcla_boost::type_with_alignment<alignment_>::type align_;
     } data_;
     void* address() const { return const_cast<aligned_storage_imp*>(this); }
 };
@@ -54,7 +54,7 @@ struct aligned_storage_imp<size, std::size_t(-1)>
    union data_t
    {
       char buf[size];
-      ::boost::detail::max_align align_;
+      ::methcla_boost::detail::max_align align_;
    } data_;
    void* address() const { return const_cast<aligned_storage_imp*>(this); }
 };
@@ -73,17 +73,17 @@ template <
     , std::size_t alignment_ = std::size_t(-1)
 >
 class aligned_storage : 
-#ifndef __BORLANDC__
+#ifndef BOOST_BORLANDC
    private 
 #else
    public
 #endif
-   ::boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> 
+   ::methcla_boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> 
 {
  
 public: // constants
 
-    typedef ::boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> type;
+    typedef ::methcla_boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> type;
 
     BOOST_STATIC_CONSTANT(
           std::size_t
@@ -93,7 +93,7 @@ public: // constants
           std::size_t
         , alignment = (
               alignment_ == std::size_t(-1)
-            ? ::boost::detail::aligned_storage::alignment_of_max_align
+            ? ::methcla_boost::detail::aligned_storage::alignment_of_max_align
             : alignment_
             )
         );
@@ -131,8 +131,8 @@ public: // accessors
 // as a POD (Note that aligned_storage<> itself is not a POD):
 //
 template <std::size_t size_, std::size_t alignment_>
-struct is_pod< ::boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> > : public true_type{};
+struct is_pod< ::methcla_boost::detail::aligned_storage::aligned_storage_imp<size_, alignment_> > : public true_type{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_ALIGNED_STORAGE_HPP

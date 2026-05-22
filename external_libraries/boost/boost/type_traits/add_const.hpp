@@ -12,7 +12,7 @@
 
 #include <boost/type_traits/detail/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 // * convert a type T to const type - add_const<T>
 // this is not required since the result is always
@@ -41,6 +41,12 @@ namespace boost {
       typedef T& type;
    };
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using add_const_t = typename add_const<T>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_ADD_CONST_HPP_INCLUDED

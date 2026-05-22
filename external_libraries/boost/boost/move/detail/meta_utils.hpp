@@ -14,21 +14,20 @@
 #ifndef BOOST_MOVE_DETAIL_META_UTILS_HPP
 #define BOOST_MOVE_DETAIL_META_UTILS_HPP
 
-#ifndef BOOST_CONFIG_HPP
-#  include <boost/config.hpp>
-#endif
-#
 #if defined(BOOST_HAS_PRAGMA_ONCE)
 #  pragma once
 #endif
+
+#include <cstddef>
+#include <boost/move/detail/workaround.hpp>  //forceinline
 #include <boost/move/detail/meta_utils_core.hpp>
-#include <cstddef>   //for std::size_t
+#include <boost/move/detail/addressof.hpp>
 
 //Small meta-typetraits to support move
 
-namespace boost {
+namespace methcla_boost {
 
-//Forward declare boost::rv
+//Forward declare methcla_boost::rv
 template <class T> class rv;
 
 namespace move_detail {
@@ -58,8 +57,8 @@ struct apply
 template< bool C_ >
 struct bool_ : integral_constant<bool, C_>
 {
-     operator bool() const { return C_; }
-   bool operator()() const { return C_; }
+   inline operator bool() const { return C_; }
+   inline bool operator()() const { return C_; }
 };
 
 typedef bool_<true>        true_;
@@ -69,6 +68,12 @@ typedef bool_<false>       false_;
 //              nat
 //////////////////////////////////////
 struct nat{};
+struct nat2{};
+struct nat3{};
+
+template <unsigned N>
+struct natN
+{};
 
 //////////////////////////////////////
 //          yes_type/no_type
@@ -197,22 +202,6 @@ struct add_const_lvalue_reference
 };
 
 //////////////////////////////////////
-//             is_lvalue_reference
-//////////////////////////////////////
-template<class T>
-struct is_lvalue_reference
-{
-    static const bool value = false;
-};
-
-template<class T>
-struct is_lvalue_reference<T&>
-{
-    static const bool value = true;
-};
-
-
-//////////////////////////////////////
 //             identity
 //////////////////////////////////////
 template <class T>
@@ -220,7 +209,25 @@ struct identity
 {
    typedef T type;
    typedef typename add_const_lvalue_reference<T>::type reference;
-   reference operator()(reference t)
+
+   BOOST_MOVE_FORCEINLINE reference operator()(reference t) const
+   {  return t;   }
+
+   //For transparent types
+   template<class K>
+   BOOST_MOVE_FORCEINLINE const K & operator()(const K &t) const
+   {  return t;   }
+};
+
+//////////////////////////////////////
+//             identity
+//////////////////////////////////////
+template <>
+struct identity<void>
+{
+   template <class U>
+   BOOST_MOVE_FORCEINLINE typename add_const_lvalue_reference<U>::type
+      operator()(typename add_const_lvalue_reference<U>::type t) const
    {  return t;   }
 };
 
@@ -241,36 +248,7 @@ struct is_class_or_union
 //////////////////////////////////////
 //             addressof
 //////////////////////////////////////
-template<class T>
-struct addr_impl_ref
-{
-   T & v_;
-   inline addr_impl_ref( T & v ): v_( v ) {}
-   inline operator T& () const { return v_; }
 
-   private:
-   addr_impl_ref & operator=(const addr_impl_ref &);
-};
-
-template<class T>
-struct addressof_impl
-{
-   static inline T * f( T & v, long )
-   {
-      return reinterpret_cast<T*>(
-         &const_cast<char&>(reinterpret_cast<const volatile char &>(v)));
-   }
-
-   static inline T * f( T * v, int )
-   {  return v;  }
-};
-
-template<class T>
-inline T * addressof( T & v )
-{
-   return ::boost::move_detail::addressof_impl<T>::f
-      ( ::boost::move_detail::addr_impl_ref<T>( v ), 0 );
-}
 
 //////////////////////////////////////
 //          has_pointer_type
@@ -314,6 +292,17 @@ class is_convertible
 
 #endif
 
+template <class T, class U, bool IsSame = is_same<T, U>::value>
+struct is_same_or_convertible
+   : is_convertible<T, U>
+{};
+
+template <class T, class U>
+struct is_same_or_convertible<T, U, true>
+{
+   static const bool value = true;
+};
+
 template<
       bool C
     , typename F1
@@ -345,6 +334,16 @@ struct enable_if_convertible
 template<class T, class U, class R = void>
 struct disable_if_convertible
    : disable_if< is_convertible<T, U>, R>
+{};
+
+template<class T, class U, class R = void>
+struct enable_if_same_or_convertible
+   : enable_if< is_same_or_convertible<T, U>, R>
+{};
+
+template<class T, class U, class R = void>
+struct disable_if_same_or_convertible
+   : disable_if< is_same_or_convertible<T, U>, R>
 {};
 
 //////////////////////////////////////////////////////////////////////////////
@@ -445,7 +444,7 @@ struct disable_if_or
 //////////////////////////////////////////////////////////////////////////////
 template<class T>
 struct has_move_emulation_enabled_impl
-   : is_convertible< T, ::boost::rv<T>& >
+   : is_convertible< T, ::methcla_boost::rv<T>& >
 {};
 
 template<class T>
@@ -453,7 +452,7 @@ struct has_move_emulation_enabled_impl<T&>
 {  static const bool value = false;  };
 
 template<class T>
-struct has_move_emulation_enabled_impl< ::boost::rv<T> >
+struct has_move_emulation_enabled_impl< ::methcla_boost::rv<T> >
 {  static const bool value = false;  };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -489,11 +488,11 @@ struct is_rvalue_reference< T&& >
 #else // #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
 template< class T >
-struct is_rvalue_reference< boost::rv<T>& >
+struct is_rvalue_reference< methcla_boost::rv<T>& >
 {  static const bool value = true;  };
 
 template< class T >
-struct is_rvalue_reference< const boost::rv<T>& >
+struct is_rvalue_reference< const methcla_boost::rv<T>& >
 {  static const bool value = true;  };
 
 #endif // #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -517,7 +516,7 @@ namespace detail_add_rvalue_reference
    struct add_rvalue_reference_impl< T, emulation, true > { typedef T & type; };
 
    template< class T, bool rv >
-   struct add_rvalue_reference_impl< T, true, rv > { typedef ::boost::rv<T>& type; };
+   struct add_rvalue_reference_impl< T, true, rv > { typedef ::methcla_boost::rv<T>& type; };
 } // namespace detail_add_rvalue_reference
 
 template< class T >
@@ -528,6 +527,10 @@ struct add_rvalue_reference
 template< class T >
 struct add_rvalue_reference<T &>
 {  typedef T & type; };
+
+template< class T, std::size_t N >
+struct add_rvalue_reference<T[N]>
+{  typedef T (&type)[N]; };
 
 #endif // #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 
@@ -559,6 +562,6 @@ template< class T > struct remove_rvalue_reference { typedef T type; };
 //  rvalue references in C++03.  This may be necessary to prevent "accidental moves".
 
 }  //namespace move_detail {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif //#ifndef BOOST_MOVE_DETAIL_META_UTILS_HPP

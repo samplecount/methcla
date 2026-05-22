@@ -12,12 +12,13 @@
 #  pragma warning (disable : 4786) // too long name, harmless warning
 #endif
 
+#include <boost/config.hpp>
+
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/impl/basic_xml_grammar.hpp>
 
-using namespace boost::spirit::classic;
-
-#include <boost/config.hpp>
+using namespace methcla_boost::spirit::classic;
 
 // fixup for borland
 // The following code will be put into Boost.Config in a later revision
@@ -39,7 +40,7 @@ namespace std {
 } // namespace std
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 typedef basic_xml_grammar<char> xml_grammar;
@@ -58,16 +59,16 @@ void xml_grammar::init_chset(){
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #include "basic_xml_grammar.ipp"
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 // explicit instantiation of xml for 8 bit characters
 template class basic_xml_grammar<char>;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 

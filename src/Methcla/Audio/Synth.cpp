@@ -14,10 +14,9 @@
 
 #include "Methcla/Audio/Synth.hpp"
 
-#include <boost/type_traits/alignment_of.hpp>
-
 #include <algorithm>
 #include <cmath>
+#include <type_traits>
 
 using namespace Methcla::Audio;
 using namespace Methcla::Memory;
@@ -54,12 +53,12 @@ Synth::Synth(Environment& env, NodeId nodeId, const SynthDef& synthDef,
 
     // Validate alignment
     assert(
-        Alignment::isAligned(boost::alignment_of<AudioInputConnection>::value,
+        Alignment::isAligned(std::alignment_of<AudioInputConnection>::value,
                              (uintptr_t)m_audioInputConnections));
     assert(
-        Alignment::isAligned(boost::alignment_of<AudioOutputConnection>::value,
+        Alignment::isAligned(std::alignment_of<AudioOutputConnection>::value,
                              (uintptr_t)m_audioOutputConnections));
-    assert(Alignment::isAligned(boost::alignment_of<sample_t>::value,
+    assert(Alignment::isAligned(std::alignment_of<sample_t>::value,
                                 (uintptr_t)m_controlBuffers));
     assert(kBufferAlignment.isAligned(m_audioBuffers));
 }

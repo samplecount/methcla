@@ -32,7 +32,7 @@ namespace std{
 template <class T>
 int test_vector(T)
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     BOOST_REQUIRE(NULL != testfile);
 
     // test array of objects
@@ -42,13 +42,13 @@ int test_vector(T)
     {   
         test_ostream os(testfile, TEST_STREAM_FLAGS);
         test_oarchive oa(os, TEST_ARCHIVE_FLAGS);
-        oa << boost::serialization::make_nvp("avector", avector);
+        oa << methcla_boost::serialization::make_nvp("avector", avector);
     }
     std::vector<T> avector1;
     {
         test_istream is(testfile, TEST_STREAM_FLAGS);
         test_iarchive ia(is, TEST_ARCHIVE_FLAGS);
-        ia >> boost::serialization::make_nvp("avector", avector1);
+        ia >> methcla_boost::serialization::make_nvp("avector", avector1);
     }
     BOOST_CHECK(avector == avector1);
     std::remove(testfile);

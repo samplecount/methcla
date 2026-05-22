@@ -24,7 +24,7 @@
 #endif
 
 #  ifndef BOOST_REGEX_TRAITS_HPP_INCLUDED
-#     include <boost/regex/v4/regex_traits.hpp>
+#     include <boost/regex/v5/regex_traits.hpp>
 #  endif
 
 #endif // include

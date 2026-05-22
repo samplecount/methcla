@@ -14,7 +14,7 @@
 // $Date$
 // $Revision$
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 struct nested_begin_end_tag;
 struct non_sequence_tag;

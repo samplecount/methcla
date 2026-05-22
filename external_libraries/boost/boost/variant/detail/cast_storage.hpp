@@ -13,9 +13,9 @@
 #ifndef BOOST_VARIANT_DETAIL_CAST_STORAGE_HPP
 #define BOOST_VARIANT_DETAIL_CAST_STORAGE_HPP
 
-#include "boost/config.hpp"
+#include <boost/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace detail { namespace variant {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,6 +37,6 @@ inline const T& cast_storage(const void* storage)
 }
 
 }} // namespace detail::variant
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_VARIANT_DETAIL_CAST_STORAGE_HPP

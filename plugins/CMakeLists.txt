@@ -33,9 +33,7 @@ foreach(plugin ${plugins})
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<INSTALL_INTERFACE:include>
     )
-    target_include_directories(${plugin_target} SYSTEM PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
-    )
+    target_link_libraries(${plugin_target} PRIVATE oscpp)
     if (plugin MATCHES ".*\.c$")
         # C99 doesn't allow to not declare a parameter name
         set(c99_warnings -Wno-unused-parameter)

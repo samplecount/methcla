@@ -30,7 +30,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace function_detector {
 
@@ -44,12 +44,12 @@ namespace function_detector {
            NonStaticFunction = sizeof( NonStaticFunctionType ) - sizeof( NotFoundType )
          };
 
-}  //namespace boost {
+}  //namespace methcla_boost {
 }  //namespace intrusive {
 }  //namespace function_detector {
 
 #define BOOST_INTRUSIVE_CREATE_FUNCTION_DETECTOR(Identifier, InstantiationKey) \
-   namespace boost { \
+   namespace methcla_boost { \
    namespace intrusive { \
    namespace function_detector { \
    template < class T, \
@@ -78,12 +78,12 @@ namespace function_detector {
       template <class U> \
       static NotFoundType Test( ... ); \
    public : \
-      static const int check = NotFound + (sizeof(Test<T>(0, 0)) - sizeof(NotFoundType));\
+      static const int check = NotFound + int(sizeof(Test<T>(0, 0)) - sizeof(NotFoundType));\
    };\
-}}} //namespace boost::intrusive::function_detector {
+}}} //namespace methcla_boost::intrusive::function_detector {
 
 #define BOOST_INTRUSIVE_DETECT_FUNCTION(Class, InstantiationKey, ReturnType, Identifier, Params) \
-    ::boost::intrusive::function_detector::DetectMember_##InstantiationKey_##Identifier< Class,\
+    ::methcla_boost::intrusive::function_detector::DetectMember_##InstantiationKey_##Identifier< Class,\
                                          ReturnType (Class::*)Params,\
                                          ReturnType (Class::*)Params const,\
                                          ReturnType (*)Params \

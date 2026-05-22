@@ -10,13 +10,14 @@
 #include <boost/detail/workaround.hpp>
 
 #if (BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
-   || BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x610)) \
+   || BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x610)) \
    || BOOST_WORKAROUND(__DMC__, BOOST_TESTED_AT(0x840)) \
    || BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3202)) \
-   || BOOST_WORKAROUND(BOOST_INTEL_CXX_VERSION, BOOST_TESTED_AT(810)) )
+   || BOOST_WORKAROUND(BOOST_INTEL_CXX_VERSION, BOOST_TESTED_AT(810)) )\
+   || defined(BOOST_MPL_CFG_NO_ADL_BARRIER_NAMESPACE)
 
 
-namespace boost{
+namespace methcla_boost{
    namespace mpl
    {
       template <bool B> struct bool_;
@@ -34,7 +35,7 @@ namespace mpl_{
    struct integral_c_tag;
 }
 
-namespace boost
+namespace methcla_boost
 {
    namespace mpl
    {
@@ -46,7 +47,7 @@ namespace boost
 
 #endif
 
-namespace boost{
+namespace methcla_boost{
 
    template <class T, T val>
    struct integral_constant
@@ -55,19 +56,15 @@ namespace boost{
       typedef T value_type;
       typedef integral_constant<T, val> type;
       static const T value = val;
-      //
-      // This helper function is just to disable type-punning 
-      // warnings from GCC:
-      //
-      template <class U>
-      static U& dereference(U* p) { return *p; }
 
       operator const mpl::integral_c<T, val>& ()const
       {
          static const char data[sizeof(long)] = { 0 };
-         return dereference(reinterpret_cast<const mpl::integral_c<T, val>*>(&data));
+         const void* const pdata = data;
+         return *static_cast<const mpl::integral_c<T, val>*>(pdata);
       }
-      BOOST_CONSTEXPR operator T()const { return val; }
+      BOOST_CONSTEXPR operator T()const BOOST_NOEXCEPT { return val; }
+      BOOST_CONSTEXPR T operator()()const BOOST_NOEXCEPT { return val; }
    };
 
    template <class T, T val>
@@ -80,19 +77,15 @@ namespace boost{
       typedef bool value_type;
       typedef integral_constant<bool, val> type;
       static const bool value = val;
-      //
-      // This helper function is just to disable type-punning 
-      // warnings from GCC:
-      //
-      template <class T>
-      static T& dereference(T* p) { return *p; }
 
       operator const mpl::bool_<val>& ()const
       {
-         static const char data = 0;
-         return dereference(reinterpret_cast<const mpl::bool_<val>*>(&data));
+         static const char data[sizeof(long)] = { 0 };
+         const void* const pdata = data;
+         return *static_cast<const mpl::bool_<val>*>(pdata);
       }
-      BOOST_CONSTEXPR operator bool()const { return val; }
+      BOOST_CONSTEXPR operator bool()const BOOST_NOEXCEPT { return val; }
+      BOOST_CONSTEXPR bool operator()()const BOOST_NOEXCEPT { return val; }
    };
 
    template <bool val>

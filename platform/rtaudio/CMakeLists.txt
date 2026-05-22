@@ -15,10 +15,11 @@ target_include_directories(driver_rtaudio
 
 target_include_directories(driver_rtaudio SYSTEM PRIVATE
     ../../external_libraries/boost
-    ../../external_libraries/oscpp/include
 )
 
 target_link_libraries(driver_rtaudio
     PUBLIC
     PkgConfig::rtaudio
+    PRIVATE
+    oscpp
 )

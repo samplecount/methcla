@@ -1,3 +1,6 @@
+#ifndef BOOST_ARRAY_HPP_INCLUDED
+#define BOOST_ARRAY_HPP_INCLUDED
+
 /* The following code declares class array,
  * an STL container (as wrapper) for arrays of constant size.
  *
@@ -13,7 +16,8 @@
  * accompanying file LICENSE_1_0.txt or copy at
  * http://www.boost.org/LICENSE_1_0.txt)
  *
- * 14 Apr 2012 - (mtc) Added support for boost::hash
+ *  9 Jan 2013 - (mtc) Added constexpr
+ * 14 Apr 2012 - (mtc) Added support for methcla_boost::hash
  * 28 Dec 2010 - (mtc) Added cbegin and cend (and crbegin and crend) for C++Ox compatibility.
  * 10 Mar 2010 - (mtc) fill method added, matching resolution of the standard library working group.
  *      See <http://www.open-std.org/jtc1/sc22/wg21/docs/lwg-defects.html#776> or Trac issue #3168
@@ -27,34 +31,33 @@
  *
  * Jan 29, 2004
  */
-#ifndef BOOST_ARRAY_HPP
-#define BOOST_ARRAY_HPP
 
-#include <boost/detail/workaround.hpp>
+#include <boost/config.hpp>
+#include <boost/config/workaround.hpp>
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)  
-# pragma warning(push)  
-# pragma warning(disable:4996) // 'std::equal': Function call with parameters that may be unsafe
-# pragma warning(disable:4510) // boost::array<T,N>' : default constructor could not be generated 
-# pragma warning(disable:4610) // warning C4610: class 'boost::array<T,N>' can never be instantiated - user defined constructor required 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+# pragma warning(push)
+# pragma warning(disable: 4510) // methcla_boost::array<T,N>' : default constructor could not be generated
+# pragma warning(disable: 4512) // methcla_boost::array<T,N>' : assignment operator could not be generated
+# pragma warning(disable: 4610) // class 'methcla_boost::array<T,N>' can never be instantiated - user defined constructor required
+# pragma warning(disable: 4702) // unreachable code
 #endif
 
-#include <cstddef>
-#include <stdexcept>
 #include <boost/assert.hpp>
-#include <boost/swap.hpp>
-
-// Handles broken standard libraries better than <iterator>
-#include <boost/detail/iterator.hpp>
+#include <boost/static_assert.hpp>
 #include <boost/throw_exception.hpp>
-#include <boost/functional/hash_fwd.hpp>
-#include <algorithm>
+#include <iterator>
+#include <stdexcept>
+#include <utility>
+#include <cstddef>
 
-// FIXES for broken compilers
-#include <boost/config.hpp>
+#if defined(__cpp_impl_three_way_comparison) && __cpp_impl_three_way_comparison >= 201907L
+# if __has_include(<compare>)
+#  include <compare>
+# endif
+#endif
 
-
-namespace boost {
+namespace methcla_boost {
 
     template<class T, std::size_t N>
     class array {
@@ -72,135 +75,135 @@ namespace boost {
         typedef std::ptrdiff_t difference_type;
 
         // iterator support
-        iterator        begin()       { return elems; }
-        const_iterator  begin() const { return elems; }
-        const_iterator cbegin() const { return elems; }
-        
-        iterator        end()       { return elems+N; }
-        const_iterator  end() const { return elems+N; }
-        const_iterator cend() const { return elems+N; }
+        BOOST_CXX14_CONSTEXPR iterator  begin()       BOOST_NOEXCEPT { return elems; }
+        BOOST_CONSTEXPR const_iterator  begin() const BOOST_NOEXCEPT { return elems; }
+        BOOST_CONSTEXPR const_iterator cbegin() const BOOST_NOEXCEPT { return elems; }
+
+        BOOST_CXX14_CONSTEXPR iterator  end()       BOOST_NOEXCEPT { return elems+N; }
+        BOOST_CONSTEXPR const_iterator  end() const BOOST_NOEXCEPT { return elems+N; }
+        BOOST_CONSTEXPR const_iterator cend() const BOOST_NOEXCEPT { return elems+N; }
 
         // reverse iterator support
-#if !defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION) && !defined(BOOST_MSVC_STD_ITERATOR) && !defined(BOOST_NO_STD_ITERATOR_TRAITS)
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-#elif defined(_MSC_VER) && (_MSC_VER == 1300) && defined(BOOST_DINKUMWARE_STDLIB) && (BOOST_DINKUMWARE_STDLIB == 310)
-        // workaround for broken reverse_iterator in VC7
-        typedef std::reverse_iterator<std::_Ptrit<value_type, difference_type, iterator,
-                                      reference, iterator, reference> > reverse_iterator;
-        typedef std::reverse_iterator<std::_Ptrit<value_type, difference_type, const_iterator,
-                                      const_reference, iterator, reference> > const_reverse_iterator;
-#elif defined(_RWSTD_NO_CLASS_PARTIAL_SPEC) 
-        typedef std::reverse_iterator<iterator, std::random_access_iterator_tag, 
-              value_type, reference, iterator, difference_type> reverse_iterator; 
-        typedef std::reverse_iterator<const_iterator, std::random_access_iterator_tag,
-              value_type, const_reference, const_iterator, difference_type> const_reverse_iterator;
-#else
-        // workaround for broken reverse_iterator implementations
-        typedef std::reverse_iterator<iterator,T> reverse_iterator;
-        typedef std::reverse_iterator<const_iterator,T> const_reverse_iterator;
-#endif
 
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        const_reverse_iterator rbegin() const {
+        reverse_iterator rbegin() BOOST_NOEXCEPT { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const BOOST_NOEXCEPT {
             return const_reverse_iterator(end());
         }
-        const_reverse_iterator crbegin() const {
+        const_reverse_iterator crbegin() const BOOST_NOEXCEPT {
             return const_reverse_iterator(end());
         }
 
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        const_reverse_iterator rend() const {
+        reverse_iterator rend() BOOST_NOEXCEPT { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const BOOST_NOEXCEPT {
             return const_reverse_iterator(begin());
         }
-        const_reverse_iterator crend() const {
+        const_reverse_iterator crend() const BOOST_NOEXCEPT {
             return const_reverse_iterator(begin());
         }
 
         // operator[]
-        reference operator[](size_type i) 
-        { 
-            BOOST_ASSERT_MSG( i < N, "out of range" );
-            return elems[i];
+        BOOST_CXX14_CONSTEXPR reference operator[](size_type i)
+        {
+            return BOOST_ASSERT_MSG( i < N, "out of range" ), elems[i];
         }
-        
-        const_reference operator[](size_type i) const 
-        {     
-            BOOST_ASSERT_MSG( i < N, "out of range" );
-            return elems[i]; 
+
+#if !BOOST_WORKAROUND(BOOST_GCC, < 50000)
+        BOOST_CONSTEXPR
+#endif
+        const_reference operator[](size_type i) const
+        {
+            return BOOST_ASSERT_MSG( i < N, "out of range" ), elems[i];
         }
 
         // at() with range check
-        reference at(size_type i) { rangecheck(i); return elems[i]; }
-        const_reference at(size_type i) const { rangecheck(i); return elems[i]; }
-    
+        BOOST_CXX14_CONSTEXPR reference at(size_type i)       { return rangecheck(i), elems[i]; }
+        BOOST_CONSTEXPR const_reference at(size_type i) const { return rangecheck(i), elems[i]; }
+
         // front() and back()
-        reference front() 
-        { 
-            return elems[0]; 
-        }
-        
-        const_reference front() const 
+        BOOST_CXX14_CONSTEXPR reference front()
         {
             return elems[0];
         }
-        
-        reference back() 
-        { 
-            return elems[N-1]; 
+
+        BOOST_CONSTEXPR const_reference front() const
+        {
+            return elems[0];
         }
-        
-        const_reference back() const 
-        { 
-            return elems[N-1]; 
+
+        BOOST_CXX14_CONSTEXPR reference back()
+        {
+            return elems[N-1];
+        }
+
+        BOOST_CONSTEXPR const_reference back() const
+        {
+            return elems[N-1];
         }
 
         // size is constant
-        static size_type size() { return N; }
-        static bool empty() { return false; }
-        static size_type max_size() { return N; }
+        static BOOST_CONSTEXPR size_type size() BOOST_NOEXCEPT { return N; }
+        static BOOST_CONSTEXPR bool empty() BOOST_NOEXCEPT { return false; }
+        static BOOST_CONSTEXPR size_type max_size() BOOST_NOEXCEPT { return N; }
         enum { static_size = N };
 
         // swap (note: linear complexity)
-        void swap (array<T,N>& y) {
-            for (size_type i = 0; i < N; ++i)
-                boost::swap(elems[i],y.elems[i]);
+        BOOST_CXX14_CONSTEXPR void swap (array<T,N>& y)
+        {
+            std::swap( elems, y.elems );
         }
 
-        // direct access to data (read-only)
-        const T* data() const { return elems; }
-        T* data() { return elems; }
+        // direct access to data
+        BOOST_CONSTEXPR const T* data() const BOOST_NOEXCEPT { return elems; }
+        BOOST_CXX14_CONSTEXPR T* data() BOOST_NOEXCEPT { return elems; }
 
-        // use array as C array (direct read/write access to data)
-        T* c_array() { return elems; }
+        // obsolete
+        BOOST_DEPRECATED( "please use `data()` instead" )
+        T* c_array() BOOST_NOEXCEPT { return elems; }
 
         // assignment with type conversion
         template <typename T2>
-        array<T,N>& operator= (const array<T2,N>& rhs) {
-            std::copy(rhs.begin(),rhs.end(), begin());
+        array<T,N>& operator= (const array<T2,N>& rhs)
+        {
+            for( std::size_t i = 0; i < N; ++i )
+            {
+                elems[ i ] = rhs.elems[ i ];
+            }
+
             return *this;
         }
 
-        // assign one value to all elements
-        void assign (const T& value) { fill ( value ); }    // A synonym for fill
-        void fill   (const T& value)
+        // fill with one value
+        BOOST_CXX14_CONSTEXPR void fill (const T& value)
         {
-            std::fill_n(begin(),size(),value);
+            // using elems[ 0 ] as a temporary copy
+            // avoids the aliasing opportunity betw.
+            // `value` and `elems`
+
+            elems[ 0 ] = value;
+
+            for( std::size_t i = 1; i < N; ++i )
+            {
+                elems[ i ] = elems[ 0 ];
+            }
         }
 
+        // an obsolete synonym for fill
+        BOOST_DEPRECATED( "please use `fill` instead" )
+        void assign (const T& value) { fill ( value ); }
+
         // check range (may be private because it is static)
-        static void rangecheck (size_type i) {
-            if (i >= size()) {
-                std::out_of_range e("array<>: index out of range");
-                boost::throw_exception(e);
-            }
+        static BOOST_CONSTEXPR bool rangecheck (size_type i) {
+            return i >= size() ? methcla_boost::throw_exception(std::out_of_range ("array<>: index out of range")), true : true;
         }
 
     };
 
-#if !defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
     template< class T >
     class array< T, 0 > {
+      public:
+        struct {} elems; // enables initialization with = {{}}
 
       public:
         // type definitions
@@ -213,48 +216,31 @@ namespace boost {
         typedef std::ptrdiff_t difference_type;
 
         // iterator support
-        iterator        begin()       { return       iterator( reinterpret_cast<       T * >( this ) ); }
-        const_iterator  begin() const { return const_iterator( reinterpret_cast< const T * >( this ) ); }
-        const_iterator cbegin() const { return const_iterator( reinterpret_cast< const T * >( this ) ); }
+        BOOST_CXX14_CONSTEXPR iterator  begin()       BOOST_NOEXCEPT { return data(); }
+        BOOST_CONSTEXPR const_iterator  begin() const BOOST_NOEXCEPT { return data(); }
+        BOOST_CONSTEXPR const_iterator cbegin() const BOOST_NOEXCEPT { return data(); }
 
-        iterator        end()       { return  begin(); }
-        const_iterator  end() const { return  begin(); }
-        const_iterator cend() const { return cbegin(); }
+        BOOST_CXX14_CONSTEXPR iterator  end()       BOOST_NOEXCEPT { return  begin(); }
+        BOOST_CONSTEXPR const_iterator  end() const BOOST_NOEXCEPT { return  begin(); }
+        BOOST_CONSTEXPR const_iterator cend() const BOOST_NOEXCEPT { return cbegin(); }
 
         // reverse iterator support
-#if !defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION) && !defined(BOOST_MSVC_STD_ITERATOR) && !defined(BOOST_NO_STD_ITERATOR_TRAITS)
         typedef std::reverse_iterator<iterator> reverse_iterator;
         typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-#elif defined(_MSC_VER) && (_MSC_VER == 1300) && defined(BOOST_DINKUMWARE_STDLIB) && (BOOST_DINKUMWARE_STDLIB == 310)
-        // workaround for broken reverse_iterator in VC7
-        typedef std::reverse_iterator<std::_Ptrit<value_type, difference_type, iterator,
-                                      reference, iterator, reference> > reverse_iterator;
-        typedef std::reverse_iterator<std::_Ptrit<value_type, difference_type, const_iterator,
-                                      const_reference, iterator, reference> > const_reverse_iterator;
-#elif defined(_RWSTD_NO_CLASS_PARTIAL_SPEC) 
-        typedef std::reverse_iterator<iterator, std::random_access_iterator_tag, 
-              value_type, reference, iterator, difference_type> reverse_iterator; 
-        typedef std::reverse_iterator<const_iterator, std::random_access_iterator_tag,
-              value_type, const_reference, const_iterator, difference_type> const_reverse_iterator;
-#else
-        // workaround for broken reverse_iterator implementations
-        typedef std::reverse_iterator<iterator,T> reverse_iterator;
-        typedef std::reverse_iterator<const_iterator,T> const_reverse_iterator;
-#endif
 
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        const_reverse_iterator rbegin() const {
+        reverse_iterator rbegin() BOOST_NOEXCEPT { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const BOOST_NOEXCEPT {
             return const_reverse_iterator(end());
         }
-        const_reverse_iterator crbegin() const {
+        const_reverse_iterator crbegin() const BOOST_NOEXCEPT {
             return const_reverse_iterator(end());
         }
 
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        const_reverse_iterator rend() const {
+        reverse_iterator rend() BOOST_NOEXCEPT { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const BOOST_NOEXCEPT {
             return const_reverse_iterator(begin());
         }
-        const_reverse_iterator crend() const {
+        const_reverse_iterator crend() const BOOST_NOEXCEPT {
             return const_reverse_iterator(begin());
         }
 
@@ -270,8 +256,8 @@ namespace boost {
         }
 
         // at() with range check
-        reference at(size_type /*i*/)               {   return failed_rangecheck(); }
-        const_reference at(size_type /*i*/) const   {   return failed_rangecheck(); }
+        reference at(size_type /*i*/)               { return failed_rangecheck(); }
+        const_reference at(size_type /*i*/) const   { return failed_rangecheck(); }
 
         // front() and back()
         reference front()
@@ -295,20 +281,22 @@ namespace boost {
         }
 
         // size is constant
-        static size_type size() { return 0; }
-        static bool empty() { return true; }
-        static size_type max_size() { return 0; }
+        static BOOST_CONSTEXPR size_type size() BOOST_NOEXCEPT { return 0; }
+        static BOOST_CONSTEXPR bool empty() BOOST_NOEXCEPT { return true; }
+        static BOOST_CONSTEXPR size_type max_size() BOOST_NOEXCEPT { return 0; }
         enum { static_size = 0 };
 
-        void swap (array<T,0>& /*y*/) {
+        BOOST_CXX14_CONSTEXPR void swap (array<T,0>& /*y*/)
+        {
         }
 
-        // direct access to data (read-only)
-        const T* data() const { return 0; }
-        T* data() { return 0; }
+        // direct access to data
+        BOOST_CONSTEXPR const T* data() const BOOST_NOEXCEPT { return 0; }
+        BOOST_CXX14_CONSTEXPR T* data() BOOST_NOEXCEPT { return 0; }
 
-        // use array as C array (direct read/write access to data)
-        T* c_array() { return 0; }
+        // obsolete
+        BOOST_DEPRECATED( "please use `data()` instead" )
+        T* c_array() BOOST_NOEXCEPT { return 0; }
 
         // assignment with type conversion
         template <typename T2>
@@ -316,131 +304,212 @@ namespace boost {
             return *this;
         }
 
-        // assign one value to all elements
+        // an obsolete synonym for fill
+        BOOST_DEPRECATED( "please use `fill` instead" )
         void assign (const T& value) { fill ( value ); }
-        void fill   (const T& ) {}
-        
+
+        // fill with one value
+        BOOST_CXX14_CONSTEXPR void fill (const T& ) {}
+
         // check range (may be private because it is static)
-        static reference failed_rangecheck () {
-                std::out_of_range e("attempt to access element of an empty array");
-                boost::throw_exception(e);
-#if defined(BOOST_NO_EXCEPTIONS) || (!defined(BOOST_MSVC) && !defined(__PATHSCALE__))
-                //
-                // We need to return something here to keep
-                // some compilers happy: however we will never
-                // actually get here....
-                //
-                static T placeholder;
-                return placeholder;
-#endif
-            }
+        static reference failed_rangecheck ()
+        {
+            methcla_boost::throw_exception( std::out_of_range( "attempt to access element of an empty array" ) );
+        }
     };
-#endif
 
     // comparisons
     template<class T, std::size_t N>
-    bool operator== (const array<T,N>& x, const array<T,N>& y) {
-        return std::equal(x.begin(), x.end(), y.begin());
+    BOOST_CXX14_CONSTEXPR bool operator== (const array<T,N>& x, const array<T,N>& y)
+    {
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            if( !( x[ i ] == y[ i ] ) ) return false;
+        }
+
+        return true;
     }
-    template<class T, std::size_t N>
-    bool operator< (const array<T,N>& x, const array<T,N>& y) {
-        return std::lexicographical_compare(x.begin(),x.end(),y.begin(),y.end());
+
+#if BOOST_WORKAROUND(BOOST_GCC, < 90000)
+
+    template<class T>
+    BOOST_CXX14_CONSTEXPR bool operator== (const array<T, 0>& /*x*/, const array<T, 0>& /*y*/)
+    {
+        return true;
     }
+
+#endif
+
     template<class T, std::size_t N>
-    bool operator!= (const array<T,N>& x, const array<T,N>& y) {
+    BOOST_CXX14_CONSTEXPR bool operator!= (const array<T,N>& x, const array<T,N>& y) {
         return !(x==y);
     }
+
     template<class T, std::size_t N>
-    bool operator> (const array<T,N>& x, const array<T,N>& y) {
+    BOOST_CXX14_CONSTEXPR bool operator< (const array<T,N>& x, const array<T,N>& y)
+    {
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            if( x[ i ] < y[ i ] ) return true;
+            if( y[ i ] < x[ i ] ) return false;
+        }
+
+        return false;
+    }
+
+#if BOOST_WORKAROUND(BOOST_GCC, < 90000)
+
+    template<class T>
+    BOOST_CXX14_CONSTEXPR bool operator< (const array<T, 0>& /*x*/, const array<T, 0>& /*y*/)
+    {
+        return false;
+    }
+
+#endif
+
+    template<class T, std::size_t N>
+    BOOST_CXX14_CONSTEXPR bool operator> (const array<T,N>& x, const array<T,N>& y) {
         return y<x;
     }
+
     template<class T, std::size_t N>
-    bool operator<= (const array<T,N>& x, const array<T,N>& y) {
+    BOOST_CXX14_CONSTEXPR bool operator<= (const array<T,N>& x, const array<T,N>& y) {
         return !(y<x);
     }
+
     template<class T, std::size_t N>
-    bool operator>= (const array<T,N>& x, const array<T,N>& y) {
+    BOOST_CXX14_CONSTEXPR bool operator>= (const array<T,N>& x, const array<T,N>& y) {
         return !(x<y);
     }
 
     // global swap()
     template<class T, std::size_t N>
-    inline void swap (array<T,N>& x, array<T,N>& y) {
+    BOOST_CXX14_CONSTEXPR inline void swap (array<T,N>& x, array<T,N>& y) {
         x.swap(y);
     }
 
-#if defined(__SUNPRO_CC)
-//  Trac ticket #4757; the Sun Solaris compiler can't handle
-//  syntax like 'T(&get_c_array(boost::array<T,N>& arg))[N]'
-//  
-//  We can't just use this for all compilers, because the 
-//      borland compilers can't handle this form. 
-    namespace detail {
-       template <typename T, std::size_t N> struct c_array
-       {
-           typedef T type[N];
-       };
-    }
-    
-   // Specific for boost::array: simply returns its elems data member.
-   template <typename T, std::size_t N>
-   typename detail::c_array<T,N>::type& get_c_array(boost::array<T,N>& arg)
-   {
-       return arg.elems;
-   }
-
-   // Specific for boost::array: simply returns its elems data member.
-   template <typename T, std::size_t N>
-   typename const detail::c_array<T,N>::type& get_c_array(const boost::array<T,N>& arg)
-   {
-       return arg.elems;
-   }
-#else
-// Specific for boost::array: simply returns its elems data member.
-    template <typename T, std::size_t N>
-    T(&get_c_array(boost::array<T,N>& arg))[N]
-    {
-        return arg.elems;
-    }
-    
-    // Const version.
-    template <typename T, std::size_t N>
-    const T(&get_c_array(const boost::array<T,N>& arg))[N]
-    {
-        return arg.elems;
-    }
-#endif
-    
-#if 0
-    // Overload for std::array, assuming that std::array will have
-    // explicit conversion functions as discussed at the WG21 meeting
-    // in Summit, March 2009.
-    template <typename T, std::size_t N>
-    T(&get_c_array(std::array<T,N>& arg))[N]
-    {
-        return static_cast<T(&)[N]>(arg);
-    }
-    
-    // Const version.
-    template <typename T, std::size_t N>
-    const T(&get_c_array(const std::array<T,N>& arg))[N]
-    {
-        return static_cast<T(&)[N]>(arg);
-    }
-#endif
-
+#if defined(__cpp_impl_three_way_comparison) && __cpp_impl_three_way_comparison >= 201907L
+# if __has_include(<compare>)
 
     template<class T, std::size_t N>
-    std::size_t hash_value(const array<T,N>& arr)
+    constexpr auto operator<=> (const array<T,N>& x, const array<T,N>& y)
+        -> decltype( x.elems[ 0 ] <=> y.elems[ 0 ] )
     {
-        return boost::hash_range(arr.begin(), arr.end());
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            auto r = x.elems[ i ] <=> y.elems[ i ];
+            if( r != 0 ) return r;
+        }
+
+        return std::strong_ordering::equal;
     }
 
-} /* namespace boost */
+    template<class T>
+    constexpr auto operator<=> (const array<T,0>& /*x*/, const array<T,0>& /*y*/)
+        -> std::strong_ordering
+    {
+        return std::strong_ordering::equal;
+    }
 
+# endif
+#endif
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)  
-# pragma warning(pop)  
-#endif 
+    // undocumented and obsolete
+    template <typename T, std::size_t N>
+    BOOST_DEPRECATED( "please use `elems` instead" )
+    T(&get_c_array(methcla_boost::array<T,N>& arg))[N]
+    {
+        return arg.elems;
+    }
 
-#endif /*BOOST_ARRAY_HPP*/
+    // Const version.
+    template <typename T, std::size_t N>
+    BOOST_DEPRECATED( "please use `elems` instead" )
+    const T(&get_c_array(const methcla_boost::array<T,N>& arg))[N]
+    {
+        return arg.elems;
+    }
+
+    template <size_t Idx, typename T, size_t N>
+    BOOST_CXX14_CONSTEXPR T &get(methcla_boost::array<T,N> &arr) BOOST_NOEXCEPT
+    {
+        BOOST_STATIC_ASSERT_MSG ( Idx < N, "methcla_boost::get<>(methcla_boost::array &) index out of range" );
+        return arr[Idx];
+    }
+
+    template <size_t Idx, typename T, size_t N>
+    BOOST_CONSTEXPR const T &get(const methcla_boost::array<T,N> &arr) BOOST_NOEXCEPT
+    {
+        BOOST_STATIC_ASSERT_MSG ( Idx < N, "methcla_boost::get<>(const methcla_boost::array &) index out of range" );
+        return arr[Idx];
+    }
+
+    template<class T, std::size_t N>
+    BOOST_CXX14_CONSTEXPR array<T, N> to_array( T const (&a)[ N ] )
+    {
+        array<T, N> r = {};
+
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            r[ i ] = a[ i ];
+        }
+
+        return r;
+    }
+
+#if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
+
+    template<class T, std::size_t N>
+    BOOST_CXX14_CONSTEXPR array<T, N> to_array( T (&&a)[ N ] )
+    {
+        array<T, N> r = {};
+
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            r[ i ] = std::move( a[ i ] );
+        }
+
+        return r;
+    }
+
+    template<class T, std::size_t N>
+    BOOST_CXX14_CONSTEXPR array<T, N> to_array( T const (&&a)[ N ] )
+    {
+        array<T, N> r = {};
+
+        for( std::size_t i = 0; i < N; ++i )
+        {
+            r[ i ] = a[ i ];
+        }
+
+        return r;
+    }
+
+#endif
+
+} /* namespace methcla_boost */
+
+#ifndef BOOST_NO_CXX11_HDR_ARRAY
+//  If we don't have std::array, I'm assuming that we don't have std::get
+namespace std {
+   template <size_t Idx, typename T, size_t N>
+   BOOST_DEPRECATED( "please use `methcla_boost::get` instead" )
+   T &get(methcla_boost::array<T,N> &arr) BOOST_NOEXCEPT {
+       BOOST_STATIC_ASSERT_MSG ( Idx < N, "std::get<>(methcla_boost::array &) index out of range" );
+       return arr[Idx];
+       }
+
+   template <size_t Idx, typename T, size_t N>
+   BOOST_DEPRECATED( "please use `methcla_boost::get` instead" )
+   const T &get(const methcla_boost::array<T,N> &arr) BOOST_NOEXCEPT {
+       BOOST_STATIC_ASSERT_MSG ( Idx < N, "std::get<>(const methcla_boost::array &) index out of range" );
+       return arr[Idx];
+       }
+}
+#endif
+
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+# pragma warning(pop)
+#endif
+
+#endif // #ifndef BOOST_ARRAY_HPP_INCLUDED

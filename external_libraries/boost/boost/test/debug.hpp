@@ -28,7 +28,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 /// Contains debugger and debug C Runtime interfaces
 namespace debug {
 
@@ -44,7 +44,7 @@ namespace debug {
 ///
 /// In addition here you find interfaces for memory leaks detection and reporting.
 ///
-/// All these interfaces are defined in namespace boost::debug
+/// All these interfaces are defined in namespace methcla_boost::debug
 
 // ************************************************************************** //
 /// Checks if programs runs under debugger
@@ -72,7 +72,7 @@ struct dbg_startup_info {
 };
 
 /// Signature of debugger starter routine. Takes an instance of dbg_startup_into as only argument
-typedef boost::function<void (dbg_startup_info const&)> dbg_starter;
+typedef methcla_boost::function<void (dbg_startup_info const&)> dbg_starter;
 
 // ************************************************************************** //
 /// Specifies which debugger to use when attaching and optionally what routine to use to start that debugger
@@ -131,7 +131,7 @@ void BOOST_TEST_DECL break_memory_alloc( long mem_alloc_order_num );
 } // namespace debug
 /// @}
 
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

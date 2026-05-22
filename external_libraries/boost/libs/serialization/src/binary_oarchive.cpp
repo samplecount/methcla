@@ -11,6 +11,7 @@
 #include <ostream>
 
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/detail/archive_serializer_map.hpp>
 
@@ -19,7 +20,7 @@
 #include <boost/archive/impl/basic_binary_oprimitive.ipp>
 #include <boost/archive/impl/basic_binary_oarchive.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 template class detail::archive_serializer_map<binary_oarchive>;
@@ -36,4 +37,4 @@ template class binary_oarchive_impl<
 >;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

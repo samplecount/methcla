@@ -23,7 +23,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace output {
 
@@ -34,18 +34,18 @@ namespace output {
 class xml_report_formatter : public results_reporter::format {
 public:
     // Formatter interface
-    void    results_report_start( std::ostream& ostr );
-    void    results_report_finish( std::ostream& ostr );
+    void    results_report_start( std::ostream& ostr ) BOOST_OVERRIDE;
+    void    results_report_finish( std::ostream& ostr ) BOOST_OVERRIDE;
 
-    void    test_unit_report_start( test_unit const&, std::ostream& ostr );
-    void    test_unit_report_finish( test_unit const&, std::ostream& ostr );
+    void    test_unit_report_start( test_unit const&, std::ostream& ostr ) BOOST_OVERRIDE;
+    void    test_unit_report_finish( test_unit const&, std::ostream& ostr ) BOOST_OVERRIDE;
 
-    void    do_confirmation_report( test_unit const&, std::ostream& ostr );
+    void    do_confirmation_report( test_unit const&, std::ostream& ostr ) BOOST_OVERRIDE;
 };
 
 } // namespace output
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

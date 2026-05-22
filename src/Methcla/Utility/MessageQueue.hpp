@@ -56,7 +56,7 @@ namespace Methcla { namespace Utility {
         bool next(T& msg) override { return m_queue.pop(msg); }
 
     private:
-        typedef boost::lockfree::spsc_queue<T> Queue;
+        typedef methcla_boost::lockfree::spsc_queue<T> Queue;
         Queue                                  m_queue;
         std::mutex                             m_mutex;
     };
@@ -96,7 +96,7 @@ namespace Methcla { namespace Utility {
         }
 
     protected:
-        typedef boost::lockfree::spsc_queue<Command> Queue;
+        typedef methcla_boost::lockfree::spsc_queue<Command> Queue;
 
         Queue& queue() { return m_queue; }
 
@@ -113,7 +113,7 @@ namespace Methcla { namespace Utility {
 
     private:
         // typedef
-        // boost::lockfree::queue<Command,boost::lockfree::capacity<queueSize>>
+        // methcla_boost::lockfree::queue<Command,methcla_boost::lockfree::capacity<queueSize>>
         // Queue;
         Queue      m_queue;
         bool       m_needsLock;

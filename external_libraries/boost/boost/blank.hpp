@@ -20,12 +20,12 @@
 #include "boost/detail/templated_streams.hpp"
 #endif // BOOST_NO_IOSTREAM
 
-#include "boost/mpl/bool.hpp"
+#include "boost/type_traits/integral_constant.hpp"
 #include "boost/type_traits/is_empty.hpp"
 #include "boost/type_traits/is_pod.hpp"
 #include "boost/type_traits/is_stateless.hpp"
 
-namespace boost {
+namespace methcla_boost {
 
 struct blank
 {
@@ -36,19 +36,19 @@ struct blank
 
 template <>
 struct is_pod< blank >
-    : mpl::true_
+    : methcla_boost::true_type
 {
 };
 
 template <>
 struct is_empty< blank >
-    : mpl::true_
+    : methcla_boost::true_type
 {
 };
 
 template <>
 struct is_stateless< blank >
-    : mpl::true_
+    : methcla_boost::true_type
 {
 };
 
@@ -101,6 +101,6 @@ inline BOOST_TEMPLATED_STREAM(ostream, E,T)& operator<<(
 
 #endif // BOOST_NO_IOSTREAM
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_BLANK_HPP

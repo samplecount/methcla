@@ -18,7 +18,14 @@
 #include <boost/smart_ptr/detail/yield_k.hpp>
 #include <atomic>
 
-namespace boost
+#if defined(BOOST_SP_REPORT_IMPLEMENTATION)
+
+#include <boost/config/pragma_message.hpp>
+BOOST_PRAGMA_MESSAGE("Using std::atomic spinlock")
+
+#endif
+
+namespace methcla_boost
 {
 
 namespace detail
@@ -32,20 +39,20 @@ public:
 
 public:
 
-    bool try_lock()
+    bool try_lock() noexcept
     {
         return !v_.test_and_set( std::memory_order_acquire );
     }
 
-    void lock()
+    void lock() noexcept
     {
         for( unsigned k = 0; !try_lock(); ++k )
         {
-            boost::detail::yield( k );
+            methcla_boost::detail::yield( k );
         }
     }
 
-    void unlock()
+    void unlock() noexcept
     {
         v_ .clear( std::memory_order_release );
     }
@@ -63,12 +70,12 @@ public:
 
     public:
 
-        explicit scoped_lock( spinlock & sp ): sp_( sp )
+        explicit scoped_lock( spinlock & sp ) noexcept: sp_( sp )
         {
             sp.lock();
         }
 
-        ~scoped_lock()
+        ~scoped_lock() /*noexcept*/
         {
             sp_.unlock();
         }
@@ -76,7 +83,7 @@ public:
 };
 
 } // namespace detail
-} // namespace boost
+} // namespace methcla_boost
 
 #define BOOST_DETAIL_SPINLOCK_INIT { ATOMIC_FLAG_INIT }
 

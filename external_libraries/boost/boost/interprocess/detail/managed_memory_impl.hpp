@@ -32,7 +32,6 @@
 #include <boost/interprocess/detail/nothrow.hpp>
 #include <boost/interprocess/detail/simple_swap.hpp>
 //
-#include <boost/core/no_exceptions_support.hpp>
 //
 #include <boost/intrusive/detail/minimal_pair_header.hpp>
 #include <boost/assert.hpp>
@@ -41,7 +40,7 @@
 //!Describes a named shared memory allocation user class.
 //!
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 namespace ipcdetail {
 
@@ -110,48 +109,48 @@ class basic_managed_memory_impl
    typedef basic_managed_memory_impl
                <CharType, MemoryAlgorithm, IndexType, Offset> self_t;
    protected:
-   template<class ManagedMemory>
-   static bool grow(const char *filename, size_type extra_bytes)
+   template<class ManagedMemory, class CharT>
+   static bool grow(const CharT *filename, size_type extra_bytes)
    {
       typedef typename ManagedMemory::device_type device_type;
       //Increase file size
-      try{
+      BOOST_INTERPROCESS_TRY{
          offset_t old_size;
          {
             device_type f(open_or_create, filename, read_write);
             if(!f.get_size(old_size))
                return false;
-            f.truncate(old_size + extra_bytes);
+            f.truncate(old_size + static_cast<offset_t>(extra_bytes));
          }
          ManagedMemory managed_memory(open_only, filename);
          //Grow always works
          managed_memory.self_t::grow(extra_bytes);
       }
-      catch(...){
+      BOOST_INTERPROCESS_CATCH(...){
          return false;
-      }
+      } BOOST_INTERPROCESS_CATCH_END
       return true;
    }
 
-   template<class ManagedMemory>
-   static bool shrink_to_fit(const char *filename)
+   template<class ManagedMemory, class CharT>
+   static bool shrink_to_fit(const CharT *filename)
    {
       typedef typename ManagedMemory::device_type device_type;
       size_type new_size;
-      try{
+      BOOST_INTERPROCESS_TRY{
          ManagedMemory managed_memory(open_only, filename);
          managed_memory.get_size();
          managed_memory.self_t::shrink_to_fit();
          new_size = managed_memory.get_size();
       }
-      catch(...){
+      BOOST_INTERPROCESS_CATCH(...){
          return false;
-      }
+      } BOOST_INTERPROCESS_CATCH_END
 
       //Decrease file size
       {
          device_type f(open_or_create, filename, read_write);
-         f.truncate(new_size);
+         f.truncate(static_cast<offset_t>(new_size));
       }
       return true;
    }
@@ -175,14 +174,14 @@ class basic_managed_memory_impl
 
       //This function should not throw. The index construction can
       //throw if constructor allocates memory. So we must catch it.
-      BOOST_TRY{
+      BOOST_INTERPROCESS_TRY{
          //Let's construct the allocator in memory
+         BOOST_ASSERT((0 == (std::size_t)addr % methcla_boost::move_detail::alignment_of<segment_manager>::value));
          mp_header       = ::new(addr, boost_container_new_t()) segment_manager(size);
       }
-      BOOST_CATCH(...){
+      BOOST_INTERPROCESS_CATCH(...){
          return false;
-      }
-      BOOST_CATCH_END
+      } BOOST_INTERPROCESS_CATCH_END
       return true;
    }
 
@@ -227,31 +226,31 @@ class basic_managed_memory_impl
 
    //!Returns the base address of the memory in this process. Never throws.
    void *   get_address   () const
-   {   return reinterpret_cast<char*>(mp_header) - Offset; }
+   {   return mp_header ? reinterpret_cast<char*>(mp_header) - Offset : 0; }
 
    //!Returns the size of memory segment. Never throws.
    size_type   get_size   () const
-   {   return mp_header->get_size() + Offset;  }
+   {   return mp_header ? mp_header->get_size() + Offset : 0u;  }
 
    //!Returns the number of free bytes of the memory
    //!segment
    size_type get_free_memory() const
-   {  return mp_header->get_free_memory();  }
+   {  return mp_header ? mp_header->get_free_memory() : 0;  }
 
    //!Returns the result of "all_memory_deallocated()" function
    //!of the used memory algorithm
    bool all_memory_deallocated()
-   {   return mp_header->all_memory_deallocated(); }
+   {   return mp_header ? mp_header->all_memory_deallocated() : true; }
 
    //!Returns the result of "check_sanity()" function
    //!of the used memory algorithm
    bool check_sanity()
-   {   return mp_header->check_sanity(); }
+   {   return mp_header ? mp_header->check_sanity() : true; }
 
    //!Writes to zero free memory (memory not yet allocated) of
    //!the memory algorithm
    void zero_free_memory()
-   {   mp_header->zero_free_memory(); }
+   {   if (mp_header) mp_header->zero_free_memory(); }
 
    //!Transforms an absolute address into an offset from base address.
    //!The address must belong to the memory segment. Never throws.
@@ -275,7 +274,7 @@ class basic_managed_memory_impl
 
    //!Searches for nbytes of free memory in the segment, marks the
    //!memory as used and return the pointer to the memory. If no
-   //!memory is available throws a boost::interprocess::bad_alloc exception
+   //!memory is available throws a methcla_boost::interprocess::bad_alloc exception
    void* allocate             (size_type nbytes)
    {   return mp_header->allocate(nbytes);   }
 
@@ -292,13 +291,13 @@ class basic_managed_memory_impl
    {   return mp_header->allocate_aligned(nbytes, alignment, tag);  }
 
    template<class T>
-   T * allocation_command  (boost::interprocess::allocation_type command,   size_type limit_size,
+   T * allocation_command  (methcla_boost::interprocess::allocation_type command,   size_type limit_size,
                            size_type &prefer_in_recvd_out_size, T *&reuse)
    {  return mp_header->allocation_command(command, limit_size, prefer_in_recvd_out_size, reuse);  }
 
    //!Allocates nbytes bytes aligned to "alignment" bytes. "alignment"
    //!must be power of two. If no
-   //!memory is available throws a boost::interprocess::bad_alloc exception
+   //!memory is available throws a methcla_boost::interprocess::bad_alloc exception
    void * allocate_aligned(size_type nbytes, size_type alignment)
    {   return mp_header->allocate_aligned(nbytes, alignment);  }
 
@@ -308,24 +307,24 @@ class basic_managed_memory_impl
 
    //!Allocates n_elements of elem_bytes bytes.
    //!Throws bad_alloc on failure. chain.size() is not increased on failure.
-   void allocate_many(size_type elem_bytes, size_type n_elements, multiallocation_chain &chain)
-   {  mp_header->allocate_many(elem_bytes, n_elements, chain); }
+   void allocate_many(size_type elem_bytes, size_type n_elements, size_type alignment, multiallocation_chain &chain)
+   {  mp_header->allocate_many(elem_bytes, n_elements, alignment, chain); }
 
    //!Allocates n_elements, each one of element_lengths[i]*sizeof_element bytes.
    //!Throws bad_alloc on failure. chain.size() is not increased on failure.
-   void allocate_many(const size_type *element_lengths, size_type n_elements, size_type sizeof_element, multiallocation_chain &chain)
-   {  mp_header->allocate_many(element_lengths, n_elements, sizeof_element, chain); }
+   void allocate_many(const size_type *element_lengths, size_type n_elements, size_type sizeof_element, size_type alignment, multiallocation_chain &chain)
+   {  mp_header->allocate_many(element_lengths, n_elements, sizeof_element, alignment, chain); }
 
    //!Allocates n_elements of elem_bytes bytes.
    //!Non-throwing version. chain.size() is not increased on failure.
-   void allocate_many(const std::nothrow_t &tag, size_type elem_bytes, size_type n_elements, multiallocation_chain &chain)
-   {  mp_header->allocate_many(tag, elem_bytes, n_elements, chain); }
+   void allocate_many(const std::nothrow_t &tag, size_type elem_bytes, size_type n_elements, size_type alignment, multiallocation_chain &chain)
+   {  mp_header->allocate_many(tag, elem_bytes, n_elements, alignment, chain); }
 
    //!Allocates n_elements, each one of
    //!element_lengths[i]*sizeof_element bytes.
    //!Non-throwing version. chain.size() is not increased on failure.
-   void allocate_many(const std::nothrow_t &tag, const size_type *elem_sizes, size_type n_elements, size_type sizeof_element, multiallocation_chain &chain)
-   {  mp_header->allocate_many(tag, elem_sizes, n_elements, sizeof_element, chain); }
+   void allocate_many(const std::nothrow_t &tag, const size_type *elem_sizes, size_type n_elements, size_type sizeof_element, size_type alignment, multiallocation_chain &chain)
+   {  mp_header->allocate_many(tag, elem_sizes, n_elements, sizeof_element, alignment, chain); }
 
    //!Deallocates all elements contained in chain.
    //!Never throws.
@@ -354,7 +353,7 @@ class basic_managed_memory_impl
    //!
    //!-> If the name was previously used, returns 0.
    //!
-   //!-> Throws boost::interprocess::bad_alloc if there is no available memory
+   //!-> Throws methcla_boost::interprocess::bad_alloc if there is no available memory
    //!
    //!-> If T's constructor throws, the function throws that exception.
    //!
@@ -362,6 +361,7 @@ class basic_managed_memory_impl
    //!array was being constructed, destructors of created objects are called
    //!before freeing the memory.
    template <class T>
+   BOOST_INTERPROCESS_NODISCARD
    typename segment_manager::template construct_proxy<T>::type
       construct(char_ptr_holder_t name)
    {   return mp_header->template construct<T>(name);  }
@@ -375,7 +375,7 @@ class basic_managed_memory_impl
    //!created object. If an array is being constructed all objects are
    //!created using the same parameters given to this function.
    //!
-   //!-> Throws boost::interprocess::bad_alloc if there is no available memory
+   //!-> Throws methcla_boost::interprocess::bad_alloc if there is no available memory
    //!
    //!-> If T's constructor throws, the function throws that exception.
    //!
@@ -439,13 +439,14 @@ class basic_managed_memory_impl
    //!
    //!-> If the name was previously used, returns 0.
    //!
-   //!-> Throws boost::interprocess::bad_alloc if there is no available memory
+   //!-> Throws methcla_boost::interprocess::bad_alloc if there is no available memory
    //!
    //!-> If T's constructor throws, the function throws that exception.
    //!
    //!Memory is freed automatically if T's constructor throws and
    //!destructors of created objects are called before freeing the memory.
    template <class T>
+   BOOST_INTERPROCESS_NODISCARD
    typename segment_manager::template construct_iter_proxy<T>::type
       construct_it(char_ptr_holder_t name)
    {   return mp_header->template construct_it<T>(name);  }
@@ -462,7 +463,7 @@ class basic_managed_memory_impl
    //!
    //!-> If the name was previously used, returns 0.
    //!
-   //!-> Throws boost::interprocess::bad_alloc if there is no available memory
+   //!-> Throws methcla_boost::interprocess::bad_alloc if there is no available memory
    //!
    //!-> If T's constructor throws, the function throws that exception.
    //!
@@ -627,13 +628,13 @@ class basic_managed_memory_impl
 
    //!Preallocates needed index resources to optimize the
    //!creation of "num" named objects in the  memory segment.
-   //!Can throw boost::interprocess::bad_alloc if there is no enough memory.
+   //!Can throw methcla_boost::interprocess::bad_alloc if there is no enough memory.
    void reserve_named_objects(size_type num)
    {  mp_header->reserve_named_objects(num);  }
 
    //!Preallocates needed index resources to optimize the
    //!creation of "num" unique objects in the  memory segment.
-   //!Can throw boost::interprocess::bad_alloc if there is no enough memory.
+   //!Can throw methcla_boost::interprocess::bad_alloc if there is no enough memory.
    void reserve_unique_objects(size_type num)
    {  mp_header->reserve_unique_objects(num);  }
 
@@ -747,9 +748,9 @@ class create_open_func
       }
    }
 
-   std::size_t get_min_size() const
+   static std::size_t get_min_size()
    {
-      const size_type sz = m_frontend->get_segment_manager()->get_min_size();
+      const size_type sz = BasicManagedMemoryImpl::segment_manager::get_min_size();
       if(sz > std::size_t(-1)){
          //The minimum size is not representable by std::size_t
          BOOST_ASSERT(false);
@@ -767,7 +768,7 @@ class create_open_func
 
 }  //namespace ipcdetail {
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

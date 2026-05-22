@@ -19,7 +19,7 @@
 #  pragma once
 #endif
 
-namespace boost{
+namespace methcla_boost{
 namespace interprocess{
 namespace ipcdetail{
 
@@ -33,7 +33,7 @@ class interprocess_tester
 
 }  //namespace ipcdetail{
 }  //namespace interprocess{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif   //#ifndef BOOST_INTERPROCESS_DETAIL_INTERPROCESS_TESTER_HPP
 

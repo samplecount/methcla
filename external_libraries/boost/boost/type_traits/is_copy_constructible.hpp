@@ -18,16 +18,16 @@
 
 #if !BOOST_WORKAROUND(BOOST_MSVC, <= 1800)
 
-namespace boost {
+namespace methcla_boost {
 
-template <class T> struct is_copy_constructible : public boost::is_constructible<T, const T&>{};
+template <class T> struct is_copy_constructible : public methcla_boost::is_constructible<T, const T&>{};
 
 template <> struct is_copy_constructible<void> : public false_type{};
 template <> struct is_copy_constructible<void const> : public false_type{};
 template <> struct is_copy_constructible<void const volatile> : public false_type{};
 template <> struct is_copy_constructible<void volatile> : public false_type{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #else
 //
@@ -35,49 +35,47 @@ template <> struct is_copy_constructible<void volatile> : public false_type{};
 // copy constructor.  In this case the compiler thinks there really is a copy-constructor and tries to
 // instantiate the deleted member.  std::is_copy_constructible has the same issue (or at least returns
 // an incorrect value, which just defers the issue into the users code) as well.  We can at least fix
-// boost::non_copyable as a base class as a special case:
+// methcla_boost::non_copyable as a base class as a special case:
 //
-#include <boost/type_traits/is_base_and_derived.hpp>
-#include <boost/noncopyable.hpp>
+#include <boost/type_traits/is_noncopyable.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
    namespace detail
    {
 
-      template <class T, bool b> struct is_copy_constructible_imp : public boost::is_constructible<T, const T&>{};
+      template <class T, bool b> struct is_copy_constructible_imp : public methcla_boost::is_constructible<T, const T&>{};
       template <class T> struct is_copy_constructible_imp<T, true> : public false_type{};
 
    }
 
-   template <class T> struct is_copy_constructible : public detail::is_copy_constructible_imp<T, is_base_and_derived<boost::noncopyable, T>::value>{};
+   template <class T> struct is_copy_constructible : public detail::is_copy_constructible_imp<T, is_noncopyable<T>::value>{};
 
    template <> struct is_copy_constructible<void> : public false_type{};
    template <> struct is_copy_constructible<void const> : public false_type{};
    template <> struct is_copy_constructible<void const volatile> : public false_type{};
    template <> struct is_copy_constructible<void volatile> : public false_type{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif
 
 #else
 
 #include <boost/type_traits/detail/yes_no_type.hpp>
-#include <boost/type_traits/is_base_and_derived.hpp>
+#include <boost/type_traits/is_noncopyable.hpp>
 #include <boost/type_traits/add_reference.hpp>
 #include <boost/type_traits/is_rvalue_reference.hpp>
 #include <boost/type_traits/declval.hpp>
 #include <boost/type_traits/is_array.hpp>
 #include <boost/type_traits/declval.hpp>
-#include <boost/noncopyable.hpp>
 
 #ifdef BOOST_MSVC
 #pragma warning(push)
 #pragma warning(disable:4181)
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
    namespace detail{
 
@@ -87,7 +85,7 @@ namespace boost {
          // Intel compiler has problems with SFINAE for copy constructors and deleted functions:
          //
          // error: function *function_name* cannot be referenced -- it is a deleted function
-         // static boost::type_traits::yes_type test(T1&, decltype(T1(boost::declval<T1&>()))* = 0);
+         // static methcla_boost::type_traits::yes_type test(T1&, decltype(T1(methcla_boost::declval<T1&>()))* = 0);
          //                                                        ^ 
          //
          // MSVC 12.0 (Visual 2013) has problems when the copy constructor has been deleted. See:
@@ -96,17 +94,17 @@ namespace boost {
 
 #ifdef BOOST_NO_CXX11_DECLTYPE
          template <class T1>
-         static boost::type_traits::yes_type test(const T1&, boost::mpl::int_<sizeof(T1(boost::declval<const T1&>()))>* = 0);
+         static methcla_boost::type_traits::yes_type test(const T1&, methcla_boost::mpl::int_<sizeof(T1(methcla_boost::declval<const T1&>()))>* = 0);
 #else
          template <class T1>
-         static boost::type_traits::yes_type test(const T1&, decltype(T1(boost::declval<const T1&>()))* = 0);
+         static methcla_boost::type_traits::yes_type test(const T1&, decltype(T1(methcla_boost::declval<const T1&>()))* = 0);
 #endif
 
-         static boost::type_traits::no_type test(...);
+         static methcla_boost::type_traits::no_type test(...);
 #else
          template <class T1>
-         static boost::type_traits::no_type test(const T1&, typename T1::boost_move_no_copy_constructor_or_assign* = 0);
-         static boost::type_traits::yes_type test(...);
+         static methcla_boost::type_traits::no_type test(const T1&, typename T1::boost_move_no_copy_constructor_or_assign* = 0);
+         static methcla_boost::type_traits::yes_type test(...);
 #endif
 
          // If you see errors like this:
@@ -126,7 +124,7 @@ namespace boost {
          // To fix that you must modify your structure:
          //
          //      // C++03 and C++11 version
-         //      struct T: private boost::noncopyable {
+         //      struct T: private methcla_boost::noncopyable {
          //          ...
          //      private:
          //          T(const T &);
@@ -142,11 +140,11 @@ namespace boost {
          //      };
          BOOST_STATIC_CONSTANT(bool, value = (
             sizeof(test(
-            boost::declval<BOOST_DEDUCED_TYPENAME boost::add_reference<T const>::type>()
-            )) == sizeof(boost::type_traits::yes_type)
+            methcla_boost::declval<BOOST_DEDUCED_TYPENAME methcla_boost::add_reference<T const>::type>()
+            )) == sizeof(methcla_boost::type_traits::yes_type)
             &&
-            !boost::is_rvalue_reference<T>::value
-            && !boost::is_array<T>::value
+            !methcla_boost::is_rvalue_reference<T>::value
+            && !methcla_boost::is_array<T>::value
             ));
       };
 
@@ -159,8 +157,8 @@ namespace boost {
       struct is_copy_constructible_impl {
 
          BOOST_STATIC_CONSTANT(bool, value = (
-            boost::detail::is_copy_constructible_impl2<
-            boost::is_base_and_derived<boost::noncopyable, T>::value,
+            methcla_boost::detail::is_copy_constructible_impl2<
+            methcla_boost::is_noncopyable<T>::value,
             T
             >::value
             ));
@@ -168,7 +166,7 @@ namespace boost {
 
    } // namespace detail
 
-   template <class T> struct is_copy_constructible : public integral_constant<bool, ::boost::detail::is_copy_constructible_impl<T>::value>{};
+   template <class T> struct is_copy_constructible : public integral_constant<bool, ::methcla_boost::detail::is_copy_constructible_impl<T>::value>{};
    template <> struct is_copy_constructible<void> : public false_type{};
 #ifndef BOOST_NO_CV_VOID_SPECIALIZATIONS
    template <> struct is_copy_constructible<void const> : public false_type{};
@@ -176,7 +174,7 @@ namespace boost {
    template <> struct is_copy_constructible<void const volatile> : public false_type{};
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 #pragma warning(pop)

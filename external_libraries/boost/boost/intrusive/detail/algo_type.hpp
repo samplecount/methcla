@@ -21,7 +21,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 enum algo_types
@@ -35,7 +35,10 @@ enum algo_types
    AvlTreeAlgorithms,
    SgTreeAlgorithms,
    SplayTreeAlgorithms,
-   TreapAlgorithms
+   TreapAlgorithms,
+   UnorderedAlgorithms,
+   UnorderedCircularSlistAlgorithms,
+   AnyAlgorithm
 };
 
 template<algo_types AlgoType, class NodeTraits>
@@ -45,6 +48,6 @@ template<algo_types AlgoType, class ValueTraits, class NodePtrCompare, class Ext
 struct get_node_checker;
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #endif //BOOST_INTRUSIVE_DETAIL_ALGO_TYPE_HPP

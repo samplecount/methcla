@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2026.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -18,165 +18,58 @@
 #ifndef BOOST_LEXICAL_CAST_TRY_LEXICAL_CONVERT_HPP
 #define BOOST_LEXICAL_CAST_TRY_LEXICAL_CONVERT_HPP
 
+#include <boost/lexical_cast/detail/config.hpp>
+
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
+
+#ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 #include <boost/config.hpp>
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-#if defined(__clang__) || (defined(__GNUC__) && \
-    !(defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)) && \
-    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wuninitialized"
+#include <type_traits>
 #endif
 
-#include <string>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/is_arithmetic.hpp>
-
+#include <boost/lexical_cast/detail/buffer_view.hpp>
 #include <boost/lexical_cast/detail/is_character.hpp>
 #include <boost/lexical_cast/detail/converter_numeric.hpp>
 #include <boost/lexical_cast/detail/converter_lexical.hpp>
 
-#include <boost/range/iterator_range_core.hpp>
-#include <boost/container/container_fwd.hpp>
-
-namespace boost {
+namespace methcla_boost {
     namespace detail
     {
-        template<typename T>
-        struct is_stdstring
-            : boost::false_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_stdstring< std::basic_string<CharT, Traits, Alloc> >
-            : boost::true_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_stdstring< boost::container::basic_string<CharT, Traits, Alloc> >
-            : boost::true_type
-        {};
-
         template<typename Target, typename Source>
-        struct is_arithmetic_and_not_xchars
-        {
-            typedef boost::mpl::bool_<
-                    !(boost::detail::is_character<Target>::value) &&
-                    !(boost::detail::is_character<Source>::value) &&
-                    boost::is_arithmetic<Source>::value &&
-                    boost::is_arithmetic<Target>::value
-                > type;
-        
-            BOOST_STATIC_CONSTANT(bool, value = (
-                type::value
-            ));
-        };
-
-        /*
-         * is_xchar_to_xchar<Target, Source>::value is true, 
-         * Target and Souce are char types of the same size 1 (char, signed char, unsigned char).
-         */
-        template<typename Target, typename Source>
-        struct is_xchar_to_xchar 
-        {
-            typedef boost::mpl::bool_<
-                     sizeof(Source) == sizeof(Target) &&
-                     sizeof(Source) == sizeof(char) &&
-                     boost::detail::is_character<Target>::value &&
-                     boost::detail::is_character<Source>::value
-                > type;
-                
-            BOOST_STATIC_CONSTANT(bool, value = (
-                type::value
-            ));
-        };
-
-        template<typename Target, typename Source>
-        struct is_char_array_to_stdstring
-            : boost::false_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_char_array_to_stdstring< std::basic_string<CharT, Traits, Alloc>, CharT* >
-            : boost::true_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_char_array_to_stdstring< std::basic_string<CharT, Traits, Alloc>, const CharT* >
-            : boost::true_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_char_array_to_stdstring< boost::container::basic_string<CharT, Traits, Alloc>, CharT* >
-            : boost::true_type
-        {};
-
-        template<typename CharT, typename Traits, typename Alloc>
-        struct is_char_array_to_stdstring< boost::container::basic_string<CharT, Traits, Alloc>, const CharT* >
-            : boost::true_type
-        {};
-
-        template <typename Target, typename Source>
-        struct copy_converter_impl
-        {
-// MSVC fail to forward an array (DevDiv#555157 "SILENT BAD CODEGEN triggered by perfect forwarding",
-// fixed in 2013 RTM).
-#if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && (!defined(BOOST_MSVC) || BOOST_MSVC >= 1800)
-            template <class T>
-            static inline bool try_convert(T&& arg, Target& result) {
-                result = static_cast<T&&>(arg); // eqaul to `result = std::forward<T>(arg);`
-                return true;
-            }
-#else
-            static inline bool try_convert(const Source& arg, Target& result) {
-                result = arg;
-                return true;
-            }
-#endif
-        };
+        using is_arithmetic_and_not_xchars = std::integral_constant<
+            bool,
+            !(methcla_boost::detail::is_character<Target>::value) &&
+                !(methcla_boost::detail::is_character<Source>::value) &&
+                std::is_arithmetic<Source>::value &&
+                std::is_arithmetic<Target>::value
+        >;
     }
 
     namespace conversion { namespace detail {
 
+BOOST_LEXICAL_CAST_BEGIN_MODULE_EXPORT
+
         template <typename Target, typename Source>
         inline bool try_lexical_convert(const Source& arg, Target& result)
         {
-            typedef BOOST_DEDUCED_TYPENAME boost::detail::array_to_pointer_decay<Source>::type src;
+            static_assert(
+                !std::is_volatile<Source>::value,
+                "Boost.LexicalCast does not support volatile input");
 
-            typedef boost::mpl::bool_<
-                boost::detail::is_xchar_to_xchar<Target, src >::value ||
-                boost::detail::is_char_array_to_stdstring<Target, src >::value ||
-                (
-                     boost::is_same<Target, src >::value &&
-                     boost::detail::is_stdstring<Target >::value
-                ) ||
-                (
-                     boost::is_same<Target, src >::value &&
-                     boost::detail::is_character<Target >::value
-                )
-            > shall_we_copy_t;
+            typedef typename methcla_boost::detail::array_to_pointer_decay<Source>::type src;
 
-            typedef boost::detail::is_arithmetic_and_not_xchars<Target, src >
+            typedef methcla_boost::detail::is_arithmetic_and_not_xchars<Target, src >
                 shall_we_copy_with_dynamic_check_t;
 
-            // We do evaluate second `if_` lazily to avoid unnecessary instantiations
-            // of `shall_we_copy_with_dynamic_check_t` and improve compilation times.
-            typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_c<
-                shall_we_copy_t::value,
-                boost::mpl::identity<boost::detail::copy_converter_impl<Target, src > >,
-                boost::mpl::if_<
-                     shall_we_copy_with_dynamic_check_t,
-                     boost::detail::dynamic_num_converter_impl<Target, src >,
-                     boost::detail::lexical_converter_impl<Target, src >
-                >
-            >::type caster_type_lazy;
-
-            typedef BOOST_DEDUCED_TYPENAME caster_type_lazy::type caster_type;
+            typedef typename std::conditional<
+                 shall_we_copy_with_dynamic_check_t::value,
+                 methcla_boost::detail::dynamic_num_converter_impl<Target, src >,
+                 methcla_boost::detail::lexical_converter_impl<Target, src >
+            >::type caster_type;
 
             return caster_type::try_convert(arg, result);
         }
@@ -184,29 +77,29 @@ namespace boost {
         template <typename Target, typename CharacterT>
         inline bool try_lexical_convert(const CharacterT* chars, std::size_t count, Target& result)
         {
-            BOOST_STATIC_ASSERT_MSG(
-                boost::detail::is_character<CharacterT>::value,
+            static_assert(
+                methcla_boost::detail::is_character<CharacterT>::value,
                 "This overload of try_lexical_convert is meant to be used only with arrays of characters."
             );
-            return ::boost::conversion::detail::try_lexical_convert(
-                ::boost::iterator_range<const CharacterT*>(chars, chars + count), result
+            return ::methcla_boost::conversion::detail::try_lexical_convert(
+                ::methcla_boost::conversion::detail::make_buffer_view(chars, chars + count),
+                result
             );
         }
+BOOST_LEXICAL_CAST_END_MODULE_EXPORT
 
     }} // namespace conversion::detail
 
     namespace conversion {
+BOOST_LEXICAL_CAST_BEGIN_MODULE_EXPORT
         // ADL barrier
-        using ::boost::conversion::detail::try_lexical_convert;
+        using ::methcla_boost::conversion::detail::try_lexical_convert;
+BOOST_LEXICAL_CAST_END_MODULE_EXPORT
     }
 
-} // namespace boost
+} // namespace methcla_boost
 
-#if defined(__clang__) || (defined(__GNUC__) && \
-    !(defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)) && \
-    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
-#pragma GCC diagnostic pop
-#endif
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
 
 #endif // BOOST_LEXICAL_CAST_TRY_LEXICAL_CONVERT_HPP
 

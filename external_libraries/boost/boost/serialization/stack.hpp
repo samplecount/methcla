@@ -18,16 +18,18 @@
 
 #include <stack>
 #include <boost/config.hpp>
+#include <boost/mpl/eval_if.hpp>
+#include <boost/mpl/identity.hpp>
 
 // function specializations must be defined in the appropriate
-// namespace - boost::serialization
+// namespace - methcla_boost::serialization
 #if defined(__SGI_STL_PORT) || defined(_STLPORT_VERSION)
 #define STD _STLP_STD
 #else
 #define STD std
 #endif
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
 namespace detail{
 
@@ -52,7 +54,7 @@ template<class Archive, class T, class C>
 inline void serialize(
     Archive & ar,
     std::stack< T, C> & t,
-    const unsigned int file_version 
+    const unsigned int file_version
 ){
     typedef typename mpl::eval_if<
         typename Archive::is_saving,
@@ -63,7 +65,7 @@ inline void serialize(
 }
 
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/serialization/collection_traits.hpp>
 

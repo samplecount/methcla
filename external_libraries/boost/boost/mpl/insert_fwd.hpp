@@ -14,7 +14,7 @@
 // $Date$
 // $Revision$
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template< typename Tag > struct insert_impl;
 template< typename Sequence, typename Pos_or_T, typename T > struct insert;

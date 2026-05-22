@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2026.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -13,126 +13,142 @@
 //        Beman Dawes, Dave Abrahams, Daryle Walker, Peter Dimov,
 //        Alexander Nasonov, Antony Polukhin, Justin Viiret, Michael Hofmann,
 //        Cheng Yang, Matthew Bradbury, David W. Birdsall, Pavel Korzh and other Boosters
-// when:  November 2000, March 2003, June 2005, June 2006, March 2011 - 2014
+// when:  November 2000, March 2003, June 2005, June 2006, March 2011 - 2016
 
 #ifndef BOOST_LEXICAL_CAST_DETAIL_CONVERTER_NUMERIC_HPP
 #define BOOST_LEXICAL_CAST_DETAIL_CONVERTER_NUMERIC_HPP
 
+#include <boost/lexical_cast/detail/config.hpp>
+
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
+
+#ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 #include <boost/config.hpp>
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
+#include <type_traits>
+#include <boost/core/cmath.hpp>
 #include <boost/limits.hpp>
-#include <boost/mpl/eval_if.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/type_traits/make_unsigned.hpp>
-#include <boost/type_traits/is_signed.hpp>
-#include <boost/type_traits/is_integral.hpp>
-#include <boost/type_traits/is_arithmetic.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_float.hpp>
 
-#include <boost/numeric/conversion/cast.hpp>
+#endif  // #ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 
-namespace boost { namespace detail {
+#include <boost/lexical_cast/detail/type_traits.hpp>
 
-template <class Source >
-struct detect_precision_loss
-{
-    typedef Source source_type;
-    typedef boost::numeric::Trunc<Source> Rounder;
-    typedef BOOST_DEDUCED_TYPENAME mpl::if_<
-        boost::is_arithmetic<Source>, Source, Source const&
-    >::type argument_type ;
+namespace methcla_boost { namespace detail {
 
-    static inline source_type nearbyint(argument_type s, bool& is_ok) BOOST_NOEXCEPT {
-        const source_type near_int = Rounder::nearbyint(s);
-        if (near_int && is_ok) {
-            const source_type orig_div_round = s / near_int;
-            const source_type eps = std::numeric_limits<source_type>::epsilon();
-
-            is_ok = !((orig_div_round > 1 ? orig_div_round - 1 : 1 - orig_div_round) > eps);
-        }
-
-        return s;
-    }
-
-    typedef typename Rounder::round_style round_style;
-};
-
-template <typename Base, class Source>
-struct fake_precision_loss: public Base
-{
-    typedef Source source_type ;
-    typedef BOOST_DEDUCED_TYPENAME mpl::if_<
-        boost::is_arithmetic<Source>, Source, Source const&
-    >::type argument_type ;
-
-    static inline source_type nearbyint(argument_type s, bool& /*is_ok*/) BOOST_NOEXCEPT {
-        return s;
-    }
-};
-
-struct nothrow_overflow_handler
-{
-    inline bool operator() ( boost::numeric::range_check_result r ) const BOOST_NOEXCEPT {
-        return (r == boost::numeric::cInRange);
-    }
-};
-
-template <typename Target, typename Source>
-inline bool noexcept_numeric_convert(const Source& arg, Target& result) BOOST_NOEXCEPT {
-    typedef boost::numeric::converter<
-            Target,
-            Source,
-            boost::numeric::conversion_traits<Target, Source >,
-            nothrow_overflow_handler,
-            detect_precision_loss<Source >
-    > converter_orig_t;
-
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_c<
-        boost::is_base_of< detect_precision_loss<Source >, converter_orig_t >::value,
-        converter_orig_t,
-        fake_precision_loss<converter_orig_t, Source>
-    >::type converter_t;
-
-    bool res = nothrow_overflow_handler()(converter_t::out_of_range(arg));
-    result = converter_t::low_level_convert(converter_t::nearbyint(arg, res));
-    return res;
+template <class Source, class Target>
+bool ios_numeric_comparer_float(Source x, Source y) noexcept {
+    return x == y
+        || (methcla_boost::core::isnan(x) && methcla_boost::core::isnan(y))
+        || (x < (std::numeric_limits<Target>::min)())
+    ;
 }
 
+template <class RangeType, class T>
+constexpr bool is_out_of_range_for(T value) noexcept {
+    return value > static_cast<T>((std::numeric_limits<RangeType>::max)())
+        || value < static_cast<T>((std::numeric_limits<RangeType>::min)())
+        || methcla_boost::core::isnan(value);
+}
+
+
+// integral -> integral
 template <typename Target, typename Source>
+typename std::enable_if<
+    !std::is_floating_point<Source>::value && !std::is_floating_point<Target>::value, bool
+>::type noexcept_numeric_convert(Source arg, Target& result) noexcept {
+    const Target target_tmp = static_cast<Target>(arg);
+    const Source arg_restored = static_cast<Source>(target_tmp);
+    if (arg == arg_restored) {
+        result = target_tmp;
+        return true;
+    }
+    return false;
+}
+
+// integral -> floating point
+template <typename Target, typename Source>
+typename std::enable_if<
+    !std::is_floating_point<Source>::value && std::is_floating_point<Target>::value, bool
+>::type noexcept_numeric_convert(Source arg, Target& result) noexcept {
+    const Target target_tmp = static_cast<Target>(arg);
+    result = target_tmp;
+    return true;
+}
+
+
+// floating point -> floating point
+template <typename Target, typename Source>
+typename std::enable_if<
+    std::is_floating_point<Source>::value && std::is_floating_point<Target>::value, bool
+>::type noexcept_numeric_convert(Source arg, Target& result) noexcept {
+    const Target target_tmp = static_cast<Target>(arg);
+    const Source arg_restored = static_cast<Source>(target_tmp);
+    if (detail::ios_numeric_comparer_float<Source, Target>(arg, arg_restored)) {
+        result = target_tmp;
+        return true;
+    }
+
+    return false;
+}
+
+// floating point -> integral
+template <typename Target, typename Source>
+typename std::enable_if<
+    std::is_floating_point<Source>::value && !std::is_floating_point<Target>::value, bool
+>::type noexcept_numeric_convert(Source arg, Target& result) noexcept {
+    if (detail::is_out_of_range_for<Target>(arg)) {
+        return false;
+    }
+
+    const Target target_tmp = static_cast<Target>(arg);
+    const Source arg_restored = static_cast<Source>(target_tmp);
+    if (arg == arg_restored /* special values are handled in detail::is_out_of_range_for */) {
+        result = target_tmp;
+        return true;
+    }
+
+    return false;
+}
+
 struct lexical_cast_dynamic_num_not_ignoring_minus
 {
-    static inline bool try_convert(const Source &arg, Target& result) BOOST_NOEXCEPT {
-        return noexcept_numeric_convert<Target, Source >(arg, result);
+    template <typename Target, typename Source>
+    static inline bool try_convert(Source arg, Target& result) noexcept {
+        return methcla_boost::detail::noexcept_numeric_convert<Target, Source >(arg, result);
     }
 };
 
-template <typename Target, typename Source>
 struct lexical_cast_dynamic_num_ignoring_minus
 {
-    static inline bool try_convert(const Source &arg, Target& result) BOOST_NOEXCEPT {
-        typedef BOOST_DEDUCED_TYPENAME boost::mpl::eval_if_c<
-                boost::is_float<Source>::value,
-                boost::mpl::identity<Source>,
-                boost::make_unsigned<Source>
-        >::type usource_t;
+    template <typename Target, typename Source>
+#if defined(__clang__) && (__clang_major__ > 3 || __clang_minor__ > 6)
+    __attribute__((no_sanitize("unsigned-integer-overflow")))
+#endif
+    static inline bool try_convert(Source arg, Target& result) noexcept {
+        typedef typename std::conditional<
+                std::is_floating_point<Source>::value,
+                std::conditional<true, Source, Source>,  // std::type_identity emulation
+                methcla_boost::detail::lcast::make_unsigned<Source>
+        >::type usource_lazy_t;
+        typedef typename usource_lazy_t::type usource_t;
 
         if (arg < 0) {
-            const bool res = noexcept_numeric_convert<Target, usource_t>(0u - arg, result);
+            const bool res = methcla_boost::detail::noexcept_numeric_convert<Target, usource_t>(
+                static_cast<usource_t>(0u - static_cast<usource_t>(arg)), result
+            );
             result = static_cast<Target>(0u - result);
             return res;
         } else {
-            return noexcept_numeric_convert<Target, usource_t>(arg, result);
+            return methcla_boost::detail::noexcept_numeric_convert<Target, usource_t>(arg, result);
         }
     }
 };
 
 /*
- * lexical_cast_dynamic_num follows the rules:
+ * dynamic_num_converter_impl follows the rules:
  * 1) If Source can be converted to Target without precision loss and
  * without overflows, then assign Source to Target and return
  *
@@ -143,7 +159,7 @@ struct lexical_cast_dynamic_num_ignoring_minus
  * 3) Otherwise throw a bad_lexical_cast exception
  *
  *
- * Rule 2) required because boost::lexical_cast has the behavior of
+ * Rule 2) required because methcla_boost::lexical_cast has the behavior of
  * stringstream, which uses the rules of scanf for conversions. And
  * in the C99 standard for unsigned input value minus sign is
  * optional, so if a negative number is read, no errors will arise
@@ -152,43 +168,23 @@ struct lexical_cast_dynamic_num_ignoring_minus
 template <typename Target, typename Source>
 struct dynamic_num_converter_impl
 {
-    static inline bool try_convert(const Source &arg, Target& result) BOOST_NOEXCEPT {
-        typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_c<
-        	boost::is_unsigned<Target>::value &&
-        	(boost::is_signed<Source>::value || boost::is_float<Source>::value) &&
-        	!(boost::is_same<Source, bool>::value) &&
-        	!(boost::is_same<Target, bool>::value),
-            lexical_cast_dynamic_num_ignoring_minus<Target, Source>,
-            lexical_cast_dynamic_num_not_ignoring_minus<Target, Source>
+    static inline bool try_convert(Source arg, Target& result) noexcept {
+        typedef typename std::conditional<
+            methcla_boost::detail::lcast::is_unsigned<Target>::value &&
+            (methcla_boost::detail::lcast::is_signed<Source>::value || std::is_floating_point<Source>::value) &&
+            !(std::is_same<Source, bool>::value) &&
+            !(std::is_same<Target, bool>::value),
+            lexical_cast_dynamic_num_ignoring_minus,
+            lexical_cast_dynamic_num_not_ignoring_minus
         >::type caster_type;
-        
-#if 0
-
-        typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_<
-            BOOST_DEDUCED_TYPENAME boost::mpl::and_<
-                boost::is_unsigned<Target>,
-                boost::mpl::or_<
-                    boost::is_signed<Source>,
-                    boost::is_float<Source>
-                >,
-                boost::mpl::not_<
-                    boost::is_same<Source, bool>
-                >,
-                boost::mpl::not_<
-                    boost::is_same<Target, bool>
-                >
-            >::type,
-            lexical_cast_dynamic_num_ignoring_minus<Target, Source>,
-            lexical_cast_dynamic_num_not_ignoring_minus<Target, Source>
-        >::type caster_type;
-        
-#endif
 
         return caster_type::try_convert(arg, result);
     }
 };
 
-}} // namespace boost::detail
+}} // namespace methcla_boost::detail
+
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
 
 #endif // BOOST_LEXICAL_CAST_DETAIL_CONVERTER_NUMERIC_HPP
 

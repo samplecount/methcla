@@ -13,7 +13,7 @@
 
 #include <boost/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 // * convert a type T to a const volatile type - add_cv<T>
 // this is not required since the result is always
@@ -36,6 +36,12 @@ template <class T> struct add_cv{ typedef T const volatile type; };
 
 template <class T> struct add_cv<T&>{ typedef T& type; };
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using add_cv_t = typename add_cv<T>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_ADD_CV_HPP_INCLUDED

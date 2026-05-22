@@ -18,9 +18,9 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 template<class T>
 const T &max_value(const T &a, const T &b)
@@ -30,8 +30,8 @@ template<class T>
 const T &min_value(const T &a, const T &b)
 {  return a < b ? a : b;   }
 
-}  //namespace container_detail {
+}  //namespace dtl {
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //#ifndef BOOST_CONTAINER_DETAIL_MIN_MAX_HPP

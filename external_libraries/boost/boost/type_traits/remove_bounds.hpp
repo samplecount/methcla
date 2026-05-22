@@ -11,11 +11,18 @@
 
 #include <boost/type_traits/remove_extent.hpp>
 
-namespace boost 
+namespace methcla_boost 
 {
 
 template <class T> struct remove_bounds : public remove_extent<T> {};
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+template <class T> using remove_bounds_t = typename remove_bounds<T>::type;
+
+#endif
+
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_REMOVE_BOUNDS_HPP_INCLUDED

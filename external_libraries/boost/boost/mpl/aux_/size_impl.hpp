@@ -20,7 +20,7 @@
 #include <boost/mpl/aux_/traits_lambda_spec.hpp>
 #include <boost/mpl/aux_/config/workaround.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 // default implementation; conrete sequences might override it by 
 // specializing either the 'size_impl' or the primary 'size' template
@@ -29,7 +29,7 @@ template< typename Tag >
 struct size_impl
 {
     template< typename Sequence > struct apply
-#if !BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x561))
+#if !BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x561))
         : distance<
               typename begin<Sequence>::type
             , typename end<Sequence>::type

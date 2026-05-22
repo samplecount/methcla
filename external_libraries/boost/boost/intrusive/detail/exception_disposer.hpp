@@ -21,7 +21,9 @@
 #  pragma once
 #endif
 
-namespace boost {
+#include <boost/intrusive/detail/workaround.hpp>
+
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -39,7 +41,7 @@ class exception_disposer
       :  cont_(&cont), disp_(disp)
    {}
 
-   void release()
+   inline void release()
    {  cont_ = 0;  }
 
    ~exception_disposer()
@@ -50,39 +52,8 @@ class exception_disposer
    }
 };
 
-template<class Container, class Disposer, class SizeType>
-class exception_array_disposer
-{
-   Container *cont_;
-   Disposer  &disp_;
-   SizeType  &constructed_;
-
-   exception_array_disposer(const exception_array_disposer&);
-   exception_array_disposer &operator=(const exception_array_disposer&);
-
-   public:
-
-   exception_array_disposer
-      (Container &cont, Disposer &disp, SizeType &constructed)
-      :  cont_(&cont), disp_(disp), constructed_(constructed)
-   {}
-
-   void release()
-   {  cont_ = 0;  }
-
-   ~exception_array_disposer()
-   {
-      SizeType n = constructed_;
-      if(cont_){
-         while(n--){
-            cont_[n].clear_and_dispose(disp_);
-         }
-      }
-   }
-};
-
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_EXCEPTION_DISPOSER_HPP

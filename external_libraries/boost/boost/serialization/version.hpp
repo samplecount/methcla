@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // version.hpp:
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -25,7 +25,7 @@
 
 #include <boost/type_traits/is_base_and_derived.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
 
 struct basic_traits;
@@ -45,7 +45,7 @@ struct version
     // on basic traits below
     typedef
         typename mpl::eval_if<
-            is_base_and_derived<boost::serialization::basic_traits,T>,
+            is_base_and_derived<methcla_boost::serialization::basic_traits,T>,
             traits_class_version< T >,
             mpl::int_<0>
         >::type type;
@@ -58,19 +58,17 @@ const int version<T>::value;
 #endif
 
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 /* note: at first it seemed that this would be a good place to trap
  * as an error an attempt to set a version # for a class which doesn't
  * save its class information (including version #) in the archive.
  * However, this imposes a requirement that the version be set after
- * the implemention level which would be pretty confusing.  If this
+ * the implementation level which would be pretty confusing.  If this
  * is to be done, do this check in the input or output operators when
  * ALL the serialization traits are available.  Included the implementation
  * here with this comment as a reminder not to do this!
  */
-//#include <boost/serialization/level.hpp>
-//#include <boost/mpl/equal_to.hpp>
 
 #include <boost/mpl/less.hpp>
 #include <boost/mpl/comparison.hpp>
@@ -78,7 +76,7 @@ const int version<T>::value;
 // specify the current version number for the class
 // version numbers limited to 8 bits !!!
 #define BOOST_CLASS_VERSION(T, N)                                      \
-namespace boost {                                                      \
+namespace methcla_boost {                                                      \
 namespace serialization {                                              \
 template<>                                                             \
 struct version<T >                                                     \
@@ -87,9 +85,9 @@ struct version<T >                                                     \
     typedef mpl::integral_c_tag tag;                                   \
     BOOST_STATIC_CONSTANT(int, value = version::type::value);          \
     BOOST_MPL_ASSERT((                                                 \
-        boost::mpl::less<                                              \
-            boost::mpl::int_<N>,                                       \
-            boost::mpl::int_<256>                                      \
+        methcla_boost::mpl::less<                                              \
+            methcla_boost::mpl::int_<N>,                                       \
+            methcla_boost::mpl::int_<256>                                      \
         >                                                              \
     ));                                                                \
     /*                                                                 \

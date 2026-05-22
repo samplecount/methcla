@@ -23,7 +23,7 @@
 #include <boost/archive/impl/basic_binary_iprimitive.ipp>
 #include <boost/archive/impl/basic_binary_iarchive.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 // explicitly instantiate for this type of text stream
@@ -41,7 +41,7 @@ template class binary_iarchive_impl<
 >;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif  // BOOST_NO_STD_WSTREAMBUF
 

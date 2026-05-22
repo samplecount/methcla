@@ -25,7 +25,7 @@
 
 #include <boost/intrusive/detail/mpl.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -44,7 +44,7 @@ struct is_stateful_value_traits
 BOOST_INTRUSIVE_CREATE_FUNCTION_DETECTOR(to_node_ptr, boost_intrusive)
 BOOST_INTRUSIVE_CREATE_FUNCTION_DETECTOR(to_value_ptr, boost_intrusive)
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -60,16 +60,16 @@ struct is_stateful_value_traits
    typedef ValueTraits value_traits;
 
    static const bool value =
-      (boost::intrusive::function_detector::NonStaticFunction ==
+      (methcla_boost::intrusive::function_detector::NonStaticFunction ==
          (BOOST_INTRUSIVE_DETECT_FUNCTION(ValueTraits, boost_intrusive, node_ptr, to_node_ptr, (value_type&) )))
       ||
-      (boost::intrusive::function_detector::NonStaticFunction ==
+      (methcla_boost::intrusive::function_detector::NonStaticFunction ==
          (BOOST_INTRUSIVE_DETECT_FUNCTION(ValueTraits, boost_intrusive, pointer, to_value_ptr, (node_ptr) )))
       ||
-      (boost::intrusive::function_detector::NonStaticFunction ==
+      (methcla_boost::intrusive::function_detector::NonStaticFunction ==
          (BOOST_INTRUSIVE_DETECT_FUNCTION(ValueTraits, boost_intrusive, const_node_ptr, to_node_ptr, (const value_type&) )))
       ||
-      (boost::intrusive::function_detector::NonStaticFunction ==
+      (methcla_boost::intrusive::function_detector::NonStaticFunction ==
          (BOOST_INTRUSIVE_DETECT_FUNCTION(ValueTraits, boost_intrusive, const_pointer, to_value_ptr, (const_node_ptr) )))
       ;
 };

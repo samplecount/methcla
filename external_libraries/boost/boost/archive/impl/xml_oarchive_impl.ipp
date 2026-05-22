@@ -19,6 +19,7 @@ namespace std{
 } // namespace std
 #endif
 
+#include <boost/core/uncaught_exceptions.hpp>
 #include <boost/archive/iterators/xml_escape.hpp>
 #include <boost/archive/iterators/ostream_iterator.hpp>
 
@@ -27,7 +28,7 @@ namespace std{
 #include <boost/archive/iterators/mb_from_wchar.hpp>
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -38,13 +39,13 @@ namespace archive {
 // copy chars to output escaping to xml and translating wide chars to mb chars
 template<class InputIterator>
 void save_iterator(std::ostream &os, InputIterator begin, InputIterator end){
-    typedef boost::archive::iterators::mb_from_wchar<
-        boost::archive::iterators::xml_escape<InputIterator>
+    typedef methcla_boost::archive::iterators::mb_from_wchar<
+        methcla_boost::archive::iterators::xml_escape<InputIterator>
     > translator;
     std::copy(
         translator(begin),
         translator(end),
-        boost::archive::iterators::ostream_iterator<char>(os)
+        methcla_boost::archive::iterators::ostream_iterator<char>(os)
     );
 }
 
@@ -74,26 +75,26 @@ BOOST_ARCHIVE_DECL void
 xml_oarchive_impl<Archive>::save(const std::string & s){
 //  at least one library doesn't typedef value_type for strings
 //  so rather than using string directly make a pointer iterator out of it
-    typedef boost::archive::iterators::xml_escape<
+    typedef methcla_boost::archive::iterators::xml_escape<
         const char * 
     > xml_escape_translator;
     std::copy(
         xml_escape_translator(s.data()),
         xml_escape_translator(s.data()+ s.size()),
-        boost::archive::iterators::ostream_iterator<char>(os)
+        methcla_boost::archive::iterators::ostream_iterator<char>(os)
     );
 }
 
 template<class Archive>
 BOOST_ARCHIVE_DECL void
 xml_oarchive_impl<Archive>::save(const char * s){
-    typedef boost::archive::iterators::xml_escape<
+    typedef methcla_boost::archive::iterators::xml_escape<
         const char * 
     > xml_escape_translator;
     std::copy(
         xml_escape_translator(s),
         xml_escape_translator(s + std::strlen(s)),
-        boost::archive::iterators::ostream_iterator<char>(os)
+        methcla_boost::archive::iterators::ostream_iterator<char>(os)
     );
 }
 
@@ -108,10 +109,32 @@ xml_oarchive_impl<Archive>::xml_oarchive_impl(
         0 != (flags & no_codecvt)
     ),
     basic_xml_oarchive<Archive>(flags)
-{
-    if(0 == (flags & no_header))
-        this->init();
+{}
+
+template<class Archive>
+BOOST_ARCHIVE_DECL void
+xml_oarchive_impl<Archive>::save_binary(const void *address, std::size_t count){
+    this->end_preamble();
+    #if ! defined(__MWERKS__)
+    this->basic_text_oprimitive<std::ostream>::save_binary(
+    #else
+    this->basic_text_oprimitive::save_binary(
+    #endif
+        address, 
+        count
+    );
+    this->indent_next = true;
+}
+
+template<class Archive>
+BOOST_ARCHIVE_DECL
+xml_oarchive_impl<Archive>::~xml_oarchive_impl(){
+    if(methcla_boost::core::uncaught_exceptions() > 0)
+        return;
+    if(0 == (this->get_flags() & no_header)){
+        this->put("</boost_serialization>\n");
+    }
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

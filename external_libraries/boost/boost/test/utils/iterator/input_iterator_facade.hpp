@@ -19,7 +19,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace utils {
 
@@ -29,7 +29,7 @@ namespace utils {
 
 class input_iterator_core_access
 {
-#if defined(BOOST_NO_MEMBER_TEMPLATE_FRIENDS) || BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x551))
+#if defined(BOOST_NO_MEMBER_TEMPLATE_FRIENDS) || BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x551))
 public:
 #else
     template <class I, class V, class R, class TC> friend class input_iterator_facade;
@@ -72,7 +72,7 @@ protected: // provide access to the Derived
     ValueType           m_value;
 
 private:
-    friend class boost::iterator_core_access;
+    friend class methcla_boost::iterator_core_access;
 
     // iterator facade interface implementation
     void                increment()
@@ -96,7 +96,7 @@ private:
 
 } // namespace utils
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 //____________________________________________________________________________//
 

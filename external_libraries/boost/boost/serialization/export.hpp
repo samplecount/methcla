@@ -32,7 +32,7 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/and.hpp>
 #include <boost/mpl/not.hpp>
-#include <boost/mpl/bool.hpp>
+#include <boost/mpl/bool_fwd.hpp>
 
 #include <boost/serialization/extended_type_info.hpp> // for guid_defined only
 #include <boost/serialization/static_warning.hpp>
@@ -42,9 +42,7 @@
 
 #include <boost/archive/detail/register_archive.hpp>
 
-#include <iostream>
-
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
@@ -61,15 +59,15 @@ struct export_impl
 {
     static const basic_pointer_iserializer &
     enable_load(mpl::true_){
-        return boost::serialization::singleton<
-            pointer_iserializer<Archive, Serializable> 
+        return methcla_boost::serialization::singleton<
+            pointer_iserializer<Archive, Serializable>
         >::get_const_instance();
     }
 
     static const basic_pointer_oserializer &
     enable_save(mpl::true_){
-        return boost::serialization::singleton<
-            pointer_oserializer<Archive, Serializable> 
+        return methcla_boost::serialization::singleton<
+            pointer_oserializer<Archive, Serializable>
         >::get_const_instance();
     }
     inline static void enable_load(mpl::false_) {}
@@ -95,7 +93,7 @@ struct ptr_serialization_support
 };
 
 template <class Archive, class Serializable>
-BOOST_DLLEXPORT void 
+BOOST_DLLEXPORT void
 ptr_serialization_support<Archive,Serializable>::instantiate()
 {
     export_impl<Archive,Serializable>::enable_save(
@@ -125,12 +123,12 @@ struct guid_initializer
     void export_guid(mpl::true_) const {
     }
     guid_initializer const & export_guid() const {
-        BOOST_STATIC_WARNING(boost::is_polymorphic< T >::value);
+        BOOST_STATIC_WARNING(methcla_boost::is_polymorphic< T >::value);
         // note: exporting an abstract base class will have no effect
-        // and cannot be used to instantitiate serialization code
+        // and cannot be used to instantiate serialization code
         // (one might be using this in a DLL to instantiate code)
-        //BOOST_STATIC_WARNING(! boost::serialization::is_abstract< T >::value);
-        export_guid(boost::serialization::is_abstract< T >());
+        //BOOST_STATIC_WARNING(! methcla_boost::serialization::is_abstract< T >::value);
+        export_guid(methcla_boost::serialization::is_abstract< T >());
         return *this;
     }
 };
@@ -141,10 +139,10 @@ struct init_guid;
 } // anonymous
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #define BOOST_CLASS_EXPORT_IMPLEMENT(T)                      \
-    namespace boost {                                        \
+    namespace methcla_boost {                                        \
     namespace archive {                                      \
     namespace detail {                                       \
     namespace extra_detail {                                 \
@@ -153,17 +151,17 @@ struct init_guid;
         static guid_initializer< T > const & g;              \
     };                                                       \
     guid_initializer< T > const & init_guid< T >::g =        \
-        ::boost::serialization::singleton<                   \
+        ::methcla_boost::serialization::singleton<                   \
             guid_initializer< T >                            \
         >::get_mutable_instance().export_guid();             \
     }}}}                                                     \
 /**/
 
 #define BOOST_CLASS_EXPORT_KEY2(T, K)          \
-namespace boost {                              \
+namespace methcla_boost {                              \
 namespace serialization {                      \
 template<>                                     \
-struct guid_defined< T > : boost::mpl::true_ {}; \
+struct guid_defined< T > : methcla_boost::mpl::true_ {}; \
 template<>                                     \
 inline const char * guid< T >(){                 \
     return K;                                  \
@@ -191,9 +189,9 @@ BOOST_CLASS_EXPORT_IMPLEMENT(T)                                        \
 # define BOOST_SERIALIZATION_MWERKS_BASE_AND_DERIVED(Base,Derived)             \
 namespace {                                                                    \
   static int BOOST_PP_CAT(boost_serialization_mwerks_init_, __LINE__) =        \
-  (::boost::archive::detail::instantiate_ptr_serialization((Derived*)0,0), 3); \
+  (::methcla_boost::archive::detail::instantiate_ptr_serialization((Derived*)0,0), 3); \
   static int BOOST_PP_CAT(boost_serialization_mwerks_init2_, __LINE__) = (     \
-      ::boost::serialization::void_cast_register((Derived*)0,(Base*)0)         \
+      ::methcla_boost::serialization::void_cast_register((Derived*)0,(Base*)0)         \
     , 3);                                                                      \
 }
 
@@ -201,13 +199,13 @@ namespace {                                                                    \
 
 # define BOOST_SERIALIZATION_MWERKS_BASE_AND_DERIVED(Base,Derived)
 
-#endif 
+#endif
 
 // check for unnecessary export.  T isn't polymorphic so there is no
 // need to export it.
 #define BOOST_CLASS_EXPORT_CHECK(T)                              \
     BOOST_STATIC_WARNING(                                        \
-        boost::is_polymorphic<U>::value                          \
+        methcla_boost::is_polymorphic<U>::value                          \
     );                                                           \
     /**/
 

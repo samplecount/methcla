@@ -16,9 +16,10 @@
 
 //  See http://www.boost.org for updates, documentation, and revision history.
 
-// this is useful for compilers which don't support the boost::is_abstract
+// this is useful for compilers which don't support the methcla_boost::is_abstract
 
 #include <boost/type_traits/is_abstract.hpp>
+#include <boost/mpl/bool_fwd.hpp>
 
 #ifndef BOOST_NO_IS_ABSTRACT
 
@@ -26,31 +27,31 @@
 #define BOOST_SERIALIZATION_ASSUME_ABSTRACT(T)
 
 // but forward to the "official" is_abstract
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     template<class T>
-    struct is_abstract : boost::is_abstract< T > {} ;
+    struct is_abstract : methcla_boost::is_abstract< T > {} ;
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #else
 // we have to "make" one
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     template<class T>
-    struct is_abstract : boost::false_type {};
+    struct is_abstract : methcla_boost::false_type {};
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 // define a macro to make explicit designation of this more transparent
 #define BOOST_SERIALIZATION_ASSUME_ABSTRACT(T)        \
-namespace boost {                                     \
+namespace methcla_boost {                                     \
 namespace serialization {                             \
 template<>                                            \
-struct is_abstract< T > : boost::true_type {};        \
+struct is_abstract< T > : methcla_boost::true_type {};        \
 template<>                                            \
-struct is_abstract< const T > : boost::true_type {};  \
+struct is_abstract< const T > : methcla_boost::true_type {};  \
 }}                                                    \
 /**/
 

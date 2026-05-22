@@ -1,13 +1,3 @@
-add_library(gtest 
-    ../external_libraries/gtest/gtest-all.cc
-)
-
-target_include_directories(gtest SYSTEM PUBLIC
-    ../external_libraries/gtest
-)
-
-target_compile_options(gtest PRIVATE -w)
-
 # =============================================================================
 # Plugin directories
 
@@ -34,7 +24,7 @@ target_include_directories(methcla_tests SYSTEM PRIVATE
 )
 
 target_link_libraries(methcla_tests PRIVATE
-    gtest
+    GTest::gtest
     methcla
 )
 
@@ -58,7 +48,7 @@ target_include_directories(methcla_engine_tests SYSTEM PRIVATE
 )
 
 target_link_libraries(methcla_engine_tests PRIVATE
-    gtest
+    GTest::gtest
     methcla
 )
 

@@ -14,12 +14,13 @@
 #include <boost/chrono/config.hpp>
 #include <boost/chrono/thread_clock.hpp>
 #include <cassert>
+#include <boost/assert.hpp>
 
-#include <boost/detail/winapi/GetLastError.hpp>
-#include <boost/detail/winapi/GetCurrentThread.hpp>
-#include <boost/detail/winapi/GetThreadTimes.hpp>
+#include <boost/winapi/get_last_error.hpp>
+#include <boost/winapi/get_current_thread.hpp>
+#include <boost/winapi/get_thread_times.hpp>
 
-namespace boost
+namespace methcla_boost
 {
 namespace chrono
 {
@@ -28,10 +29,10 @@ namespace chrono
 thread_clock::time_point thread_clock::now( system::error_code & ec )
 {
     //  note that Windows uses 100 nanosecond ticks for FILETIME
-    boost::detail::winapi::FILETIME_ creation, exit, user_time, system_time;
+    methcla_boost::winapi::FILETIME_ creation, exit, user_time, system_time;
 
-    if ( boost::detail::winapi::GetThreadTimes(
-            boost::detail::winapi::GetCurrentThread (), &creation, &exit,
+    if ( methcla_boost::winapi::GetThreadTimes(
+            methcla_boost::winapi::GetCurrentThread (), &creation, &exit,
             &system_time, &user_time ) )
     {
         duration user = duration(
@@ -42,7 +43,7 @@ thread_clock::time_point thread_clock::now( system::error_code & ec )
                 ((static_cast<duration::rep>(system_time.dwHighDateTime) << 32)
                         | system_time.dwLowDateTime) * 100 );
 
-        if (!BOOST_CHRONO_IS_THROWS(ec)) 
+        if (!::methcla_boost::chrono::is_throws(ec))
         {
             ec.clear();
         }
@@ -51,17 +52,17 @@ thread_clock::time_point thread_clock::now( system::error_code & ec )
     }
     else
     {
-        if (BOOST_CHRONO_IS_THROWS(ec)) 
+        if (::methcla_boost::chrono::is_throws(ec))
         {
-            boost::throw_exception(
-                    system::system_error( 
-                            boost::detail::winapi::GetLastError(), 
-                            BOOST_CHRONO_SYSTEM_CATEGORY, 
+            methcla_boost::throw_exception(
+                    system::system_error(
+                            methcla_boost::winapi::GetLastError(),
+                            ::methcla_boost::system::system_category(),
                             "chrono::thread_clock" ));
-        } 
-        else 
+        }
+        else
         {
-            ec.assign( boost::detail::winapi::GetLastError(), BOOST_CHRONO_SYSTEM_CATEGORY );
+            ec.assign( methcla_boost::winapi::GetLastError(), ::methcla_boost::system::system_category() );
             return thread_clock::time_point(duration(0));
         }
     }
@@ -72,10 +73,10 @@ thread_clock::time_point thread_clock::now() BOOST_NOEXCEPT
 {
 
     //  note that Windows uses 100 nanosecond ticks for FILETIME
-    boost::detail::winapi::FILETIME_ creation, exit, user_time, system_time;
+    methcla_boost::winapi::FILETIME_ creation, exit, user_time, system_time;
 
-    if ( boost::detail::winapi::GetThreadTimes( 
-            boost::detail::winapi::GetCurrentThread (), &creation, &exit,
+    if ( methcla_boost::winapi::GetThreadTimes(
+            methcla_boost::winapi::GetCurrentThread (), &creation, &exit,
             &system_time, &user_time ) )
     {
         duration user   = duration(
@@ -97,6 +98,6 @@ thread_clock::time_point thread_clock::now() BOOST_NOEXCEPT
 }
 
 } // namespace chrono
-} // namespace boost
+} // namespace methcla_boost
 
 #endif

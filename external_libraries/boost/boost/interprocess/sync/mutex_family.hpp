@@ -29,29 +29,29 @@
 //!\file
 //!Describes a shared interprocess_mutex family fit algorithm used to allocate objects in shared memory.
 
-namespace boost {
+namespace methcla_boost {
 
 namespace interprocess {
 
 //!Describes interprocess_mutex family to use with Interprocess framework
-//!based on boost::interprocess synchronization objects.
+//!based on methcla_boost::interprocess synchronization objects.
 struct mutex_family
 {
-   typedef boost::interprocess::interprocess_mutex                 mutex_type;
-   typedef boost::interprocess::interprocess_recursive_mutex       recursive_mutex_type;
+   typedef methcla_boost::interprocess::interprocess_mutex                 mutex_type;
+   typedef methcla_boost::interprocess::interprocess_recursive_mutex       recursive_mutex_type;
 };
 
 //!Describes interprocess_mutex family to use with Interprocess frameworks
 //!based on null operation synchronization objects.
 struct null_mutex_family
 {
-   typedef boost::interprocess::null_mutex                   mutex_type;
-   typedef boost::interprocess::null_mutex                   recursive_mutex_type;
+   typedef methcla_boost::interprocess::null_mutex                   mutex_type;
+   typedef methcla_boost::interprocess::null_mutex                   recursive_mutex_type;
 };
 
 }  //namespace interprocess {
 
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

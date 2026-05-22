@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2026.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -18,23 +18,32 @@
 #ifndef BOOST_LEXICAL_CAST_DETAIL_WIDEST_CHAR_HPP
 #define BOOST_LEXICAL_CAST_DETAIL_WIDEST_CHAR_HPP
 
+#include <boost/lexical_cast/detail/config.hpp>
+
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
+
+#ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 #include <boost/config.hpp>
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-namespace boost { namespace detail {
+#include <type_traits>
 
-    template <typename TargetChar, typename SourceChar>
-    struct widest_char {
-        typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_c<
-            (sizeof(TargetChar) > sizeof(SourceChar))
-            , TargetChar
-            , SourceChar
-        >::type type;
-    };
+#endif  // #ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 
-}} // namespace boost::detail
+namespace methcla_boost { namespace detail {
+
+template <typename TargetChar, typename SourceChar>
+using widest_char = std::conditional<
+    (sizeof(TargetChar) > sizeof(SourceChar))
+    , TargetChar
+    , SourceChar
+>;
+
+}} // namespace methcla_boost::detail
+
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
 
 #endif // BOOST_LEXICAL_CAST_DETAIL_WIDEST_CHAR_HPP
 

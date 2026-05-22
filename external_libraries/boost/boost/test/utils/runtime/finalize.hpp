@@ -24,7 +24,7 @@
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 
 inline void
@@ -49,7 +49,7 @@ finalize_arguments( parameters_store const& params, runtime::arguments_store& ar
 }
 
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

@@ -9,9 +9,15 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // variant.hpp - non-intrusive serialization of variant types
 //
-// copyright (c) 2005   
+// copyright (c) 2005
 // troy d. straszheim <troy@resophonic.com>
 // http://www.resophonic.com
+//
+// copyright (c) 2019 Samuel Debionne, ESRF
+//
+// copyright (c) 2023
+// Robert Ramey <ramey@rrsd.com>
+// http://www.rrsd.com
 //
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
@@ -31,7 +37,21 @@
 
 #include <boost/serialization/throw_exception.hpp>
 
-#include <boost/variant.hpp>
+// Boost Variant supports all C++ versions back to C++03
+#include <boost/variant/variant.hpp>
+#include <boost/variant/get.hpp>
+
+// Boost Variant2 supports all C++ versions back to C++11
+#if BOOST_CXX_VERSION >= 201103L
+#include <boost/variant2/variant.hpp>
+#include <type_traits>
+#endif
+
+// Boost Variant2 supports all C++ versions back to C++11
+#ifndef BOOST_NO_CXX17_HDR_VARIANT
+#include <variant>
+//#include <type_traits>
+#endif
 
 #include <boost/archive/archive_exception.hpp>
 
@@ -39,19 +59,35 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
 
-namespace boost {
+// use visitor from methcla_boost::variant
+template<class Visitor, BOOST_VARIANT_ENUM_PARAMS(class T)>
+typename Visitor::result_type visit(
+    Visitor visitor,
+    const methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> & t
+){
+    return methcla_boost::apply_visitor(visitor, t);
+}
+template<class Visitor, BOOST_VARIANT_ENUM_PARAMS(class T)>
+typename Visitor::result_type visit(
+    Visitor visitor,
+    const methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> & t,
+    const methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> & u
+){
+    return methcla_boost::apply_visitor(visitor, t, u);
+}
+
+namespace methcla_boost {
 namespace serialization {
 
 template<class Archive>
-struct variant_save_visitor : 
-    boost::static_visitor<> 
+struct variant_save_visitor :
+    methcla_boost::static_visitor<void>
 {
     variant_save_visitor(Archive& ar) :
         m_ar(ar)
     {}
     template<class T>
-    void operator()(T const & value) const
-    {
+    void operator()(T const & value) const {
         m_ar << BOOST_SERIALIZATION_NVP(value);
     }
 private:
@@ -61,14 +97,42 @@ private:
 template<class Archive, BOOST_VARIANT_ENUM_PARAMS(/* typename */ class T)>
 void save(
     Archive & ar,
-    boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const & v,
+    methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> const & v,
     unsigned int /*version*/
 ){
     int which = v.which();
     ar << BOOST_SERIALIZATION_NVP(which);
     variant_save_visitor<Archive> visitor(ar);
-    v.apply_visitor(visitor);
+    visit(visitor, v);
 }
+
+#if BOOST_CXX_VERSION >= 201103L
+template<class Archive, class ...Types>
+void save(
+    Archive & ar,
+    methcla_boost::variant2::variant<Types...> const & v,
+    unsigned int /*version*/
+){
+    int which = v.index();
+    ar << BOOST_SERIALIZATION_NVP(which);
+    const variant_save_visitor<Archive> visitor(ar);
+    visit(visitor, v);
+}
+#endif
+
+#ifndef BOOST_NO_CXX17_HDR_VARIANT
+template<class Archive, class ...Types>
+void save(
+    Archive & ar,
+    std::variant<Types...> const & v,
+    unsigned int /*version*/
+){
+    int which = v.index();
+    ar << BOOST_SERIALIZATION_NVP(which);
+    const variant_save_visitor<Archive> visitor(ar);
+    visit(visitor, v);
+}
+#endif
 
 template<class S>
 struct variant_impl {
@@ -77,17 +141,17 @@ struct variant_impl {
         template<class Archive, class V>
         static void invoke(
             Archive & /*ar*/,
-            int /*which*/,
+            std::size_t /*which*/,
             V & /*v*/,
             const unsigned int /*version*/
         ){}
     };
 
-    struct load_impl {
+    struct load_member {
         template<class Archive, class V>
         static void invoke(
             Archive & ar,
-            int which,
+            std::size_t which,
             V & v,
             const unsigned int version
         ){
@@ -99,60 +163,155 @@ struct variant_impl {
                 typedef typename mpl::front<S>::type head_type;
                 head_type value;
                 ar >> BOOST_SERIALIZATION_NVP(value);
-                v = value;
-                ar.reset_object_address(& boost::get<head_type>(v), & value);
+                v = std::move(value);;
+                head_type * new_address = & get<head_type>(v);
+                ar.reset_object_address(new_address, & value);
                 return;
             }
             typedef typename mpl::pop_front<S>::type type;
-            variant_impl<type>::load(ar, which - 1, v, version);
+            variant_impl<type>::load_impl(ar, which - 1, v, version);
         }
     };
 
     template<class Archive, class V>
-    static void load(
+    static void load_impl(
         Archive & ar,
-        int which,
+        std::size_t which,
         V & v,
         const unsigned int version
     ){
         typedef typename mpl::eval_if<mpl::empty<S>,
             mpl::identity<load_null>,
-            mpl::identity<load_impl>
+            mpl::identity<load_member>
         >::type typex;
         typex::invoke(ar, which, v, version);
     }
-
-};
+}; // variant_impl
 
 template<class Archive, BOOST_VARIANT_ENUM_PARAMS(/* typename */ class T)>
 void load(
-    Archive & ar, 
-    boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& v,
+    Archive & ar,
+    methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>& v,
     const unsigned int version
 ){
     int which;
-    typedef typename boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types types;
+    typedef typename methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)>::types types;
     ar >> BOOST_SERIALIZATION_NVP(which);
-    if(which >=  mpl::size<types>::value)
+    if(which >=  mpl::size<types>::value){
         // this might happen if a type was removed from the list of variant types
-        boost::serialization::throw_exception(
-            boost::archive::archive_exception(
-                boost::archive::archive_exception::unsupported_version
+        methcla_boost::serialization::throw_exception(
+            methcla_boost::archive::archive_exception(
+                methcla_boost::archive::archive_exception::unsupported_version
             )
         );
-    variant_impl<types>::load(ar, which, v, version);
+    }
+    variant_impl<types>::load_impl(ar, which, v, version);
 }
+
+#if BOOST_CXX_VERSION >= 201103L
+template<class Archive, class ... Types>
+void load(
+    Archive & ar,
+    methcla_boost::variant2::variant<Types...> & v,
+    const unsigned int version
+){
+    int which;
+    typedef typename methcla_boost::variant<Types...>::types types;
+    ar >> BOOST_SERIALIZATION_NVP(which);
+    if(which >=  sizeof...(Types)){
+        // this might happen if a type was removed from the list of variant types
+        methcla_boost::serialization::throw_exception(
+            methcla_boost::archive::archive_exception(
+                methcla_boost::archive::archive_exception::unsupported_version
+            )
+        );
+    }
+    variant_impl<types>::load_impl(ar, which, v, version);
+}
+#endif
+
+#ifndef BOOST_NO_CXX17_HDR_VARIANT
+template<class Archive, class ... Types>
+void load(
+    Archive & ar,
+    std::variant<Types...> & v,
+    const unsigned int version
+){
+    int which;
+    typedef typename methcla_boost::variant<Types...>::types types;
+    ar >> BOOST_SERIALIZATION_NVP(which);
+    if(which >=  sizeof...(Types)){
+        // this might happen if a type was removed from the list of variant types
+        methcla_boost::serialization::throw_exception(
+            methcla_boost::archive::archive_exception(
+                methcla_boost::archive::archive_exception::unsupported_version
+            )
+        );
+    }
+    variant_impl<types>::load_impl(ar, which, v, version);
+}
+#endif
 
 template<class Archive,BOOST_VARIANT_ENUM_PARAMS(/* typename */ class T)>
 inline void serialize(
     Archive & ar,
-    boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> & v,
+    methcla_boost::variant<BOOST_VARIANT_ENUM_PARAMS(T)> & v,
     const unsigned int file_version
 ){
-    split_free(ar,v,file_version);
+    methcla_boost::serialization::split_free(ar,v,file_version);
 }
 
+#if BOOST_CXX_VERSION >= 201103L
+template<class Archive, class ... Types>
+inline void serialize(
+    Archive & ar,
+    methcla_boost::variant2::variant<Types...> & v,
+    const unsigned int file_version
+){
+    methcla_boost::serialization::split_free(ar,v,file_version);
+}
+#endif
+
+#ifndef BOOST_NO_CXX17_HDR_VARIANT
+template<class Archive, class ... Types>
+inline void serialize(
+    Archive & ar,
+    std::variant<Types...> & v,
+    const unsigned int file_version
+){
+    methcla_boost::serialization::split_free(ar,v,file_version);
+}
+#endif
+
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
+
+#include <boost/serialization/tracking.hpp>
+
+namespace methcla_boost {
+namespace serialization {
+
+template<BOOST_VARIANT_ENUM_PARAMS(/* typename */ class T)>
+struct tracking_level<
+    variant<BOOST_VARIANT_ENUM_PARAMS(T)>
+>{
+    typedef mpl::integral_c_tag tag;
+    typedef mpl::int_< ::methcla_boost::serialization::track_always> type;
+    BOOST_STATIC_CONSTANT(int, value = type::value);
+};
+
+#ifndef BOOST_NO_CXX17_HDR_VARIANT
+template<class... Types>
+struct tracking_level<
+    std::variant<Types...>
+>{
+    typedef mpl::integral_c_tag tag;
+    typedef mpl::int_< ::methcla_boost::serialization::track_always> type;
+    BOOST_STATIC_CONSTANT(int, value = type::value);
+};
+#endif
+
+} // namespace serialization
+} // namespace methcla_boost
 
 #endif //BOOST_SERIALIZATION_VARIANT_HPP

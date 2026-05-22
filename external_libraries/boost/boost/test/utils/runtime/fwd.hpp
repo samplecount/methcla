@@ -18,7 +18,7 @@
 // Boost.Test
 #include <boost/test/detail/config.hpp>
 #include <boost/test/utils/basic_cstring/basic_cstring.hpp>
-#include <boost/test/utils/basic_cstring/io.hpp> // operator<<(boost::runtime::cstring)
+#include <boost/test/utils/basic_cstring/io.hpp> // operator<<(methcla_boost::runtime::cstring)
 
 // Boost
 #include <boost/shared_ptr.hpp>
@@ -26,7 +26,7 @@
 // STL
 #include <map>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 
 typedef unit_test::const_string     cstring;
@@ -40,6 +40,6 @@ class basic_param;
 typedef shared_ptr<basic_param> basic_param_ptr;
 
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TEST_UTILS_RUNTIME_FWD_HPP

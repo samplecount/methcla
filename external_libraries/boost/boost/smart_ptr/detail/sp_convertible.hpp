@@ -18,21 +18,7 @@
 #include <boost/config.hpp>
 #include <cstddef>
 
-#if !defined( BOOST_SP_NO_SP_CONVERTIBLE ) && defined( BOOST_NO_SFINAE )
-# define BOOST_SP_NO_SP_CONVERTIBLE
-#endif
-
-#if !defined( BOOST_SP_NO_SP_CONVERTIBLE ) && defined( __GNUC__ ) && ( __GNUC__ * 100 + __GNUC_MINOR__ < 303 )
-# define BOOST_SP_NO_SP_CONVERTIBLE
-#endif
-
-#if !defined( BOOST_SP_NO_SP_CONVERTIBLE ) && defined( __BORLANDC__ ) && ( __BORLANDC__ < 0x630 )
-# define BOOST_SP_NO_SP_CONVERTIBLE
-#endif
-
-#if !defined( BOOST_SP_NO_SP_CONVERTIBLE )
-
-namespace boost
+namespace methcla_boost
 {
 
 namespace detail
@@ -85,8 +71,6 @@ template< class Y, class T > struct sp_enable_if_convertible: public sp_enable_i
 
 } // namespace detail
 
-} // namespace boost
-
-#endif // !defined( BOOST_SP_NO_SP_CONVERTIBLE )
+} // namespace methcla_boost
 
 #endif  // #ifndef BOOST_SMART_PTR_DETAIL_SP_CONVERTIBLE_HPP_INCLUDED

@@ -23,7 +23,7 @@
 #define BOOST_INTERNAL_IS_EMPTY(T) BOOST_IS_EMPTY(T)
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 namespace detail {
 
@@ -50,7 +50,7 @@ private:
 
 struct empty_helper_t2 { int i[256]; };
 
-#if !BOOST_WORKAROUND(__BORLANDC__, < 0x600)
+#if !BOOST_WORKAROUND(BOOST_BORLANDC, < 0x600)
 
 template <typename T, bool is_a_class = false>
 struct empty_helper
@@ -72,10 +72,10 @@ struct is_empty_impl
     typedef typename remove_cv<T>::type cvt;
     BOOST_STATIC_CONSTANT(
         bool, 
-        value = ( ::boost::detail::empty_helper<cvt,::boost::is_class<T>::value>::value || BOOST_INTERNAL_IS_EMPTY(cvt)));
+        value = ( ::methcla_boost::detail::empty_helper<cvt,::methcla_boost::is_class<T>::value>::value || BOOST_INTERNAL_IS_EMPTY(cvt)));
 };
 
-#else // __BORLANDC__
+#else // BOOST_BORLANDC
 
 template <typename T, bool is_a_class, bool convertible_to_int>
 struct empty_helper
@@ -99,20 +99,20 @@ struct is_empty_impl
 
    BOOST_STATIC_CONSTANT(
        bool, value = (
-              ::boost::detail::empty_helper<
+              ::methcla_boost::detail::empty_helper<
                   cvt
-                , ::boost::is_class<T>::value
-                , ::boost::is_convertible< r_type,int>::value
-              >::value || BOOST_INTERNAL_IS_EMPTY(cvt));
+                , ::methcla_boost::is_class<T>::value
+                , ::methcla_boost::is_convertible< r_type,int>::value
+              >::value || BOOST_INTERNAL_IS_EMPTY(cvt)));
 };
 
-#endif // __BORLANDC__
+#endif // BOOST_BORLANDC
 
 } // namespace detail
 
-template <class T> struct is_empty : integral_constant<bool, ::boost::detail::is_empty_impl<T>::value> {};
+template <class T> struct is_empty : integral_constant<bool, ::methcla_boost::detail::is_empty_impl<T>::value> {};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #undef BOOST_INTERNAL_IS_EMPTY
 

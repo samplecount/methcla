@@ -17,7 +17,7 @@
 #include <utility>
 
 
-namespace boost 
+namespace methcla_boost 
 {
     namespace range_detail
     {          

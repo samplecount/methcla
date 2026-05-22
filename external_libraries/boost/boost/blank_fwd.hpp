@@ -13,10 +13,10 @@
 #ifndef BOOST_BLANK_FWD_HPP
 #define BOOST_BLANK_FWD_HPP
 
-namespace boost {
+namespace methcla_boost {
 
 struct blank;
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_BLANK_FWD_HPP

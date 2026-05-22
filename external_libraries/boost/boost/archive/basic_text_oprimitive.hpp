@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // basic_text_oprimitive.hpp
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -26,20 +26,19 @@
 
 #include <iomanip>
 #include <locale>
-#include <boost/assert.hpp>
 #include <cstddef> // size_t
 
 #include <boost/config.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/detail/workaround.hpp>
 #include <boost/io/ios_state.hpp>
 
+#include <boost/detail/workaround.hpp>
 #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
 #include <boost/archive/dinkumware.hpp>
 #endif
 
 #if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
+namespace std{
     using ::size_t;
     #if ! defined(BOOST_DINKUMWARE_STDLIB) && ! defined(__SGI_STL_PORT)
         using ::locale;
@@ -52,17 +51,17 @@ namespace std{
 #include <boost/limits.hpp>
 #include <boost/integer.hpp>
 #include <boost/io/ios_state.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/serialization/throw_exception.hpp>
-#include <boost/archive/archive_exception.hpp>
 #include <boost/archive/basic_streambuf_locale_saver.hpp>
+#include <boost/archive/codecvt_null.hpp>
+#include <boost/archive/archive_exception.hpp>
 #include <boost/archive/detail/abi_prefix.hpp> // must be the last header
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////////////////////////////////////////////////////////////////////
-// class basic_text_oprimitive - output of prmitives to stream
+// class basic_text_oprimitive - output of primitives to stream
 template<class OStream>
 class BOOST_SYMBOL_VISIBLE basic_text_oprimitive
 {
@@ -72,9 +71,17 @@ protected:
     io::ios_precision_saver precision_saver;
 
     #ifndef BOOST_NO_STD_LOCALE
-    boost::scoped_ptr<std::locale> archive_locale;
-    basic_streambuf_locale_saver<
-        typename OStream::char_type, 
+    // note order! - if you change this, libstd++ will fail!
+    // a) create new locale with new codecvt facet
+    // b) save current locale
+    // c) change locale to new one
+    // d) use stream buffer
+    // e) change locale back to original
+    // f) destroy new codecvt facet
+    methcla_boost::archive::codecvt_null<typename OStream::char_type> codecvt_null_facet;
+    std::locale archive_locale;
+    basic_ostream_locale_saver<
+        typename OStream::char_type,
         typename OStream::traits_type
     > locale_saver;
     #endif
@@ -86,7 +93,7 @@ protected:
         // otherwise crash on load.
         BOOST_ASSERT(0 == static_cast<int>(t) || 1 == static_cast<int>(t));
         if(os.fail())
-            boost::serialization::throw_exception(
+            methcla_boost::serialization::throw_exception(
                 archive_exception(archive_exception::output_stream_error)
             );
         os << t;
@@ -115,9 +122,9 @@ protected:
     // saving of any types not listed above
 
     template<class T>
-    void save_impl(const T &t, boost::mpl::bool_<false> &){
+    void save_impl(const T &t, methcla_boost::mpl::bool_<false> &){
         if(os.fail())
-            boost::serialization::throw_exception(
+            methcla_boost::serialization::throw_exception(
                 archive_exception(archive_exception::output_stream_error)
             );
         os << t;
@@ -135,54 +142,54 @@ protected:
 
     template<class T>
     struct is_float {
-        typedef typename mpl::bool_< 
-            boost::is_floating_point<T>::value 
+        typedef typename mpl::bool_<
+            methcla_boost::is_floating_point<T>::value
             || (std::numeric_limits<T>::is_specialized
             && !std::numeric_limits<T>::is_integer
             && !std::numeric_limits<T>::is_exact
-            && std::numeric_limits<T>::max_exponent) 
+            && std::numeric_limits<T>::max_exponent)
         >::type type;
     };
 
     template<class T>
-    void save_impl(const T &t, boost::mpl::bool_<true> &){
+    void save_impl(const T &t, methcla_boost::mpl::bool_<true> &){
         // must be a user mistake - can't serialize un-initialized data
-        if(os.fail())
-            boost::serialization::throw_exception(
+        if(os.fail()){
+            methcla_boost::serialization::throw_exception(
                 archive_exception(archive_exception::output_stream_error)
             );
-        // The formulae for the number of decimla digits required is given in
+        }
+        // The formulae for the number of decimal digits required is given in
         // http://www2.open-std.org/JTC1/SC22/WG21/docs/papers/2005/n1822.pdf
         // which is derived from Kahan's paper:
         // www.eecs.berkeley.edu/~wkahan/ieee754status/ieee754.ps
         // const unsigned int digits = (std::numeric_limits<T>::digits * 3010) / 10000;
         // note: I've commented out the above because I didn't get good results.  e.g.
         // in one case I got a difference of 19 units.
+        const unsigned int digits =
         #ifndef BOOST_NO_CXX11_NUMERIC_LIMITS
-            const unsigned int digits = std::numeric_limits<T>::max_digits10;
+            std::numeric_limits<T>::max_digits10;
         #else
-            const unsigned int digits = std::numeric_limits<T>::digits10 + 2;
+            std::numeric_limits<T>::digits10 + 2;
         #endif
         os << std::setprecision(digits) << std::scientific << t;
     }
 
     template<class T>
     void save(const T & t){
-        boost::io::ios_flags_saver fs(os);
-        boost::io::ios_precision_saver ps(os);
         typename is_float<T>::type tf;
         save_impl(t, tf);
     }
 
     BOOST_ARCHIVE_OR_WARCHIVE_DECL
     basic_text_oprimitive(OStream & os, bool no_codecvt);
-    BOOST_ARCHIVE_OR_WARCHIVE_DECL 
+    BOOST_ARCHIVE_OR_WARCHIVE_DECL
     ~basic_text_oprimitive();
 public:
     // unformatted append of one character
     void put(typename OStream::char_type c){
         if(os.fail())
-            boost::serialization::throw_exception(
+            methcla_boost::serialization::throw_exception(
                 archive_exception(archive_exception::output_stream_error)
             );
         os.put(c);
@@ -192,12 +199,12 @@ public:
         while('\0' != *s)
             os.put(*s++);
     }
-    BOOST_ARCHIVE_OR_WARCHIVE_DECL void 
+    BOOST_ARCHIVE_OR_WARCHIVE_DECL void
     save_binary(const void *address, std::size_t count);
 };
 
-} //namespace boost 
-} //namespace archive 
+} //namespace methcla_boost
+} //namespace archive
 
 #include <boost/archive/detail/abi_suffix.hpp> // pops abi_suffix.hpp pragmas
 

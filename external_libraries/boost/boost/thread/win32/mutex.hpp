@@ -15,15 +15,15 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
     namespace detail
     {
-        typedef ::boost::detail::basic_timed_mutex underlying_mutex;
+        typedef ::methcla_boost::detail::basic_timed_mutex underlying_mutex;
     }
 
     class mutex:
-        public ::boost::detail::underlying_mutex
+        public ::methcla_boost::detail::underlying_mutex
     {
     public:
         BOOST_THREAD_NO_COPYABLE(mutex)
@@ -45,7 +45,7 @@ namespace boost
     typedef mutex try_mutex;
 
     class timed_mutex:
-        public ::boost::detail::basic_timed_mutex
+        public ::methcla_boost::detail::basic_timed_mutex
     {
     public:
         BOOST_THREAD_NO_COPYABLE(timed_mutex)

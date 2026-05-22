@@ -22,18 +22,19 @@
 #include <boost/container/detail/config_begin.hpp>
 #include <boost/container/detail/workaround.hpp>
 #include <boost/container/throw_exception.hpp>
+#include <boost/container/detail/operator_new_helpers.hpp>
 #include <cstddef>
 
 //!\file
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
 
 /// @cond
 
 template<bool Value>
 struct new_allocator_bool
-{  static const bool value = Value;  };
+{  BOOST_STATIC_CONSTEXPR bool value = Value;  };
 
 template<class T>
 class new_allocator;
@@ -71,6 +72,13 @@ class new_allocator<void>
    //!Never throws
    new_allocator(const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
    {}
+
+   //!Copy assignment operator from other new_allocator.
+   //!Never throws
+   new_allocator& operator=(const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   {
+       return *this;
+   }
 
    //!Constructor from related new_allocator.
    //!Never throws
@@ -122,58 +130,67 @@ class new_allocator
 
    //!Default constructor
    //!Never throws
-   new_allocator() BOOST_NOEXCEPT_OR_NOTHROW
+   inline new_allocator() BOOST_NOEXCEPT_OR_NOTHROW
    {}
 
    //!Constructor from other new_allocator.
    //!Never throws
-   new_allocator(const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   inline new_allocator(const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
    {}
+
+   //!Copy assignment operator from other new_allocator.
+   //!Never throws
+   inline new_allocator& operator=(const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   {  return *this;  }
 
    //!Constructor from related new_allocator.
    //!Never throws
    template<class T2>
-   new_allocator(const new_allocator<T2> &) BOOST_NOEXCEPT_OR_NOTHROW
+   inline new_allocator(const new_allocator<T2> &) BOOST_NOEXCEPT_OR_NOTHROW
    {}
 
    //!Allocates memory for an array of count elements.
-   //!Throws std::bad_alloc if there is no enough memory
+   //!Throws bad_alloc if there is no enough memory
+   BOOST_CONTAINER_NODISCARD
    pointer allocate(size_type count)
    {
-	   if(BOOST_UNLIKELY(count > this->max_size()))
-	      throw_bad_alloc();
-	   return static_cast<T*>(::operator new(count*sizeof(T)));
+      return dtl::operator_new_allocate<T>(count);
    }
 
    //!Deallocates previously allocated memory.
    //!Never throws
-   void deallocate(pointer ptr, size_type) BOOST_NOEXCEPT_OR_NOTHROW
-     { ::operator delete((void*)ptr); }
+   void deallocate(pointer ptr, size_type n) BOOST_NOEXCEPT_OR_NOTHROW
+   {
+      return dtl::operator_delete_deallocate<T>(ptr, n);
+   }
 
    //!Returns the maximum number of elements that could be allocated.
    //!Never throws
-   size_type max_size() const BOOST_NOEXCEPT_OR_NOTHROW
-   {  return size_type(-1)/sizeof(T);   }
+   BOOST_CONTAINER_NODISCARD
+   inline size_type max_size() const BOOST_NOEXCEPT_OR_NOTHROW
+   {  return std::size_t(-1)/(2*sizeof(T));   }
 
    //!Swaps two allocators, does nothing
    //!because this new_allocator is stateless
-   friend void swap(new_allocator &, new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   inline friend void swap(new_allocator &, new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
    {}
 
    //!An new_allocator always compares to true, as memory allocated with one
    //!instance can be deallocated by another instance
-   friend bool operator==(const new_allocator &, const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   BOOST_CONTAINER_NODISCARD
+   inline friend bool operator==(const new_allocator &, const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
    {  return true;   }
 
    //!An new_allocator always compares to false, as memory allocated with one
    //!instance can be deallocated by another instance
-   friend bool operator!=(const new_allocator &, const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
+   BOOST_CONTAINER_NODISCARD
+   inline friend bool operator!=(const new_allocator &, const new_allocator &) BOOST_NOEXCEPT_OR_NOTHROW
    {  return false;   }
 };
 
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/container/detail/config_end.hpp>
 
-#endif   //BOOST_CONTAINER_ALLOCATOR_HPP
+#endif   //BOOST_CONTAINER_NEW_ALLOCATOR_HPP

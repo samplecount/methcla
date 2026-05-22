@@ -14,11 +14,12 @@
 #include <boost/chrono/config.hpp>
 #include <boost/chrono/thread_clock.hpp>
 #include <cassert>
+#include <boost/assert.hpp>
 
 # include <pthread.h>
 # include <mach/thread_act.h>
 
-namespace boost { namespace chrono {
+namespace methcla_boost { namespace chrono {
 
     thread_clock::time_point thread_clock::now( ) BOOST_NOEXCEPT
     {
@@ -57,21 +58,21 @@ namespace boost { namespace chrono {
         mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
         if ( thread_info(port, THREAD_BASIC_INFO, (thread_info_t)&info, &count) != KERN_SUCCESS )
         {
-            if (BOOST_CHRONO_IS_THROWS(ec))
+            if (::methcla_boost::chrono::is_throws(ec))
             {
-                boost::throw_exception(
+                methcla_boost::throw_exception(
                         system::system_error(
                                 EINVAL,
-                                BOOST_CHRONO_SYSTEM_CATEGORY,
+                                ::methcla_boost::system::system_category(),
                                 "chrono::thread_clock" ));
             }
             else
             {
-                ec.assign( errno, BOOST_CHRONO_SYSTEM_CATEGORY );
+                ec.assign( errno, ::methcla_boost::system::system_category() );
                 return time_point();
             }
         }
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::methcla_boost::chrono::is_throws(ec))
         {
             ec.clear();
         }

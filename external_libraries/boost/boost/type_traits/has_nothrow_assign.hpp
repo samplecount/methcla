@@ -9,6 +9,7 @@
 #ifndef BOOST_TT_HAS_NOTHROW_ASSIGN_HPP_INCLUDED
 #define BOOST_TT_HAS_NOTHROW_ASSIGN_HPP_INCLUDED
 
+#include <cstddef> // size_t
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/intrinsics.hpp>
 
@@ -24,7 +25,7 @@
 #include <boost/type_traits/remove_reference.hpp>
 #endif
 #endif
-#if defined(__GNUC__) || defined(__SUNPRO_CC)
+#if defined(__GNUC__) || defined(__SUNPRO_CC) || defined(__clang__)
 #include <boost/type_traits/is_const.hpp>
 #include <boost/type_traits/is_volatile.hpp>
 #include <boost/type_traits/is_assignable.hpp>
@@ -34,14 +35,14 @@
 #endif
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 #if !defined(BOOST_HAS_NOTHROW_ASSIGN) && !defined(BOOST_NO_CXX11_NOEXCEPT) && !defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
 
    namespace detail
    {
       template <class T, bool b1, bool b2> struct has_nothrow_assign_imp{ static const bool value = false; };
-      template <class T>          struct has_nothrow_assign_imp<T, false, true>{ static const bool value = noexcept(boost::declval<typename add_reference<T>::type>() = boost::declval<typename add_reference<T const>::type>()); };
+      template <class T>          struct has_nothrow_assign_imp<T, false, true>{ static const bool value = noexcept(methcla_boost::declval<typename add_reference<T>::type>() = methcla_boost::declval<typename add_reference<T const>::type>()); };
       template <class T, std::size_t N> struct has_nothrow_assign_imp<T[N], false, true>{ static const bool value = has_nothrow_assign_imp<T, false, true>::value; };
       template <class T>          struct has_nothrow_assign_imp<T[], false, true>{ static const bool value = has_nothrow_assign_imp<T, false, true>::value; };
    }
@@ -58,7 +59,7 @@ namespace boost {
       is_assignable<typename add_reference<T>::type, typename add_reference<const T>::type>::value
       >::value
 #else
-      ::boost::has_trivial_assign<T>::value
+      ::methcla_boost::has_trivial_assign<T>::value
 #endif
 #else
       BOOST_HAS_NOTHROW_ASSIGN(T)
@@ -78,6 +79,6 @@ template <> struct has_nothrow_assign<void const volatile> : public false_type{}
 template <> struct has_nothrow_assign<void volatile> : public false_type{};
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_HAS_NOTHROW_ASSIGN_HPP_INCLUDED

@@ -48,6 +48,7 @@
 //              to degrade gracefully, rather than trash the compiler (John Maddock).
 //
 
+#include <cstddef> // size_t
 #include <boost/type_traits/intrinsics.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 #ifndef BOOST_IS_ABSTRACT
@@ -59,7 +60,7 @@
 #endif
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 namespace detail{
 
@@ -128,7 +129,7 @@ struct is_abstract_select<false>
 template <class T>
 struct is_abstract_imp
 {
-   typedef is_abstract_select< ::boost::is_class<T>::value> selector;
+   typedef is_abstract_select< ::methcla_boost::is_class<T>::value> selector;
    typedef typename selector::template rebind<T> binder;
    typedef typename binder::type type;
 
@@ -139,11 +140,11 @@ struct is_abstract_imp
 }
 
 #ifndef BOOST_NO_IS_ABSTRACT
-template <class T> struct is_abstract : public integral_constant<bool, ::boost::detail::is_abstract_imp<T>::value> {};
+template <class T> struct is_abstract : public integral_constant<bool, ::methcla_boost::detail::is_abstract_imp<T>::value> {};
 #else
-template <class T> struct is_abstract : public integral_constant<bool, ::boost::detail::is_polymorphic_imp<T>::value> {};
+template <class T> struct is_abstract : public integral_constant<bool, ::methcla_boost::detail::is_polymorphic_imp<T>::value> {};
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif //BOOST_TT_IS_ABSTRACT_CLASS_HPP

@@ -9,7 +9,9 @@
 //  http://www.boost.org/LICENSE_1_0.txt
 //
 
-namespace boost
+#include <boost/config.hpp>
+
+namespace methcla_boost
 {
 
 template<class T> struct type_identity
@@ -17,6 +19,13 @@ template<class T> struct type_identity
     typedef T type;
 };
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+template <class T> using type_identity_t = typename type_identity<T>::type;
+
+#endif
+
+
+} // namespace methcla_boost
 
 #endif // #ifndef BOOST_TYPE_TRAITS_TYPE_IDENTITY_HPP_INCLUDED

@@ -23,7 +23,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 
 namespace fpc = math::fpc;
@@ -86,7 +86,7 @@ inline fixture_t
 tolerance( test_tools::fpc::percent_tolerance_t<FPT> v )
 {
     return fixture_t( test_unit_fixture_ptr(
-        new unit_test::class_based_fixture<test_tools::local_fpc_tolerance<FPT>,FPT>( boost::math::fpc::fpc_detail::fraction_tolerance<FPT>( v ) ) ) );
+        new unit_test::class_based_fixture<test_tools::local_fpc_tolerance<FPT>,FPT>( methcla_boost::math::fpc::fpc_detail::fraction_tolerance<FPT>( v ) ) ) );
 }
 
 //____________________________________________________________________________//
@@ -96,7 +96,7 @@ tolerance( test_tools::fpc::percent_tolerance_t<FPT> v )
 using decorator::tolerance;
 
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

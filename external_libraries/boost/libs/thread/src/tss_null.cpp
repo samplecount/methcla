@@ -6,9 +6,9 @@
 
 #include <boost/thread/detail/config.hpp>
 
-#if defined(BOOST_HAS_WINTHREADS) && (defined(BOOST_THREAD_BUILD_LIB) || defined(BOOST_THREAD_TEST) || defined(UNDER_CE)) && (!defined(_MSC_VER) || defined(UNDER_CE))
+#if defined(BOOST_THREAD_WIN32) && (defined(BOOST_THREAD_BUILD_LIB) || defined(BOOST_THREAD_TEST) || defined(UNDER_CE)) && (!defined(_MSC_VER) || defined(UNDER_CE))
 
-namespace boost
+namespace methcla_boost
 {
     /*
     This file is a "null" implementation of tss cleanup; it's
@@ -16,14 +16,14 @@ namespace boost
     where it is known that tss cleanup is not needed.
     */
 
-    void tss_cleanup_implemented(void)
+    void methcla_boosttss_cleanup_implemented(void)
     {
         /*
         This function's sole purpose is to cause a link error in cases where
         automatic tss cleanup is not implemented by Boost.Threads as a
         reminder that user code is responsible for calling the necessary
         functions at the appropriate times (and for implementing an a
-        tss_cleanup_implemented() function to eliminate the linker's
+        methcla_boosttss_cleanup_implemented() function to eliminate the linker's
         missing symbol error).
 
         If Boost.Threads later implements automatic tss cleanup in cases
@@ -35,4 +35,4 @@ namespace boost
 
 }
 
-#endif //defined(BOOST_HAS_WINTHREADS) && defined(BOOST_THREAD_BUILD_LIB) && !defined(_MSC_VER)
+#endif //defined(BOOST_THREAD_WIN32) && defined(BOOST_THREAD_BUILD_LIB) && !defined(_MSC_VER)

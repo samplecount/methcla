@@ -29,7 +29,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 
 namespace unit_test {
 
@@ -39,7 +39,7 @@ template<typename CharT> struct bcs_base_char           { typedef CharT type; };
 
 template<> struct bcs_base_char<char const>             { typedef char type; };
 template<> struct bcs_base_char<unsigned char>          { typedef char type; };
-#if !BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x551))
+#if !BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x551))
 template<> struct bcs_base_char<unsigned char const>    { typedef char type; };
 #endif
 
@@ -52,10 +52,10 @@ template<> struct bcs_base_char<wchar_t const>          { typedef wchar_t type; 
 template<typename CharT>
 struct bcs_char_traits_impl
 {
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x564))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x564))
     typedef CharT const const_char;
 #else
-    typedef typename boost::add_const<CharT>::type const_char;
+    typedef typename methcla_boost::add_const<CharT>::type const_char;
 #endif
     static bool eq( CharT c1, CharT c2 )
     {
@@ -141,7 +141,7 @@ public:
 
 } // namespace unit_test
 
-} // namespace boost
+} // namespace methcla_boost
 
 //____________________________________________________________________________//
 

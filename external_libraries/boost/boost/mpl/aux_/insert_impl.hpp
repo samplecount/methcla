@@ -22,7 +22,7 @@
 #include <boost/mpl/aux_/traits_lambda_spec.hpp>
 #include <boost/type_traits/is_same.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 // default implementation; conrete sequences might override it by 
 // specializing either the 'insert_impl' or the primary 'insert' template

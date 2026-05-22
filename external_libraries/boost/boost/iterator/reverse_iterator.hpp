@@ -4,71 +4,73 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BOOST_REVERSE_ITERATOR_23022003THW_HPP
-#define BOOST_REVERSE_ITERATOR_23022003THW_HPP
+#ifndef BOOST_ITERATOR_REVERSE_ITERATOR_23022003THW_HPP
+#define BOOST_ITERATOR_REVERSE_ITERATOR_23022003THW_HPP
 
-#include <boost/next_prior.hpp>
-#include <boost/iterator.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/iterator/enable_if_convertible.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace iterators {
 
-  //
-  //
-  //
-  template <class Iterator>
-  class reverse_iterator
-      : public iterator_adaptor< reverse_iterator<Iterator>, Iterator >
-  {
-      typedef iterator_adaptor< reverse_iterator<Iterator>, Iterator > super_t;
+template< typename Iterator >
+class reverse_iterator :
+    public iterator_adaptor< reverse_iterator< Iterator >, Iterator >
+{
+    friend class iterator_core_access;
 
-      friend class iterator_core_access;
+private:
+    using super_t = iterator_adaptor< reverse_iterator< Iterator >, Iterator >;
 
-   public:
-      reverse_iterator() {}
+public:
+    reverse_iterator() = default;
 
-      explicit reverse_iterator(Iterator x)
-          : super_t(x) {}
+    explicit reverse_iterator(Iterator x) :
+        super_t(x)
+    {}
 
-      template<class OtherIterator>
-      reverse_iterator(
-          reverse_iterator<OtherIterator> const& r
-          , typename enable_if_convertible<OtherIterator, Iterator>::type* = 0
-          )
-          : super_t(r.base())
-      {}
+    template<
+        typename OtherIterator,
+        typename = enable_if_convertible_t< OtherIterator, Iterator >
+    >
+    reverse_iterator(reverse_iterator< OtherIterator > const& r) :
+        super_t(r.base())
+    {}
 
-   private:
-      typename super_t::reference dereference() const { return *boost::prior(this->base()); }
+private:
+    typename super_t::reference dereference() const
+    {
+        Iterator it = this->base_reference();
+        --it;
+        return *it;
+    }
 
-      void increment() { --this->base_reference(); }
-      void decrement() { ++this->base_reference(); }
+    void increment() { --this->base_reference(); }
+    void decrement() { ++this->base_reference(); }
 
-      void advance(typename super_t::difference_type n)
-      {
-          this->base_reference() += -n;
-      }
+    void advance(typename super_t::difference_type n)
+    {
+        this->base_reference() -= n;
+    }
 
-      template <class OtherIterator>
-      typename super_t::difference_type
-      distance_to(reverse_iterator<OtherIterator> const& y) const
-      {
-          return this->base_reference() - y.base();
-      }
-  };
+    template< typename OtherIterator >
+    typename super_t::difference_type distance_to(reverse_iterator< OtherIterator > const& y) const
+    {
+        return this->base_reference() - y.base();
+    }
+};
 
-  template <class BidirectionalIterator>
-  inline reverse_iterator<BidirectionalIterator> make_reverse_iterator(BidirectionalIterator x)
-  {
-      return reverse_iterator<BidirectionalIterator>(x);
-  }
+template< typename Iterator >
+inline reverse_iterator< Iterator > make_reverse_iterator(Iterator x)
+{
+    return reverse_iterator< Iterator >(x);
+}
 
 } // namespace iterators
 
 using iterators::reverse_iterator;
 using iterators::make_reverse_iterator;
 
-} // namespace boost
+} // namespace methcla_boost
 
-#endif // BOOST_REVERSE_ITERATOR_23022003THW_HPP
+#endif // BOOST_ITERATOR_REVERSE_ITERATOR_23022003THW_HPP

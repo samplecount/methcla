@@ -26,7 +26,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 // ************************************************************************** //
@@ -51,7 +51,7 @@ traverse_test_tree( test_unit const& tu, test_tree_visitor& V, bool ignore_statu
 //____________________________________________________________________________//
 
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

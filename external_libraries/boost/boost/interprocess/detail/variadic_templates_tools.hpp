@@ -21,15 +21,15 @@
 
 #include <boost/container/detail/variadic_templates_tools.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 namespace ipcdetail {
 
-using boost::container::container_detail::tuple;
-using boost::container::container_detail::build_number_seq;
-using boost::container::container_detail::index_tuple;
-using boost::container::container_detail::get;
+using methcla_boost::container::dtl::tuple;
+using methcla_boost::container::dtl::build_number_seq;
+using methcla_boost::container::dtl::index_tuple;
+using methcla_boost::container::dtl::get;
 
-}}}   //namespace boost { namespace interprocess { namespace ipcdetail {
+}}}   //namespace methcla_boost { namespace interprocess { namespace ipcdetail {
 
 #endif   //#ifndef BOOST_INTERPROCESS_DETAIL_VARIADIC_TEMPLATES_TOOLS_HPP

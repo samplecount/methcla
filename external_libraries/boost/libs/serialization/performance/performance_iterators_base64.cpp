@@ -49,9 +49,9 @@ void test_base64(){
     text_base64_type text_base64;
 
     typedef 
-        boost::archive::iterators::insert_linebreaks<
-            boost::archive::iterators::base64_from_binary<
-                boost::archive::iterators::transform_width<
+        methcla_boost::archive::iterators::insert_linebreaks<
+            methcla_boost::archive::iterators::base64_from_binary<
+                methcla_boost::archive::iterators::transform_width<
                     CharType *
                     ,6
                     ,sizeof(CharType) * 8
@@ -69,9 +69,9 @@ void test_base64(){
 
     // convert from base64 to binary and compare with the original 
     typedef 
-        boost::archive::iterators::transform_width<
-            boost::archive::iterators::binary_from_base64<
-                boost::archive::iterators::remove_whitespace<
+        methcla_boost::archive::iterators::transform_width<
+            methcla_boost::archive::iterators::binary_from_base64<
+                methcla_boost::archive::iterators::remove_whitespace<
                     BOOST_DEDUCED_TYPENAME text_base64_type::iterator
                 >
             >,

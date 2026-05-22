@@ -22,14 +22,14 @@
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/container/detail/version_type.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
-using boost::container::container_detail::version_type;
-using boost::container::container_detail::version;
+using methcla_boost::container::dtl::version_type;
+using methcla_boost::container::dtl::version;
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

@@ -18,6 +18,7 @@
 // Boost.Test Runtime parameters
 #include <boost/test/utils/runtime/errors.hpp>
 #include <boost/test/utils/runtime/argument.hpp>
+#include <boost/test/utils/runtime/modifier.hpp>
 
 // Boost.Test
 #include <boost/test/utils/basic_cstring/io.hpp>
@@ -32,7 +33,7 @@
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 
 // ************************************************************************** //
@@ -128,7 +129,7 @@ template<typename EnumType>
 struct value_interpreter<EnumType, true> {
     template<typename Modifiers>
     explicit        value_interpreter( Modifiers const& m )
-#if !defined(BOOST_NO_CXX11_HDR_INITIALIZER_LIST) && !defined(BOOST_NO_CXX11_UNIFIED_INITIALIZATION_SYNTAX)
+#if defined(BOOST_TEST_CLA_NEW_API)
     : m_name_to_value( m[enum_values<EnumType>::value] )
     {
     }
@@ -235,7 +236,7 @@ private:
 //____________________________________________________________________________//
 
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

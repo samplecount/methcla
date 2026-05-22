@@ -21,12 +21,12 @@
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/is_same.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 namespace detail {
 
 #ifndef BOOST_IS_BASE_OF
-#if !BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x581)) \
+#if !BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x581)) \
  && !BOOST_WORKAROUND(__SUNPRO_CC , <= 0x540) \
  && !BOOST_WORKAROUND(__EDG_VERSION__, <= 243) \
  && !BOOST_WORKAROUND(__DMC__, BOOST_TESTED_AT(0x840))
@@ -168,7 +168,7 @@ template<typename B, typename D>
 struct is_base_and_derived_impl2
 {
     BOOST_STATIC_CONSTANT(bool, value =
-        (::boost::is_convertible<D*,B*>::value));
+        (::methcla_boost::is_convertible<D*,B*>::value));
 };
 
 #define BOOST_BROKEN_IS_BASE_AND_DERIVED
@@ -208,9 +208,9 @@ struct is_base_and_derived_impl
     typedef typename remove_cv<D>::type ncvD;
 
     typedef is_base_and_derived_select<
-       ::boost::is_class<B>::value,
-       ::boost::is_class<D>::value,
-       ::boost::is_same<ncvB,ncvD>::value> selector;
+       ::methcla_boost::is_class<B>::value,
+       ::methcla_boost::is_class<D>::value,
+       ::methcla_boost::is_same<ncvB,ncvD>::value> selector;
     typedef typename selector::template rebind<ncvB,ncvD> binder;
     typedef typename binder::type bound_type;
 
@@ -223,22 +223,22 @@ struct is_base_and_derived_impl
     typedef typename remove_cv<B>::type ncvB;
     typedef typename remove_cv<D>::type ncvD;
 
-    BOOST_STATIC_CONSTANT(bool, value = (BOOST_IS_BASE_OF(B,D) && ! ::boost::is_same<ncvB,ncvD>::value));
+    BOOST_STATIC_CONSTANT(bool, value = (BOOST_IS_BASE_OF(B,D) && ! ::methcla_boost::is_same<ncvB,ncvD>::value));
 };
 #endif
 } // namespace detail
 
 template <class Base, class Derived> struct is_base_and_derived
-   : public integral_constant<bool, (::boost::detail::is_base_and_derived_impl<Base, Derived>::value)> {};
+   : public integral_constant<bool, (::methcla_boost::detail::is_base_and_derived_impl<Base, Derived>::value)> {};
 
 template <class Base, class Derived> struct is_base_and_derived<Base&, Derived> : public false_type{};
 template <class Base, class Derived> struct is_base_and_derived<Base, Derived&> : public false_type{};
 template <class Base, class Derived> struct is_base_and_derived<Base&, Derived&> : public false_type{};
 
-#if BOOST_WORKAROUND(__CODEGEARC__, BOOST_TESTED_AT(0x610))
+#if BOOST_WORKAROUND(BOOST_CODEGEARC, BOOST_TESTED_AT(0x610))
 template <class Base> struct is_base_and_derived<Base, Base> : public true_type{};
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_BASE_AND_DERIVED_HPP_INCLUDED

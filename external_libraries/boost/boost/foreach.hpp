@@ -30,6 +30,13 @@
 #include <boost/config.hpp>
 #include <boost/detail/workaround.hpp>
 
+// Define a compiler generic null pointer value
+#if defined(BOOST_NO_NULLPTR)
+#define BOOST_FOREACH_NULL 0
+#else
+#define BOOST_FOREACH_NULL nullptr
+#endif
+
 // Some compilers let us detect even const-qualified rvalues at compile-time
 #if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES)                                                   \
  || defined(BOOST_MSVC) && !defined(_PREFAST_)                                 \
@@ -42,7 +49,7 @@
 // Some compilers allow temporaries to be bound to non-const references.
 // These compilers make it impossible to for BOOST_FOREACH to detect
 // temporaries and avoid reevaluation of the collection expression.
-# if BOOST_WORKAROUND(__BORLANDC__, < 0x593)                                                    \
+# if BOOST_WORKAROUND(BOOST_BORLANDC, < 0x593)                                                    \
   || (BOOST_WORKAROUND(BOOST_INTEL_CXX_VERSION, <= 700) && defined(_MSC_VER))                   \
   || BOOST_WORKAROUND(__SUNPRO_CC, < 0x5100)                                                    \
   || BOOST_WORKAROUND(__DECCXX_VER, <= 60590042)
@@ -58,7 +65,7 @@
   || BOOST_WORKAROUND(__IBMCPP__, BOOST_TESTED_AT(600))                                         \
   || BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3206))                                      \
   || BOOST_WORKAROUND(__SUNPRO_CC, >= 0x5100)                                                   \
-  || BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x590))
+  || BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x590))
 #  define BOOST_FOREACH_NO_CONST_RVALUE_DETECTION
 # else
 #  define BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION
@@ -81,6 +88,7 @@
 #include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_base_and_derived.hpp>
 #include <boost/type_traits/is_rvalue_reference.hpp>
+#include <boost/type_traits/is_convertible.hpp>
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/utility/addressof.hpp>
 #include <boost/foreach_fwd.hpp>
@@ -92,7 +100,7 @@
 # include <boost/type_traits/remove_const.hpp>
 #endif
 
-namespace boost
+namespace methcla_boost
 {
 
 // forward declarations for iterator_range
@@ -115,45 +123,45 @@ namespace foreach
     }
 
     ///////////////////////////////////////////////////////////////////////////////
-    // boost::foreach::is_lightweight_proxy
+    // methcla_boost::foreach::is_lightweight_proxy
     //   Specialize this for user-defined collection types if they are inexpensive to copy.
     //   This tells BOOST_FOREACH it can avoid the rvalue/lvalue detection stuff.
     template<typename T>
     struct is_lightweight_proxy
-      : boost::mpl::false_
+      : methcla_boost::mpl::false_
     {
     };
 
     ///////////////////////////////////////////////////////////////////////////////
-    // boost::foreach::is_noncopyable
+    // methcla_boost::foreach::is_noncopyable
     //   Specialize this for user-defined collection types if they cannot be copied.
     //   This also tells BOOST_FOREACH to avoid the rvalue/lvalue detection stuff.
     template<typename T>
     struct is_noncopyable
     #if !defined(BOOST_BROKEN_IS_BASE_AND_DERIVED) && !defined(BOOST_NO_IS_ABSTRACT)
-      : boost::mpl::or_<
-            boost::is_abstract<T>
-          , boost::is_base_and_derived<boost::noncopyable, T>
+      : methcla_boost::mpl::or_<
+            methcla_boost::is_abstract<T>
+          , methcla_boost::is_base_and_derived<methcla_boost::noncopyable, T>
         >
     #elif !defined(BOOST_BROKEN_IS_BASE_AND_DERIVED)
-      : boost::is_base_and_derived<boost::noncopyable, T>
+      : methcla_boost::is_base_and_derived<methcla_boost::noncopyable, T>
     #elif !defined(BOOST_NO_IS_ABSTRACT)
-      : boost::is_abstract<T>
+      : methcla_boost::is_abstract<T>
     #else
-      : boost::mpl::false_
+      : methcla_boost::mpl::false_
     #endif
     {
     };
 
 } // namespace foreach
 
-} // namespace boost
+} // namespace methcla_boost
 
 // vc6/7 needs help ordering the following overloads
 #ifdef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 # define BOOST_FOREACH_TAG_DEFAULT ...
 #else
-# define BOOST_FOREACH_TAG_DEFAULT boost::foreach::tag
+# define BOOST_FOREACH_TAG_DEFAULT methcla_boost::foreach::tag
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,24 +170,24 @@ namespace foreach
 //   this one works on legacy compilers. Overload boost_foreach_is_lightweight_proxy
 //   at the global namespace for your type.
 template<typename T>
-inline boost::foreach::is_lightweight_proxy<T> *
+inline methcla_boost::foreach::is_lightweight_proxy<T> *
 boost_foreach_is_lightweight_proxy(T *&, BOOST_FOREACH_TAG_DEFAULT) { return 0; }
 
 template<typename T>
-inline boost::mpl::true_ *
-boost_foreach_is_lightweight_proxy(std::pair<T, T> *&, boost::foreach::tag) { return 0; }
+inline methcla_boost::mpl::true_ *
+boost_foreach_is_lightweight_proxy(std::pair<T, T> *&, methcla_boost::foreach::tag) { return 0; }
 
 template<typename T>
-inline boost::mpl::true_ *
-boost_foreach_is_lightweight_proxy(boost::iterator_range<T> *&, boost::foreach::tag) { return 0; }
+inline methcla_boost::mpl::true_ *
+boost_foreach_is_lightweight_proxy(methcla_boost::iterator_range<T> *&, methcla_boost::foreach::tag) { return 0; }
 
 template<typename T>
-inline boost::mpl::true_ *
-boost_foreach_is_lightweight_proxy(boost::sub_range<T> *&, boost::foreach::tag) { return 0; }
+inline methcla_boost::mpl::true_ *
+boost_foreach_is_lightweight_proxy(methcla_boost::sub_range<T> *&, methcla_boost::foreach::tag) { return 0; }
 
 template<typename T>
-inline boost::mpl::true_ *
-boost_foreach_is_lightweight_proxy(T **&, boost::foreach::tag) { return 0; }
+inline methcla_boost::mpl::true_ *
+boost_foreach_is_lightweight_proxy(T **&, methcla_boost::foreach::tag) { return 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 // boost_foreach_is_noncopyable
@@ -187,10 +195,10 @@ boost_foreach_is_lightweight_proxy(T **&, boost::foreach::tag) { return 0; }
 //   this one works on legacy compilers. Overload boost_foreach_is_noncopyable
 //   at the global namespace for your type.
 template<typename T>
-inline boost::foreach::is_noncopyable<T> *
+inline methcla_boost::foreach::is_noncopyable<T> *
 boost_foreach_is_noncopyable(T *&, BOOST_FOREACH_TAG_DEFAULT) { return 0; }
 
-namespace boost
+namespace methcla_boost
 {
 
 namespace foreach_detail_
@@ -200,40 +208,40 @@ namespace foreach_detail_
 // Define some utilities for assessing the properties of expressions
 //
 template<typename Bool1, typename Bool2>
-inline boost::mpl::and_<Bool1, Bool2> *and_(Bool1 *, Bool2 *) { return 0; }
+inline methcla_boost::mpl::and_<Bool1, Bool2> *and_(Bool1 *, Bool2 *) { return 0; }
 
 template<typename Bool1, typename Bool2, typename Bool3>
-inline boost::mpl::and_<Bool1, Bool2, Bool3> *and_(Bool1 *, Bool2 *, Bool3 *) { return 0; }
+inline methcla_boost::mpl::and_<Bool1, Bool2, Bool3> *and_(Bool1 *, Bool2 *, Bool3 *) { return 0; }
 
 template<typename Bool1, typename Bool2>
-inline boost::mpl::or_<Bool1, Bool2> *or_(Bool1 *, Bool2 *) { return 0; }
+inline methcla_boost::mpl::or_<Bool1, Bool2> *or_(Bool1 *, Bool2 *) { return 0; }
 
 template<typename Bool1, typename Bool2, typename Bool3>
-inline boost::mpl::or_<Bool1, Bool2, Bool3> *or_(Bool1 *, Bool2 *, Bool3 *) { return 0; }
+inline methcla_boost::mpl::or_<Bool1, Bool2, Bool3> *or_(Bool1 *, Bool2 *, Bool3 *) { return 0; }
 
 template<typename Bool1>
-inline boost::mpl::not_<Bool1> *not_(Bool1 *) { return 0; }
+inline methcla_boost::mpl::not_<Bool1> *not_(Bool1 *) { return 0; }
 
 template<typename T>
-inline boost::is_array<T> *is_array_(T const &) { return 0; }
+inline methcla_boost::is_array<T> *is_array_(T const &) { return 0; }
 
 template<typename T>
-inline boost::is_const<T> *is_const_(T &) { return 0; }
+inline methcla_boost::is_const<T> *is_const_(T &) { return 0; }
 
 #ifndef BOOST_FOREACH_NO_RVALUE_DETECTION
 template<typename T>
-inline boost::mpl::true_ *is_const_(T const &) { return 0; }
+inline methcla_boost::mpl::true_ *is_const_(T const &) { return 0; }
 #endif
 
 #ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
 template<typename T>
-inline boost::mpl::false_ *is_rvalue_(T &, int) { return 0; }
+inline methcla_boost::mpl::false_ *is_rvalue_(T &, int) { return 0; }
 
 template<typename T>
-inline boost::mpl::true_ *is_rvalue_(T const &, ...) { return 0; }
+inline methcla_boost::mpl::true_ *is_rvalue_(T const &, ...) { return 0; }
 #else
 template<typename T>
-inline boost::is_rvalue_reference<T &&> *is_rvalue_(T &&, int) { return 0; }
+inline methcla_boost::is_rvalue_reference<T &&> *is_rvalue_(T &&, int) { return 0; }
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -266,19 +274,19 @@ struct auto_any : auto_any_base
 typedef auto_any_base const &auto_any_t;
 
 template<typename T, typename C>
-inline BOOST_DEDUCED_TYPENAME boost::mpl::if_<C, T const, T>::type &auto_any_cast(auto_any_t a)
+inline BOOST_DEDUCED_TYPENAME methcla_boost::mpl::if_<C, T const, T>::type &auto_any_cast(auto_any_t a)
 {
     return static_cast<auto_any<T> const &>(a).item;
 }
 
-typedef boost::mpl::true_ const_;
+typedef methcla_boost::mpl::true_ const_;
 
 ///////////////////////////////////////////////////////////////////////////////
 // type2type
 //
-template<typename T, typename C = boost::mpl::false_>
+template<typename T, typename C = methcla_boost::mpl::false_>
 struct type2type
-  : boost::mpl::if_<C, T const, T>
+  : methcla_boost::mpl::if_<C, T const, T>
 {
 };
 
@@ -331,7 +339,7 @@ struct is_char_array
     >
 {};
 
-template<typename T, typename C = boost::mpl::false_>
+template<typename T, typename C = methcla_boost::mpl::false_>
 struct foreach_iterator
 {
     // **** READ THIS IF YOUR COMPILE BREAKS HERE ****
@@ -344,15 +352,15 @@ struct foreach_iterator
     // To treat the container as a null-terminated string, merely cast it to a
     // char const *, as in BOOST_FOREACH( char ch, (char const *)"hello" ) ...
     //
-    // To treat the container as an array, use boost::as_array() in <boost/range/as_array.hpp>,
-    // as in BOOST_FOREACH( char ch, boost::as_array("hello") ) ...
+    // To treat the container as an array, use methcla_boost::as_array() in <boost/range/as_array.hpp>,
+    // as in BOOST_FOREACH( char ch, methcla_boost::as_array("hello") ) ...
     BOOST_MPL_ASSERT_MSG( (!is_char_array<T>::value), IS_THIS_AN_ARRAY_OR_A_NULL_TERMINATED_STRING, (T&) );
 
     // If the type is a pointer to a null terminated string (as opposed 
     // to an array type), there is no ambiguity.
     typedef BOOST_DEDUCED_TYPENAME wrap_cstr<T>::type container;
 
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::eval_if<
+    typedef BOOST_DEDUCED_TYPENAME methcla_boost::mpl::eval_if<
         C
       , range_const_iterator<container>
       , range_mutable_iterator<container>
@@ -360,7 +368,7 @@ struct foreach_iterator
 };
 
 
-template<typename T, typename C = boost::mpl::false_>
+template<typename T, typename C = methcla_boost::mpl::false_>
 struct foreach_reverse_iterator
 {
     // **** READ THIS IF YOUR COMPILE BREAKS HERE ****
@@ -373,22 +381,22 @@ struct foreach_reverse_iterator
     // To treat the container as a null-terminated string, merely cast it to a
     // char const *, as in BOOST_FOREACH( char ch, (char const *)"hello" ) ...
     //
-    // To treat the container as an array, use boost::as_array() in <boost/range/as_array.hpp>,
-    // as in BOOST_FOREACH( char ch, boost::as_array("hello") ) ...
+    // To treat the container as an array, use methcla_boost::as_array() in <boost/range/as_array.hpp>,
+    // as in BOOST_FOREACH( char ch, methcla_boost::as_array("hello") ) ...
     BOOST_MPL_ASSERT_MSG( (!is_char_array<T>::value), IS_THIS_AN_ARRAY_OR_A_NULL_TERMINATED_STRING, (T&) );
 
     // If the type is a pointer to a null terminated string (as opposed 
     // to an array type), there is no ambiguity.
     typedef BOOST_DEDUCED_TYPENAME wrap_cstr<T>::type container;
 
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::eval_if<
+    typedef BOOST_DEDUCED_TYPENAME methcla_boost::mpl::eval_if<
         C
       , range_reverse_iterator<container const>
       , range_reverse_iterator<container>
     >::type type;
 };
 
-template<typename T, typename C = boost::mpl::false_>
+template<typename T, typename C = methcla_boost::mpl::false_>
 struct foreach_reference
   : iterator_reference<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>
 {
@@ -398,16 +406,16 @@ struct foreach_reference
 // encode_type
 //
 template<typename T>
-inline type2type<T> *encode_type(T &, boost::false_type*) { return 0; }
+inline type2type<T> *encode_type(T &, methcla_boost::false_type*) { return 0; }
 
 template<typename T>
-inline type2type<T, const_> *encode_type(T const &, boost::true_type*) { return 0; }
+inline type2type<T, const_> *encode_type(T const &, methcla_boost::true_type*) { return 0; }
 
 template<typename T>
-inline type2type<T> *encode_type(T &, boost::mpl::false_*) { return 0; }
+inline type2type<T> *encode_type(T &, methcla_boost::mpl::false_*) { return 0; }
 
 template<typename T>
-inline type2type<T, const_> *encode_type(T const &, boost::mpl::true_*) { return 0; }
+inline type2type<T, const_> *encode_type(T const &, methcla_boost::mpl::true_*) { return 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 // set_false
@@ -429,7 +437,7 @@ inline T *&to_ptr(T const &)
 }
 
 // Borland needs a little extra help with arrays
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x564))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x564))
 template<typename T,std::size_t N>
 inline T (*&to_ptr(T (&)[N]))[N]
 {
@@ -452,7 +460,7 @@ inline T &derefof(T *t)
     );
 }
 
-# define BOOST_FOREACH_DEREFOF(T) boost::foreach_detail_::derefof(*T)
+# define BOOST_FOREACH_DEREFOF(T) methcla_boost::foreach_detail_::derefof(*T)
 #else
 # define BOOST_FOREACH_DEREFOF(T) (*T)
 #endif
@@ -465,7 +473,7 @@ inline T &derefof(T *t)
 ///////////////////////////////////////////////////////////////////////////////
 
 # define BOOST_FOREACH_IS_RVALUE(COL)                                                           \
-    boost::foreach_detail_::is_rvalue_((COL), 0)
+    methcla_boost::foreach_detail_::is_rvalue_((COL), 0)
 
 #elif defined(BOOST_FOREACH_COMPILE_TIME_CONST_RVALUE_DETECTION)                                \
  && defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
@@ -483,8 +491,8 @@ struct rvalue_probe
 {
     struct private_type_ {};
     // can't ever return an array by value
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_<
-        boost::mpl::or_<boost::is_abstract<T>, boost::is_array<T> >, private_type_, T
+    typedef BOOST_DEDUCED_TYPENAME methcla_boost::mpl::if_<
+        methcla_boost::mpl::or_<methcla_boost::is_abstract<T>, methcla_boost::is_array<T> >, private_type_, T
     >::type value_type;
     operator value_type() { return *reinterpret_cast<value_type *>(this); } // never called
     operator T &() const { return *reinterpret_cast<T *>(const_cast<rvalue_probe *>(this)); } // never called
@@ -497,10 +505,10 @@ rvalue_probe<T> const make_probe(T const &)
 }
 
 # define BOOST_FOREACH_IS_RVALUE(COL)                                                           \
-    boost::foreach_detail_::and_(                                                               \
-        boost::foreach_detail_::not_(boost::foreach_detail_::is_array_(COL))                    \
-      , (true ? 0 : boost::foreach_detail_::is_rvalue_(                                         \
-            (true ? boost::foreach_detail_::make_probe(COL) : (COL)), 0)))
+    methcla_boost::foreach_detail_::and_(                                                               \
+        methcla_boost::foreach_detail_::not_(methcla_boost::foreach_detail_::is_array_(COL))                    \
+      , (true ? 0 : methcla_boost::foreach_detail_::is_rvalue_(                                         \
+            (true ? methcla_boost::foreach_detail_::make_probe(COL) : (COL)), 0)))
 
 #elif defined(BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION)
 ///////////////////////////////////////////////////////////////////////////////
@@ -525,12 +533,12 @@ struct rvalue_probe
     struct private_type_ {};
     // can't ever return an array or an abstract type by value
     #ifdef BOOST_NO_IS_ABSTRACT
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_<
-        boost::is_array<T>, private_type_, T
+    typedef BOOST_DEDUCED_TYPENAME methcla_boost::mpl::if_<
+        methcla_boost::is_array<T>, private_type_, T
     >::type value_type;
     #else
-    typedef BOOST_DEDUCED_TYPENAME boost::mpl::if_<
-        boost::mpl::or_<boost::is_abstract<T>, boost::is_array<T> >, private_type_, T
+    typedef BOOST_DEDUCED_TYPENAME methcla_boost::mpl::if_<
+        methcla_boost::mpl::or_<methcla_boost::is_abstract<T>, methcla_boost::is_array<T> >, private_type_, T
     >::type value_type;
     #endif
     
@@ -608,7 +616,7 @@ private:
 // If the collection is a lightweight proxy, treat it as an rvalue
 // BUGBUG what about a noncopyable proxy?
 template<typename LValue, typename IsProxy>
-inline BOOST_DEDUCED_TYPENAME boost::enable_if<boost::mpl::or_<LValue, IsProxy>, IsProxy>::type *
+inline BOOST_DEDUCED_TYPENAME methcla_boost::enable_if<methcla_boost::mpl::or_<LValue, IsProxy>, IsProxy>::type *
 should_copy_impl(LValue *, IsProxy *, bool *)
 {
     return 0;
@@ -616,7 +624,7 @@ should_copy_impl(LValue *, IsProxy *, bool *)
 
 // Otherwise, we must determine at runtime whether it's an lvalue or rvalue
 inline bool *
-should_copy_impl(boost::mpl::false_ *, boost::mpl::false_ *, bool *is_rvalue)
+should_copy_impl(methcla_boost::mpl::false_ *, methcla_boost::mpl::false_ *, bool *is_rvalue)
 {
     return is_rvalue;
 }
@@ -627,19 +635,19 @@ should_copy_impl(boost::mpl::false_ *, boost::mpl::false_ *, bool *is_rvalue)
 // contain
 //
 template<typename T>
-inline auto_any<T> contain(T const &t, boost::mpl::true_ *) // rvalue
+inline auto_any<T> contain(T const &t, methcla_boost::mpl::true_ *) // rvalue
 {
     return auto_any<T>(t);
 }
 
 template<typename T>
-inline auto_any<T *> contain(T &t, boost::mpl::false_ *) // lvalue
+inline auto_any<T *> contain(T &t, methcla_boost::mpl::false_ *) // lvalue
 {
     // Cannot seem to get sunpro to handle addressof() with array types.
     #if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x570))
     return auto_any<T *>(&t);
     #else
-    return auto_any<T *>(boost::addressof(t));
+    return auto_any<T *>(methcla_boost::addressof(t));
     #endif
 }
 
@@ -657,20 +665,20 @@ contain(T const &t, bool *rvalue)
 //
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>
-begin(auto_any_t col, type2type<T, C> *, boost::mpl::true_ *) // rvalue
+begin(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::true_ *) // rvalue
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>(
-        boost::begin(auto_any_cast<T, C>(col)));
+        methcla_boost::begin(auto_any_cast<T, C>(col)));
 }
 
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>
-begin(auto_any_t col, type2type<T, C> *, boost::mpl::false_ *) // lvalue
+begin(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::false_ *) // lvalue
 {
     typedef BOOST_DEDUCED_TYPENAME type2type<T, C>::type type;
     typedef BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type iterator;
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>(
-        iterator(boost::begin(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, boost::mpl::false_>(col))))));
+        iterator(methcla_boost::begin(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, methcla_boost::mpl::false_>(col))))));
 }
 
 #ifdef BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION
@@ -679,16 +687,16 @@ inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, const_>::type>
 begin(auto_any_t col, type2type<T, const_> *, bool *)
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, const_>::type>(
-        boost::begin(*auto_any_cast<simple_variant<T>, boost::mpl::false_>(col).get()));
+        methcla_boost::begin(*auto_any_cast<simple_variant<T>, methcla_boost::mpl::false_>(col).get()));
 }
 #endif
 
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 template<typename T, typename C>
 inline auto_any<T *>
-begin(auto_any_t col, type2type<T *, C> *, boost::mpl::true_ *) // null-terminated C-style strings
+begin(auto_any_t col, type2type<T *, C> *, methcla_boost::mpl::true_ *) // null-terminated C-style strings
 {
-    return auto_any<T *>(auto_any_cast<T *, boost::mpl::false_>(col));
+    return auto_any<T *>(auto_any_cast<T *, methcla_boost::mpl::false_>(col));
 }
 #endif
 
@@ -697,20 +705,20 @@ begin(auto_any_t col, type2type<T *, C> *, boost::mpl::true_ *) // null-terminat
 //
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>
-end(auto_any_t col, type2type<T, C> *, boost::mpl::true_ *) // rvalue
+end(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::true_ *) // rvalue
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>(
-        boost::end(auto_any_cast<T, C>(col)));
+        methcla_boost::end(auto_any_cast<T, C>(col)));
 }
 
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>
-end(auto_any_t col, type2type<T, C> *, boost::mpl::false_ *) // lvalue
+end(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::false_ *) // lvalue
 {
     typedef BOOST_DEDUCED_TYPENAME type2type<T, C>::type type;
     typedef BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type iterator;
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type>(
-        iterator(boost::end(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, boost::mpl::false_>(col))))));
+        iterator(methcla_boost::end(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, methcla_boost::mpl::false_>(col))))));
 }
 
 #ifdef BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION
@@ -719,14 +727,14 @@ inline auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, const_>::type>
 end(auto_any_t col, type2type<T, const_> *, bool *)
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_iterator<T, const_>::type>(
-        boost::end(*auto_any_cast<simple_variant<T>, boost::mpl::false_>(col).get()));
+        methcla_boost::end(*auto_any_cast<simple_variant<T>, methcla_boost::mpl::false_>(col).get()));
 }
 #endif
 
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 template<typename T, typename C>
 inline auto_any<int>
-end(auto_any_t, type2type<T *, C> *, boost::mpl::true_ *) // null-terminated C-style strings
+end(auto_any_t, type2type<T *, C> *, methcla_boost::mpl::true_ *) // null-terminated C-style strings
 {
     return auto_any<int>(0); // not used
 }
@@ -739,14 +747,14 @@ template<typename T, typename C>
 inline bool done(auto_any_t cur, auto_any_t end, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type iter_t;
-    return auto_any_cast<iter_t, boost::mpl::false_>(cur) == auto_any_cast<iter_t, boost::mpl::false_>(end);
+    return auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur) == auto_any_cast<iter_t, methcla_boost::mpl::false_>(end);
 }
 
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 template<typename T, typename C>
 inline bool done(auto_any_t cur, auto_any_t, type2type<T *, C> *) // null-terminated C-style strings
 {
-    return ! *auto_any_cast<T *, boost::mpl::false_>(cur);
+    return ! *auto_any_cast<T *, methcla_boost::mpl::false_>(cur);
 }
 #endif
 
@@ -757,7 +765,7 @@ template<typename T, typename C>
 inline void next(auto_any_t cur, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type iter_t;
-    ++auto_any_cast<iter_t, boost::mpl::false_>(cur);
+    ++auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -768,7 +776,7 @@ inline BOOST_DEDUCED_TYPENAME foreach_reference<T, C>::type
 deref(auto_any_t cur, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_iterator<T, C>::type iter_t;
-    return *auto_any_cast<iter_t, boost::mpl::false_>(cur);
+    return *auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -776,20 +784,20 @@ deref(auto_any_t cur, type2type<T, C> *)
 //
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>
-rbegin(auto_any_t col, type2type<T, C> *, boost::mpl::true_ *) // rvalue
+rbegin(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::true_ *) // rvalue
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>(
-        boost::rbegin(auto_any_cast<T, C>(col)));
+        methcla_boost::rbegin(auto_any_cast<T, C>(col)));
 }
 
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>
-rbegin(auto_any_t col, type2type<T, C> *, boost::mpl::false_ *) // lvalue
+rbegin(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::false_ *) // lvalue
 {
     typedef BOOST_DEDUCED_TYPENAME type2type<T, C>::type type;
     typedef BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type iterator;
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>(
-        iterator(boost::rbegin(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, boost::mpl::false_>(col))))));
+        iterator(methcla_boost::rbegin(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, methcla_boost::mpl::false_>(col))))));
 }
 
 #ifdef BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION
@@ -798,16 +806,16 @@ inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, const_>::type
 rbegin(auto_any_t col, type2type<T, const_> *, bool *)
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, const_>::type>(
-        boost::rbegin(*auto_any_cast<simple_variant<T>, boost::mpl::false_>(col).get()));
+        methcla_boost::rbegin(*auto_any_cast<simple_variant<T>, methcla_boost::mpl::false_>(col).get()));
 }
 #endif
 
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 template<typename T, typename C>
 inline auto_any<reverse_iterator<T *> >
-rbegin(auto_any_t col, type2type<T *, C> *, boost::mpl::true_ *) // null-terminated C-style strings
+rbegin(auto_any_t col, type2type<T *, C> *, methcla_boost::mpl::true_ *) // null-terminated C-style strings
 {
-    T *p = auto_any_cast<T *, boost::mpl::false_>(col);
+    T *p = auto_any_cast<T *, methcla_boost::mpl::false_>(col);
     while(0 != *p)
         ++p;
     return auto_any<reverse_iterator<T *> >(reverse_iterator<T *>(p));
@@ -819,20 +827,20 @@ rbegin(auto_any_t col, type2type<T *, C> *, boost::mpl::true_ *) // null-termina
 //
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>
-rend(auto_any_t col, type2type<T, C> *, boost::mpl::true_ *) // rvalue
+rend(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::true_ *) // rvalue
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>(
-        boost::rend(auto_any_cast<T, C>(col)));
+        methcla_boost::rend(auto_any_cast<T, C>(col)));
 }
 
 template<typename T, typename C>
 inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>
-rend(auto_any_t col, type2type<T, C> *, boost::mpl::false_ *) // lvalue
+rend(auto_any_t col, type2type<T, C> *, methcla_boost::mpl::false_ *) // lvalue
 {
     typedef BOOST_DEDUCED_TYPENAME type2type<T, C>::type type;
     typedef BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type iterator;
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type>(
-        iterator(boost::rend(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, boost::mpl::false_>(col))))));
+        iterator(methcla_boost::rend(BOOST_FOREACH_DEREFOF((auto_any_cast<type *, methcla_boost::mpl::false_>(col))))));
 }
 
 #ifdef BOOST_FOREACH_RUN_TIME_CONST_RVALUE_DETECTION
@@ -841,17 +849,17 @@ inline auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, const_>::type
 rend(auto_any_t col, type2type<T, const_> *, bool *)
 {
     return auto_any<BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, const_>::type>(
-        boost::rend(*auto_any_cast<simple_variant<T>, boost::mpl::false_>(col).get()));
+        methcla_boost::rend(*auto_any_cast<simple_variant<T>, methcla_boost::mpl::false_>(col).get()));
 }
 #endif
 
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
 template<typename T, typename C>
 inline auto_any<reverse_iterator<T *> >
-rend(auto_any_t col, type2type<T *, C> *, boost::mpl::true_ *) // null-terminated C-style strings
+rend(auto_any_t col, type2type<T *, C> *, methcla_boost::mpl::true_ *) // null-terminated C-style strings
 {
     return auto_any<reverse_iterator<T *> >(
-        reverse_iterator<T *>(auto_any_cast<T *, boost::mpl::false_>(col)));
+        reverse_iterator<T *>(auto_any_cast<T *, methcla_boost::mpl::false_>(col)));
 }
 #endif
 
@@ -862,7 +870,7 @@ template<typename T, typename C>
 inline bool rdone(auto_any_t cur, auto_any_t end, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type iter_t;
-    return auto_any_cast<iter_t, boost::mpl::false_>(cur) == auto_any_cast<iter_t, boost::mpl::false_>(end);
+    return auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur) == auto_any_cast<iter_t, methcla_boost::mpl::false_>(end);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -872,7 +880,7 @@ template<typename T, typename C>
 inline void rnext(auto_any_t cur, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type iter_t;
-    ++auto_any_cast<iter_t, boost::mpl::false_>(cur);
+    ++auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -883,11 +891,11 @@ inline BOOST_DEDUCED_TYPENAME foreach_reference<T, C>::type
 rderef(auto_any_t cur, type2type<T, C> *)
 {
     typedef BOOST_DEDUCED_TYPENAME foreach_reverse_iterator<T, C>::type iter_t;
-    return *auto_any_cast<iter_t, boost::mpl::false_>(cur);
+    return *auto_any_cast<iter_t, methcla_boost::mpl::false_>(cur);
 }
 
 } // namespace foreach_detail_
-} // namespace boost
+} // namespace methcla_boost
 
 // Suppress a bogus code analysis warning on vc8+
 #if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
@@ -909,20 +917,20 @@ rderef(auto_any_t cur, type2type<T, C> *)
 
 // A sneaky way to get the type of the collection without evaluating the expression
 #define BOOST_FOREACH_TYPEOF(COL)                                                               \
-    (true ? 0 : boost::foreach_detail_::encode_type(COL, boost::foreach_detail_::is_const_(COL)))
+    (true ? BOOST_FOREACH_NULL : methcla_boost::foreach_detail_::encode_type(COL, methcla_boost::foreach_detail_::is_const_(COL)))
 
 // returns true_* if the type is noncopyable
 #define BOOST_FOREACH_IS_NONCOPYABLE(COL)                                                       \
     boost_foreach_is_noncopyable(                                                               \
-        boost::foreach_detail_::to_ptr(COL)                                                     \
+        methcla_boost::foreach_detail_::to_ptr(COL)                                                     \
       , boost_foreach_argument_dependent_lookup_hack_value)
 
 // returns true_* if the type is a lightweight proxy (and is not noncopyable)
 #define BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL)                                                 \
-    boost::foreach_detail_::and_(                                                               \
-        boost::foreach_detail_::not_(BOOST_FOREACH_IS_NONCOPYABLE(COL))                         \
+    methcla_boost::foreach_detail_::and_(                                                               \
+        methcla_boost::foreach_detail_::not_(BOOST_FOREACH_IS_NONCOPYABLE(COL))                         \
       , boost_foreach_is_lightweight_proxy(                                                     \
-            boost::foreach_detail_::to_ptr(COL)                                                 \
+            methcla_boost::foreach_detail_::to_ptr(COL)                                                 \
           , boost_foreach_argument_dependent_lookup_hack_value))
 
 #if defined(BOOST_FOREACH_COMPILE_TIME_CONST_RVALUE_DETECTION)
@@ -939,7 +947,7 @@ rderef(auto_any_t cur, type2type<T, C> *)
     (COL)
 
 # define BOOST_FOREACH_SHOULD_COPY(COL)                                                         \
-    (true ? 0 : boost::foreach_detail_::or_(                                                    \
+    (true ? BOOST_FOREACH_NULL : methcla_boost::foreach_detail_::or_(                                                    \
         BOOST_FOREACH_IS_RVALUE(COL)                                                            \
       , BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL)))
 
@@ -955,18 +963,18 @@ rderef(auto_any_t cur, type2type<T, C> *)
 
 // Evaluate the collection expression, and detect if it is an lvalue or and rvalue
 # define BOOST_FOREACH_EVALUATE(COL)                                                            \
-    (true ? boost::foreach_detail_::make_probe((COL), BOOST_FOREACH_ID(_foreach_is_rvalue)) : (COL))
+    (true ? methcla_boost::foreach_detail_::make_probe((COL), BOOST_FOREACH_ID(_foreach_is_rvalue)) : (COL))
 
 // The rvalue/lvalue-ness of the collection expression is determined dynamically, unless
 // the type is an array or is noncopyable or is non-const, in which case we know it's an lvalue.
 // If the type happens to be a lightweight proxy, always make a copy.
 # define BOOST_FOREACH_SHOULD_COPY(COL)                                                         \
-    (boost::foreach_detail_::should_copy_impl(                                                  \
-        true ? 0 : boost::foreach_detail_::or_(                                                 \
-            boost::foreach_detail_::is_array_(COL)                                              \
+    (methcla_boost::foreach_detail_::should_copy_impl(                                                  \
+        true ? BOOST_FOREACH_NULL : methcla_boost::foreach_detail_::or_(                                                 \
+            methcla_boost::foreach_detail_::is_array_(COL)                                              \
           , BOOST_FOREACH_IS_NONCOPYABLE(COL)                                                   \
-          , boost::foreach_detail_::not_(boost::foreach_detail_::is_const_(COL)))               \
-      , true ? 0 : BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL)                                      \
+          , methcla_boost::foreach_detail_::not_(methcla_boost::foreach_detail_::is_const_(COL)))               \
+      , true ? BOOST_FOREACH_NULL : BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL)                                      \
       , &BOOST_FOREACH_ID(_foreach_is_rvalue)))
 
 #elif !defined(BOOST_FOREACH_NO_RVALUE_DETECTION)
@@ -985,8 +993,8 @@ rderef(auto_any_t cur, type2type<T, C> *)
 // Determine whether the collection expression is an lvalue or an rvalue.
 // NOTE: this gets the answer wrong for const rvalues.
 # define BOOST_FOREACH_SHOULD_COPY(COL)                                                         \
-    (true ? 0 : boost::foreach_detail_::or_(                                                    \
-        boost::foreach_detail_::is_rvalue_((COL), 0)                                            \
+    (true ? BOOST_FOREACH_NULL : methcla_boost::foreach_detail_::or_(                                                    \
+        methcla_boost::foreach_detail_::is_rvalue_((COL), 0)                                            \
       , BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL)))
 
 #else
@@ -1004,68 +1012,68 @@ rderef(auto_any_t cur, type2type<T, C> *)
 
 // Can't use rvalues with BOOST_FOREACH (unless they are lightweight proxies)
 # define BOOST_FOREACH_SHOULD_COPY(COL)                                                         \
-    (true ? 0 : BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL))
+    (true ? BOOST_FOREACH_NULL : BOOST_FOREACH_IS_LIGHTWEIGHT_PROXY(COL))
 
 #endif
 
 #define BOOST_FOREACH_CONTAIN(COL)                                                              \
-    boost::foreach_detail_::contain(                                                            \
+    methcla_boost::foreach_detail_::contain(                                                            \
         BOOST_FOREACH_EVALUATE(COL)                                                             \
       , BOOST_FOREACH_SHOULD_COPY(COL))
 
 #define BOOST_FOREACH_BEGIN(COL)                                                                \
-    boost::foreach_detail_::begin(                                                              \
+    methcla_boost::foreach_detail_::begin(                                                              \
         BOOST_FOREACH_ID(_foreach_col)                                                          \
       , BOOST_FOREACH_TYPEOF(COL)                                                               \
       , BOOST_FOREACH_SHOULD_COPY(COL))
 
 #define BOOST_FOREACH_END(COL)                                                                  \
-    boost::foreach_detail_::end(                                                                \
+    methcla_boost::foreach_detail_::end(                                                                \
         BOOST_FOREACH_ID(_foreach_col)                                                          \
       , BOOST_FOREACH_TYPEOF(COL)                                                               \
       , BOOST_FOREACH_SHOULD_COPY(COL))
 
 #define BOOST_FOREACH_DONE(COL)                                                                 \
-    boost::foreach_detail_::done(                                                               \
+    methcla_boost::foreach_detail_::done(                                                               \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_ID(_foreach_end)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
 #define BOOST_FOREACH_NEXT(COL)                                                                 \
-    boost::foreach_detail_::next(                                                               \
+    methcla_boost::foreach_detail_::next(                                                               \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
 #define BOOST_FOREACH_DEREF(COL)                                                                \
-    boost::foreach_detail_::deref(                                                              \
+    methcla_boost::foreach_detail_::deref(                                                              \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
 #define BOOST_FOREACH_RBEGIN(COL)                                                               \
-    boost::foreach_detail_::rbegin(                                                             \
+    methcla_boost::foreach_detail_::rbegin(                                                             \
         BOOST_FOREACH_ID(_foreach_col)                                                          \
       , BOOST_FOREACH_TYPEOF(COL)                                                               \
       , BOOST_FOREACH_SHOULD_COPY(COL))
 
 #define BOOST_FOREACH_REND(COL)                                                                 \
-    boost::foreach_detail_::rend(                                                               \
+    methcla_boost::foreach_detail_::rend(                                                               \
         BOOST_FOREACH_ID(_foreach_col)                                                          \
       , BOOST_FOREACH_TYPEOF(COL)                                                               \
       , BOOST_FOREACH_SHOULD_COPY(COL))
 
 #define BOOST_FOREACH_RDONE(COL)                                                                \
-    boost::foreach_detail_::rdone(                                                              \
+    methcla_boost::foreach_detail_::rdone(                                                              \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_ID(_foreach_end)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
 #define BOOST_FOREACH_RNEXT(COL)                                                                \
-    boost::foreach_detail_::rnext(                                                              \
+    methcla_boost::foreach_detail_::rnext(                                                              \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
 #define BOOST_FOREACH_RDEREF(COL)                                                               \
-    boost::foreach_detail_::rderef(                                                             \
+    methcla_boost::foreach_detail_::rderef(                                                             \
         BOOST_FOREACH_ID(_foreach_cur)                                                          \
       , BOOST_FOREACH_TYPEOF(COL))
 
@@ -1097,13 +1105,13 @@ rderef(auto_any_t cur, type2type<T, C> *)
 //
 #define BOOST_FOREACH(VAR, COL)                                                                                   \
     BOOST_FOREACH_PREAMBLE()                                                                                      \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_col) = BOOST_FOREACH_CONTAIN(COL)) {} else   \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_cur) = BOOST_FOREACH_BEGIN(COL)) {} else     \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_end) = BOOST_FOREACH_END(COL)) {} else       \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_col) = BOOST_FOREACH_CONTAIN(COL)) {} else   \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_cur) = BOOST_FOREACH_BEGIN(COL)) {} else     \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_end) = BOOST_FOREACH_END(COL)) {} else       \
     for (bool BOOST_FOREACH_ID(_foreach_continue) = true;                                                         \
               BOOST_FOREACH_ID(_foreach_continue) && !BOOST_FOREACH_DONE(COL);                                    \
               BOOST_FOREACH_ID(_foreach_continue) ? BOOST_FOREACH_NEXT(COL) : (void)0)                            \
-        if  (boost::foreach_detail_::set_false(BOOST_FOREACH_ID(_foreach_continue))) {} else                      \
+        if  (methcla_boost::foreach_detail_::set_false(BOOST_FOREACH_ID(_foreach_continue))) {} else                      \
         for (VAR = BOOST_FOREACH_DEREF(COL); !BOOST_FOREACH_ID(_foreach_continue); BOOST_FOREACH_ID(_foreach_continue) = true)
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1115,13 +1123,13 @@ rderef(auto_any_t cur, type2type<T, C> *)
 //
 #define BOOST_REVERSE_FOREACH(VAR, COL)                                                                           \
     BOOST_FOREACH_PREAMBLE()                                                                                      \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_col) = BOOST_FOREACH_CONTAIN(COL)) {} else   \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_cur) = BOOST_FOREACH_RBEGIN(COL)) {} else    \
-    if (boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_end) = BOOST_FOREACH_REND(COL)) {} else      \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_col) = BOOST_FOREACH_CONTAIN(COL)) {} else   \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_cur) = BOOST_FOREACH_RBEGIN(COL)) {} else    \
+    if (methcla_boost::foreach_detail_::auto_any_t BOOST_FOREACH_ID(_foreach_end) = BOOST_FOREACH_REND(COL)) {} else      \
     for (bool BOOST_FOREACH_ID(_foreach_continue) = true;                                                         \
               BOOST_FOREACH_ID(_foreach_continue) && !BOOST_FOREACH_RDONE(COL);                                   \
               BOOST_FOREACH_ID(_foreach_continue) ? BOOST_FOREACH_RNEXT(COL) : (void)0)                           \
-        if  (boost::foreach_detail_::set_false(BOOST_FOREACH_ID(_foreach_continue))) {} else                      \
+        if  (methcla_boost::foreach_detail_::set_false(BOOST_FOREACH_ID(_foreach_continue))) {} else                      \
         for (VAR = BOOST_FOREACH_RDEREF(COL); !BOOST_FOREACH_ID(_foreach_continue); BOOST_FOREACH_ID(_foreach_continue) = true)
 
 #endif

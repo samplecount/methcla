@@ -12,10 +12,10 @@
 //  (See accompanying file LICENSE_1_0.txt or copy at 
 //  http://www.boost.org/LICENSE_1_0.txt)
 //
-//  See http://www.boost.org/libs/smart_ptr/pointer_to_other.html
+//  See http://www.boost.org/libs/smart_ptr/ for documentation.
 //
 
-namespace boost
+namespace methcla_boost
 {
 
 // Defines the same pointer type (raw or smart) to another pointee type
@@ -50,6 +50,6 @@ struct pointer_to_other< T*, U >
    typedef U* type;
 };
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // #ifndef BOOST_POINTER_TO_OTHER_HPP_INCLUDED

@@ -27,12 +27,12 @@ namespace std {
 
 template
 locale::locale(
-    const locale& __loc, boost::archive::codecvt_null<char> * __f
+    const locale& __loc, methcla_boost::archive::codecvt_null<char> * __f
 );
 
 template
 locale::locale(
-    const locale& __loc, boost::archive::codecvt_null<wchar_t> * __f
+    const locale& __loc, methcla_boost::archive::codecvt_null<wchar_t> * __f
 );
 
 } // namespace std

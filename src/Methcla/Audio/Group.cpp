@@ -15,22 +15,24 @@
 #include "Methcla/Audio/Engine.hpp"
 #include "Methcla/Audio/Group.hpp"
 
+#include <cassert>
+
 using namespace Methcla::Audio;
 
 #define METHCLA_ASSERT_NODE_IS_BLANK(node)   \
-    BOOST_ASSERT(node != nullptr);           \
-    BOOST_ASSERT(node->m_parent == nullptr); \
-    BOOST_ASSERT(node->m_prev == nullptr);   \
-    BOOST_ASSERT(node->m_next == nullptr);
+    assert(node != nullptr);           \
+    assert(node->m_parent == nullptr); \
+    assert(node->m_prev == nullptr);   \
+    assert(node->m_next == nullptr);
 
 #define METHCLA_ASSERT_NODE_IS_LINKED(node)                   \
-    BOOST_ASSERT(m_first != nullptr);                         \
-    BOOST_ASSERT(m_last != nullptr);                          \
-    BOOST_ASSERT(node != nullptr);                            \
-    BOOST_ASSERT(node->m_parent == this);                     \
-    BOOST_ASSERT(node->m_prev != nullptr || node == m_first); \
-    BOOST_ASSERT(node->m_next != nullptr || node == m_last);  \
-    BOOST_ASSERT(m_first != m_last || (m_first == node && node == m_last));
+    assert(m_first != nullptr);                         \
+    assert(m_last != nullptr);                          \
+    assert(node != nullptr);                            \
+    assert(node->m_parent == this);                     \
+    assert(node->m_prev != nullptr || node == m_first); \
+    assert(node->m_next != nullptr || node == m_last);  \
+    assert(m_first != m_last || (m_first == node && node == m_last));
 
 Group::Group(Environment& env, NodeId nodeId)
 : Node(env, nodeId)
@@ -114,12 +116,12 @@ void Group::addBefore(Node* target, Node* node)
 
     if (target == m_first)
     {
-        BOOST_ASSERT(node->m_prev == nullptr);
+        assert(node->m_prev == nullptr);
         m_first = node;
     }
     else
     {
-        BOOST_ASSERT(node->m_prev != nullptr);
+        assert(node->m_prev != nullptr);
         node->m_prev->m_next = node;
     }
 
@@ -138,12 +140,12 @@ void Group::addAfter(Node* target, Node* node)
 
     if (target == m_last)
     {
-        BOOST_ASSERT(node->m_next == nullptr);
+        assert(node->m_next == nullptr);
         m_last = node;
     }
     else
     {
-        BOOST_ASSERT(node->m_next != nullptr);
+        assert(node->m_next != nullptr);
         node->m_next->m_prev = node;
     }
 
@@ -187,7 +189,7 @@ void Group::remove(Node* node)
 
 bool Group::isEmpty() const
 {
-    BOOST_ASSERT(m_first != nullptr || m_last == nullptr);
+    assert(m_first != nullptr || m_last == nullptr);
     return m_first == nullptr;
 }
 
@@ -202,5 +204,5 @@ void Group::freeAll()
         node->free();
         node = nextNode;
     }
-    BOOST_ASSERT(isEmpty());
+    assert(isEmpty());
 }

@@ -3,48 +3,56 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 #ifndef ITERATOR_TRAITS_DWA200347_HPP
-# define ITERATOR_TRAITS_DWA200347_HPP
+#define ITERATOR_TRAITS_DWA200347_HPP
 
-# include <boost/detail/iterator.hpp>
-# include <boost/detail/workaround.hpp>
+#include <iterator>
 
-namespace boost {
+namespace methcla_boost {
 namespace iterators {
 
-// Macro for supporting old compilers, no longer needed but kept
-// for backwards compatibility (it was documented).
-#define BOOST_ITERATOR_CATEGORY iterator_category
+template< typename Iterator >
+using iterator_value_t = typename std::iterator_traits< Iterator >::value_type;
 
-
-template <class Iterator>
+template< typename Iterator >
 struct iterator_value
 {
-    typedef typename boost::detail::iterator_traits<Iterator>::value_type type;
+    using type = iterator_value_t< Iterator >;
 };
 
-template <class Iterator>
+template< typename Iterator >
+using iterator_reference_t = typename std::iterator_traits< Iterator >::reference;
+
+template< typename Iterator >
 struct iterator_reference
 {
-    typedef typename boost::detail::iterator_traits<Iterator>::reference type;
+    using type = iterator_reference_t< Iterator >;
 };
 
+template< typename Iterator >
+using iterator_pointer_t = typename std::iterator_traits< Iterator >::pointer;
 
-template <class Iterator>
+template< typename Iterator >
 struct iterator_pointer
 {
-    typedef typename boost::detail::iterator_traits<Iterator>::pointer type;
+    using type = iterator_pointer_t< Iterator >;
 };
 
-template <class Iterator>
+template< typename Iterator >
+using iterator_difference_t = typename std::iterator_traits< Iterator >::difference_type;
+
+template< typename Iterator >
 struct iterator_difference
 {
-    typedef typename boost::detail::iterator_traits<Iterator>::difference_type type;
+    using type = iterator_difference_t< Iterator >;
 };
 
-template <class Iterator>
+template< typename Iterator >
+using iterator_category_t = typename std::iterator_traits< Iterator >::iterator_category;
+
+template< typename Iterator >
 struct iterator_category
 {
-    typedef typename boost::detail::iterator_traits<Iterator>::iterator_category type;
+    using type = iterator_category_t< Iterator >;
 };
 
 } // namespace iterators
@@ -55,6 +63,6 @@ using iterators::iterator_pointer;
 using iterators::iterator_difference;
 using iterators::iterator_category;
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // ITERATOR_TRAITS_DWA200347_HPP

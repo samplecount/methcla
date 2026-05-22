@@ -15,7 +15,7 @@
 #include <boost/spirit/home/classic/utility/chset.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost { namespace spirit {
+namespace methcla_boost { namespace spirit {
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 
@@ -27,16 +27,16 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 namespace utility { namespace impl {
     template <typename CharT>
     inline void
-    detach(boost::shared_ptr<basic_chset<CharT> >& ptr)
+    detach(methcla_boost::shared_ptr<basic_chset<CharT> >& ptr)
     {
         if (!ptr.unique())
-            ptr = boost::shared_ptr<basic_chset<CharT> >
+            ptr = methcla_boost::shared_ptr<basic_chset<CharT> >
                 (new basic_chset<CharT>(*ptr));
     }
 
     template <typename CharT>
     inline void
-    detach_clear(boost::shared_ptr<basic_chset<CharT> >& ptr)
+    detach_clear(methcla_boost::shared_ptr<basic_chset<CharT> >& ptr)
     {
         if (ptr.unique())
             ptr->clear();
@@ -45,7 +45,7 @@ namespace utility { namespace impl {
     }
 
     template <typename CharT, typename CharT2>
-    void construct_chset(boost::shared_ptr<basic_chset<CharT> >& ptr,
+    void construct_chset(methcla_boost::shared_ptr<basic_chset<CharT> >& ptr,
             CharT2 const* definition)
     {
         CharT2 ch = *definition++;
@@ -316,7 +316,7 @@ chset<CharT>::operator^=(chset const& x)
 ///////////////////////////////////////////////////////////////////////////////
 BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 
-}} // namespace boost::spirit
+}} // namespace methcla_boost::spirit
 
 #endif
 

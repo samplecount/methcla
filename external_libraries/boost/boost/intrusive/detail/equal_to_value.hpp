@@ -21,7 +21,9 @@
 #  pragma once
 #endif
 
-namespace boost {
+#include <boost/intrusive/detail/workaround.hpp>
+
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -37,12 +39,12 @@ class equal_to_value
       :  t_(t)
    {}
 
-   bool operator()(ConstReference t)const
+   inline bool operator()(ConstReference t)const
    {  return t_ == t;   }
 };
 
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_EQUAL_TO_VALUE_HPP

@@ -9,6 +9,7 @@
 #ifndef BOOST_TT_HAS_TRIVIAL_COPY_HPP_INCLUDED
 #define BOOST_TT_HAS_TRIVIAL_COPY_HPP_INCLUDED
 
+#include <cstddef> // size_t
 #include <boost/type_traits/intrinsics.hpp>
 #include <boost/type_traits/is_pod.hpp>
 #include <boost/type_traits/is_reference.hpp>
@@ -25,14 +26,14 @@
 #include <boost/type_traits/add_lvalue_reference.hpp>
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 template <typename T> struct has_trivial_copy 
 : public integral_constant<bool, 
 #ifdef BOOST_HAS_TRIVIAL_COPY
    BOOST_HAS_TRIVIAL_COPY(T) BOOST_TT_TRIVIAL_CONSTRUCT_FIX
 #else
-   ::boost::is_pod<T>::value
+   ::methcla_boost::is_pod<T>::value
 #endif
 >{};
 // Arrays are not explicitly copyable:
@@ -57,6 +58,6 @@ template <class T> struct has_trivial_copy_constructor : public has_trivial_copy
 
 #undef BOOST_TT_TRIVIAL_CONSTRUCT_FIX
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_HAS_TRIVIAL_COPY_HPP_INCLUDED

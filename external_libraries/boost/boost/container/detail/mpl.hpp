@@ -28,58 +28,115 @@
 
 #include <cstddef>
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
-using boost::move_detail::integral_constant;
-using boost::move_detail::true_type;
-using boost::move_detail::false_type;
-using boost::move_detail::enable_if_c;
-using boost::move_detail::enable_if;
-using boost::move_detail::enable_if_convertible;
-using boost::move_detail::disable_if_c;
-using boost::move_detail::disable_if;
-using boost::move_detail::disable_if_convertible;
-using boost::move_detail::is_convertible;
-using boost::move_detail::if_c;
-using boost::move_detail::if_;
-using boost::move_detail::identity;
-using boost::move_detail::bool_;
-using boost::move_detail::true_;
-using boost::move_detail::false_;
-using boost::move_detail::yes_type;
-using boost::move_detail::no_type;
-using boost::move_detail::bool_;
-using boost::move_detail::true_;
-using boost::move_detail::false_;
-using boost::move_detail::unvoid_ref;
-using boost::move_detail::and_;
-using boost::move_detail::or_;
-using boost::move_detail::not_;
-using boost::move_detail::enable_if_and;
-using boost::move_detail::disable_if_and;
-using boost::move_detail::enable_if_or;
-using boost::move_detail::disable_if_or;
+using methcla_boost::move_detail::integral_constant;
+using methcla_boost::move_detail::true_type;
+using methcla_boost::move_detail::false_type;
+using methcla_boost::move_detail::enable_if_c;
+using methcla_boost::move_detail::enable_if;
+using methcla_boost::move_detail::enable_if_convertible;
+using methcla_boost::move_detail::disable_if_c;
+using methcla_boost::move_detail::disable_if;
+using methcla_boost::move_detail::disable_if_convertible;
+using methcla_boost::move_detail::is_convertible;
+using methcla_boost::move_detail::if_c;
+using methcla_boost::move_detail::if_;
+using methcla_boost::move_detail::identity;
+using methcla_boost::move_detail::bool_;
+using methcla_boost::move_detail::true_;
+using methcla_boost::move_detail::false_;
+using methcla_boost::move_detail::yes_type;
+using methcla_boost::move_detail::no_type;
+using methcla_boost::move_detail::bool_;
+using methcla_boost::move_detail::true_;
+using methcla_boost::move_detail::false_;
+using methcla_boost::move_detail::unvoid_ref;
+using methcla_boost::move_detail::and_;
+using methcla_boost::move_detail::or_;
+using methcla_boost::move_detail::not_;
+using methcla_boost::move_detail::enable_if_and;
+using methcla_boost::move_detail::disable_if_and;
+using methcla_boost::move_detail::enable_if_or;
+using methcla_boost::move_detail::disable_if_or;
+using methcla_boost::move_detail::remove_const;
 
-
-template <class Pair>
+template <class FirstType>
 struct select1st
 {
-   typedef Pair                        argument_type;
-   typedef typename Pair::first_type   result_type;
+   typedef FirstType type;
 
-   template<class OtherPair>
-   const typename Pair::first_type& operator()(const OtherPair& x) const
+   template<class T>
+   BOOST_CONTAINER_FORCEINLINE const type& operator()(const T& x) const
    {  return x.first;   }
 
-   const typename Pair::first_type& operator()(const typename Pair::first_type& x) const
-   {  return x;   }
+   template<class T>
+   BOOST_CONTAINER_FORCEINLINE type& operator()(T& x)
+   {  return const_cast<type&>(x.first);   }
 };
 
-}  //namespace container_detail {
+
+template<typename T>
+struct void_t { typedef void type; };
+
+template <class T, class=void>
+struct is_transparent_base
+{
+   BOOST_STATIC_CONSTEXPR bool value = false;
+};
+
+template <class T>
+struct is_transparent_base<T, typename void_t<typename T::is_transparent>::type>
+{
+   BOOST_STATIC_CONSTEXPR bool value = true;
+};
+
+template <class T>
+struct is_transparent
+   : is_transparent_base<T>
+{};
+
+template <typename C, class /*Dummy*/, typename R>
+struct enable_if_transparent
+   : methcla_boost::move_detail::enable_if_c<dtl::is_transparent<C>::value, R>
+{};
+
+#ifndef BOOST_CONTAINER_NO_CXX17_CTAD
+
+// void_t (void_t for C++11)
+template<typename...> using variadic_void_t = void;
+
+// Trait to detect Allocator-like types.
+template<typename Allocator, typename = void>
+struct is_allocator
+{
+   BOOST_STATIC_CONSTEXPR bool value = false;
+};
+
+template <typename T>
+T&& ctad_declval();
+
+template<typename Allocator>
+struct is_allocator < Allocator,
+   variadic_void_t< typename Allocator::value_type
+                  , decltype(ctad_declval<Allocator&>().allocate(size_t{})) >>
+{
+   BOOST_STATIC_CONSTEXPR bool value = true;
+};
+
+template<class T>
+using require_allocator_t = typename enable_if_c<is_allocator<T>::value, T>::type;
+
+template<class T>
+using require_nonallocator_t = typename enable_if_c<!is_allocator<T>::value, T>::type;
+
+#endif
+
+}  //namespace dtl {
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/container/detail/config_end.hpp>
 

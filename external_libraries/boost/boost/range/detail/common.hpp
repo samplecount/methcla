@@ -18,17 +18,15 @@
 #include <boost/range/config.hpp>
 #include <boost/range/detail/sfinae.hpp>
 #include <boost/type_traits/is_void.hpp>
-#include <boost/mpl/bool.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/int.hpp>
-#include <boost/mpl/or.hpp>
 #include <cstddef>
 
 //////////////////////////////////////////////////////////////////////////////
 // missing partial specialization  workaround.
 //////////////////////////////////////////////////////////////////////////////
 
-namespace boost 
+namespace methcla_boost 
 {
     namespace range_detail 
     {        
@@ -64,51 +62,51 @@ namespace boost
             static C* c;
             static C  ptr;
 
-            BOOST_STATIC_CONSTANT( bool, is_pair_                = sizeof( boost::range_detail::is_pair_impl( c ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_char_ptr_            = sizeof( boost::range_detail::is_char_ptr_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_const_char_ptr_      = sizeof( boost::range_detail::is_const_char_ptr_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_wchar_t_ptr_         = sizeof( boost::range_detail::is_wchar_t_ptr_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_const_wchar_t_ptr_   = sizeof( boost::range_detail::is_const_wchar_t_ptr_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_char_array_          = sizeof( boost::range_detail::is_char_array_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_wchar_t_array_       = sizeof( boost::range_detail::is_wchar_t_array_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_string_              = (boost::mpl::or_<boost::mpl::bool_<is_const_char_ptr_>, boost::mpl::bool_<is_const_wchar_t_ptr_> >::value ));
-            BOOST_STATIC_CONSTANT( bool, is_array_               = boost::is_array<C>::value );
+            BOOST_STATIC_CONSTANT( bool, is_pair_                = sizeof( methcla_boost::range_detail::is_pair_impl( c ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_char_ptr_            = sizeof( methcla_boost::range_detail::is_char_ptr_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_const_char_ptr_      = sizeof( methcla_boost::range_detail::is_const_char_ptr_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_wchar_t_ptr_         = sizeof( methcla_boost::range_detail::is_wchar_t_ptr_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_const_wchar_t_ptr_   = sizeof( methcla_boost::range_detail::is_const_wchar_t_ptr_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_char_array_          = sizeof( methcla_boost::range_detail::is_char_array_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_wchar_t_array_       = sizeof( methcla_boost::range_detail::is_wchar_t_array_impl( ptr ) ) == sizeof( yes_type ) );
+            BOOST_STATIC_CONSTANT( bool, is_string_              = (is_const_char_ptr_ || is_const_wchar_t_ptr_));
+            BOOST_STATIC_CONSTANT( bool, is_array_               = methcla_boost::is_array<C>::value );
             
         };
         
         template< typename C >
         class range
         {
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_pair_,
-                                                                  boost::range_detail::std_pair_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_pair_,
+                                                                  methcla_boost::range_detail::std_pair_,
                                                                   void >::type pair_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_array_,
-                                                                    boost::range_detail::array_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_array_,
+                                                                    methcla_boost::range_detail::array_,
                                                                     pair_t >::type array_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_string_,
-                                                                    boost::range_detail::string_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_string_,
+                                                                    methcla_boost::range_detail::string_,
                                                                     array_t >::type string_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_const_char_ptr_,
-                                                                    boost::range_detail::const_char_ptr_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_const_char_ptr_,
+                                                                    methcla_boost::range_detail::const_char_ptr_,
                                                                     string_t >::type const_char_ptr_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_char_ptr_,
-                                                                    boost::range_detail::char_ptr_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_char_ptr_,
+                                                                    methcla_boost::range_detail::char_ptr_,
                                                                     const_char_ptr_t >::type char_ptr_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_const_wchar_t_ptr_,
-                                                                    boost::range_detail::const_wchar_t_ptr_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_const_wchar_t_ptr_,
+                                                                    methcla_boost::range_detail::const_wchar_t_ptr_,
                                                                     char_ptr_t >::type const_wchar_ptr_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_wchar_t_ptr_,
-                                                                    boost::range_detail::wchar_t_ptr_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_wchar_t_ptr_,
+                                                                    methcla_boost::range_detail::wchar_t_ptr_,
                                                                     const_wchar_ptr_t >::type wchar_ptr_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_wchar_t_array_,
-                                                                    boost::range_detail::wchar_t_array_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_wchar_t_array_,
+                                                                    methcla_boost::range_detail::wchar_t_array_,
                                                                     wchar_ptr_t >::type wchar_array_t;
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::range_detail::range_helper<C>::is_char_array_,
-                                                                    boost::range_detail::char_array_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::range_detail::range_helper<C>::is_char_array_,
+                                                                    methcla_boost::range_detail::char_array_,
                                                                     wchar_array_t >::type char_array_t;
         public:
-            typedef BOOST_RANGE_DEDUCED_TYPENAME   boost::mpl::if_c< ::boost::is_void<char_array_t>::value,
-                                                                    boost::range_detail::std_container_,
+            typedef BOOST_RANGE_DEDUCED_TYPENAME   methcla_boost::mpl::if_c< ::methcla_boost::is_void<char_array_t>::value,
+                                                                    methcla_boost::range_detail::std_container_,
                                                                     char_array_t >::type type;  
         }; // class 'range' 
     }

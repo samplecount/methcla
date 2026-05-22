@@ -21,7 +21,7 @@
 
 #include <boost/move/detail/workaround.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace move_detail {
 
 template <typename T> struct unvoid { typedef T type; };
@@ -29,13 +29,13 @@ template <> struct unvoid<void> { struct type { }; };
 template <> struct unvoid<const void> { struct type { }; };
 
 }  //namespace move_detail {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
 
 #if defined(BOOST_MOVE_MSVC_10_MEMBER_RVALUE_REF_BUG)
 
-namespace boost {
+namespace methcla_boost {
 namespace move_detail {
 
    template<class T>
@@ -54,50 +54,104 @@ namespace move_detail {
    {
       explicit mref(T &&t) : t_(t) {}
       T &t_;
-      T &&get() {  return ::boost::move(t_);   }
+      T &&get() {  return ::methcla_boost::move(t_);   }
    };
 
 }  //namespace move_detail {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //BOOST_MOVE_MSVC_10_MEMBER_RVALUE_REF_BUG
 #endif   //!defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
 
 //BOOST_MOVE_REPEATN(MACRO)
+#define BOOST_MOVE_REPEAT(x, MACRO)   BOOST_MOVE_REPEAT_I(x,MACRO)
+#define BOOST_MOVE_REPEAT_I(x, MACRO) BOOST_MOVE_REPEAT##x(MACRO)
 #define BOOST_MOVE_REPEAT0(MACRO)
-#define BOOST_MOVE_REPEAT1(MACRO)                            MACRO
-#define BOOST_MOVE_REPEAT2(MACRO) BOOST_MOVE_REPEAT1(MACRO), MACRO
-#define BOOST_MOVE_REPEAT3(MACRO) BOOST_MOVE_REPEAT2(MACRO), MACRO
-#define BOOST_MOVE_REPEAT4(MACRO) BOOST_MOVE_REPEAT3(MACRO), MACRO
-#define BOOST_MOVE_REPEAT5(MACRO) BOOST_MOVE_REPEAT4(MACRO), MACRO
-#define BOOST_MOVE_REPEAT6(MACRO) BOOST_MOVE_REPEAT5(MACRO), MACRO
-#define BOOST_MOVE_REPEAT7(MACRO) BOOST_MOVE_REPEAT6(MACRO), MACRO
-#define BOOST_MOVE_REPEAT8(MACRO) BOOST_MOVE_REPEAT7(MACRO), MACRO
-#define BOOST_MOVE_REPEAT9(MACRO) BOOST_MOVE_REPEAT8(MACRO), MACRO
+#define BOOST_MOVE_REPEAT1(MACRO)                              MACRO
+#define BOOST_MOVE_REPEAT2(MACRO)  BOOST_MOVE_REPEAT1(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT3(MACRO)  BOOST_MOVE_REPEAT2(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT4(MACRO)  BOOST_MOVE_REPEAT3(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT5(MACRO)  BOOST_MOVE_REPEAT4(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT6(MACRO)  BOOST_MOVE_REPEAT5(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT7(MACRO)  BOOST_MOVE_REPEAT6(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT8(MACRO)  BOOST_MOVE_REPEAT7(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT9(MACRO)  BOOST_MOVE_REPEAT8(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT10(MACRO) BOOST_MOVE_REPEAT9(MACRO),  MACRO
+#define BOOST_MOVE_REPEAT11(MACRO) BOOST_MOVE_REPEAT10(MACRO), MACRO
+#define BOOST_MOVE_REPEAT12(MACRO) BOOST_MOVE_REPEAT11(MACRO), MACRO
+#define BOOST_MOVE_REPEAT13(MACRO) BOOST_MOVE_REPEAT12(MACRO), MACRO
 
 //BOOST_MOVE_FWDN
 #define BOOST_MOVE_FWD0
-#define BOOST_MOVE_FWD1                  ::boost::forward<P0>(p0)
-#define BOOST_MOVE_FWD2 BOOST_MOVE_FWD1, ::boost::forward<P1>(p1)
-#define BOOST_MOVE_FWD3 BOOST_MOVE_FWD2, ::boost::forward<P2>(p2)
-#define BOOST_MOVE_FWD4 BOOST_MOVE_FWD3, ::boost::forward<P3>(p3)
-#define BOOST_MOVE_FWD5 BOOST_MOVE_FWD4, ::boost::forward<P4>(p4)
-#define BOOST_MOVE_FWD6 BOOST_MOVE_FWD5, ::boost::forward<P5>(p5)
-#define BOOST_MOVE_FWD7 BOOST_MOVE_FWD6, ::boost::forward<P6>(p6)
-#define BOOST_MOVE_FWD8 BOOST_MOVE_FWD7, ::boost::forward<P7>(p7)
-#define BOOST_MOVE_FWD9 BOOST_MOVE_FWD8, ::boost::forward<P8>(p8)
+#define BOOST_MOVE_FWD1                  ::methcla_boost::forward<P0>(p0)
+#define BOOST_MOVE_FWD2 BOOST_MOVE_FWD1, ::methcla_boost::forward<P1>(p1)
+#define BOOST_MOVE_FWD3 BOOST_MOVE_FWD2, ::methcla_boost::forward<P2>(p2)
+#define BOOST_MOVE_FWD4 BOOST_MOVE_FWD3, ::methcla_boost::forward<P3>(p3)
+#define BOOST_MOVE_FWD5 BOOST_MOVE_FWD4, ::methcla_boost::forward<P4>(p4)
+#define BOOST_MOVE_FWD6 BOOST_MOVE_FWD5, ::methcla_boost::forward<P5>(p5)
+#define BOOST_MOVE_FWD7 BOOST_MOVE_FWD6, ::methcla_boost::forward<P6>(p6)
+#define BOOST_MOVE_FWD8 BOOST_MOVE_FWD7, ::methcla_boost::forward<P7>(p7)
+#define BOOST_MOVE_FWD9 BOOST_MOVE_FWD8, ::methcla_boost::forward<P8>(p8)
 
 //BOOST_MOVE_FWDQN
 #define BOOST_MOVE_FWDQ0
-#define BOOST_MOVE_FWDQ1                   ::boost::forward<Q0>(q0)
-#define BOOST_MOVE_FWDQ2 BOOST_MOVE_FWDQ1, ::boost::forward<Q1>(q1)
-#define BOOST_MOVE_FWDQ3 BOOST_MOVE_FWDQ2, ::boost::forward<Q2>(q2)
-#define BOOST_MOVE_FWDQ4 BOOST_MOVE_FWDQ3, ::boost::forward<Q3>(q3)
-#define BOOST_MOVE_FWDQ5 BOOST_MOVE_FWDQ4, ::boost::forward<Q4>(q4)
-#define BOOST_MOVE_FWDQ6 BOOST_MOVE_FWDQ5, ::boost::forward<Q5>(q5)
-#define BOOST_MOVE_FWDQ7 BOOST_MOVE_FWDQ6, ::boost::forward<Q6>(q6)
-#define BOOST_MOVE_FWDQ8 BOOST_MOVE_FWDQ7, ::boost::forward<Q7>(q7)
-#define BOOST_MOVE_FWDQ9 BOOST_MOVE_FWDQ8, ::boost::forward<Q8>(q8)
+#define BOOST_MOVE_FWDQ1                   ::methcla_boost::forward<Q0>(q0)
+#define BOOST_MOVE_FWDQ2 BOOST_MOVE_FWDQ1, ::methcla_boost::forward<Q1>(q1)
+#define BOOST_MOVE_FWDQ3 BOOST_MOVE_FWDQ2, ::methcla_boost::forward<Q2>(q2)
+#define BOOST_MOVE_FWDQ4 BOOST_MOVE_FWDQ3, ::methcla_boost::forward<Q3>(q3)
+#define BOOST_MOVE_FWDQ5 BOOST_MOVE_FWDQ4, ::methcla_boost::forward<Q4>(q4)
+#define BOOST_MOVE_FWDQ6 BOOST_MOVE_FWDQ5, ::methcla_boost::forward<Q5>(q5)
+#define BOOST_MOVE_FWDQ7 BOOST_MOVE_FWDQ6, ::methcla_boost::forward<Q6>(q6)
+#define BOOST_MOVE_FWDQ8 BOOST_MOVE_FWDQ7, ::methcla_boost::forward<Q7>(q7)
+#define BOOST_MOVE_FWDQ9 BOOST_MOVE_FWDQ8, ::methcla_boost::forward<Q8>(q8)
+
+//BOOST_MOVE_TMPL_GETN
+#define BOOST_MOVE_TMPL_GET0
+#define BOOST_MOVE_TMPL_GET1                       p.template get<0>()
+#define BOOST_MOVE_TMPL_GET2 BOOST_MOVE_TMPL_GET1, p.template get<1>()
+#define BOOST_MOVE_TMPL_GET3 BOOST_MOVE_TMPL_GET2, p.template get<2>()
+#define BOOST_MOVE_TMPL_GET4 BOOST_MOVE_TMPL_GET3, p.template get<3>()
+#define BOOST_MOVE_TMPL_GET5 BOOST_MOVE_TMPL_GET4, p.template get<4>()
+#define BOOST_MOVE_TMPL_GET6 BOOST_MOVE_TMPL_GET5, p.template get<5>()
+#define BOOST_MOVE_TMPL_GET7 BOOST_MOVE_TMPL_GET6, p.template get<6>()
+#define BOOST_MOVE_TMPL_GET8 BOOST_MOVE_TMPL_GET7, p.template get<7>()
+#define BOOST_MOVE_TMPL_GET9 BOOST_MOVE_TMPL_GET8, p.template get<8>()
+
+//BOOST_MOVE_TMPL_GETQN
+#define BOOST_MOVE_TMPL_GETQ0
+#define BOOST_MOVE_TMPL_GETQ1                        q.template get<0>()
+#define BOOST_MOVE_TMPL_GETQ2 BOOST_MOVE_TMPL_GETQ1, q.template get<1>()
+#define BOOST_MOVE_TMPL_GETQ3 BOOST_MOVE_TMPL_GETQ2, q.template get<2>()
+#define BOOST_MOVE_TMPL_GETQ4 BOOST_MOVE_TMPL_GETQ3, q.template get<3>()
+#define BOOST_MOVE_TMPL_GETQ5 BOOST_MOVE_TMPL_GETQ4, q.template get<4>()
+#define BOOST_MOVE_TMPL_GETQ6 BOOST_MOVE_TMPL_GETQ5, q.template get<5>()
+#define BOOST_MOVE_TMPL_GETQ7 BOOST_MOVE_TMPL_GETQ6, q.template get<6>()
+#define BOOST_MOVE_TMPL_GETQ8 BOOST_MOVE_TMPL_GETQ7, q.template get<7>()
+#define BOOST_MOVE_TMPL_GETQ9 BOOST_MOVE_TMPL_GETQ8, q.template get<8>()
+
+//BOOST_MOVE_GET_IDXN
+#define BOOST_MOVE_GET_IDX0
+#define BOOST_MOVE_GET_IDX1                      get<0>(p)
+#define BOOST_MOVE_GET_IDX2 BOOST_MOVE_GET_IDX1, get<1>(p)
+#define BOOST_MOVE_GET_IDX3 BOOST_MOVE_GET_IDX2, get<2>(p)
+#define BOOST_MOVE_GET_IDX4 BOOST_MOVE_GET_IDX3, get<3>(p)
+#define BOOST_MOVE_GET_IDX5 BOOST_MOVE_GET_IDX4, get<4>(p)
+#define BOOST_MOVE_GET_IDX6 BOOST_MOVE_GET_IDX5, get<5>(p)
+#define BOOST_MOVE_GET_IDX7 BOOST_MOVE_GET_IDX6, get<6>(p)
+#define BOOST_MOVE_GET_IDX8 BOOST_MOVE_GET_IDX7, get<7>(p)
+#define BOOST_MOVE_GET_IDX9 BOOST_MOVE_GET_IDX8, get<8>(p)
+
+//BOOST_MOVE_GET_IDXQN
+#define BOOST_MOVE_GET_IDXQ0
+#define BOOST_MOVE_GET_IDXQ1                       get<0>(q)
+#define BOOST_MOVE_GET_IDXQ2 BOOST_MOVE_GET_IDXQ1, get<1>(q)
+#define BOOST_MOVE_GET_IDXQ3 BOOST_MOVE_GET_IDXQ2, get<2>(q)
+#define BOOST_MOVE_GET_IDXQ4 BOOST_MOVE_GET_IDXQ3, get<3>(q)
+#define BOOST_MOVE_GET_IDXQ5 BOOST_MOVE_GET_IDXQ4, get<4>(q)
+#define BOOST_MOVE_GET_IDXQ6 BOOST_MOVE_GET_IDXQ5, get<5>(q)
+#define BOOST_MOVE_GET_IDXQ7 BOOST_MOVE_GET_IDXQ6, get<6>(q)
+#define BOOST_MOVE_GET_IDXQ8 BOOST_MOVE_GET_IDXQ7, get<7>(q)
+#define BOOST_MOVE_GET_IDXQ9 BOOST_MOVE_GET_IDXQ8, get<8>(q)
 
 //BOOST_MOVE_ARGN
 #define BOOST_MOVE_ARG0
@@ -125,36 +179,36 @@ namespace move_detail {
 
 //BOOST_MOVE_DECLVALN
 #define BOOST_MOVE_DECLVAL0
-#define BOOST_MOVE_DECLVAL1                      ::boost::move_detail::declval<P0>()
-#define BOOST_MOVE_DECLVAL2 BOOST_MOVE_DECLVAL1, ::boost::move_detail::declval<P1>()
-#define BOOST_MOVE_DECLVAL3 BOOST_MOVE_DECLVAL2, ::boost::move_detail::declval<P2>()
-#define BOOST_MOVE_DECLVAL4 BOOST_MOVE_DECLVAL3, ::boost::move_detail::declval<P3>()
-#define BOOST_MOVE_DECLVAL5 BOOST_MOVE_DECLVAL4, ::boost::move_detail::declval<P4>()
-#define BOOST_MOVE_DECLVAL6 BOOST_MOVE_DECLVAL5, ::boost::move_detail::declval<P5>()
-#define BOOST_MOVE_DECLVAL7 BOOST_MOVE_DECLVAL6, ::boost::move_detail::declval<P6>()
-#define BOOST_MOVE_DECLVAL8 BOOST_MOVE_DECLVAL7, ::boost::move_detail::declval<P7>()
-#define BOOST_MOVE_DECLVAL9 BOOST_MOVE_DECLVAL8, ::boost::move_detail::declval<P8>()
+#define BOOST_MOVE_DECLVAL1                      ::methcla_boost::move_detail::declval<P0>()
+#define BOOST_MOVE_DECLVAL2 BOOST_MOVE_DECLVAL1, ::methcla_boost::move_detail::declval<P1>()
+#define BOOST_MOVE_DECLVAL3 BOOST_MOVE_DECLVAL2, ::methcla_boost::move_detail::declval<P2>()
+#define BOOST_MOVE_DECLVAL4 BOOST_MOVE_DECLVAL3, ::methcla_boost::move_detail::declval<P3>()
+#define BOOST_MOVE_DECLVAL5 BOOST_MOVE_DECLVAL4, ::methcla_boost::move_detail::declval<P4>()
+#define BOOST_MOVE_DECLVAL6 BOOST_MOVE_DECLVAL5, ::methcla_boost::move_detail::declval<P5>()
+#define BOOST_MOVE_DECLVAL7 BOOST_MOVE_DECLVAL6, ::methcla_boost::move_detail::declval<P6>()
+#define BOOST_MOVE_DECLVAL8 BOOST_MOVE_DECLVAL7, ::methcla_boost::move_detail::declval<P7>()
+#define BOOST_MOVE_DECLVAL9 BOOST_MOVE_DECLVAL8, ::methcla_boost::move_detail::declval<P8>()
 
 //BOOST_MOVE_DECLVALQN
 #define BOOST_MOVE_DECLVALQ0
-#define BOOST_MOVE_DECLVALQ1                       ::boost::move_detail::declval<Q0>()
-#define BOOST_MOVE_DECLVALQ2 BOOST_MOVE_DECLVALQ1, ::boost::move_detail::declval<Q1>()
-#define BOOST_MOVE_DECLVALQ3 BOOST_MOVE_DECLVALQ2, ::boost::move_detail::declval<Q2>()
-#define BOOST_MOVE_DECLVALQ4 BOOST_MOVE_DECLVALQ3, ::boost::move_detail::declval<Q3>()
-#define BOOST_MOVE_DECLVALQ5 BOOST_MOVE_DECLVALQ4, ::boost::move_detail::declval<Q4>()
-#define BOOST_MOVE_DECLVALQ6 BOOST_MOVE_DECLVALQ5, ::boost::move_detail::declval<Q5>()
-#define BOOST_MOVE_DECLVALQ7 BOOST_MOVE_DECLVALQ6, ::boost::move_detail::declval<Q6>()
-#define BOOST_MOVE_DECLVALQ8 BOOST_MOVE_DECLVALQ7, ::boost::move_detail::declval<Q7>()
-#define BOOST_MOVE_DECLVALQ9 BOOST_MOVE_DECLVALQ8, ::boost::move_detail::declval<Q8>()
+#define BOOST_MOVE_DECLVALQ1                       ::methcla_boost::move_detail::declval<Q0>()
+#define BOOST_MOVE_DECLVALQ2 BOOST_MOVE_DECLVALQ1, ::methcla_boost::move_detail::declval<Q1>()
+#define BOOST_MOVE_DECLVALQ3 BOOST_MOVE_DECLVALQ2, ::methcla_boost::move_detail::declval<Q2>()
+#define BOOST_MOVE_DECLVALQ4 BOOST_MOVE_DECLVALQ3, ::methcla_boost::move_detail::declval<Q3>()
+#define BOOST_MOVE_DECLVALQ5 BOOST_MOVE_DECLVALQ4, ::methcla_boost::move_detail::declval<Q4>()
+#define BOOST_MOVE_DECLVALQ6 BOOST_MOVE_DECLVALQ5, ::methcla_boost::move_detail::declval<Q5>()
+#define BOOST_MOVE_DECLVALQ7 BOOST_MOVE_DECLVALQ6, ::methcla_boost::move_detail::declval<Q6>()
+#define BOOST_MOVE_DECLVALQ8 BOOST_MOVE_DECLVALQ7, ::methcla_boost::move_detail::declval<Q7>()
+#define BOOST_MOVE_DECLVALQ9 BOOST_MOVE_DECLVALQ8, ::methcla_boost::move_detail::declval<Q8>()
 
 #ifdef BOOST_MOVE_MSVC_10_MEMBER_RVALUE_REF_BUG
-   #define BOOST_MOVE_MREF(T)    ::boost::move_detail::mref<T>
-   #define BOOST_MOVE_MFWD(N)    ::boost::forward<P##N>(this->m_p##N.get())
-   #define BOOST_MOVE_MFWDQ(N)   ::boost::forward<Q##N>(this->m_q##N.get())
+   #define BOOST_MOVE_MREF(T)    ::methcla_boost::move_detail::mref<T>
+   #define BOOST_MOVE_MFWD(N)    ::methcla_boost::forward<P##N>(this->m_p##N.get())
+   #define BOOST_MOVE_MFWDQ(N)   ::methcla_boost::forward<Q##N>(this->m_q##N.get())
 #else
    #define BOOST_MOVE_MREF(T)    BOOST_FWD_REF(T)
-   #define BOOST_MOVE_MFWD(N)    ::boost::forward<P##N>(this->m_p##N)
-   #define BOOST_MOVE_MFWDQ(N)   ::boost::forward<Q##N>(this->m_q##N)
+   #define BOOST_MOVE_MFWD(N)    ::methcla_boost::forward<P##N>(this->m_p##N)
+   #define BOOST_MOVE_MFWDQ(N)   ::methcla_boost::forward<Q##N>(this->m_q##N)
 #endif
 #define BOOST_MOVE_MITFWD(N)  *this->m_p##N
 #define BOOST_MOVE_MINC(N)    ++this->m_p##N
@@ -236,27 +290,27 @@ namespace move_detail {
 
 //BOOST_MOVE_FWD_INITN
 #define BOOST_MOVE_FWD_INIT0
-#define BOOST_MOVE_FWD_INIT1                       m_p0(::boost::forward<P0>(p0))
-#define BOOST_MOVE_FWD_INIT2 BOOST_MOVE_FWD_INIT1, m_p1(::boost::forward<P1>(p1))
-#define BOOST_MOVE_FWD_INIT3 BOOST_MOVE_FWD_INIT2, m_p2(::boost::forward<P2>(p2))
-#define BOOST_MOVE_FWD_INIT4 BOOST_MOVE_FWD_INIT3, m_p3(::boost::forward<P3>(p3))
-#define BOOST_MOVE_FWD_INIT5 BOOST_MOVE_FWD_INIT4, m_p4(::boost::forward<P4>(p4))
-#define BOOST_MOVE_FWD_INIT6 BOOST_MOVE_FWD_INIT5, m_p5(::boost::forward<P5>(p5))
-#define BOOST_MOVE_FWD_INIT7 BOOST_MOVE_FWD_INIT6, m_p6(::boost::forward<P6>(p6))
-#define BOOST_MOVE_FWD_INIT8 BOOST_MOVE_FWD_INIT7, m_p7(::boost::forward<P7>(p7))
-#define BOOST_MOVE_FWD_INIT9 BOOST_MOVE_FWD_INIT8, m_p8(::boost::forward<P8>(p8))
+#define BOOST_MOVE_FWD_INIT1                       m_p0(::methcla_boost::forward<P0>(p0))
+#define BOOST_MOVE_FWD_INIT2 BOOST_MOVE_FWD_INIT1, m_p1(::methcla_boost::forward<P1>(p1))
+#define BOOST_MOVE_FWD_INIT3 BOOST_MOVE_FWD_INIT2, m_p2(::methcla_boost::forward<P2>(p2))
+#define BOOST_MOVE_FWD_INIT4 BOOST_MOVE_FWD_INIT3, m_p3(::methcla_boost::forward<P3>(p3))
+#define BOOST_MOVE_FWD_INIT5 BOOST_MOVE_FWD_INIT4, m_p4(::methcla_boost::forward<P4>(p4))
+#define BOOST_MOVE_FWD_INIT6 BOOST_MOVE_FWD_INIT5, m_p5(::methcla_boost::forward<P5>(p5))
+#define BOOST_MOVE_FWD_INIT7 BOOST_MOVE_FWD_INIT6, m_p6(::methcla_boost::forward<P6>(p6))
+#define BOOST_MOVE_FWD_INIT8 BOOST_MOVE_FWD_INIT7, m_p7(::methcla_boost::forward<P7>(p7))
+#define BOOST_MOVE_FWD_INIT9 BOOST_MOVE_FWD_INIT8, m_p8(::methcla_boost::forward<P8>(p8))
 
 //BOOST_MOVE_FWD_INITQN
 #define BOOST_MOVE_FWD_INITQ0
-#define BOOST_MOVE_FWD_INITQ1                        m_q0(::boost::forward<Q0>(q0))
-#define BOOST_MOVE_FWD_INITQ2 BOOST_MOVE_FWD_INITQ1, m_q1(::boost::forward<Q1>(q1))
-#define BOOST_MOVE_FWD_INITQ3 BOOST_MOVE_FWD_INITQ2, m_q2(::boost::forward<Q2>(q2))
-#define BOOST_MOVE_FWD_INITQ4 BOOST_MOVE_FWD_INITQ3, m_q3(::boost::forward<Q3>(q3))
-#define BOOST_MOVE_FWD_INITQ5 BOOST_MOVE_FWD_INITQ4, m_q4(::boost::forward<Q4>(q4))
-#define BOOST_MOVE_FWD_INITQ6 BOOST_MOVE_FWD_INITQ5, m_q5(::boost::forward<Q5>(q5))
-#define BOOST_MOVE_FWD_INITQ7 BOOST_MOVE_FWD_INITQ6, m_q6(::boost::forward<Q6>(q6))
-#define BOOST_MOVE_FWD_INITQ8 BOOST_MOVE_FWD_INITQ7, m_q7(::boost::forward<Q7>(q7))
-#define BOOST_MOVE_FWD_INITQ9 BOOST_MOVE_FWD_INITQ8, m_q8(::boost::forward<Q8>(q8))
+#define BOOST_MOVE_FWD_INITQ1                        m_q0(::methcla_boost::forward<Q0>(q0))
+#define BOOST_MOVE_FWD_INITQ2 BOOST_MOVE_FWD_INITQ1, m_q1(::methcla_boost::forward<Q1>(q1))
+#define BOOST_MOVE_FWD_INITQ3 BOOST_MOVE_FWD_INITQ2, m_q2(::methcla_boost::forward<Q2>(q2))
+#define BOOST_MOVE_FWD_INITQ4 BOOST_MOVE_FWD_INITQ3, m_q3(::methcla_boost::forward<Q3>(q3))
+#define BOOST_MOVE_FWD_INITQ5 BOOST_MOVE_FWD_INITQ4, m_q4(::methcla_boost::forward<Q4>(q4))
+#define BOOST_MOVE_FWD_INITQ6 BOOST_MOVE_FWD_INITQ5, m_q5(::methcla_boost::forward<Q5>(q5))
+#define BOOST_MOVE_FWD_INITQ7 BOOST_MOVE_FWD_INITQ6, m_q6(::methcla_boost::forward<Q6>(q6))
+#define BOOST_MOVE_FWD_INITQ8 BOOST_MOVE_FWD_INITQ7, m_q7(::methcla_boost::forward<Q7>(q7))
+#define BOOST_MOVE_FWD_INITQ9 BOOST_MOVE_FWD_INITQ8, m_q8(::methcla_boost::forward<Q8>(q8))
 
 //BOOST_MOVE_VAL_INITN
 #define BOOST_MOVE_VAL_INIT0
@@ -281,6 +335,18 @@ namespace move_detail {
 #define BOOST_MOVE_VAL_INITQ7 BOOST_MOVE_VAL_INITQ6, m_q6(q6)
 #define BOOST_MOVE_VAL_INITQ8 BOOST_MOVE_VAL_INITQ7, m_q7(q7)
 #define BOOST_MOVE_VAL_INITQ9 BOOST_MOVE_VAL_INITQ8, m_q8(q8)
+
+//BOOST_MOVE_UREFANONN
+#define BOOST_MOVE_UREFANON0
+#define BOOST_MOVE_UREFANON1                       BOOST_FWD_REF(P0)
+#define BOOST_MOVE_UREFANON2 BOOST_MOVE_UREFANON1, BOOST_FWD_REF(P1)
+#define BOOST_MOVE_UREFANON3 BOOST_MOVE_UREFANON2, BOOST_FWD_REF(P2)
+#define BOOST_MOVE_UREFANON4 BOOST_MOVE_UREFANON3, BOOST_FWD_REF(P3)
+#define BOOST_MOVE_UREFANON5 BOOST_MOVE_UREFANON4, BOOST_FWD_REF(P4)
+#define BOOST_MOVE_UREFANON6 BOOST_MOVE_UREFANON5, BOOST_FWD_REF(P5)
+#define BOOST_MOVE_UREFANON7 BOOST_MOVE_UREFANON6, BOOST_FWD_REF(P6)
+#define BOOST_MOVE_UREFANON8 BOOST_MOVE_UREFANON7, BOOST_FWD_REF(P7)
+#define BOOST_MOVE_UREFANON9 BOOST_MOVE_UREFANON8, BOOST_FWD_REF(P8)
 
 //BOOST_MOVE_UREFN
 #define BOOST_MOVE_UREF0
@@ -331,7 +397,7 @@ namespace move_detail {
 #define BOOST_MOVE_VALQ9 BOOST_MOVE_VALQ8, BOOST_FWD_REF(Q8) q8
 
 
-#define BOOST_MOVE_UNVOIDCREF(T) const typename boost::move_detail::unvoid<T>::type&
+#define BOOST_MOVE_UNVOIDCREF(T) const typename methcla_boost::move_detail::unvoid<T>::type&
 //BOOST_MOVE_CREFN
 #define BOOST_MOVE_CREF0
 #define BOOST_MOVE_CREF1                   BOOST_MOVE_UNVOIDCREF(P0) p0
@@ -404,6 +470,31 @@ namespace move_detail {
 #define BOOST_MOVE_CLASSDFLTQ8 BOOST_MOVE_CLASSDFLTQ7, class Q7 = void
 #define BOOST_MOVE_CLASSDFLTQ9 BOOST_MOVE_CLASSDFLTQ8, class Q8 = void
 
+//BOOST_MOVE_LAST_TARGN
+#define BOOST_MOVE_LAST_TARG0 void
+#define BOOST_MOVE_LAST_TARG1 P0
+#define BOOST_MOVE_LAST_TARG2 P1
+#define BOOST_MOVE_LAST_TARG3 P2
+#define BOOST_MOVE_LAST_TARG4 P3
+#define BOOST_MOVE_LAST_TARG5 P4
+#define BOOST_MOVE_LAST_TARG6 P5
+#define BOOST_MOVE_LAST_TARG7 P6
+#define BOOST_MOVE_LAST_TARG8 P7
+#define BOOST_MOVE_LAST_TARG9 P8
+
+//BOOST_MOVE_LAST_TARGQN
+#define BOOST_MOVE_LAST_TARGQ0 void
+#define BOOST_MOVE_LAST_TARGQ1 Q0
+#define BOOST_MOVE_LAST_TARGQ2 Q1
+#define BOOST_MOVE_LAST_TARGQ3 Q2
+#define BOOST_MOVE_LAST_TARGQ4 Q3
+#define BOOST_MOVE_LAST_TARGQ5 Q4
+#define BOOST_MOVE_LAST_TARGQ6 Q5
+#define BOOST_MOVE_LAST_TARGQ7 Q6
+#define BOOST_MOVE_LAST_TARGQ8 Q7
+#define BOOST_MOVE_LAST_TARGQ9 Q8
+
+
 //BOOST_MOVE_TARGN
 #define BOOST_MOVE_TARG0
 #define BOOST_MOVE_TARG1                   P0
@@ -430,27 +521,27 @@ namespace move_detail {
 
 //BOOST_MOVE_FWD_TN
 #define BOOST_MOVE_FWD_T0
-#define BOOST_MOVE_FWD_T1                    typename ::boost::move_detail::forward_type<P0>::type
-#define BOOST_MOVE_FWD_T2 BOOST_MOVE_FWD_T1, typename ::boost::move_detail::forward_type<P1>::type
-#define BOOST_MOVE_FWD_T3 BOOST_MOVE_FWD_T2, typename ::boost::move_detail::forward_type<P2>::type
-#define BOOST_MOVE_FWD_T4 BOOST_MOVE_FWD_T3, typename ::boost::move_detail::forward_type<P3>::type
-#define BOOST_MOVE_FWD_T5 BOOST_MOVE_FWD_T4, typename ::boost::move_detail::forward_type<P4>::type
-#define BOOST_MOVE_FWD_T6 BOOST_MOVE_FWD_T5, typename ::boost::move_detail::forward_type<P5>::type
-#define BOOST_MOVE_FWD_T7 BOOST_MOVE_FWD_T6, typename ::boost::move_detail::forward_type<P6>::type
-#define BOOST_MOVE_FWD_T8 BOOST_MOVE_FWD_T7, typename ::boost::move_detail::forward_type<P7>::type
-#define BOOST_MOVE_FWD_T9 BOOST_MOVE_FWD_T8, typename ::boost::move_detail::forward_type<P8>::type
+#define BOOST_MOVE_FWD_T1                    typename ::methcla_boost::move_detail::forward_type<P0>::type
+#define BOOST_MOVE_FWD_T2 BOOST_MOVE_FWD_T1, typename ::methcla_boost::move_detail::forward_type<P1>::type
+#define BOOST_MOVE_FWD_T3 BOOST_MOVE_FWD_T2, typename ::methcla_boost::move_detail::forward_type<P2>::type
+#define BOOST_MOVE_FWD_T4 BOOST_MOVE_FWD_T3, typename ::methcla_boost::move_detail::forward_type<P3>::type
+#define BOOST_MOVE_FWD_T5 BOOST_MOVE_FWD_T4, typename ::methcla_boost::move_detail::forward_type<P4>::type
+#define BOOST_MOVE_FWD_T6 BOOST_MOVE_FWD_T5, typename ::methcla_boost::move_detail::forward_type<P5>::type
+#define BOOST_MOVE_FWD_T7 BOOST_MOVE_FWD_T6, typename ::methcla_boost::move_detail::forward_type<P6>::type
+#define BOOST_MOVE_FWD_T8 BOOST_MOVE_FWD_T7, typename ::methcla_boost::move_detail::forward_type<P7>::type
+#define BOOST_MOVE_FWD_T9 BOOST_MOVE_FWD_T8, typename ::methcla_boost::move_detail::forward_type<P8>::type
 
 //BOOST_MOVE_FWD_TQN
 #define BOOST_MOVE_FWD_TQ0
-#define BOOST_MOVE_FWD_TQ1                     typename ::boost::move_detail::forward_type<Q0>::type
-#define BOOST_MOVE_FWD_TQ2 BOOST_MOVE_FWD_TQ1, typename ::boost::move_detail::forward_type<Q1>::type
-#define BOOST_MOVE_FWD_TQ3 BOOST_MOVE_FWD_TQ2, typename ::boost::move_detail::forward_type<Q2>::type
-#define BOOST_MOVE_FWD_TQ4 BOOST_MOVE_FWD_TQ3, typename ::boost::move_detail::forward_type<Q3>::type
-#define BOOST_MOVE_FWD_TQ5 BOOST_MOVE_FWD_TQ4, typename ::boost::move_detail::forward_type<Q4>::type
-#define BOOST_MOVE_FWD_TQ6 BOOST_MOVE_FWD_TQ5, typename ::boost::move_detail::forward_type<Q5>::type
-#define BOOST_MOVE_FWD_TQ7 BOOST_MOVE_FWD_TQ6, typename ::boost::move_detail::forward_type<Q6>::type
-#define BOOST_MOVE_FWD_TQ8 BOOST_MOVE_FWD_TQ7, typename ::boost::move_detail::forward_type<Q7>::type
-#define BOOST_MOVE_FWD_TQ9 BOOST_MOVE_FWD_TQ8, typename ::boost::move_detail::forward_type<Q8>::type
+#define BOOST_MOVE_FWD_TQ1                     typename ::methcla_boost::move_detail::forward_type<Q0>::type
+#define BOOST_MOVE_FWD_TQ2 BOOST_MOVE_FWD_TQ1, typename ::methcla_boost::move_detail::forward_type<Q1>::type
+#define BOOST_MOVE_FWD_TQ3 BOOST_MOVE_FWD_TQ2, typename ::methcla_boost::move_detail::forward_type<Q2>::type
+#define BOOST_MOVE_FWD_TQ4 BOOST_MOVE_FWD_TQ3, typename ::methcla_boost::move_detail::forward_type<Q3>::type
+#define BOOST_MOVE_FWD_TQ5 BOOST_MOVE_FWD_TQ4, typename ::methcla_boost::move_detail::forward_type<Q4>::type
+#define BOOST_MOVE_FWD_TQ6 BOOST_MOVE_FWD_TQ5, typename ::methcla_boost::move_detail::forward_type<Q5>::type
+#define BOOST_MOVE_FWD_TQ7 BOOST_MOVE_FWD_TQ6, typename ::methcla_boost::move_detail::forward_type<Q6>::type
+#define BOOST_MOVE_FWD_TQ8 BOOST_MOVE_FWD_TQ7, typename ::methcla_boost::move_detail::forward_type<Q7>::type
+#define BOOST_MOVE_FWD_TQ9 BOOST_MOVE_FWD_TQ8, typename ::methcla_boost::move_detail::forward_type<Q8>::type
 
 //BOOST_MOVE_MREFX
 #define BOOST_MOVE_MREF0
@@ -572,6 +663,45 @@ namespace move_detail {
 #define BOOST_MOVE_I8 BOOST_MOVE_I1
 #define BOOST_MOVE_I9 BOOST_MOVE_I1
 
+//BOOST_MOVE_BOOL
+# define BOOST_MOVE_BOOL(x)   BOOST_MOVE_BOOL_I(x)
+# define BOOST_MOVE_BOOL_I(x) BOOST_MOVE_BOOL##x
+# define BOOST_MOVE_BOOL0 0
+# define BOOST_MOVE_BOOL1 1
+# define BOOST_MOVE_BOOL2 1
+# define BOOST_MOVE_BOOL3 1
+# define BOOST_MOVE_BOOL4 1
+# define BOOST_MOVE_BOOL5 1
+# define BOOST_MOVE_BOOL6 1
+# define BOOST_MOVE_BOOL7 1
+# define BOOST_MOVE_BOOL8 1
+# define BOOST_MOVE_BOOL9 1
+
+//BOOST_MOVE_I_IF
+#define BOOST_MOVE_I_IF(x)    BOOST_MOVE_I_IF_I (BOOST_MOVE_BOOL(x))
+#define BOOST_MOVE_I_IF_I(x)  BOOST_MOVE_I_IF_I2(x)
+#define BOOST_MOVE_I_IF_I2(x) BOOST_MOVE_IF_I_##x
+#define BOOST_MOVE_IF_I_0
+#define BOOST_MOVE_IF_I_1 ,
+
+//BOOST_MOVE_IF
+#define BOOST_MOVE_IF(cond, t, f) BOOST_MOVE_IF_I(cond, t, f)
+#define BOOST_MOVE_IF_I(cond, t, f) BOOST_MOVE_IIF(BOOST_MOVE_BOOL(cond), t, f)
+
+#define BOOST_MOVE_IIF(bit, t, f)   BOOST_MOVE_IIF_I(bit, t, f)
+#define BOOST_MOVE_IIF_I(bit, t, f) BOOST_MOVE_IIF_##bit(t, f)
+#define BOOST_MOVE_IIF_0(t, f) f
+#define BOOST_MOVE_IIF_1(t, f) t
+
+/*
+#define BOOST_MOVE_IIF(bit, t, f) BOOST_MOVE_IIF_OO((bit, t, f))
+#define BOOST_MOVE_IIF_OO(par) BOOST_MOVE_IIF_I ## par
+#define BOOST_MOVE_IIF_I(bit, t, f) BOOST_MOVE_IIF_II(BOOST_MOVE_IIF_ ## bit(t, f))
+#define BOOST_MOVE_IIF_II(id) id
+#define BOOST_MOVE_IIF_0(t, f) f
+#define BOOST_MOVE_IIF_1(t, f) t
+*/
+
 //BOOST_MOVE_COLON
 #define BOOST_MOVE_COLON0
 #define BOOST_MOVE_COLON1 :
@@ -583,6 +713,103 @@ namespace move_detail {
 #define BOOST_MOVE_COLON7 BOOST_MOVE_COLON1
 #define BOOST_MOVE_COLON8 BOOST_MOVE_COLON1
 #define BOOST_MOVE_COLON9 BOOST_MOVE_COLON1
+
+//BOOST_MOVE_BITOR
+#define BOOST_MOVE_BITOR(x,y)    BOOST_MOVE_BITOR_I(x,y)
+#define BOOST_MOVE_BITOR_I(x,y)  BOOST_MOVE_BITOR##x##y
+#define BOOST_MOVE_BITOR00 0
+#define BOOST_MOVE_BITOR01 1
+#define BOOST_MOVE_BITOR10 1
+#define BOOST_MOVE_BITOR11 1
+
+//BOOST_MOVE_OR
+#define BOOST_MOVE_OR(x, y) BOOST_MOVE_OR_I(x, y)
+#define BOOST_MOVE_OR_I(x, y) BOOST_MOVE_BITOR(BOOST_MOVE_BOOL(x), BOOST_MOVE_BOOL(y))
+
+//BOOST_MOVE_BITAND
+#define BOOST_MOVE_BITAND(x,y)    BOOST_MOVE_BITAND_I(x,y)
+#define BOOST_MOVE_BITAND_I(x,y)  BOOST_MOVE_BITAND##x##y
+#define BOOST_MOVE_BITAND00 0
+#define BOOST_MOVE_BITAND01 0
+#define BOOST_MOVE_BITAND10 0
+#define BOOST_MOVE_BITAND11 1
+
+//BOOST_MOVE_AND
+#define BOOST_MOVE_AND(x, y) BOOST_MOVE_AND_I(x, y)
+#define BOOST_MOVE_AND_I(x, y) BOOST_MOVE_BITAND(BOOST_MOVE_BOOL(x), BOOST_MOVE_BOOL(y))
+
+//BOOST_MOVE_DEC
+#define BOOST_MOVE_DEC(x) BOOST_MOVE_DEC_I(x)
+#define BOOST_MOVE_DEC_I(x) BOOST_MOVE_DEC##x
+#define BOOST_MOVE_DEC1  0
+#define BOOST_MOVE_DEC2  1
+#define BOOST_MOVE_DEC3  2
+#define BOOST_MOVE_DEC4  3
+#define BOOST_MOVE_DEC5  4
+#define BOOST_MOVE_DEC6  5
+#define BOOST_MOVE_DEC7  6
+#define BOOST_MOVE_DEC8  7
+#define BOOST_MOVE_DEC9  8
+#define BOOST_MOVE_DEC10 9
+#define BOOST_MOVE_DEC11 10
+#define BOOST_MOVE_DEC12 11
+#define BOOST_MOVE_DEC13 12
+#define BOOST_MOVE_DEC14 13
+
+//BOOST_MOVE_SUB
+#define BOOST_MOVE_SUB(x, y) BOOST_MOVE_SUB_I(x,y)
+#define BOOST_MOVE_SUB_I(x, y) BOOST_MOVE_SUB##y(x)
+#define BOOST_MOVE_SUB0(x) x
+#define BOOST_MOVE_SUB1(x) BOOST_MOVE_DEC(x)
+#define BOOST_MOVE_SUB2(x) BOOST_MOVE_SUB1(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB3(x) BOOST_MOVE_SUB2(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB4(x) BOOST_MOVE_SUB3(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB5(x) BOOST_MOVE_SUB4(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB6(x) BOOST_MOVE_SUB5(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB7(x) BOOST_MOVE_SUB6(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB8(x) BOOST_MOVE_SUB7(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB9(x) BOOST_MOVE_SUB8(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB10(x) BOOST_MOVE_SUB9(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB11(x) BOOST_MOVE_SUB10(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB12(x) BOOST_MOVE_SUB11(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB13(x) BOOST_MOVE_SUB12(BOOST_MOVE_DEC(x))
+#define BOOST_MOVE_SUB14(x) BOOST_MOVE_SUB13(BOOST_MOVE_DEC(x))
+
+//BOOST_MOVE_INC
+#define BOOST_MOVE_INC(x) BOOST_MOVE_INC_I(x)
+#define BOOST_MOVE_INC_I(x) BOOST_MOVE_INC##x
+#define BOOST_MOVE_INC0  1
+#define BOOST_MOVE_INC1  2
+#define BOOST_MOVE_INC2  3
+#define BOOST_MOVE_INC3  4
+#define BOOST_MOVE_INC4  5
+#define BOOST_MOVE_INC5  6
+#define BOOST_MOVE_INC6  7
+#define BOOST_MOVE_INC7  8
+#define BOOST_MOVE_INC8  9
+#define BOOST_MOVE_INC9  10
+#define BOOST_MOVE_INC10 11
+#define BOOST_MOVE_INC11 12
+#define BOOST_MOVE_INC12 13
+#define BOOST_MOVE_INC13 14
+
+//BOOST_MOVE_ADD
+#define BOOST_MOVE_ADD(x, y) BOOST_MOVE_ADD_I(x,y)
+#define BOOST_MOVE_ADD_I(x, y) BOOST_MOVE_ADD##y(x)
+#define BOOST_MOVE_ADD0(x) x
+#define BOOST_MOVE_ADD1(x) BOOST_MOVE_INC(x)
+#define BOOST_MOVE_ADD2(x) BOOST_MOVE_ADD1(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD3(x) BOOST_MOVE_ADD2(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD4(x) BOOST_MOVE_ADD3(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD5(x) BOOST_MOVE_ADD4(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD6(x) BOOST_MOVE_ADD5(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD7(x) BOOST_MOVE_ADD6(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD8(x) BOOST_MOVE_ADD7(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD9(x) BOOST_MOVE_ADD8(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD10(x) BOOST_MOVE_ADD9(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD11(x) BOOST_MOVE_ADD10(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD12(x) BOOST_MOVE_ADD11(BOOST_MOVE_INC(x))
+#define BOOST_MOVE_ADD13(x) BOOST_MOVE_ADD12(BOOST_MOVE_INC(x))
 
 //BOOST_MOVE_ITERATE_2TON
 #define BOOST_MOVE_ITERATE_2TO2(MACROFUNC)                                       MACROFUNC(2)
@@ -618,7 +845,6 @@ namespace move_detail {
 #define BOOST_MOVE_ITERATE_0TO9(MACROFUNC)   BOOST_MOVE_ITERATE_0TO8(MACROFUNC)  MACROFUNC(9)
 
 //BOOST_MOVE_ITERATE_NTON
-#define BOOST_MOVE_ITERATE_0TO0(MACROFUNC)   MACROFUNC(0)
 #define BOOST_MOVE_ITERATE_1TO1(MACROFUNC)   MACROFUNC(1)
 #define BOOST_MOVE_ITERATE_2TO2(MACROFUNC)   MACROFUNC(2)
 #define BOOST_MOVE_ITERATE_3TO3(MACROFUNC)   MACROFUNC(3)
@@ -629,28 +855,34 @@ namespace move_detail {
 #define BOOST_MOVE_ITERATE_8TO8(MACROFUNC)   MACROFUNC(8)
 #define BOOST_MOVE_ITERATE_9TO9(MACROFUNC)   MACROFUNC(9)
 
-//BOOST_MOVE_ITER2D_0TO9
-#define BOOST_MOVE_ITER2DLOW_0TO0(MACROFUNC2D, M)                                            MACROFUNC2D(M, 0)
-#define BOOST_MOVE_ITER2DLOW_0TO1(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO0(MACROFUNC2D, M) MACROFUNC2D(M, 1)
-#define BOOST_MOVE_ITER2DLOW_0TO2(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO1(MACROFUNC2D, M) MACROFUNC2D(M, 2)
-#define BOOST_MOVE_ITER2DLOW_0TO3(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO2(MACROFUNC2D, M) MACROFUNC2D(M, 3)
-#define BOOST_MOVE_ITER2DLOW_0TO4(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO3(MACROFUNC2D, M) MACROFUNC2D(M, 4)
-#define BOOST_MOVE_ITER2DLOW_0TO5(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO4(MACROFUNC2D, M) MACROFUNC2D(M, 5)
-#define BOOST_MOVE_ITER2DLOW_0TO6(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO5(MACROFUNC2D, M) MACROFUNC2D(M, 6)
-#define BOOST_MOVE_ITER2DLOW_0TO7(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO6(MACROFUNC2D, M) MACROFUNC2D(M, 7)
-#define BOOST_MOVE_ITER2DLOW_0TO8(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO7(MACROFUNC2D, M) MACROFUNC2D(M, 8)
-#define BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TO8(MACROFUNC2D, M) MACROFUNC2D(M, 9)
-//
-#define BOOST_MOVE_ITER2D_0TO0(MACROFUNC2D)                                        BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 0)
-#define BOOST_MOVE_ITER2D_0TO1(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO0(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 1)
-#define BOOST_MOVE_ITER2D_0TO2(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO1(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 2)
-#define BOOST_MOVE_ITER2D_0TO3(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO2(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 3)
-#define BOOST_MOVE_ITER2D_0TO4(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO3(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 4)
-#define BOOST_MOVE_ITER2D_0TO5(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO4(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 5)
-#define BOOST_MOVE_ITER2D_0TO6(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO5(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 6)
-#define BOOST_MOVE_ITER2D_0TO7(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO6(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 7)
-#define BOOST_MOVE_ITER2D_0TO8(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO7(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 8)
-#define BOOST_MOVE_ITER2D_0TO9(MACROFUNC2D)   BOOST_MOVE_ITER2D_0TO8(MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TO9(MACROFUNC2D, 9)
+//BOOST_MOVE_ITER2D_0TOMAX
+#define BOOST_MOVE_ITER2DLOW_0TOMAX0(MACROFUNC2D, M)                                                  MACROFUNC2D(M, 0)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX1(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX0(MACROFUNC2D, M) MACROFUNC2D(M, 1)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX2(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX1(MACROFUNC2D, M) MACROFUNC2D(M, 2)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX3(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX2(MACROFUNC2D, M) MACROFUNC2D(M, 3)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX4(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX3(MACROFUNC2D, M) MACROFUNC2D(M, 4)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX5(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX4(MACROFUNC2D, M) MACROFUNC2D(M, 5)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX6(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX5(MACROFUNC2D, M) MACROFUNC2D(M, 6)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX7(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX6(MACROFUNC2D, M) MACROFUNC2D(M, 7)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX8(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX7(MACROFUNC2D, M) MACROFUNC2D(M, 8)
+#define BOOST_MOVE_ITER2DLOW_0TOMAX9(MACROFUNC2D, M)  BOOST_MOVE_ITER2DLOW_0TOMAX8(MACROFUNC2D, M) MACROFUNC2D(M, 9)
+
+#define BOOST_MOVE_ITER2D_0TOMAX0(MAX, MACROFUNC2D)                                                   BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 0)
+#define BOOST_MOVE_ITER2D_0TOMAX1(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX0(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 1)
+#define BOOST_MOVE_ITER2D_0TOMAX2(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX1(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 2)
+#define BOOST_MOVE_ITER2D_0TOMAX3(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX2(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 3)
+#define BOOST_MOVE_ITER2D_0TOMAX4(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX3(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 4)
+#define BOOST_MOVE_ITER2D_0TOMAX5(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX4(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 5)
+#define BOOST_MOVE_ITER2D_0TOMAX6(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX5(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 6)
+#define BOOST_MOVE_ITER2D_0TOMAX7(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX6(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 7)
+#define BOOST_MOVE_ITER2D_0TOMAX8(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX7(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 8)
+#define BOOST_MOVE_ITER2D_0TOMAX9(MAX, MACROFUNC2D)   BOOST_MOVE_ITER2D_0TOMAX8(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2DLOW_0TOMAX##MAX(MACROFUNC2D, 9)
+
+#define BOOST_MOVE_ITER2D_0TOMAX(MAX, MACROFUNC2D)    BOOST_MOVE_ITER2D_0TOMAX_I   (MAX, MACROFUNC2D)
+#define BOOST_MOVE_ITER2D_0TOMAX_I(MAX, MACROFUNC2D)  BOOST_MOVE_ITER2D_0TOMAX##MAX(MAX, MACROFUNC2D)
+
+
+
 
 //BOOST_MOVE_CAT
 #define BOOST_MOVE_CAT(a, b) BOOST_MOVE_CAT_I(a, b)

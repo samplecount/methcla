@@ -30,6 +30,7 @@
 #include <boost/test/utils/basic_cstring/io.hpp>
 
 // Boost
+#include <boost/core/ignore_unused.hpp>
 #include <boost/cstdlib.hpp>
 
 // STL
@@ -37,13 +38,14 @@
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
+#include <iterator>
 #include <set>
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 namespace ut_detail {
@@ -66,15 +68,15 @@ private:
 
         m_os << "\n";
     }
-    virtual void    visit( test_case const& tc ) { report_test_unit( tc ); }
-    virtual bool    test_suite_start( test_suite const& ts )
+    void    visit( test_case const& tc ) BOOST_OVERRIDE { report_test_unit( tc ); }
+    bool    test_suite_start( test_suite const& ts ) BOOST_OVERRIDE
     {
         if( m_indent >= 0 )
             report_test_unit( ts );
         m_indent += 4;
         return true;
     }
-    virtual void    test_suite_finish( test_suite const& )
+    void    test_suite_finish( test_suite const& ) BOOST_OVERRIDE
     {
         m_indent -= 4;
     }
@@ -131,11 +133,11 @@ private:
         }
 
     }
-    virtual void    visit( test_case const& tc )
+    void    visit( test_case const& tc ) BOOST_OVERRIDE
     { 
         report_test_unit( tc );
     }
-    virtual bool    test_suite_start( test_suite const& ts )
+    bool    test_suite_start( test_suite const& ts ) BOOST_OVERRIDE
     {
         if( ts.p_parent_id == INV_TEST_UNIT_ID )
             m_os << "digraph G {rankdir=LR;\n";
@@ -146,7 +148,7 @@ private:
 
         return true;
     }
-    virtual void    test_suite_finish( test_suite const& ts )
+    void    test_suite_finish( test_suite const& ts ) BOOST_OVERRIDE
     {
         m_os << "}\n";
         if( ts.p_parent_id == INV_TEST_UNIT_ID )
@@ -164,7 +166,7 @@ struct labels_collector : test_tree_visitor {
     std::set<std::string> const& labels() const { return m_labels; }
 
 private:
-    virtual bool            visit( test_unit const& tu ) 
+    bool            visit( test_unit const& tu ) BOOST_OVERRIDE
     {
         m_labels.insert( tu.p_labels->begin(), tu.p_labels->end() );
         return true;
@@ -174,30 +176,51 @@ private:
     std::set<std::string>   m_labels;
 };
 
+struct framework_shutdown_helper {
+    ~framework_shutdown_helper() {
+        try {
+            framework::shutdown();
+        }
+        catch(...) {
+            std::cerr << "Boost.Test shutdown exception caught" << std::endl;
+        }
+    }
+};
+
 } // namespace ut_detail
 
 // ************************************************************************** //
 // **************                  unit_test_main              ************** //
 // ************************************************************************** //
 
+
+
 int BOOST_TEST_DECL
 unit_test_main( init_unit_test_func init_func, int argc, char* argv[] )
 {
     int result_code = 0;
 
+    ut_detail::framework_shutdown_helper shutdown_helper;
+    methcla_boost::ignore_unused(shutdown_helper);
+
     BOOST_TEST_I_TRY {
+        
         framework::init( init_func, argc, argv );
 
-        if( runtime_config::get<bool>( runtime_config::WAIT_FOR_DEBUGGER ) ) {
+        if( runtime_config::get<bool>( runtime_config::btrt_wait_for_debugger ) ) {
             results_reporter::get_stream() << "Press any key to continue..." << std::endl;
 
-            std::getchar();
+            // getchar is defined as a macro in uClibc. Use parenthesis to fix
+            // gcc bug 58952 for gcc <= 4.8.2.
+            int ch = (std::getchar)();
+            methcla_boost::ignore_unused(ch);
+
             results_reporter::get_stream() << "Continuing..." << std::endl;
         }
 
         framework::finalize_setup_phase();
 
-        output_format list_cont = runtime_config::get<output_format>( runtime_config::LIST_CONTENT );
+        output_format list_cont = runtime_config::get<output_format>( runtime_config::btrt_list_content );
         if( list_cont != unit_test::OF_INVALID ) {
             if( list_cont == unit_test::OF_DOT ) {
                 ut_detail::dot_content_reporter reporter( results_reporter::get_stream() );
@@ -210,10 +233,10 @@ unit_test_main( init_unit_test_func init_func, int argc, char* argv[] )
                 traverse_test_tree( framework::master_test_suite().p_id, reporter, true );
             }
 
-            return boost::exit_success;
+            return methcla_boost::exit_success;
         }
 
-        if( runtime_config::get<bool>( runtime_config::LIST_LABELS ) ) {
+        if( runtime_config::get<bool>( runtime_config::btrt_list_labels ) ) {
             ut_detail::labels_collector collector;
 
             traverse_test_tree( framework::master_test_suite().p_id, collector, true );
@@ -223,15 +246,13 @@ unit_test_main( init_unit_test_func init_func, int argc, char* argv[] )
                        std::ostream_iterator<std::string>( results_reporter::get_stream(), "\n  " ) );
             results_reporter::get_stream() << "\n";
 
-            return boost::exit_success;
+            return methcla_boost::exit_success;
         }
 
         framework::run();
 
-        results_reporter::make_report();
-
-        result_code = !runtime_config::get<bool>( runtime_config::RESULT_CODE )
-                        ? boost::exit_success
+        result_code = !runtime_config::get<bool>( runtime_config::btrt_result_code )
+                        ? methcla_boost::exit_success
                         : results_collector.results( framework::master_test_suite().p_id ).result_code();
     }
     BOOST_TEST_I_CATCH( framework::nothing_to_test, ex ) {
@@ -240,26 +261,29 @@ unit_test_main( init_unit_test_func init_func, int argc, char* argv[] )
     BOOST_TEST_I_CATCH( framework::internal_error, ex ) {
         results_reporter::get_stream() << "Boost.Test framework internal error: " << ex.what() << std::endl;
 
-        result_code = boost::exit_exception_failure;
+        result_code = methcla_boost::exit_exception_failure;
     }
     BOOST_TEST_I_CATCH( framework::setup_error, ex ) {
         results_reporter::get_stream() << "Test setup error: " << ex.what() << std::endl;
 
-        result_code = boost::exit_exception_failure;
+        result_code = methcla_boost::exit_exception_failure;
+    }
+    BOOST_TEST_I_CATCH( std::logic_error, ex ) {
+        results_reporter::get_stream() << "Test setup error: " << ex.what() << std::endl;
+
+        result_code = methcla_boost::exit_exception_failure;
     }
     BOOST_TEST_I_CATCHALL() {
         results_reporter::get_stream() << "Boost.Test framework internal error: unknown reason" << std::endl;
 
-        result_code = boost::exit_exception_failure;
+        result_code = methcla_boost::exit_exception_failure;
     }
-
-    framework::shutdown();
 
     return result_code;
 }
 
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #if !defined(BOOST_TEST_DYN_LINK) && !defined(BOOST_TEST_NO_MAIN)
 
@@ -274,14 +298,14 @@ main( int argc, char* argv[] )
 #ifdef BOOST_TEST_ALTERNATIVE_INIT_API
     extern bool init_unit_test();
 
-    boost::unit_test::init_unit_test_func init_func = &init_unit_test;
+    methcla_boost::unit_test::init_unit_test_func init_func = &init_unit_test;
 #else
-    extern ::boost::unit_test::test_suite* init_unit_test_suite( int argc, char* argv[] );
+    extern ::methcla_boost::unit_test::test_suite* init_unit_test_suite( int argc, char* argv[] );
 
-    boost::unit_test::init_unit_test_func init_func = &init_unit_test_suite;
+    methcla_boost::unit_test::init_unit_test_func init_func = &init_unit_test_suite;
 #endif
 
-    return ::boost::unit_test::unit_test_main( init_func, argc, argv );
+    return ::methcla_boost::unit_test::unit_test_main( init_func, argc, argv );
 }
 
 #endif // !BOOST_TEST_DYN_LINK && !BOOST_TEST_NO_MAIN

@@ -39,7 +39,7 @@ namespace std{
 #ifndef BOOST_NO_CWCHAR
 
 void test_wchar_from_mb(const wchar_t *la, const char * a, const unsigned int size){
-    typedef boost::archive::iterators::wchar_from_mb<const char *> translator;
+    typedef methcla_boost::archive::iterators::wchar_from_mb<const char *> translator;
     BOOST_CHECK((
         std::equal(
             translator(BOOST_MAKE_PFTO_WRAPPER(a)),
@@ -50,7 +50,7 @@ void test_wchar_from_mb(const wchar_t *la, const char * a, const unsigned int si
 }
 
 void test_mb_from_wchar(const char * a, const wchar_t *la, const unsigned int size){
-    typedef boost::archive::iterators::mb_from_wchar<const wchar_t *> translator;
+    typedef methcla_boost::archive::iterators::mb_from_wchar<const wchar_t *> translator;
     BOOST_CHECK(
         std::equal(
             translator(BOOST_MAKE_PFTO_WRAPPER(la)), 
@@ -68,7 +68,7 @@ void test_xml_escape(
     const CharType * xml, 
     unsigned int size
 ){
-    typedef boost::archive::iterators::xml_escape<const CharType *> translator;
+    typedef methcla_boost::archive::iterators::xml_escape<const CharType *> translator;
 
     BOOST_CHECK(
         std::equal(
@@ -87,7 +87,7 @@ void test_xml_unescape(
 ){
 
     // test xml_unescape
-    typedef boost::archive::iterators::xml_unescape<const CharType *> translator;
+    typedef methcla_boost::archive::iterators::xml_unescape<const CharType *> translator;
 
     BOOST_CHECK(
         std::equal(
@@ -108,7 +108,7 @@ void test_transform_width(unsigned int size){
         *rptr = std::rand();
 
     // convert 8 to 6 bit characters
-    typedef boost::archive::iterators::transform_width<
+    typedef methcla_boost::archive::iterators::transform_width<
         char *, BitsOut, BitsIn 
     > translator1;
 
@@ -126,7 +126,7 @@ void test_transform_width(unsigned int size){
     else
         BOOST_CHECK(v6.size() == (size * BitsIn - 1 ) / BitsOut + 1);
 
-    typedef boost::archive::iterators::transform_width<
+    typedef methcla_boost::archive::iterators::transform_width<
         std::vector<char>::iterator, BitsIn, BitsOut
     > translator2;
 
@@ -146,14 +146,14 @@ void test_stream_iterators(
     unsigned int size
 ){
     std::basic_stringstream<CharType> ss;
-    boost::archive::iterators::ostream_iterator<CharType> osi =
-        boost::archive::iterators::ostream_iterator<CharType>(ss);
+    methcla_boost::archive::iterators::ostream_iterator<CharType> osi =
+        methcla_boost::archive::iterators::ostream_iterator<CharType>(ss);
     std::copy(test_data, test_data + size, osi);
 
     BOOST_CHECK(size == ss.str().size());
 
-    boost::archive::iterators::istream_iterator<CharType> isi =
-        boost::archive::iterators::istream_iterator<CharType>(ss);
+    methcla_boost::archive::iterators::istream_iterator<CharType> isi =
+        methcla_boost::archive::iterators::istream_iterator<CharType>(ss);
     BOOST_CHECK(std::equal(test_data, test_data + size,isi));
 }
 

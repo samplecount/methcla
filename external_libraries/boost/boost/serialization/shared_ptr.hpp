@@ -33,15 +33,15 @@
 #include <boost/serialization/tracking.hpp>
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// boost:: shared_ptr serialization traits
+// methcla_boost:: shared_ptr serialization traits
 // version 1 to distinguish from boost 1.32 version. Note: we can only do this
 // for a template when the compiler supports partial template specialization
 
 #ifndef BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
-    namespace boost {
+    namespace methcla_boost {
     namespace serialization{
         template<class T>
-        struct version< ::boost::shared_ptr< T > > {
+        struct version< ::methcla_boost::shared_ptr< T > > {
             typedef mpl::integral_c_tag tag;
             #if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3206))
             typedef typename mpl::int_<1> type;
@@ -52,12 +52,12 @@
         };
         // don't track shared pointers
         template<class T>
-        struct tracking_level< ::boost::shared_ptr< T > > { 
+        struct tracking_level< ::methcla_boost::shared_ptr< T > > {
             typedef mpl::integral_c_tag tag;
             #if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3206))
-            typedef typename mpl::int_< ::boost::serialization::track_never> type;
+            typedef typename mpl::int_< ::methcla_boost::serialization::track_never> type;
             #else
-            typedef mpl::int_< ::boost::serialization::track_never> type;
+            typedef mpl::int_< ::methcla_boost::serialization::track_never> type;
             #endif
             BOOST_STATIC_CONSTANT(int, value = type::value);
         };
@@ -67,17 +67,17 @@
     // define macro to let users of these compilers do this
     #define BOOST_SERIALIZATION_SHARED_PTR(T)                         \
     BOOST_CLASS_VERSION(                                              \
-        ::boost::shared_ptr< T >,                                     \
+        ::methcla_boost::shared_ptr< T >,                                     \
         1                                                             \
     )                                                                 \
     BOOST_CLASS_TRACKING(                                             \
-        ::boost::shared_ptr< T >,                                     \
-        ::boost::serialization::track_never                           \
+        ::methcla_boost::shared_ptr< T >,                                     \
+        ::methcla_boost::serialization::track_never                           \
     )                                                                 \
     /**/
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization{
 
 struct null_deleter {
@@ -85,7 +85,7 @@ struct null_deleter {
 };
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// serialization for boost::shared_ptr
+// serialization for methcla_boost::shared_ptr
 
 // Using a constant means that all shared pointers are held in the same set.
 // Thus we detect handle multiple pointers to the same value instances
@@ -95,7 +95,7 @@ void * const shared_ptr_helper_id = 0;
 template<class Archive, class T>
 inline void save(
     Archive & ar,
-    const boost::shared_ptr< T > &t,
+    const methcla_boost::shared_ptr< T > &t,
     const unsigned int /* file_version */
 ){
     // The most common cause of trapping here would be serializing
@@ -103,14 +103,14 @@ inline void save(
     // is never tracked by default.  Wrap int in a trackable type
     BOOST_STATIC_ASSERT((tracking_level< T >::value != track_never));
     const T * t_ptr = t.get();
-    ar << boost::serialization::make_nvp("px", t_ptr);
+    ar << methcla_boost::serialization::make_nvp("px", t_ptr);
 }
 
 #ifdef BOOST_SERIALIZATION_SHARED_PTR_132_HPP
 template<class Archive, class T>
 inline void load(
     Archive & ar,
-    boost::shared_ptr< T > &t,
+    methcla_boost::shared_ptr< T > &t,
     const unsigned int file_version
 ){
     // something like shared_ptr<int>.  This occurs because int
@@ -119,24 +119,24 @@ inline void load(
     T* r;
     if(file_version < 1){
         ar.register_type(static_cast<
-            boost_132::detail::sp_counted_base_impl<T *, null_deleter > *
+            methcla_boost_132::detail::sp_counted_base_impl<T *, null_deleter > *
         >(NULL));
-        boost_132::shared_ptr< T > sp;
-        ar >> boost::serialization::make_nvp("px", sp.px);
-        ar >> boost::serialization::make_nvp("pn", sp.pn);
+        methcla_boost_132::shared_ptr< T > sp;
+        ar >> methcla_boost::serialization::make_nvp("px", sp.px);
+        ar >> methcla_boost::serialization::make_nvp("pn", sp.pn);
         // got to keep the sps around so the sp.pns don't disappear
-        boost::serialization::shared_ptr_helper<boost::shared_ptr> & h =
-            ar.template get_helper< shared_ptr_helper<boost::shared_ptr> >(
+        methcla_boost::serialization::shared_ptr_helper<methcla_boost::shared_ptr> & h =
+            ar.template get_helper< shared_ptr_helper<methcla_boost::shared_ptr> >(
                 shared_ptr_helper_id
             );
         h.append(sp);
         r = sp.get();
     }
     else{
-        ar >> boost::serialization::make_nvp("px", r);
+        ar >> methcla_boost::serialization::make_nvp("px", r);
     }
-    shared_ptr_helper<boost::shared_ptr> & h =
-        ar.template get_helper<shared_ptr_helper<boost::shared_ptr> >(
+    shared_ptr_helper<methcla_boost::shared_ptr> & h =
+        ar.template get_helper<shared_ptr_helper<methcla_boost::shared_ptr> >(
             shared_ptr_helper_id
         );
     h.reset(t,r);
@@ -146,7 +146,7 @@ inline void load(
 template<class Archive, class T>
 inline void load(
     Archive & ar,
-    boost::shared_ptr< T > &t,
+    methcla_boost::shared_ptr< T > &t,
     const unsigned int /*file_version*/
 ){
     // The most common cause of trapping here would be serializing
@@ -154,33 +154,33 @@ inline void load(
     // is never tracked by default.  Wrap int in a trackable type
     BOOST_STATIC_ASSERT((tracking_level< T >::value != track_never));
     T* r;
-    ar >> boost::serialization::make_nvp("px", r);
+    ar >> methcla_boost::serialization::make_nvp("px", r);
 
-    boost::serialization::shared_ptr_helper<boost::shared_ptr> & h =
-        ar.template get_helper<shared_ptr_helper<boost::shared_ptr> >(
+    methcla_boost::serialization::shared_ptr_helper<methcla_boost::shared_ptr> & h =
+        ar.template get_helper<shared_ptr_helper<methcla_boost::shared_ptr> >(
             shared_ptr_helper_id
         );
-    h.reset(t,r);    
+    h.reset(t,r);
 }
 #endif
 
 template<class Archive, class T>
 inline void serialize(
     Archive & ar,
-    boost::shared_ptr< T > &t,
+    methcla_boost::shared_ptr< T > &t,
     const unsigned int file_version
 ){
     // correct shared_ptr serialization depends upon object tracking
     // being used.
     BOOST_STATIC_ASSERT(
-        boost::serialization::tracking_level< T >::value
-        != boost::serialization::track_never
+        methcla_boost::serialization::tracking_level< T >::value
+        != methcla_boost::serialization::track_never
     );
-    boost::serialization::split_free(ar, t, file_version);
+    methcla_boost::serialization::split_free(ar, t, file_version);
 }
 
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // std::shared_ptr serialization traits
@@ -197,7 +197,7 @@ inline void serialize(
     BOOST_STATIC_ASSERT(false);
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization{
     template<class T>
     struct version< ::std::shared_ptr< T > > {
@@ -207,16 +207,16 @@ namespace serialization{
     };
     // don't track shared pointers
     template<class T>
-    struct tracking_level< ::std::shared_ptr< T > > { 
+    struct tracking_level< ::std::shared_ptr< T > > {
         typedef mpl::integral_c_tag tag;
-        typedef mpl::int_< ::boost::serialization::track_never> type;
+        typedef mpl::int_< ::methcla_boost::serialization::track_never> type;
         BOOST_STATIC_CONSTANT(int, value = type::value);
     };
 }}
 // the following just keeps older programs from breaking
 #define BOOST_SERIALIZATION_SHARED_PTR(T)
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization{
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -233,7 +233,7 @@ inline void save(
     // is never tracked by default.  Wrap int in a trackable type
     BOOST_STATIC_ASSERT((tracking_level< T >::value != track_never));
     const T * t_ptr = t.get();
-    ar << boost::serialization::make_nvp("px", t_ptr);
+    ar << methcla_boost::serialization::make_nvp("px", t_ptr);
 }
 
 template<class Archive, class T>
@@ -247,9 +247,9 @@ inline void load(
     // is never tracked by default.  Wrap int in a trackable type
     BOOST_STATIC_ASSERT((tracking_level< T >::value != track_never));
     T* r;
-    ar >> boost::serialization::make_nvp("px", r);
+    ar >> methcla_boost::serialization::make_nvp("px", r);
     //void (* const id)(Archive &, std::shared_ptr< T > &, const unsigned int) = & load;
-    boost::serialization::shared_ptr_helper<std::shared_ptr> & h =
+    methcla_boost::serialization::shared_ptr_helper<std::shared_ptr> & h =
         ar.template get_helper<
             shared_ptr_helper<std::shared_ptr>
         >(
@@ -267,14 +267,14 @@ inline void serialize(
     // correct shared_ptr serialization depends upon object tracking
     // being used.
     BOOST_STATIC_ASSERT(
-        boost::serialization::tracking_level< T >::value
-        != boost::serialization::track_never
+        methcla_boost::serialization::tracking_level< T >::value
+        != methcla_boost::serialization::track_never
     );
-    boost::serialization::split_free(ar, t, file_version);
+    methcla_boost::serialization::split_free(ar, t, file_version);
 }
 
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_NO_CXX11_SMART_PTR
 

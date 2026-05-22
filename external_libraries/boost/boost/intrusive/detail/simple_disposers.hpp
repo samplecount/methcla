@@ -13,6 +13,8 @@
 #ifndef BOOST_INTRUSIVE_DETAIL_SIMPLE_DISPOSERS_HPP
 #define BOOST_INTRUSIVE_DETAIL_SIMPLE_DISPOSERS_HPP
 
+#include <boost/intrusive/detail/workaround.hpp>
+
 #ifndef BOOST_CONFIG_HPP
 #  include <boost/config.hpp>
 #endif
@@ -21,7 +23,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -39,12 +41,12 @@ class init_disposer
    typedef typename NodeAlgorithms::node_ptr node_ptr;
 
    public:
-   void operator()(const node_ptr & p)
+   inline void operator()(node_ptr p)
    {  NodeAlgorithms::init(p);   }
 };
 
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_SIMPLE_DISPOSERS_HPP

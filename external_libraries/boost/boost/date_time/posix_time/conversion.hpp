@@ -10,6 +10,7 @@
  */
 
 #include <cstring>
+#include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/date_time/filetime_functions.hpp>
@@ -17,46 +18,43 @@
 #include <boost/date_time/time_resolution_traits.hpp> // absolute_value
 #include <boost/date_time/gregorian/conversion.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 namespace posix_time {
-
 
   //! Function that converts a time_t into a ptime.
   inline
   ptime from_time_t(std::time_t t)
   {
-    ptime start(gregorian::date(1970,1,1));
-    return start + seconds(static_cast<long>(t));
+    return ptime(gregorian::date(1970,1,1)) + seconds(t);
   }
 
   //! Function that converts a ptime into a time_t
   inline
   std::time_t to_time_t(ptime pt)
   {
-    time_duration dur = pt - ptime(gregorian::date(1970,1,1));
-    return std::time_t(dur.total_seconds());
+    return (pt - ptime(gregorian::date(1970,1,1))).total_seconds();
   }
 
   //! Convert a time to a tm structure truncating any fractional seconds
   inline
-  std::tm to_tm(const boost::posix_time::ptime& t) {
-    std::tm timetm = boost::gregorian::to_tm(t.date());
-    boost::posix_time::time_duration td = t.time_of_day();
-    timetm.tm_hour = td.hours();
-    timetm.tm_min = td.minutes();
-    timetm.tm_sec = td.seconds();
+  std::tm to_tm(const methcla_boost::posix_time::ptime& t) {
+    std::tm timetm = methcla_boost::gregorian::to_tm(t.date());
+    methcla_boost::posix_time::time_duration td = t.time_of_day();
+    timetm.tm_hour = static_cast<int>(td.hours());
+    timetm.tm_min = static_cast<int>(td.minutes());
+    timetm.tm_sec = static_cast<int>(td.seconds());
     timetm.tm_isdst = -1; // -1 used when dst info is unknown
     return timetm;
   }
   //! Convert a time_duration to a tm structure truncating any fractional seconds and zeroing fields for date components
   inline
-  std::tm to_tm(const boost::posix_time::time_duration& td) {
+  std::tm to_tm(const methcla_boost::posix_time::time_duration& td) {
     std::tm timetm;
     std::memset(&timetm, 0, sizeof(timetm));
-    timetm.tm_hour = date_time::absolute_value(td.hours());
-    timetm.tm_min = date_time::absolute_value(td.minutes());
-    timetm.tm_sec = date_time::absolute_value(td.seconds());
+    timetm.tm_hour = static_cast<int>(date_time::absolute_value(td.hours()));
+    timetm.tm_min = static_cast<int>(date_time::absolute_value(td.minutes()));
+    timetm.tm_sec = static_cast<int>(date_time::absolute_value(td.seconds()));
     timetm.tm_isdst = -1; // -1 used when dst info is unknown
     return timetm;
   }
@@ -64,7 +62,7 @@ namespace posix_time {
   //! Convert a tm struct to a ptime ignoring is_dst flag
   inline
   ptime ptime_from_tm(const std::tm& timetm) {
-    boost::gregorian::date d = boost::gregorian::date_from_tm(timetm);
+    methcla_boost::gregorian::date d = methcla_boost::gregorian::date_from_tm(timetm);
     return ptime(d, time_duration(timetm.tm_hour, timetm.tm_min, timetm.tm_sec));
   }
 
@@ -82,18 +80,18 @@ namespace posix_time {
    *
    * \note The function is templated on the FILETIME type, so that
    *       it can be used with both native FILETIME and the ad-hoc
-   *       boost::date_time::winapi::file_time type.
+   *       methcla_boost::detail::winapi::FILETIME_ type.
    */
   template< typename TimeT, typename FileTimeT >
   inline
   TimeT from_ftime(const FileTimeT& ft)
   {
-    return boost::date_time::time_from_ftime<TimeT>(ft);
+    return methcla_boost::date_time::time_from_ftime<TimeT>(ft);
   }
 
 #endif // BOOST_HAS_FTIME
 
-} } //namespace boost::posix_time
+} } //namespace methcla_boost::posix_time
 
 
 

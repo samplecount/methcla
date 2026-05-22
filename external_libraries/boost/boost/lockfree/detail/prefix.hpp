@@ -1,4 +1,4 @@
-//  Copyright (C) 2009 Tim Blechmann
+//  Copyright (C) 2009, 2016 Tim Blechmann
 //
 //  Distributed under the Boost Software License, Version 1.0. (See
 //  accompanying file LICENSE_1_0.txt or copy at
@@ -7,50 +7,38 @@
 #ifndef BOOST_LOCKFREE_PREFIX_HPP_INCLUDED
 #define BOOST_LOCKFREE_PREFIX_HPP_INCLUDED
 
+#include <boost/predef.h>
+
 /* this file defines the following macros:
-   BOOST_LOCKFREE_CACHELINE_BYTES: size of a cache line
    BOOST_LOCKFREE_PTR_COMPRESSION: use tag/pointer compression to utilize parts
                                    of the virtual address space as tag (at least 16bit)
-   BOOST_LOCKFREE_DCAS_ALIGNMENT:  symbol used for aligning structs at cache line
-                                   boundaries
 */
 
-#define BOOST_LOCKFREE_CACHELINE_BYTES 64
+namespace methcla_boost { namespace lockfree { namespace detail {
 
-#ifdef _MSC_VER
-
-#define BOOST_LOCKFREE_CACHELINE_ALIGNMENT __declspec(align(BOOST_LOCKFREE_CACHELINE_BYTES))
-
-#if defined(_M_IX86)
-    #define BOOST_LOCKFREE_DCAS_ALIGNMENT
-#elif defined(_M_X64) || defined(_M_IA64)
-    #define BOOST_LOCKFREE_PTR_COMPRESSION 1
-    #define BOOST_LOCKFREE_DCAS_ALIGNMENT __declspec(align(16))
+#ifdef __cpp_inline_variables
+#    define inline_constexpr inline
+#else
+#    define inline_constexpr
 #endif
 
-#endif /* _MSC_VER */
-
-#ifdef __GNUC__
-
-#define BOOST_LOCKFREE_CACHELINE_ALIGNMENT __attribute__((aligned(BOOST_LOCKFREE_CACHELINE_BYTES)))
-
-#if defined(__i386__) || defined(__ppc__)
-    #define BOOST_LOCKFREE_DCAS_ALIGNMENT
-#elif defined(__x86_64__)
-    #define BOOST_LOCKFREE_PTR_COMPRESSION 1
-    #define BOOST_LOCKFREE_DCAS_ALIGNMENT __attribute__((aligned(16)))
-#elif defined(__alpha__)
-    // LATER: alpha may benefit from pointer compression. but what is the maximum size of the address space?
-    #define BOOST_LOCKFREE_DCAS_ALIGNMENT
-#endif
-#endif /* __GNUC__ */
-
-#ifndef BOOST_LOCKFREE_DCAS_ALIGNMENT
-#define BOOST_LOCKFREE_DCAS_ALIGNMENT /*BOOST_LOCKFREE_DCAS_ALIGNMENT*/
+#if BOOST_ARCH_SYS390
+inline_constexpr constexpr size_t cacheline_bytes = 256;
+#elif BOOST_ARCH_PPC
+inline_constexpr constexpr size_t cacheline_bytes = 128;
+#elif BOOST_ARCH_ARM && ( BOOST_OS_MACOS || BOOST_OS_IOS )
+// technically this is for apple's the M chips, but the A chip are probably similar
+inline_constexpr constexpr size_t cacheline_bytes = 128;
+#else
+inline_constexpr constexpr size_t cacheline_bytes = 64;
 #endif
 
-#ifndef BOOST_LOCKFREE_CACHELINE_ALIGNMENT
-#define BOOST_LOCKFREE_CACHELINE_ALIGNMENT /*BOOST_LOCKFREE_CACHELINE_ALIGNMENT*/
+}}} // namespace methcla_boost::lockfree::detail
+
+#if BOOST_ARCH_X86_64 || ( ( BOOST_ARCH_ARM >= BOOST_VERSION_NUMBER( 8, 0, 0 ) ) && !BOOST_PLAT_ANDROID )
+#    define BOOST_LOCKFREE_PTR_COMPRESSION 1
 #endif
+
+#undef inline_constexpr
 
 #endif /* BOOST_LOCKFREE_PREFIX_HPP_INCLUDED */

@@ -22,7 +22,7 @@
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/interprocess/detail/workaround.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
 //!Tag to indicate that the resource must
@@ -77,7 +77,7 @@ enum create_enum_t
 }  //namespace ipcdetail {
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

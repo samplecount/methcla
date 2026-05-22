@@ -9,7 +9,7 @@
 //
 //  Version     : $Revision$
 //
-//  Description : result reporting facilties
+//  Description : result reporting facilities
 // ***************************************************************************
 
 #ifndef BOOST_TEST_RESULTS_REPORTER_IPP_020105GER
@@ -30,7 +30,7 @@
 // Boost
 #include <boost/scoped_ptr.hpp>
 #include <boost/io/ios_state.hpp>
-typedef ::boost::io::ios_base_all_saver io_saver_type;
+typedef ::methcla_boost::io::ios_base_all_saver io_saver_type;
 
 // STL
 #include <iostream>
@@ -39,7 +39,7 @@ typedef ::boost::io::ios_base_all_saver io_saver_type;
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace results_reporter {
 
@@ -59,12 +59,12 @@ struct results_reporter_impl : test_tree_visitor {
     {}
 
     // test tree visitor interface implementation
-    void    visit( test_case const& tc )
+    void    visit( test_case const& tc ) BOOST_OVERRIDE
     {
         m_formatter->test_unit_report_start( tc, *m_stream );
         m_formatter->test_unit_report_finish( tc, *m_stream );
     }
-    bool    test_suite_start( test_suite const& ts )
+    bool    test_suite_start( test_suite const& ts ) BOOST_OVERRIDE
     {
         m_formatter->test_unit_report_start( ts, *m_stream );
 
@@ -74,7 +74,7 @@ struct results_reporter_impl : test_tree_visitor {
         m_formatter->test_unit_report_finish( ts, *m_stream );
         return false;
     }
-    void    test_suite_finish( test_suite const& ts )
+    void    test_suite_finish( test_suite const& ts ) BOOST_OVERRIDE
     {
         m_formatter->test_unit_report_finish( ts, *m_stream );
     }
@@ -190,7 +190,7 @@ make_report( report_level l, test_unit_id id )
 
 } // namespace results_reporter
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

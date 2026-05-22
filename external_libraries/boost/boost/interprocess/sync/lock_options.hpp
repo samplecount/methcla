@@ -25,15 +25,7 @@
 //!\file
 //!Describes the lock options with associated with interprocess_mutex lock constructors.
 
-namespace boost {
-
-#if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
-
-namespace posix_time
-{  class ptime;   }
-
-#endif   //#if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
-
+namespace methcla_boost {
 namespace interprocess {
 
 //!Type to indicate to a mutex lock constructor that must not lock the mutex.
@@ -56,7 +48,7 @@ static const try_to_lock_type     try_to_lock    = try_to_lock_type();
 static const accept_ownership_type  accept_ownership = accept_ownership_type();
 
 } // namespace interprocess {
-} // namespace boost{
+} // namespace methcla_boost{
 
 #include <boost/interprocess/detail/config_end.hpp>
 

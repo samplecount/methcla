@@ -3,7 +3,7 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// 2013/09 Vicente J. Botet Escriba
+// 2013,2018 Vicente J. Botet Escriba
 //    Adapt to boost from CCIA C++11 implementation
 //    Make use of Boost.Move
 
@@ -15,8 +15,9 @@
 #include <boost/thread/detail/move.hpp>
 #include <boost/thread/csbl/memory/shared_ptr.hpp>
 #include <boost/type_traits/decay.hpp>
+#include <boost/type_traits/is_same.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   namespace detail
   {
@@ -44,7 +45,7 @@ namespace boost
         {}
 #endif
         impl_type(BOOST_THREAD_RV_REF(F) f_)
-          : f(boost::move(f_))
+          : f(methcla_boost::move(f_))
         {}
 
         void call()
@@ -72,13 +73,17 @@ namespace boost
 
 #ifdef BOOST_NO_CXX11_RVALUE_REFERENCES
       template<typename F>
-      explicit nullary_function(F& f):
+      explicit nullary_function(F& f
+                                , typename disable_if<is_same<typename decay<F>::type, nullary_function>, int* >::type=0
+                                ):
       impl(new impl_type<F>(f))
       {}
 #endif
       template<typename F>
-      nullary_function(BOOST_THREAD_RV_REF(F) f):
-      impl(new impl_type<typename decay<F>::type>(thread_detail::decay_copy(boost::forward<F>(f))))
+      nullary_function(BOOST_THREAD_RV_REF(F) f
+                       , typename disable_if<is_same<typename decay<F>::type, nullary_function>, int* >::type=0
+                       ):
+      impl(new impl_type<typename decay<F>::type>(thread_detail::decay_copy(methcla_boost::forward<F>(f))))
       {}
 
       nullary_function()
@@ -96,7 +101,7 @@ namespace boost
         BOOST_THREAD_RV(other).impl.reset();
       }
 #else
-      impl(boost::move(other.impl))
+      impl(methcla_boost::move(other.impl))
       {
       }
 #endif
@@ -115,7 +120,7 @@ namespace boost
         impl=BOOST_THREAD_RV(other).impl;
         BOOST_THREAD_RV(other).impl.reset();
 #else
-        impl = boost::move(other.impl);
+        impl = methcla_boost::move(other.impl);
 #endif
         return *this;
       }
@@ -147,7 +152,7 @@ namespace boost
         {}
 #endif
         impl_type(BOOST_THREAD_RV_REF(F) f_)
-          : f(boost::move(f_))
+          : f(methcla_boost::move(f_))
         {}
 
         R call()
@@ -181,7 +186,7 @@ namespace boost
 #endif
       template<typename F>
       nullary_function(BOOST_THREAD_RV_REF(F) f):
-      impl(new impl_type<typename decay<F>::type>(thread_detail::decay_copy(boost::forward<F>(f))))
+      impl(new impl_type<typename decay<F>::type>(thread_detail::decay_copy(methcla_boost::forward<F>(f))))
       {}
 
       nullary_function(nullary_function const& other) BOOST_NOEXCEPT :
@@ -195,7 +200,7 @@ namespace boost
         BOOST_THREAD_RV(other).impl.reset();
       }
 #else
-      impl(boost::move(other.impl))
+      impl(methcla_boost::move(other.impl))
       {
       }
 #endif
@@ -218,7 +223,7 @@ namespace boost
         impl=BOOST_THREAD_RV(other).impl;
         BOOST_THREAD_RV(other).impl.reset();
 #else
-        impl = boost::move(other.impl);
+        impl = methcla_boost::move(other.impl);
 #endif
         return *this;
       }

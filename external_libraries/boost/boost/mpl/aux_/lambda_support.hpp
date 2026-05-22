@@ -94,7 +94,7 @@ struct name<BOOST_MPL_PP_PARAMS(i,T)>::rebind \
 
 #else // __EDG_VERSION__
 
-namespace boost { namespace mpl { namespace aux {
+namespace methcla_boost { namespace mpl { namespace aux {
 template< typename T > struct has_rebind_tag;
 }}}
 
@@ -110,31 +110,31 @@ template< typename T > struct has_rebind_tag;
     typedef BOOST_PP_CAT(name,_rebind) rebind; \
 /**/
 
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x610))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x610))
 #   define BOOST_MPL_AUX_LAMBDA_SUPPORT_HAS_REBIND(i, name, params) \
 template< BOOST_MPL_PP_PARAMS(i,typename T) > \
-::boost::mpl::aux::yes_tag operator|( \
-      ::boost::mpl::aux::has_rebind_tag<int> \
+::methcla_boost::mpl::aux::yes_tag operator|( \
+      ::methcla_boost::mpl::aux::has_rebind_tag<int> \
     , name<BOOST_MPL_PP_PARAMS(i,T)>* \
     ); \
-::boost::mpl::aux::no_tag operator|( \
-      ::boost::mpl::aux::has_rebind_tag<int> \
-    , name< BOOST_MPL_PP_ENUM(i,::boost::mpl::na) >* \
+::methcla_boost::mpl::aux::no_tag operator|( \
+      ::methcla_boost::mpl::aux::has_rebind_tag<int> \
+    , name< BOOST_MPL_PP_ENUM(i,::methcla_boost::mpl::na) >* \
     ); \
 /**/
 #elif !BOOST_WORKAROUND(BOOST_MSVC, < 1300)
 #   define BOOST_MPL_AUX_LAMBDA_SUPPORT_HAS_REBIND(i, name, params) \
 template< BOOST_MPL_PP_PARAMS(i,typename T) > \
-::boost::mpl::aux::yes_tag operator|( \
-      ::boost::mpl::aux::has_rebind_tag<int> \
-    , ::boost::mpl::aux::has_rebind_tag< name<BOOST_MPL_PP_PARAMS(i,T)> >* \
+::methcla_boost::mpl::aux::yes_tag operator|( \
+      ::methcla_boost::mpl::aux::has_rebind_tag<int> \
+    , ::methcla_boost::mpl::aux::has_rebind_tag< name<BOOST_MPL_PP_PARAMS(i,T)> >* \
     ); \
 /**/
 #else
 #   define BOOST_MPL_AUX_LAMBDA_SUPPORT_HAS_REBIND(i, name, params) /**/
 #endif
 
-#   if !defined(__BORLANDC__)
+#   if !defined(BOOST_BORLANDC)
 #   define BOOST_MPL_AUX_LAMBDA_SUPPORT(i, name, params) \
     BOOST_MPL_AUX_LAMBDA_SUPPORT_SPEC(i, name, params) \
 }; \
@@ -160,7 +160,7 @@ class BOOST_PP_CAT(name,_rebind) \
         typedef typename name< BOOST_MPL_PP_PARAMS(i,U) >::type type; \
     }; \
 /**/
-#   endif // __BORLANDC__
+#   endif // BOOST_BORLANDC
 
 #endif // __EDG_VERSION__
 

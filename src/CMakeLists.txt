@@ -57,16 +57,12 @@ target_include_directories(methcla PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(methcla SYSTEM PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../external_libraries/oscpp/include>
-)
-
 target_include_directories(methcla
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ../external_libraries
     ../external_libraries/tinydir
+    ../external_libraries
 )
 
 target_include_directories(methcla
@@ -81,6 +77,8 @@ else()
 endif()
 
 target_link_libraries(methcla
+    PUBLIC
+    oscpp
     PRIVATE
     tlsf
     ${methcla_driver})

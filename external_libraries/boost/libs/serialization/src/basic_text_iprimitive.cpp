@@ -15,14 +15,15 @@
 #include <istream>
 
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/detail/auto_link_archive.hpp>
 #include <boost/archive/impl/basic_text_iprimitive.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 // explicitly instantiate for this type of text stream
 template class basic_text_iprimitive<std::istream> ;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

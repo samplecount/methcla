@@ -15,42 +15,48 @@
 #  include <boost/config.hpp>
 #endif
 
+#include <boost/container/detail/workaround.hpp>
+
 #if defined(BOOST_HAS_PRAGMA_ONCE)
 #  pragma once
 #endif
 
 //! \file
 //! This header file forward declares the following containers:
-//!   - boost::container::vector
-//!   - boost::container::stable_vector
-//!   - boost::container::static_vector
-//!   - boost::container::small_vector
-//!   - boost::container::slist
-//!   - boost::container::list
-//!   - boost::container::set
-//!   - boost::container::multiset
-//!   - boost::container::map
-//!   - boost::container::multimap
-//!   - boost::container::flat_set
-//!   - boost::container::flat_multiset
-//!   - boost::container::flat_map
-//!   - boost::container::flat_multimap
-//!   - boost::container::basic_string
-//!   - boost::container::string
-//!   - boost::container::wstring
+//!   - methcla_boost::container::vector
+//!   - methcla_boost::container::stable_vector
+//!   - methcla_boost::container::static_vector
+//!   - methcla_boost::container::small_vector_base
+//!   - methcla_boost::container::small_vector
+//!   - methcla_boost::container::devector
+//!   - methcla_boost::container::deque
+//!   - methcla_boost::container::segtor
+//!   - methcla_boost::container::slist
+//!   - methcla_boost::container::list
+//!   - methcla_boost::container::set
+//!   - methcla_boost::container::multiset
+//!   - methcla_boost::container::map
+//!   - methcla_boost::container::multimap
+//!   - methcla_boost::container::flat_set
+//!   - methcla_boost::container::flat_multiset
+//!   - methcla_boost::container::flat_map
+//!   - methcla_boost::container::flat_multimap
+//!   - methcla_boost::container::basic_string
+//!   - methcla_boost::container::string
+//!   - methcla_boost::container::wstring
 //!
 //! Forward declares the following allocators:
-//!   - boost::container::allocator
-//!   - boost::container::node_allocator
-//!   - boost::container::adaptive_pool
+//!   - methcla_boost::container::allocator
+//!   - methcla_boost::container::node_allocator
+//!   - methcla_boost::container::adaptive_pool
 //!
 //! Forward declares the following polymorphic resource classes:
-//!   - boost::container::pmr::memory_resource
-//!   - boost::container::pmr::polymorphic_allocator
-//!   - boost::container::pmr::monotonic_buffer_resource
-//!   - boost::container::pmr::pool_options
-//!   - boost::container::pmr::unsynchronized_pool_resource
-//!   - boost::container::pmr::synchronized_pool_resource
+//!   - methcla_boost::container::pmr::memory_resource
+//!   - methcla_boost::container::pmr::polymorphic_allocator
+//!   - methcla_boost::container::pmr::monotonic_buffer_resource
+//!   - methcla_boost::container::pmr::pool_options
+//!   - methcla_boost::container::pmr::unsynchronized_pool_resource
+//!   - methcla_boost::container::pmr::synchronized_pool_resource
 //!
 //! And finally it defines the following types
 
@@ -61,20 +67,20 @@
    #include <boost/container/detail/std_fwd.hpp>
 #endif
 
-namespace boost{
+namespace methcla_boost{
 namespace intrusive{
 namespace detail{
    //Create namespace to avoid compilation errors
 }}}
 
-namespace boost{ namespace container{ namespace container_detail{
-   namespace bi = boost::intrusive;
-   namespace bid = boost::intrusive::detail;
+namespace methcla_boost{ namespace container{ namespace dtl{
+   namespace bi = methcla_boost::intrusive;
+   namespace bid = methcla_boost::intrusive::detail;
 }}}
 
-namespace boost{ namespace container{ namespace pmr{
-   namespace bi = boost::intrusive;
-   namespace bid = boost::intrusive::detail;
+namespace methcla_boost{ namespace container{ namespace pmr{
+   namespace bi = methcla_boost::intrusive;
+   namespace bid = methcla_boost::intrusive::detail;
 }}}
 
 #include <cstddef>
@@ -85,18 +91,8 @@ namespace boost{ namespace container{ namespace pmr{
 //                             Containers
 //////////////////////////////////////////////////////////////////////////////
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
-
-//! Enumeration used to configure ordered associative containers
-//! with a concrete tree implementation.
-enum tree_type_enum
-{
-   red_black_tree,
-   avl_tree,
-   scapegoat_tree,
-   splay_tree
-};
 
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
@@ -104,106 +100,197 @@ template<class T>
 class new_allocator;
 
 template <class T
-         ,class Allocator = new_allocator<T> >
+         ,class Allocator = void
+         ,class Options   = void>
 class vector;
 
 template <class T
-         ,class Allocator = new_allocator<T> >
+         ,class Allocator = void >
 class stable_vector;
 
-template <class T, std::size_t Capacity>
+template < class T
+         , std::size_t Capacity
+         , class Options = void>
 class static_vector;
 
-template < class T, std::size_t N
-         , class Allocator= new_allocator<T> >
+template < class T
+         , class Allocator = void
+         , class Options   = void >
+class small_vector_base;
+
+template < class T
+         , std::size_t N
+         , class Allocator = void
+         , class Options   = void  >
 class small_vector;
 
 template <class T
-         ,class Allocator = new_allocator<T> >
+         ,class Allocator = void
+         ,class Options   = void>
+class devector;
+
+template <class T
+         ,class Allocator = void
+         ,class Options   = void>
 class deque;
 
 template <class T
-         ,class Allocator = new_allocator<T> >
+         ,class Allocator = void
+         ,class Options   = void>
+class segtor;
+
+template <class T
+         ,class Allocator = void >
 class list;
 
 template <class T
-         ,class Allocator = new_allocator<T> >
+         ,class Allocator = void >
 class slist;
-
-template<tree_type_enum TreeType, bool OptimizeSize>
-struct tree_opt;
-
-typedef tree_opt<red_black_tree, true> tree_assoc_defaults;
 
 template <class Key
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<Key>
-         ,class Options = tree_assoc_defaults >
+         ,class Allocator = void
+         ,class Options = void>
 class set;
 
 template <class Key
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<Key>
-         ,class Options = tree_assoc_defaults >
+         ,class Allocator = void
+         ,class Options = void >
 class multiset;
 
 template <class Key
          ,class T
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<std::pair<const Key, T> >
-         ,class Options = tree_assoc_defaults >
+         ,class Allocator = void
+         ,class Options = void >
 class map;
 
 template <class Key
          ,class T
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<std::pair<const Key, T> >
-         ,class Options = tree_assoc_defaults >
+         ,class Allocator = void
+         ,class Options = void >
 class multimap;
 
 template <class Key
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<Key> >
+         ,class Allocator = void >
 class flat_set;
 
 template <class Key
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<Key> >
+         ,class Allocator = void >
 class flat_multiset;
 
 template <class Key
          ,class T
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<std::pair<Key, T> > >
+         ,class Allocator = void >
 class flat_map;
 
 template <class Key
          ,class T
          ,class Compare  = std::less<Key>
-         ,class Allocator = new_allocator<std::pair<Key, T> > >
+         ,class Allocator = void >
 class flat_multimap;
 
+#ifndef BOOST_NO_CXX11_TEMPLATE_ALIASES
+
+//! Alias templates for small_flat_[multi]{set|map} using small_vector as container
+
+template < class Key
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+using small_flat_set = flat_set<Key, Compare, small_vector<Key, N, SmallVectorAllocator, SmallVectorOptions>>;
+
+template < class Key
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+using small_flat_multiset = flat_multiset<Key, Compare, small_vector<Key, N, SmallVectorAllocator, SmallVectorOptions>>;
+
+template < class Key
+         , class T
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+using small_flat_map = flat_map<Key, T, Compare, small_vector<std::pair<Key, T>, N, SmallVectorAllocator, SmallVectorOptions>>;
+
+template < class Key
+         , class T
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+using small_flat_multimap = flat_multimap<Key, T, Compare, small_vector<std::pair<Key, T>, N, SmallVectorAllocator, SmallVectorOptions>>;
+
+#endif // #ifndef BOOST_NO_CXX11_TEMPLATE_ALIASES
+
+
+//! A portable metafunction to obtain a small_flat_set
+template < class Key
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+struct small_flat_set_of
+{
+   typedef flat_set<Key, Compare, small_vector<Key, N, SmallVectorAllocator, SmallVectorOptions> > type;
+};
+
+//! A portable metafunction to obtain a small_flat_multiset
+template < class Key
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+struct small_flat_multiset_of
+{
+   typedef flat_multiset<Key, Compare, small_vector<Key, N, SmallVectorAllocator, SmallVectorOptions> > type;
+};
+
+//! A portable metafunction to obtain a small_flat_map
+template < class Key
+         , class T
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+struct small_flat_map_of
+{
+   typedef flat_map<Key, T, Compare, small_vector<std::pair<Key, T>, N, SmallVectorAllocator, SmallVectorOptions> > type;
+};
+
+//! A portable metafunction to obtain a small_flat_multimap
+template < class Key
+         , class T
+         , std::size_t N
+         , class Compare  = std::less<Key>
+         , class SmallVectorAllocator = void
+         , class SmallVectorOptions   = void  >
+struct small_flat_multimap_of
+{
+   typedef flat_multimap<Key, T, Compare, small_vector<std::pair<Key, T>, N, SmallVectorAllocator, SmallVectorOptions> > type;
+};
+
 template <class CharT
-         ,class Traits = std::char_traits<CharT>
-         ,class Allocator  = new_allocator<CharT> >
+         ,class Traits     = std::char_traits<CharT>
+         ,class Allocator  = void
+         ,class Options    = void >
 class basic_string;
 
-typedef basic_string
-   <char
-   ,std::char_traits<char>
-   ,new_allocator<char> >
-string;
+typedef basic_string <char>   string;
+typedef basic_string<wchar_t> wstring;
 
-typedef basic_string
-   <wchar_t
-   ,std::char_traits<wchar_t>
-   ,new_allocator<wchar_t> >
-wstring;
-
-static const std::size_t ADP_nodes_per_block    = 256u;
-static const std::size_t ADP_max_free_blocks    = 2u;
-static const std::size_t ADP_overhead_percent   = 1u;
-static const std::size_t ADP_only_alignment     = 0u;
+BOOST_STATIC_CONSTEXPR std::size_t ADP_nodes_per_block    = 256u;
+BOOST_STATIC_CONSTEXPR std::size_t ADP_max_free_blocks    = 2u;
+BOOST_STATIC_CONSTEXPR std::size_t ADP_overhead_percent   = 1u;
+BOOST_STATIC_CONSTEXPR std::size_t ADP_only_alignment     = 0u;
 
 template < class T
          , std::size_t NodesPerBlock   = ADP_nodes_per_block
@@ -218,7 +305,7 @@ template < class T
          , unsigned int AllocationDisableMask = 0>
 class allocator;
 
-static const std::size_t NodeAlloc_nodes_per_block = 256u;
+BOOST_STATIC_CONSTEXPR std::size_t NodeAlloc_nodes_per_block = 256u;
 
 template
    < class T
@@ -246,13 +333,6 @@ class synchronized_pool_resource;
 
 }  //namespace pmr {
 
-#else
-
-//! Default options for tree-based associative containers
-//!   - tree_type<red_black_tree>
-//!   - optimize_size<true>
-typedef implementation_defined tree_assoc_defaults;
-
 #endif   //#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
 //! Type used to tag that the input range is
@@ -262,7 +342,7 @@ struct ordered_range_t
 
 //! Value used to tag that the input range is
 //! guaranteed to be ordered
-static const ordered_range_t ordered_range = ordered_range_t();
+BOOST_CONTAINER_CONSTANT_VAR ordered_range_t ordered_range = ordered_range_t();
 
 //! Type used to tag that the input range is
 //! guaranteed to be ordered and unique
@@ -272,7 +352,7 @@ struct ordered_unique_range_t
 
 //! Value used to tag that the input range is
 //! guaranteed to be ordered and unique
-static const ordered_unique_range_t ordered_unique_range = ordered_unique_range_t();
+BOOST_CONTAINER_CONSTANT_VAR ordered_unique_range_t ordered_unique_range = ordered_unique_range_t();
 
 //! Type used to tag that the inserted values
 //! should be default initialized
@@ -281,7 +361,7 @@ struct default_init_t
 
 //! Value used to tag that the inserted values
 //! should be default initialized
-static const default_init_t default_init = default_init_t();
+BOOST_CONTAINER_CONSTANT_VAR default_init_t default_init = default_init_t();
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
 //! Type used to tag that the inserted values
@@ -291,7 +371,7 @@ struct value_init_t
 
 //! Value used to tag that the inserted values
 //! should be value initialized
-static const value_init_t value_init = value_init_t();
+BOOST_CONTAINER_CONSTANT_VAR value_init_t value_init = value_init_t();
 
 namespace container_detail_really_deep_namespace {
 
@@ -309,9 +389,10 @@ struct dummy
 
 }  //detail_really_deep_namespace {
 
+typedef const std::piecewise_construct_t & piecewise_construct_t;
 
 #endif   //#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
-}}  //namespace boost { namespace container {
+}}  //namespace methcla_boost { namespace container {
 
 #endif //#ifndef BOOST_CONTAINER_CONTAINER_FWD_HPP

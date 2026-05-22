@@ -18,7 +18,7 @@
 #include <boost/mpl/key_type_fwd.hpp>
 #include <boost/mpl/set/aux_/tag.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<>
 struct key_type_impl< aux::set_tag >

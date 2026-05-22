@@ -40,12 +40,12 @@
 
 #include <boost/config.hpp> // msvc 6.0 needs this for warning suppression
 #if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
-    using ::size_t; 
+namespace std{
+    using ::size_t;
 } // namespace std
 #endif
 
-namespace boost_132 {
+namespace methcla_boost_132 {
 
 // Debug hooks
 
@@ -70,9 +70,9 @@ class bad_weak_ptr: public std::exception
 {
 public:
 
-    virtual char const * what() const throw()
+    virtual char const * what() const BOOST_NOEXCEPT_OR_NOTHROW
     {
-        return "boost::bad_weak_ptr";
+        return "methcla_boost::bad_weak_ptr";
     }
 };
 
@@ -82,7 +82,7 @@ class sp_counted_base
 {
 //private:
 
-    typedef boost::detail::lightweight_mutex mutex_type;
+    typedef methcla_boost::detail::lightweight_mutex mutex_type;
 
 public:
 
@@ -121,7 +121,7 @@ public:
 #if defined(BOOST_HAS_THREADS)
         mutex_type::scoped_lock lock(mtx_);
 #endif
-        if(use_count_ == 0) boost::serialization::throw_exception(bad_weak_ptr());
+        if(use_count_ == 0) methcla_boost::serialization::throw_exception(bad_weak_ptr());
         ++use_count_;
     }
 
@@ -188,28 +188,28 @@ public:
 
 #if defined(BOOST_SP_ENABLE_DEBUG_HOOKS)
 
-template<class T> void cbi_call_constructor_hook(sp_counted_base * pn, T * px, boost::checked_deleter< T > const &)
+template<class T> void cbi_call_constructor_hook(sp_counted_base * pn, T * px, methcla_boost::checked_deleter< T > const &)
 {
-    boost::sp_scalar_constructor_hook(px, sizeof(T), pn);
+    methcla_boost::sp_scalar_constructor_hook(px, sizeof(T), pn);
 }
 
-template<class T> void cbi_call_constructor_hook(sp_counted_base *, T * px, boost::checked_array_deleter< T > const &)
+template<class T> void cbi_call_constructor_hook(sp_counted_base *, T * px, methcla_boost::checked_array_deleter< T > const &)
 {
-    boost::sp_array_constructor_hook(px);
+    methcla_boost::sp_array_constructor_hook(px);
 }
 
 template<class P, class D> void cbi_call_constructor_hook(sp_counted_base *, P const &, D const &, long)
 {
 }
 
-template<class T> void cbi_call_destructor_hook(sp_counted_base * pn, T * px, boost::checked_deleter< T > const &)
+template<class T> void cbi_call_destructor_hook(sp_counted_base * pn, T * px, methcla_boost::checked_deleter< T > const &)
 {
-    boost::sp_scalar_destructor_hook(px, sizeof(T), pn);
+    methcla_boost::sp_scalar_destructor_hook(px, sizeof(T), pn);
 }
 
-template<class T> void cbi_call_destructor_hook(sp_counted_base *, T * px, boost::checked_array_deleter< T > const &)
+template<class T> void cbi_call_destructor_hook(sp_counted_base *, T * px, methcla_boost::checked_array_deleter< T > const &)
 {
-    boost::sp_array_destructor_hook(px);
+    methcla_boost::sp_array_destructor_hook(px);
 }
 
 template<class P, class D> void cbi_call_destructor_hook(sp_counted_base *, P const &, D const &, long)
@@ -279,12 +279,12 @@ public:
 
     void * operator new(std::size_t)
     {
-        return boost::detail::quick_allocator<this_type>::alloc();
+        return methcla_boost::detail::quick_allocator<this_type>::alloc();
     }
 
     void operator delete(void * p)
     {
-        boost::detail::quick_allocator<this_type>::dealloc(p);
+        methcla_boost::detail::quick_allocator<this_type>::dealloc(p);
     }
 
 #endif
@@ -344,7 +344,7 @@ public:
         if(pi_ == 0)
         {
             d(p); // delete p
-            boost::serialization::throw_exception(std::bad_alloc());
+            methcla_boost::serialization::throw_exception(std::bad_alloc());
         }
 
 #endif
@@ -357,9 +357,9 @@ public:
     template<class Y>
     explicit shared_count(std::auto_ptr<Y> & r): pi_(
         new sp_counted_base_impl<
-            Y *, 
-            boost::checked_deleter<Y>
-        >(r.get(), boost::checked_deleter<Y>()))
+            Y *,
+            methcla_boost::checked_deleter<Y>
+        >(r.get(), methcla_boost::checked_deleter<Y>()))
 #if defined(BOOST_SP_ENABLE_DEBUG_HOOKS)
         , id_(shared_count_id)
 #endif
@@ -367,7 +367,7 @@ public:
         r.release();
     }
 
-#endif 
+#endif
 
     ~shared_count() // nothrow
     {
@@ -538,14 +538,14 @@ inline shared_count::shared_count(weak_count const & r): pi_(r.pi_)
     }
     else
     {
-        boost::serialization::throw_exception(bad_weak_ptr());
+        methcla_boost::serialization::throw_exception(bad_weak_ptr());
     }
 }
 
 } // namespace detail
 
-} // namespace boost
+} // namespace methcla_boost
 
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(boost_132::detail::sp_counted_base)
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(methcla_boost_132::detail::sp_counted_base)
 
 #endif  // #ifndef BOOST_DETAIL_SHARED_COUNT_HPP_INCLUDED

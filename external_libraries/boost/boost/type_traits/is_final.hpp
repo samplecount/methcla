@@ -17,14 +17,14 @@
 #include <boost/type_traits/remove_cv.hpp>
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 #ifdef BOOST_IS_FINAL
-template <class T> struct is_final : public integral_constant<bool, BOOST_IS_FINAL(typename remove_cv<T>::type)> {};
+template <class T> struct is_final : public integral_constant<bool, BOOST_IS_FINAL(T)> {};
 #else
 template <class T> struct is_final : public integral_constant<bool, false> {};
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_FINAL_HPP_INCLUDED

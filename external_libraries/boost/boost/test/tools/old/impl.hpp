@@ -39,7 +39,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 namespace tt_detail {
 
@@ -63,7 +63,7 @@ namespace tt_detail {
 #define ARG_INFO( z, m, dummy )                                                     \
  , BOOST_JOIN( BOOST_JOIN( arg, m ), _descr )                                       \
  , &static_cast<const unit_test::lazy_ostream&>(unit_test::lazy_ostream::instance() \
-        << ::boost::test_tools::tt_detail::print_helper( BOOST_JOIN( arg, m ) ))    \
+        << ::methcla_boost::test_tools::tt_detail::print_helper( BOOST_JOIN( arg, m ) ))    \
 /**/
 
 #define IMPL_FRWD( z, n, dummy )                                                    \
@@ -114,7 +114,7 @@ inline assertion_result equal_impl( char const* left, char* right ) { return equ
 inline assertion_result equal_impl( char* left, char* right )       { return equal_impl( static_cast<char const*>(left), static_cast<char const*>(right) ); }
 
 #if !defined( BOOST_NO_CWCHAR )
-assertion_result        BOOST_TEST_DECL equal_impl( wchar_t const* left, wchar_t const* right );
+BOOST_TEST_DECL assertion_result equal_impl( wchar_t const* left, wchar_t const* right );
 inline assertion_result equal_impl( wchar_t* left, wchar_t const* right ) { return equal_impl( static_cast<wchar_t const*>(left), static_cast<wchar_t const*>(right) ); }
 inline assertion_result equal_impl( wchar_t const* left, wchar_t* right ) { return equal_impl( static_cast<wchar_t const*>(left), static_cast<wchar_t const*>(right) ); }
 inline assertion_result equal_impl( wchar_t* left, wchar_t* right )       { return equal_impl( static_cast<wchar_t const*>(left), static_cast<wchar_t const*>(right) ); }
@@ -209,9 +209,9 @@ struct equal_coll_impl {
             if( *left_begin != *right_begin ) {
                 pr = false;
                 pr.message() << "\nMismatch at position " << pos << ": "
-                  << ::boost::test_tools::tt_detail::print_helper(*left_begin)
+                  << ::methcla_boost::test_tools::tt_detail::print_helper(*left_begin)
                   << " != "
-                  << ::boost::test_tools::tt_detail::print_helper(*right_begin);
+                  << ::methcla_boost::test_tools::tt_detail::print_helper(*right_begin);
             }
         }
 
@@ -301,9 +301,10 @@ struct BOOST_TEST_DECL check_is_close_t {
     assertion_result
     operator()( FPT1 left, FPT2 right, ToleranceType tolerance ) const
     {
-        fpc::close_at_tolerance<typename tt_detail::comp_supertype<FPT1,FPT2>::type> pred( tolerance, fpc::FPC_STRONG );
+        typedef typename tt_detail::comp_supertype<FPT1,FPT2>::type super_type;
+        fpc::close_at_tolerance<super_type> pred( tolerance, fpc::FPC_STRONG );
 
-        assertion_result ar( pred( left, right ) );
+        assertion_result ar( pred( static_cast<super_type>(left), static_cast<super_type>(right) ) );
 
         if( !ar )
             ar.message() << pred.tested_rel_diff();
@@ -351,7 +352,7 @@ check_is_small( FPT fpv, FPT tolerance )
 //____________________________________________________________________________//
 
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

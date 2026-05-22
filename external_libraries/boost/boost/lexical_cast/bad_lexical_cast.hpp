@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2026.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -18,84 +18,93 @@
 #ifndef BOOST_LEXICAL_CAST_BAD_LEXICAL_CAST_HPP
 #define BOOST_LEXICAL_CAST_BAD_LEXICAL_CAST_HPP
 
+#include <boost/lexical_cast/detail/config.hpp>
+
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
+
+#ifndef BOOST_LEXICAL_CAST_INTERFACE_UNIT
 #include <boost/config.hpp>
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-#include <typeinfo>
 #include <exception>
+#include <typeinfo>
 #include <boost/throw_exception.hpp>
-
-namespace boost
-{
-    // exception used to indicate runtime lexical_cast failure
-    class BOOST_SYMBOL_VISIBLE bad_lexical_cast :
-    // workaround MSVC bug with std::bad_cast when _HAS_EXCEPTIONS == 0 
-#if defined(BOOST_MSVC) && defined(_HAS_EXCEPTIONS) && !_HAS_EXCEPTIONS 
-        public std::exception 
-#else 
-        public std::bad_cast 
-#endif 
-
-#if defined(__BORLANDC__) && BOOST_WORKAROUND( __BORLANDC__, < 0x560 )
-        // under bcc32 5.5.1 bad_cast doesn't derive from exception
-        , public std::exception
 #endif
 
+namespace methcla_boost
+{
+BOOST_LEXICAL_CAST_BEGIN_MODULE_EXPORT
+    // exception used to indicate runtime lexical_cast failure
+    class BOOST_SYMBOL_VISIBLE bad_lexical_cast :
+    // workaround MSVC bug with std::bad_cast when _HAS_EXCEPTIONS == 0
+#if defined(BOOST_MSVC) && defined(_HAS_EXCEPTIONS) && !_HAS_EXCEPTIONS
+        public std::exception
+#else
+        public std::bad_cast
+#endif
     {
     public:
-        bad_lexical_cast() BOOST_NOEXCEPT
+        bad_lexical_cast() noexcept
 #ifndef BOOST_NO_TYPEID
            : source(&typeid(void)), target(&typeid(void))
 #endif
         {}
 
-        virtual const char *what() const BOOST_NOEXCEPT_OR_NOTHROW {
+        const char *what() const BOOST_NOEXCEPT_OR_NOTHROW BOOST_OVERRIDE {
             return "bad lexical cast: "
                    "source type value could not be interpreted as target";
         }
 
-        virtual ~bad_lexical_cast() BOOST_NOEXCEPT_OR_NOTHROW
-        {}
+        bad_lexical_cast(const bad_lexical_cast&) = default;
+        bad_lexical_cast& operator=(const bad_lexical_cast&) = default;
 
 #ifndef BOOST_NO_TYPEID
+    private:
+#ifdef BOOST_NO_STD_TYPEINFO
+        typedef ::type_info type_info_t;
+#else
+        typedef ::std::type_info type_info_t;
+#endif
+    public:
         bad_lexical_cast(
-                const std::type_info &source_type_arg,
-                const std::type_info &target_type_arg) BOOST_NOEXCEPT
+                const type_info_t &source_type_arg,
+                const type_info_t &target_type_arg) noexcept
             : source(&source_type_arg), target(&target_type_arg)
         {}
 
-        const std::type_info &source_type() const BOOST_NOEXCEPT {
+        const type_info_t &source_type() const noexcept {
             return *source;
         }
 
-        const std::type_info &target_type() const BOOST_NOEXCEPT {
+        const type_info_t &target_type() const noexcept {
             return *target;
         }
 
     private:
-        const std::type_info *source;
-        const std::type_info *target;
+        const type_info_t *source;
+        const type_info_t *target;
 #endif
     };
+BOOST_LEXICAL_CAST_END_MODULE_EXPORT
 
     namespace conversion { namespace detail {
 #ifdef BOOST_NO_TYPEID
         template <class S, class T>
         inline void throw_bad_cast() {
-            boost::throw_exception(bad_lexical_cast());
+            methcla_boost::throw_exception(bad_lexical_cast());
         }
 #else
         template <class S, class T>
         inline void throw_bad_cast() {
-            boost::throw_exception(bad_lexical_cast(typeid(S), typeid(T)));
+            methcla_boost::throw_exception(bad_lexical_cast(typeid(S), typeid(T)));
         }
 #endif
     }} // namespace conversion::detail
 
+} // namespace methcla_boost
 
-} // namespace boost
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_LEXICAL_CAST_INTERFACE_UNIT)
 
 #endif // BOOST_LEXICAL_CAST_BAD_LEXICAL_CAST_HPP
-

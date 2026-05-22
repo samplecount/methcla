@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // dataflow_exception.hpp:
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@
 
 #include <boost/assert.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace iterators {
 
@@ -46,7 +46,7 @@ public:
     dataflow_exception(exception_code c = other_exception) : code(c)
     {}
 
-    virtual const char *what( ) const throw( )
+    const char *what( ) const BOOST_NOEXCEPT_OR_NOTHROW BOOST_OVERRIDE
     {
         const char *msg = "unknown exception code";
         switch(code){
@@ -75,6 +75,6 @@ public:
 
 } // namespace iterators
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif //BOOST_ARCHIVE_ITERATORS_DATAFLOW_EXCEPTION_HPP

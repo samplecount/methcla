@@ -20,27 +20,27 @@ namespace std{
 
 #include <boost/assert.hpp>
 #include <algorithm> // std::copy
-
 #include <boost/detail/workaround.hpp> // Dinkumware and RogueWave
 #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
 #include <boost/archive/dinkumware.hpp>
 #endif
 
 #include <boost/io/ios_state.hpp>
+#include <boost/core/uncaught_exceptions.hpp>
 #include <boost/core/no_exceptions_support.hpp>
 #include <boost/serialization/string.hpp>
 
 #include <boost/archive/basic_xml_archive.hpp>
 #include <boost/archive/xml_wiarchive.hpp>
 
-#include <boost/archive/add_facet.hpp>
-
 #include <boost/archive/xml_archive_exception.hpp>
 #include <boost/archive/iterators/mb_from_wchar.hpp>
 
+#include <boost/archive/detail/utf8_codecvt_facet.hpp>
+
 #include "basic_xml_grammar.hpp"
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -69,7 +69,7 @@ xml_wiarchive_impl<Archive>::load(std::string & s){
     std::wstring ws;
     bool result = gimpl->parse_string(is, ws);
     if(! result)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     #if BOOST_WORKAROUND(_RWSTD_VER, BOOST_TESTED_AT(20101))
@@ -94,7 +94,7 @@ BOOST_WARCHIVE_DECL void
 xml_wiarchive_impl<Archive>::load(std::wstring & ws){
     bool result = gimpl->parse_string(is, ws);
     if(! result)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
 }
@@ -106,7 +106,7 @@ xml_wiarchive_impl<Archive>::load(char * s){
     std::wstring ws;
     bool result = gimpl->parse_string(is, ws);
     if(! result)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     copy_to_ptr(s, ws);
@@ -119,7 +119,7 @@ xml_wiarchive_impl<Archive>::load(wchar_t * ws){
     std::wstring twstring;
     bool result = gimpl->parse_string(is, twstring);
     if(! result)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     std::memcpy(ws, twstring.c_str(), twstring.size());
@@ -132,7 +132,7 @@ BOOST_WARCHIVE_DECL void
 xml_wiarchive_impl<Archive>::load_override(class_name_type & t){
     const std::wstring & ws = gimpl->rv.class_name;
     if(ws.size() > BOOST_SERIALIZATION_MAX_KEY_SIZE - 1)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::invalid_class_name)
         );
     copy_to_ptr(t, ws);
@@ -143,7 +143,7 @@ BOOST_WARCHIVE_DECL void
 xml_wiarchive_impl<Archive>::init(){
     gimpl->init(is);
     this->set_library_version(
-        library_version_type(gimpl->rv.version)
+        methcla_boost::serialization::library_version_type(gimpl->rv.version)
     );
 }
 
@@ -161,33 +161,27 @@ xml_wiarchive_impl<Archive>::xml_wiarchive_impl(
     gimpl(new xml_wgrammar())
 {
     if(0 == (flags & no_codecvt)){
-        // note usage of argument "1" so that the locale isn't
-        // automatically delete the facet
-        archive_locale.reset(
-            add_facet(
-                is_.getloc(),
-                new boost::archive::detail::utf8_codecvt_facet
-            )
+        archive_locale = std::locale(
+            is_.getloc(),
+            new methcla_boost::archive::detail::utf8_codecvt_facet
         );
-        //is.imbue(* archive_locale);
+        // libstdc++ crashes without this
+        is_.sync();
+        is_.imbue(archive_locale);
     }
-    if(0 == (flags & no_header))
-        init();
 }
 
 template<class Archive>
 BOOST_WARCHIVE_DECL
 xml_wiarchive_impl<Archive>::~xml_wiarchive_impl(){
+    if(methcla_boost::core::uncaught_exceptions() > 0)
+        return;
     if(0 == (this->get_flags() & no_header)){
-        BOOST_TRY{
-            gimpl->windup(is);
-        }
-        BOOST_CATCH(...){}
-        BOOST_CATCH_END
+        gimpl->windup(is);
     }
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif  // BOOST_NO_STD_WSTREAMBUF

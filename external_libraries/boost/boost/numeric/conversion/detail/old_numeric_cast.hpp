@@ -8,6 +8,8 @@
 //  See http://www.boost.org/libs/conversion for Documentation.
 
 //  Revision History
+//  02 Jun 14  Remove VC6 workarounds.
+//  16 Jul 11  Bugfixes for VC6.
 //  23 JUN 05  Code extracted from /boost/cast.hpp into this new header.
 //             Keeps this legacy version of numeric_cast<> for old compilers
 //             wich can't compile the new version in /boost/numeric/conversion/cast.hpp
@@ -21,7 +23,7 @@
 //             vc-stlport.
 //  20 Jan 01  Moved BOOST_NO_LIMITS_COMPILE_TIME_CONSTANTS to config.hpp.
 //             Removed unused BOOST_EXPLICIT_TARGET macro. Moved
-//             boost::detail::type to boost/type.hpp. Made it compile with
+//             methcla_boost::detail::type to boost/type.hpp. Made it compile with
 //             stock gcc again (Dave Abrahams)
 //  29 Nov 00  Remove nested namespace cast, cleanup spacing before Formal
 //             Review (Beman Dawes)
@@ -53,20 +55,7 @@
 # include <boost/limits.hpp>
 # include <boost/numeric/conversion/converter_policies.hpp>
 
-//  It has been demonstrated numerous times that MSVC 6.0 fails silently at link
-//  time if you use a template function which has template parameters that don't
-//  appear in the function's argument list.
-//
-//  TODO: Add this to config.hpp?
-//  FLC: This macro is repeated in boost/cast.hpp but only locally (is undefined at the bottom)
-//       so is OK to reproduce it here.
-# if defined(BOOST_MSVC) && BOOST_MSVC < 1300
-#  define BOOST_EXPLICIT_DEFAULT_TARGET , ::boost::type<Target>* = 0
-# else
-#  define BOOST_EXPLICIT_DEFAULT_TARGET
-# endif
-
-namespace boost
+namespace methcla_boost
 {
   using numeric::bad_numeric_cast;
 
@@ -92,7 +81,7 @@ namespace boost
          };
       };
 
-      // Move to namespace boost in utility.hpp?
+      // Move to namespace methcla_boost in utility.hpp?
       template <class T, bool specialized>
       struct fixed_numeric_limits_base
           : public if_true< std::numeric_limits<T>::is_signed >
@@ -111,11 +100,11 @@ namespace boost
       // long / unsigned long long. Not intended to be full
       // numeric_limits replacements, but good enough for numeric_cast<>
       template <>
-      struct fixed_numeric_limits_base< ::boost::long_long_type, false>
+      struct fixed_numeric_limits_base< ::methcla_boost::long_long_type, false>
       {
           BOOST_STATIC_CONSTANT(bool, is_specialized = true);
           BOOST_STATIC_CONSTANT(bool, is_signed = true);
-          static  ::boost::long_long_type max BOOST_PREVENT_MACRO_SUBSTITUTION ()
+          static  ::methcla_boost::long_long_type max BOOST_PREVENT_MACRO_SUBSTITUTION ()
           {
 #  ifdef LONGLONG_MAX
               return LONGLONG_MAX;
@@ -124,7 +113,7 @@ namespace boost
 #  endif
           }
 
-          static  ::boost::long_long_type min BOOST_PREVENT_MACRO_SUBSTITUTION ()
+          static  ::methcla_boost::long_long_type min BOOST_PREVENT_MACRO_SUBSTITUTION ()
           {
 #  ifdef LONGLONG_MIN
               return LONGLONG_MIN;
@@ -135,11 +124,11 @@ namespace boost
       };
 
       template <>
-      struct fixed_numeric_limits_base< ::boost::ulong_long_type, false>
+      struct fixed_numeric_limits_base< ::methcla_boost::ulong_long_type, false>
       {
           BOOST_STATIC_CONSTANT(bool, is_specialized = true);
           BOOST_STATIC_CONSTANT(bool, is_signed = false);
-          static  ::boost::ulong_long_type max BOOST_PREVENT_MACRO_SUBSTITUTION ()
+          static  ::methcla_boost::ulong_long_type max BOOST_PREVENT_MACRO_SUBSTITUTION ()
           {
 #  ifdef ULONGLONG_MAX
               return ULONGLONG_MAX;
@@ -148,7 +137,7 @@ namespace boost
 #  endif
           }
 
-          static  ::boost::ulong_long_type min BOOST_PREVENT_MACRO_SUBSTITUTION () { return 0; }
+          static  ::methcla_boost::ulong_long_type min BOOST_PREVENT_MACRO_SUBSTITUTION () { return 0; }
       };
 # endif
     } // namespace detail
@@ -214,24 +203,6 @@ namespace boost
         template <class X, class Y>
         static inline bool check(X x, Y)
             { return x >= 0 && static_cast<X>(static_cast<Y>(x)) != x; }
-
-# if defined(BOOST_MSVC) && BOOST_MSVC < 1300
-        // MSVC6 can't static_cast  unsigned __int64 -> floating types
-#  define BOOST_UINT64_CAST(src_type)                                   \
-        static inline bool check(src_type x, unsigned __int64)          \
-        {                                                               \
-            if (x < 0) return false;                                    \
-            unsigned __int64 y = static_cast<unsigned __int64>(x);      \
-            bool odd = y & 0x1;                                         \
-            __int64 div2 = static_cast<__int64>(y >> 1);                \
-            return ((static_cast<src_type>(div2) * 2.0) + odd) != x;    \
-        }
-
-        BOOST_UINT64_CAST(long double);
-        BOOST_UINT64_CAST(double);
-        BOOST_UINT64_CAST(float);
-#  undef BOOST_UINT64_CAST
-# endif
     };
 
     template<>
@@ -260,11 +231,11 @@ namespace boost
 #  pragma warning(push)
 #  pragma warning(disable : 4018)
 #  pragma warning(disable : 4146)
-#elif defined(__BORLANDC__)
+#elif defined(BOOST_BORLANDC)
 #  pragma option push -w-8041
 # endif
 
-       // Move to namespace boost in utility.hpp?
+       // Move to namespace methcla_boost in utility.hpp?
        template <class T>
        struct fixed_numeric_limits : public std::numeric_limits<T>
        {
@@ -277,7 +248,7 @@ namespace boost
 
 # if BOOST_MSVC
 #  pragma warning(pop)
-#elif defined(__BORLANDC__)
+#elif defined(BOOST_BORLANDC)
 #  pragma option pop
 # endif
   } // namespace detail
@@ -285,7 +256,7 @@ namespace boost
 #endif
 
     template<typename Target, typename Source>
-    inline Target numeric_cast(Source arg BOOST_EXPLICIT_DEFAULT_TARGET)
+    inline Target numeric_cast(Source arg)
     {
         // typedefs abbreviating respective trait classes
         typedef detail::fixed_numeric_limits<Source> arg_traits;
@@ -314,7 +285,7 @@ namespace boost
 # if BOOST_MSVC
 #  pragma warning(push)
 #  pragma warning(disable : 4018)
-#elif defined(__BORLANDC__)
+#elif defined(BOOST_BORLANDC)
 #pragma option push -w-8012
 # endif
         if ((arg < 0 && !result_traits::is_signed)  // loss of negative range
@@ -322,7 +293,7 @@ namespace boost
              || arg > (result_traits::max)())            // overflow
 # if BOOST_MSVC
 #  pragma warning(pop)
-#elif defined(__BORLANDC__)
+#elif defined(BOOST_BORLANDC)
 #pragma option pop
 # endif
 #endif
@@ -332,8 +303,6 @@ namespace boost
         return static_cast<Target>(arg);
     } // numeric_cast
 
-#  undef BOOST_EXPLICIT_DEFAULT_TARGET
-
-} // namespace boost
+} // namespace methcla_boost
 
 #endif  // BOOST_OLD_NUMERIC_CAST_HPP

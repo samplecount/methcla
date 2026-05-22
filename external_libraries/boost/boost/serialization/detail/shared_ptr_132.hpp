@@ -39,7 +39,7 @@
 # pragma warning(disable:4284) // odd return type for operator->
 #endif
 
-namespace boost_132 {
+namespace methcla_boost_132 {
 
 template<class T> class weak_ptr;
 template<class T> class enable_shared_from_this;
@@ -121,7 +121,7 @@ public:
     }
 
     template<class Y>
-    explicit shared_ptr(Y * p): px(p), pn(p, boost::checked_deleter<Y>()) // Y must be complete
+    explicit shared_ptr(Y * p): px(p), pn(p, methcla_boost::checked_deleter<Y>()) // Y must be complete
     {
         detail::sp_enable_shared_from_this( pn, p, p );
     }
@@ -185,7 +185,7 @@ public:
     {
         if(px == 0)
         {
-            boost::serialization::throw_exception(std::bad_cast());
+            methcla_boost::serialization::throw_exception(std::bad_cast());
         }
     }
 
@@ -251,7 +251,7 @@ public:
         BOOST_ASSERT(px != 0);
         return px;
     }
-    
+
     T * get() const // never throws
     {
         return px;
@@ -268,13 +268,13 @@ public:
 
 #elif defined(__MWERKS__) && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
     typedef T * (this_type::*unspecified_bool_type)() const;
-    
+
     operator unspecified_bool_type() const // never throws
     {
         return px == 0? 0: &this_type::get;
     }
 
-#else 
+#else
 
     typedef T * this_type::*unspecified_bool_type;
 
@@ -394,7 +394,7 @@ template<class T, class U> shared_ptr< T > shared_polymorphic_downcast(shared_pt
     return shared_static_cast< T >(r);
 }
 
-// get_pointer() enables boost::mem_fn to recognize shared_ptr
+// get_pointer() enables methcla_boost::mem_fn to recognize shared_ptr
 
 template<class T> inline T * get_pointer(shared_ptr< T > const & p)
 {
@@ -432,11 +432,11 @@ template<class D, class T> D * get_deleter(shared_ptr< T > const & p)
 
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 # pragma warning(pop)
-#endif    
+#endif
 
 #endif  // #if defined(BOOST_NO_MEMBER_TEMPLATES) && !defined(BOOST_MSVC6_MEMBER_TEMPLATES)
 

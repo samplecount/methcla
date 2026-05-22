@@ -26,7 +26,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 class lazy_ostream;
@@ -41,8 +41,6 @@ class assertion_result;
 //____________________________________________________________________________//
 
 namespace tt_detail {
-
-inline bool dummy_cond() { return false; }
 
 // ************************************************************************** //
 // **************        types of supported assertions         ************** //
@@ -114,7 +112,7 @@ equal_impl( char const* left, char const* right );
 
 } // namespace tt_detail
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

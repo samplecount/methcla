@@ -13,13 +13,13 @@
 #ifndef BOOST_VARIANT_DETAIL_ENABLE_RECURSIVE_FWD_HPP
 #define BOOST_VARIANT_DETAIL_ENABLE_RECURSIVE_FWD_HPP
 
-#include "boost/mpl/aux_/config/ctps.hpp"
+#include <boost/mpl/aux_/config/ctps.hpp>
 
-#include "boost/mpl/bool_fwd.hpp"
+#include <boost/mpl/bool_fwd.hpp>
 
-#   include "boost/mpl/bool.hpp"
+#   include <boost/mpl/bool.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace detail { namespace variant {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,7 +60,7 @@ struct is_recursive_flag< recursive_flag<T> >
 // (detail) metafunction enable_recursive
 //
 // Attempts recursive_variant_ tag substitution, wrapping with
-// boost::recursive_wrapper if substituion occurs w/ non-indirect result
+// methcla_boost::recursive_wrapper if substituion occurs w/ non-indirect result
 // (i.e., not a reference or pointer) *and* NoWrapper is false_.
 //
 template <
@@ -82,6 +82,6 @@ template <
 struct quoted_enable_recursive;
 
 }} // namespace detail::variant
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_VARIANT_DETAIL_ENABLE_RECURSIVE_FWD_HPP

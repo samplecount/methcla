@@ -20,7 +20,7 @@
 #include <boost/chrono/time_point.hpp>
 #include <boost/operators.hpp>
 #include <boost/chrono/detail/system.hpp>
-#include <iostream>
+#include <iosfwd>
 #include <boost/type_traits/common_type.hpp>
 #include <boost/chrono/clock_string.hpp>
 
@@ -28,7 +28,7 @@
 #include <boost/config/abi_prefix.hpp> // must be the last #include
 #endif
 
-namespace boost { namespace chrono {
+namespace methcla_boost { namespace chrono {
 
     class BOOST_CHRONO_DECL process_real_cpu_clock {
     public:
@@ -193,7 +193,7 @@ namespace boost { namespace chrono {
                 typedef std::istreambuf_iterator<CharT, Traits> in_iterator;
                 in_iterator i(is);
                 in_iterator e;
-                if (i == e || *i != '{')  // mandatory '{'
+                if (i == e || *i++ != '{')  // mandatory '{'
                 {
                     is.setstate(is.failbit | is.eofbit);
                     return;
@@ -243,8 +243,9 @@ namespace chrono
   operator==(const duration<process_times<Rep1>, Period1>& lhs,
         const duration<process_times<Rep2>, Period2>& rhs)
   {
-      return boost::chrono::detail::duration_eq<
-          duration<process_times<Rep1>, Period1>, duration<process_times<Rep2>, Period2> >()(lhs, rhs);
+      return methcla_boost::chrono::detail::duration_eq<
+          duration<Rep1, Period1>, duration<Rep2, Period2>
+        >()(duration<Rep1, Period1>(lhs.count().real), duration<Rep2, Period2>(rhs.count().real));
   }
 
   template <class Rep1, class Period1, class Rep2, class Period2>
@@ -253,7 +254,7 @@ namespace chrono
   operator==(const duration<process_times<Rep1>, Period1>& lhs,
         const duration<Rep2, Period2>& rhs)
   {
-      return boost::chrono::detail::duration_eq<
+      return methcla_boost::chrono::detail::duration_eq<
           duration<Rep1, Period1>, duration<Rep2, Period2> >()(duration<Rep1, Period1>(lhs.count().real), rhs);
   }
 
@@ -275,7 +276,7 @@ namespace chrono
   operator< (const duration<process_times<Rep1>, Period1>& lhs,
         const duration<Rep2, Period2>& rhs)
   {
-      return boost::chrono::detail::duration_lt<
+      return methcla_boost::chrono::detail::duration_lt<
         duration<Rep1, Period1>, duration<Rep2, Period2> >()(duration<Rep1, Period1>(lhs.count().real), rhs);
   }
 
@@ -285,7 +286,8 @@ namespace chrono
   operator< (const duration<Rep1, Period1>& lhs,
         const duration<process_times<Rep2>, Period2>& rhs)
   {
-    return rhs < lhs;
+      return methcla_boost::chrono::detail::duration_lt<
+        duration<Rep1, Period1>, duration<Rep2, Period2> >()(lhs, duration<Rep2, Period2>(rhs.count().real));
   }
 
   template <class Rep1, class Period1, class Rep2, class Period2>
@@ -294,8 +296,9 @@ namespace chrono
   operator< (const duration<process_times<Rep1>, Period1>& lhs,
         const duration<process_times<Rep2>, Period2>& rhs)
   {
-    return boost::chrono::detail::duration_lt<
-      duration<Rep1, Period1>, duration<Rep2, Period2> >()(lhs, rhs);
+    return methcla_boost::chrono::detail::duration_lt<
+        duration<Rep1, Period1>, duration<Rep2, Period2>
+      >()(duration<Rep1, Period1>(lhs.count().real), duration<Rep2, Period2>(rhs.count().real));
   }
 
 
@@ -306,7 +309,7 @@ namespace chrono
     public:
 
         typedef process_cpu_clock_times times;
-        typedef boost::chrono::duration<times,  nano>                duration;
+        typedef methcla_boost::chrono::duration<times,  nano>                duration;
         typedef duration::rep                       rep;
         typedef duration::period                    period;
         typedef chrono::time_point<process_cpu_clock>  time_point;
@@ -412,7 +415,7 @@ namespace chrono
       {
         static const CharT
             u[] =
-                { 'p', 'r', 'o', 'c', 'e', 's', 's', '_', 's', 'y', 's', 't', 't', 'e', 'm', '_', 'c', 'l', 'o', 'c', 'k' };
+                { 'p', 'r', 'o', 'c', 'e', 's', 's', '_', 's', 'y', 's', 't', 'e', 'm', '_', 'c', 'l', 'o', 'c', 'k' };
         static const std::basic_string<CharT> str(u, u + sizeof(u)
             / sizeof(u[0]));
         return str;
@@ -450,14 +453,14 @@ namespace chrono
 #endif
 
 } // namespace chrono
-} // namespace boost
+} // namespace methcla_boost
 
 namespace std {
 
     template <typename Rep>
-    struct numeric_limits<boost::chrono::process_times<Rep> >
+    struct numeric_limits<methcla_boost::chrono::process_times<Rep> >
     {
-        typedef boost::chrono::process_times<Rep> Res;
+        typedef methcla_boost::chrono::process_times<Rep> Res;
 
         public:
         static const bool is_specialized = true;
@@ -473,7 +476,7 @@ namespace std {
                       (std::numeric_limits<Rep>::max)(),
                       (std::numeric_limits<Rep>::max)());
         }
-        static Res lowest() throw()
+        static Res lowest() BOOST_NOEXCEPT_OR_NOTHROW
         {
             return (min)();
         }

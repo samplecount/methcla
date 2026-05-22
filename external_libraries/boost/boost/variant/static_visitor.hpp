@@ -13,16 +13,16 @@
 #ifndef BOOST_VARIANT_STATIC_VISITOR_HPP
 #define BOOST_VARIANT_STATIC_VISITOR_HPP
 
-#include "boost/config.hpp"
-#include "boost/detail/workaround.hpp"
+#include <boost/config.hpp>
+#include <boost/detail/workaround.hpp>
 
-#include "boost/mpl/if.hpp"
-#include "boost/type_traits/is_base_and_derived.hpp"
+#include <boost/mpl/if.hpp>
+#include <boost/type_traits/is_base_and_derived.hpp>
 
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/mpl/aux_/lambda_support.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 //////////////////////////////////////////////////////////////////////////
 // class template static_visitor
@@ -39,7 +39,7 @@ namespace detail {
 
 } // namespace detail
 
-template <typename R = ::boost::detail::static_visitor_default_return>
+template <typename R = ::methcla_boost::detail::static_visitor_default_return>
 class static_visitor
     : public detail::is_static_visitor_tag
 {
@@ -50,10 +50,8 @@ public: // typedefs
 protected: // for use as base class only
 #if !defined(BOOST_NO_CXX11_DEFAULTED_FUNCTIONS) && !defined(BOOST_NO_CXX11_NON_PUBLIC_DEFAULTED_FUNCTIONS)
     static_visitor() = default;
-    ~static_visitor() = default;
 #else
     static_visitor()  BOOST_NOEXCEPT { }
-    ~static_visitor()  BOOST_NOEXCEPT { }
 #endif
 };
 
@@ -75,7 +73,7 @@ template <typename T>
 struct is_static_visitor_impl
 {
     BOOST_STATIC_CONSTANT(bool, value = 
-        (::boost::is_base_and_derived< 
+        (::methcla_boost::is_base_and_derived< 
             detail::is_static_visitor_tag,
             T
         >::value));
@@ -84,12 +82,12 @@ struct is_static_visitor_impl
 } // namespace detail
 
 template< typename T > struct is_static_visitor
-	: public ::boost::integral_constant<bool,(::boost::detail::is_static_visitor_impl<T>::value)>
+  : public ::methcla_boost::integral_constant<bool,(::methcla_boost::detail::is_static_visitor_impl<T>::value)>
 {
 public:
     BOOST_MPL_AUX_LAMBDA_SUPPORT(1,is_static_visitor,(T))
 };
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_VARIANT_STATIC_VISITOR_HPP

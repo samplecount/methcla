@@ -17,7 +17,7 @@
 //  See http://www.boost.org for updates, documentation, and revision history.
 
 #include <cstddef> // size_t
-#include <climits> // ULONG_MAX 
+#include <climits> // ULONG_MAX
 #include <string>
 
 #include <boost/config.hpp>
@@ -36,7 +36,7 @@ namespace std{
 #include <boost/archive/detail/decl.hpp>
 #include <boost/archive/detail/abi_prefix.hpp> // must be the last header
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     class extended_type_info;
 } // namespace serialization
@@ -76,8 +76,8 @@ public:
     virtual void save(const unsigned long t) = 0;
 
     #if defined(BOOST_HAS_LONG_LONG)
-    virtual void save(const boost::long_long_type t) = 0;
-    virtual void save(const boost::ulong_long_type t) = 0;
+    virtual void save(const methcla_boost::long_long_type t) = 0;
+    virtual void save(const methcla_boost::ulong_long_type t) = 0;
     #elif defined(BOOST_HAS_MS_INT64)
     virtual void save(const __int64 t) = 0;
     virtual void save(const unsigned __int64 t) = 0;
@@ -111,18 +111,18 @@ public:
     // special treatment for name-value pairs.
     template<class T>
     void save_override(
-            const ::boost::serialization::nvp< T > & t
+            const ::methcla_boost::serialization::nvp< T > & t
         ){
         save_start(t.name());
         archive::save(* this->This(), t.const_value());
         save_end(t.name());
     }
 protected:
-    virtual ~polymorphic_oarchive_impl(){};
+    virtual ~polymorphic_oarchive_impl() {}
 public:
     // utility functions implemented by all legal archives
     virtual unsigned int get_flags() const = 0;
-    virtual library_version_type get_library_version() const = 0;
+    virtual methcla_boost::serialization::library_version_type get_library_version() const = 0;
     virtual void save_binary(const void * t, std::size_t size) = 0;
 
     virtual void save_object(
@@ -136,18 +136,18 @@ public:
 };
 
 // note: preserve naming symmetry
-class BOOST_SYMBOL_VISIBLE polymorphic_oarchive : 
+class BOOST_SYMBOL_VISIBLE polymorphic_oarchive :
     public polymorphic_oarchive_impl
 {
 public:
-    virtual ~polymorphic_oarchive(){};
+    ~polymorphic_oarchive() BOOST_OVERRIDE {}
 };
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 // required by export
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(boost::archive::polymorphic_oarchive)
+BOOST_SERIALIZATION_REGISTER_ARCHIVE(methcla_boost::archive::polymorphic_oarchive)
 
 #include <boost/archive/detail/abi_suffix.hpp> // pops abi_suffix.hpp pragmas
 

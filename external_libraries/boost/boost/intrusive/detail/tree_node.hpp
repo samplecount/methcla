@@ -22,9 +22,10 @@
 #endif
 
 #include <boost/intrusive/detail/config_begin.hpp>
+#include <boost/intrusive/detail/workaround.hpp>
 #include <boost/intrusive/pointer_rebind.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 template<class VoidPointer>
@@ -43,36 +44,36 @@ struct tree_node_traits
    typedef typename node::node_ptr   node_ptr;
    typedef typename pointer_rebind<VoidPointer, const node>::type const_node_ptr;
 
-   static node_ptr get_parent(const const_node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_parent(const_node_ptr n)
    {  return n->parent_;  }
 
-   static node_ptr get_parent(const node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_parent(node_ptr n)
    {  return n->parent_;  }
 
-   static void set_parent(const node_ptr & n, const node_ptr & p)
+   BOOST_INTRUSIVE_FORCEINLINE static void set_parent(node_ptr n, node_ptr p)
    {  n->parent_ = p;  }
 
-   static node_ptr get_left(const const_node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_left(const_node_ptr n)
    {  return n->left_;  }
 
-   static node_ptr get_left(const node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_left(node_ptr n)
    {  return n->left_;  }
 
-   static void set_left(const node_ptr & n, const node_ptr & l)
+   BOOST_INTRUSIVE_FORCEINLINE static void set_left(node_ptr n, node_ptr l)
    {  n->left_ = l;  }
 
-   static node_ptr get_right(const const_node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_right(const_node_ptr n)
    {  return n->right_;  }
 
-   static node_ptr get_right(const node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_right(node_ptr n)
    {  return n->right_;  }
 
-   static void set_right(const node_ptr & n, const node_ptr & r)
+   BOOST_INTRUSIVE_FORCEINLINE static void set_right(node_ptr n, node_ptr r)
    {  n->right_ = r;  }
 };
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #include <boost/intrusive/detail/config_end.hpp>
 

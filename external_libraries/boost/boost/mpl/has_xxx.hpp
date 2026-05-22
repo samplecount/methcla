@@ -33,7 +33,7 @@
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_trailing_params.hpp>
 
-#if BOOST_WORKAROUND( __BORLANDC__, BOOST_TESTED_AT(0x590) )
+#if BOOST_WORKAROUND( BOOST_BORLANDC, BOOST_TESTED_AT(0x590) )
 # include <boost/type_traits/is_class.hpp>
 #endif
 
@@ -51,7 +51,7 @@
 #   include <boost/mpl/if.hpp>
 #   include <boost/mpl/bool.hpp>
 
-namespace boost { namespace mpl { namespace aux {
+namespace methcla_boost { namespace mpl { namespace aux {
 
 struct has_xxx_tag;
 
@@ -91,26 +91,26 @@ struct msvc_is_incomplete<int>
 }}}
 
 #   define BOOST_MPL_HAS_XXX_TRAIT_NAMED_DEF_(trait, name, default_) \
-template< typename T, typename name = ::boost::mpl::aux::has_xxx_tag > \
+template< typename T, typename name = ::methcla_boost::mpl::aux::has_xxx_tag > \
 struct BOOST_PP_CAT(trait,_impl) : T \
 { \
-    static boost::mpl::aux::no_tag \
-    test(void(*)(::boost::mpl::aux::has_xxx_tag)); \
+    static methcla_boost::mpl::aux::no_tag \
+    test(void(*)(::methcla_boost::mpl::aux::has_xxx_tag)); \
     \
-    static boost::mpl::aux::yes_tag test(...); \
+    static methcla_boost::mpl::aux::yes_tag test(...); \
     \
     BOOST_STATIC_CONSTANT(bool, value = \
           sizeof(test(static_cast<void(*)(name)>(0))) \
-            != sizeof(boost::mpl::aux::no_tag) \
+            != sizeof(methcla_boost::mpl::aux::no_tag) \
         ); \
-    typedef boost::mpl::bool_<value> type; \
+    typedef methcla_boost::mpl::bool_<value> type; \
 }; \
 \
-template< typename T, typename fallback_ = boost::mpl::bool_<default_> > \
+template< typename T, typename fallback_ = methcla_boost::mpl::bool_<default_> > \
 struct trait \
-    : boost::mpl::if_c< \
-          boost::mpl::aux::msvc_is_incomplete<T>::value \
-        , boost::mpl::bool_<false> \
+    : methcla_boost::mpl::if_c< \
+          methcla_boost::mpl::aux::msvc_is_incomplete<T>::value \
+        , methcla_boost::mpl::bool_<false> \
         , BOOST_PP_CAT(trait,_impl)<T> \
         >::type \
 { \
@@ -136,7 +136,7 @@ BOOST_MPL_AUX_HAS_XXX_TRAIT_SPEC(trait, long double) \
 template<> struct trait<T> \
 { \
     BOOST_STATIC_CONSTANT(bool, value = false); \
-    typedef boost::mpl::bool_<false> type; \
+    typedef methcla_boost::mpl::bool_<false> type; \
 }; \
 /**/
 
@@ -176,7 +176,7 @@ template< typename T, typename U = void > \
 struct BOOST_PP_CAT(trait,_impl_) \
 { \
     BOOST_STATIC_CONSTANT(bool, value = false); \
-    typedef boost::mpl::bool_<value> type; \
+    typedef methcla_boost::mpl::bool_<value> type; \
 }; \
 \
 template< typename T > \
@@ -186,17 +186,17 @@ struct BOOST_PP_CAT(trait,_impl_)< \
     > \
 { \
     BOOST_STATIC_CONSTANT(bool, value = true); \
-    typedef boost::mpl::bool_<value> type; \
+    typedef methcla_boost::mpl::bool_<value> type; \
 }; \
 \
-template< typename T, typename fallback_ = boost::mpl::bool_<default_> > \
+template< typename T, typename fallback_ = methcla_boost::mpl::bool_<default_> > \
 struct trait \
     : BOOST_PP_CAT(trait,_impl_)<T> \
 { \
 }; \
 /**/
 
-#   elif BOOST_WORKAROUND( __BORLANDC__, BOOST_TESTED_AT(0x590) )
+#   elif BOOST_WORKAROUND( BOOST_BORLANDC, BOOST_TESTED_AT(0x590) )
 
 #   define BOOST_MPL_HAS_XXX_TRAIT_NAMED_BCB_DEF(trait, trait_tester, name, default_) \
 template< typename T, bool IS_CLASS > \
@@ -210,18 +210,18 @@ struct trait_tester< T, true > \
     struct trait_tester_impl \
     { \
         template < class U > \
-        static int  resolve( boost::mpl::aux::type_wrapper<U> const volatile * \
-                           , boost::mpl::aux::type_wrapper<typename U::name >* = 0 ); \
+        static int  resolve( methcla_boost::mpl::aux::type_wrapper<U> const volatile * \
+                           , methcla_boost::mpl::aux::type_wrapper<typename U::name >* = 0 ); \
         static char resolve( ... ); \
     }; \
-    typedef boost::mpl::aux::type_wrapper<T> t_; \
+    typedef methcla_boost::mpl::aux::type_wrapper<T> t_; \
     BOOST_STATIC_CONSTANT( bool, value = ( sizeof( trait_tester_impl::resolve( static_cast< t_ * >(0) ) ) == sizeof(int) ) ); \
 }; \
-template< typename T, typename fallback_ = boost::mpl::bool_<default_> > \
+template< typename T, typename fallback_ = methcla_boost::mpl::bool_<default_> > \
 struct trait           \
 {                      \
-    BOOST_STATIC_CONSTANT( bool, value = (trait_tester< T, boost::is_class< T >::value >::value) );     \
-    typedef boost::mpl::bool_< trait< T, fallback_ >::value > type; \
+    BOOST_STATIC_CONSTANT( bool, value = (trait_tester< T, methcla_boost::is_class< T >::value >::value) );     \
+    typedef methcla_boost::mpl::bool_< trait< T, fallback_ >::value > type; \
 };
 
 #   define BOOST_MPL_HAS_XXX_TRAIT_NAMED_DEF(trait, name, default_) \
@@ -234,26 +234,26 @@ struct trait           \
 #   else // other SFINAE-capable compilers
 
 #   define BOOST_MPL_HAS_XXX_TRAIT_NAMED_DEF(trait, name, default_) \
-template< typename T, typename fallback_ = boost::mpl::bool_<default_> > \
+template< typename T, typename fallback_ = methcla_boost::mpl::bool_<default_> > \
 struct trait \
 { \
     struct gcc_3_2_wknd \
     { \
         template< typename U > \
-        static boost::mpl::aux::yes_tag test( \
-              boost::mpl::aux::type_wrapper<U> const volatile* \
-            , boost::mpl::aux::type_wrapper<BOOST_MSVC_TYPENAME U::name>* = 0 \
+        static methcla_boost::mpl::aux::yes_tag test( \
+              methcla_boost::mpl::aux::type_wrapper<U> const volatile* \
+            , methcla_boost::mpl::aux::type_wrapper<BOOST_MSVC_TYPENAME U::name>* = 0 \
             ); \
     \
-        static boost::mpl::aux::no_tag test(...); \
+        static methcla_boost::mpl::aux::no_tag test(...); \
     }; \
     \
-    typedef boost::mpl::aux::type_wrapper<T> t_; \
+    typedef methcla_boost::mpl::aux::type_wrapper<T> t_; \
     BOOST_STATIC_CONSTANT(bool, value = \
           sizeof(gcc_3_2_wknd::test(static_cast<t_*>(0))) \
-            == sizeof(boost::mpl::aux::yes_tag) \
+            == sizeof(methcla_boost::mpl::aux::yes_tag) \
         ); \
-    typedef boost::mpl::bool_<value> type; \
+    typedef methcla_boost::mpl::bool_<value> type; \
 }; \
 /**/
 
@@ -265,7 +265,7 @@ struct trait \
 // placeholder implementation
 
 #   define BOOST_MPL_HAS_XXX_TRAIT_NAMED_DEF(trait, name, default_) \
-template< typename T, typename fallback_ = boost::mpl::bool_<default_> > \
+template< typename T, typename fallback_ = methcla_boost::mpl::bool_<default_> > \
 struct trait \
 { \
     BOOST_STATIC_CONSTANT(bool, value = fallback_::value); \
@@ -334,7 +334,7 @@ struct trait \
 // correct name but different number of arguments.
 #   define BOOST_MPL_HAS_MEMBER_MULTI_SUBSTITUTE(z, n, args) \
       template< \
-          template< BOOST_PP_ENUM_PARAMS(BOOST_PP_INC(n), typename V) > class V \
+          template< BOOST_PP_ENUM_PARAMS_Z(z, BOOST_PP_INC(n), typename V) > class V \
        > \
       struct BOOST_MPL_HAS_MEMBER_INTROSPECTION_SUBSTITUTE_NAME(args, n) { \
       }; \
@@ -351,12 +351,12 @@ struct trait \
 #   if !BOOST_MPL_HAS_XXX_NO_EXPLICIT_TEST_FUNCTION
 #     define BOOST_MPL_HAS_MEMBER_REJECT(args, member_macro) \
         template< typename V > \
-        static boost::mpl::aux::no_tag \
+        static methcla_boost::mpl::aux::no_tag \
         BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)(...); \
       /**/
 #   else
 #     define BOOST_MPL_HAS_MEMBER_REJECT(args, member_macro) \
-        static boost::mpl::aux::no_tag \
+        static methcla_boost::mpl::aux::no_tag \
         BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)(...); \
       /**/
 #   endif
@@ -364,9 +364,9 @@ struct trait \
 #   if !BOOST_MPL_HAS_XXX_NO_WRAPPED_TYPES
 #     define BOOST_MPL_HAS_MEMBER_MULTI_ACCEPT(z, n, args) \
         template< typename V > \
-        static boost::mpl::aux::yes_tag \
+        static methcla_boost::mpl::aux::yes_tag \
         BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)( \
-            boost::mpl::aux::type_wrapper< V > const volatile* \
+            methcla_boost::mpl::aux::type_wrapper< V > const volatile* \
           , BOOST_MPL_HAS_MEMBER_INTROSPECTION_SUBSTITUTE_NAME(args, n) < \
                 V::template BOOST_PP_ARRAY_ELEM(1, args) \
             >* = 0 \
@@ -382,7 +382,7 @@ struct trait \
 #   else
 #     define BOOST_MPL_HAS_MEMBER_ACCEPT(args, member_macro) \
         template< typename V > \
-        static boost::mpl::aux::yes_tag \
+        static methcla_boost::mpl::aux::yes_tag \
         BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)( \
             V const volatile* \
           , member_macro(args, V, T)* = 0 \
@@ -393,16 +393,16 @@ struct trait \
 #   if !BOOST_MPL_HAS_XXX_NO_EXPLICIT_TEST_FUNCTION
 #     define BOOST_MPL_HAS_MEMBER_TEST(args) \
           sizeof(BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)< U >(0)) \
-              == sizeof(boost::mpl::aux::yes_tag) \
+              == sizeof(methcla_boost::mpl::aux::yes_tag) \
       /**/
 #   else
 #     if !BOOST_MPL_HAS_XXX_NO_WRAPPED_TYPES
 #       define BOOST_MPL_HAS_MEMBER_TEST(args) \
           sizeof( \
               BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)( \
-                  static_cast< boost::mpl::aux::type_wrapper< U >* >(0) \
+                  static_cast< methcla_boost::mpl::aux::type_wrapper< U >* >(0) \
               ) \
-          ) == sizeof(boost::mpl::aux::yes_tag) \
+          ) == sizeof(methcla_boost::mpl::aux::yes_tag) \
         /**/
 #     else
 #       define BOOST_MPL_HAS_MEMBER_TEST(args) \
@@ -410,7 +410,7 @@ struct trait \
               BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args)( \
                   static_cast< U* >(0) \
               ) \
-          ) == sizeof(boost::mpl::aux::yes_tag) \
+          ) == sizeof(methcla_boost::mpl::aux::yes_tag) \
         /**/
 #     endif
 #   endif
@@ -426,7 +426,7 @@ struct trait \
           BOOST_STATIC_CONSTANT( \
               bool, value = BOOST_MPL_HAS_MEMBER_TEST(args) \
           ); \
-          typedef boost::mpl::bool_< value > type; \
+          typedef methcla_boost::mpl::bool_< value > type; \
       }; \
     /**/
 
@@ -436,7 +436,7 @@ struct trait \
       template< \
           typename T \
         , typename fallback_ \
-              = boost::mpl::bool_< BOOST_PP_ARRAY_ELEM(3, args) > \
+              = methcla_boost::mpl::bool_< BOOST_PP_ARRAY_ELEM(3, args) > \
       > \
       class BOOST_PP_ARRAY_ELEM(0, args) { \
           introspect_macro(args, substitute_macro, member_macro) \
@@ -503,7 +503,7 @@ struct trait \
                  z, n, args \
              ) \
         template< \
-             template< BOOST_PP_ENUM_PARAMS(BOOST_PP_INC(n), typename U) > class U \
+             template< BOOST_PP_ENUM_PARAMS_Z(z, BOOST_PP_INC(n), typename U) > class U \
         > \
         struct BOOST_MPL_HAS_MEMBER_INTROSPECTION_SUBSTITUTE_NAME_WITH_TEMPLATE_SFINAE( \
                 args, n \
@@ -536,7 +536,7 @@ struct trait \
         > \
         struct BOOST_MPL_HAS_MEMBER_INTROSPECTION_TEST_NAME(args) { \
             BOOST_STATIC_CONSTANT(bool, value = false); \
-            typedef boost::mpl::bool_< value > type; \
+            typedef methcla_boost::mpl::bool_< value > type; \
         }; \
       /**/
 
@@ -554,7 +554,7 @@ struct trait \
                 >::type \
         > { \
             BOOST_STATIC_CONSTANT(bool, value = true); \
-            typedef boost::mpl::bool_< value > type; \
+            typedef methcla_boost::mpl::bool_< value > type; \
         }; \
       /**/
 
@@ -629,7 +629,7 @@ struct trait \
 
 #   define BOOST_MPL_HAS_XXX_TEMPLATE_NAMED_DEF(trait, name, default_) \
       template< typename T \
-              , typename fallback_ = boost::mpl::bool_< default_ > > \
+              , typename fallback_ = methcla_boost::mpl::bool_< default_ > > \
       struct trait { \
           BOOST_STATIC_CONSTANT(bool, value = fallback_::value); \
           typedef fallback_ type; \

@@ -10,7 +10,7 @@
  */
 
 
-namespace boost {
+namespace methcla_boost {
 namespace date_time {
 
   //! An enumeration of weekday names

@@ -10,15 +10,16 @@
 #define BOOST_TT_REMOVE_POINTER_HPP_INCLUDED
 
 #include <boost/config.hpp>
+#include <boost/config/workaround.hpp>
 
 #if defined(BOOST_MSVC)
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/is_pointer.hpp>
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
-#ifdef BOOST_MSVC
+#if BOOST_WORKAROUND(BOOST_MSVC, < 1900)
 
 namespace detail{
 
@@ -44,7 +45,7 @@ namespace detail{
    template <class T, bool b> 
    struct remove_pointer_imp3
    {
-      typedef typename remove_pointer_imp<typename boost::remove_cv<T>::type>::type type;
+      typedef typename remove_pointer_imp<typename methcla_boost::remove_cv<T>::type>::type type;
    };
 
    template <class T> 
@@ -56,11 +57,11 @@ namespace detail{
    template <class T> 
    struct remove_pointer_imp2
    {
-      typedef typename remove_pointer_imp3<T, ::boost::is_pointer<T>::value>::type type;
+      typedef typename remove_pointer_imp3<T, ::methcla_boost::is_pointer<T>::value>::type type;
    };
 }
 
-template <class T> struct remove_pointer{ typedef typename boost::detail::remove_pointer_imp2<T>::type type; };
+template <class T> struct remove_pointer{ typedef typename methcla_boost::detail::remove_pointer_imp2<T>::type type; };
 
 #else
 
@@ -72,6 +73,12 @@ template <class T> struct remove_pointer<T*const volatile>{ typedef T type; };
 
 #endif
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using remove_pointer_t = typename remove_pointer<T>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_REMOVE_POINTER_HPP_INCLUDED

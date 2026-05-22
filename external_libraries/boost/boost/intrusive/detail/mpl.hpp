@@ -26,45 +26,52 @@
 #include <boost/move/detail/type_traits.hpp>
 #include <cstddef>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
    
-using boost::move_detail::is_same;
-using boost::move_detail::add_const;
-using boost::move_detail::remove_const;
-using boost::move_detail::remove_cv;
-using boost::move_detail::remove_reference;
-using boost::move_detail::add_reference;
-using boost::move_detail::remove_pointer;
-using boost::move_detail::add_pointer;
-using boost::move_detail::true_type;
-using boost::move_detail::false_type;
-using boost::move_detail::enable_if_c;
-using boost::move_detail::enable_if;
-using boost::move_detail::disable_if_c;
-using boost::move_detail::disable_if;
-using boost::move_detail::is_convertible;
-using boost::move_detail::if_c;
-using boost::move_detail::if_;
-using boost::move_detail::is_const;
-using boost::move_detail::identity;
-using boost::move_detail::alignment_of;
-using boost::move_detail::is_empty;
-using boost::move_detail::addressof;
-using boost::move_detail::integral_constant;
-using boost::move_detail::enable_if_convertible;
-using boost::move_detail::disable_if_convertible;
-using boost::move_detail::bool_;
-using boost::move_detail::true_;
-using boost::move_detail::false_;
-using boost::move_detail::yes_type;
-using boost::move_detail::no_type;
-using boost::move_detail::apply;
-using boost::move_detail::eval_if_c;
-using boost::move_detail::eval_if;
-using boost::move_detail::unvoid_ref;
-using boost::move_detail::add_const_if_c;
+using methcla_boost::move_detail::is_same;
+using methcla_boost::move_detail::add_const;
+using methcla_boost::move_detail::remove_const;
+using methcla_boost::move_detail::remove_cv;
+using methcla_boost::move_detail::remove_reference;
+using methcla_boost::move_detail::add_reference;
+using methcla_boost::move_detail::remove_pointer;
+using methcla_boost::move_detail::add_pointer;
+using methcla_boost::move_detail::true_type;
+using methcla_boost::move_detail::false_type;
+using methcla_boost::move_detail::voider;
+using methcla_boost::move_detail::enable_if_c;
+using methcla_boost::move_detail::enable_if;
+using methcla_boost::move_detail::disable_if_c;
+using methcla_boost::move_detail::disable_if;
+using methcla_boost::move_detail::is_convertible;
+using methcla_boost::move_detail::if_c;
+using methcla_boost::move_detail::if_;
+using methcla_boost::move_detail::is_const;
+using methcla_boost::move_detail::identity;
+using methcla_boost::move_detail::alignment_of;
+using methcla_boost::move_detail::is_empty;
+using methcla_boost::move_detail::addressof;
+using methcla_boost::move_detail::integral_constant;
+using methcla_boost::move_detail::enable_if_convertible;
+using methcla_boost::move_detail::disable_if_convertible;
+using methcla_boost::move_detail::bool_;
+using methcla_boost::move_detail::true_;
+using methcla_boost::move_detail::false_;
+using methcla_boost::move_detail::yes_type;
+using methcla_boost::move_detail::no_type;
+using methcla_boost::move_detail::apply;
+using methcla_boost::move_detail::eval_if_c;
+using methcla_boost::move_detail::eval_if;
+using methcla_boost::move_detail::unvoid_ref;
+using methcla_boost::move_detail::add_const_if_c;
+using methcla_boost::move_detail::is_integral;
+using methcla_boost::move_detail::make_unsigned;
+using methcla_boost::move_detail::is_enum;
+using methcla_boost::move_detail::is_floating_point;
+using methcla_boost::move_detail::is_scalar;
+using methcla_boost::move_detail::is_unsigned;
 
 template<std::size_t S>
 struct ls_zeros
@@ -86,8 +93,8 @@ struct ls_zeros<1>
 
 // Infrastructure for providing a default type for T::TNAME if absent.
 #define BOOST_INTRUSIVE_INSTANTIATE_DEFAULT_TYPE_TMPLT(TNAME)     \
-   template <typename T, typename DefaultType>                    \
-   struct boost_intrusive_default_type_ ## TNAME                  \
+   template <typename T>                                          \
+   struct boost_intrusive_has_type_ ## TNAME                      \
    {                                                              \
       template <typename X>                                       \
       static char test(int, typename X::TNAME*);                  \
@@ -95,19 +102,29 @@ struct ls_zeros<1>
       template <typename X>                                       \
       static int test(...);                                       \
                                                                   \
+      static const bool value = (1 == sizeof(test<T>(0, 0)));     \
+   };                                                             \
+                                                                  \
+   template <typename T, typename DefaultType>                    \
+   struct boost_intrusive_default_type_ ## TNAME                  \
+   {                                                              \
       struct DefaultWrap { typedef DefaultType TNAME; };          \
                                                                   \
-      static const bool value = (1 == sizeof(test<T>(0, 0)));     \
-                                                                  \
       typedef typename                                            \
-         ::boost::intrusive::detail::if_c                         \
-            <value, T, DefaultWrap>::type::TNAME type;            \
+         ::methcla_boost::intrusive::detail::if_c                         \
+            < boost_intrusive_has_type_ ## TNAME<T>::value        \
+            , T, DefaultWrap>::type::TNAME type;                  \
    };                                                             \
    //
 
 #define BOOST_INTRUSIVE_OBTAIN_TYPE_WITH_DEFAULT(INSTANTIATION_NS_PREFIX, T, TNAME, TIMPL)   \
       typename INSTANTIATION_NS_PREFIX                                                       \
          boost_intrusive_default_type_ ## TNAME< T, TIMPL >::type                            \
+//
+
+#define BOOST_INTRUSIVE_HAS_TYPE(INSTANTIATION_NS_PREFIX, T, TNAME)  \
+      INSTANTIATION_NS_PREFIX                                        \
+         boost_intrusive_has_type_ ## TNAME< T >::value              \
 //
 
 #define BOOST_INTRUSIVE_INSTANTIATE_EVAL_DEFAULT_TYPE_TMPLT(TNAME)\
@@ -126,10 +143,10 @@ struct ls_zeros<1>
       static const bool value = (1 == sizeof(test<T>(0, 0)));     \
                                                                   \
       typedef typename                                            \
-         ::boost::intrusive::detail::eval_if_c                    \
+         ::methcla_boost::intrusive::detail::eval_if_c                    \
             < value                                               \
-            , ::boost::intrusive::detail::identity<T>             \
-            , ::boost::intrusive::detail::identity<DefaultWrap>   \
+            , ::methcla_boost::intrusive::detail::identity<T>             \
+            , ::methcla_boost::intrusive::detail::identity<DefaultWrap>   \
             >::type::TNAME type;                                  \
    };                                                             \
 //
@@ -144,7 +161,7 @@ template <class T>\
 struct TRAITS_PREFIX##_bool\
 {\
    template<bool Add>\
-   struct two_or_three {yes_type _[2 + Add];};\
+   struct two_or_three {yes_type _[2u + (unsigned)Add];};\
    template <class U> static yes_type test(...);\
    template <class U> static two_or_three<U::TYPEDEF_TO_FIND> test (int);\
    static const std::size_t value = sizeof(test<T>(0));\
@@ -164,10 +181,10 @@ struct TRAITS_PREFIX##_bool_is_true\
   private: \
   template<Signature> struct helper;\
   template<typename T> \
-  static ::boost::intrusive::detail::yes_type test(helper<&T::FUNC_NAME>*); \
-  template<typename T> static ::boost::intrusive::detail::no_type test(...); \
+  static ::methcla_boost::intrusive::detail::yes_type test(helper<&T::FUNC_NAME>*); \
+  template<typename T> static ::methcla_boost::intrusive::detail::no_type test(...); \
   public: \
-  static const bool value = sizeof(test<U>(0)) == sizeof(::boost::intrusive::detail::yes_type); \
+  static const bool value = sizeof(test<U>(0)) == sizeof(::methcla_boost::intrusive::detail::yes_type); \
   }; \
 //
 
@@ -182,9 +199,9 @@ struct TRAITS_NAME \
    struct Base : public Type, public BaseMixin { Base(); }; \
    template <typename T, T t> class Helper{}; \
    template <typename U> \
-   static ::boost::intrusive::detail::no_type  test(U*, Helper<void (BaseMixin::*)(), &U::FUNC_NAME>* = 0); \
-   static ::boost::intrusive::detail::yes_type test(...); \
-   static const bool value = sizeof(::boost::intrusive::detail::yes_type) == sizeof(test((Base*)(0))); \
+   static ::methcla_boost::intrusive::detail::no_type  test(U*, Helper<void (BaseMixin::*)(), &U::FUNC_NAME>* = 0); \
+   static ::methcla_boost::intrusive::detail::yes_type test(...); \
+   static const bool value = sizeof(::methcla_boost::intrusive::detail::yes_type) == sizeof(test((Base*)(0))); \
 };\
 //
 
@@ -199,7 +216,7 @@ struct TRAITS_NAME \
 
 } //namespace detail
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #include <boost/intrusive/detail/config_end.hpp>
 

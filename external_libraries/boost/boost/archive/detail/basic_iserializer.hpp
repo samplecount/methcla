@@ -7,9 +7,9 @@
 #endif
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// basic_iserializer.hpp: extenstion of type_info required for serialization.
+// basic_iserializer.hpp: extension of type_info required for serialization.
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -30,7 +30,7 @@
 #  pragma warning(disable : 4511 4512)
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     class extended_type_info;
 } // namespace serialization
@@ -42,14 +42,14 @@ namespace detail {
 class basic_iarchive;
 class basic_pointer_iserializer;
 
-class BOOST_SYMBOL_VISIBLE basic_iserializer : 
+class BOOST_SYMBOL_VISIBLE basic_iserializer :
     public basic_serializer
 {
 private:
     basic_pointer_iserializer *m_bpis;
 protected:
     explicit BOOST_ARCHIVE_DECL basic_iserializer(
-        const boost::serialization::extended_type_info & type
+        const methcla_boost::serialization::extended_type_info & type
     );
     virtual BOOST_ARCHIVE_DECL ~basic_iserializer();
 public:
@@ -63,7 +63,7 @@ public:
         return m_bpis;
     }
     virtual void load_object_data(
-        basic_iarchive & ar, 
+        basic_iarchive & ar,
         void *x,
         const unsigned int file_version
     ) const = 0;
@@ -78,9 +78,9 @@ public:
     virtual void destroy(/*const*/ void *address) const = 0 ;
 };
 
-} // namespae detail
+} // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 #pragma warning(pop)

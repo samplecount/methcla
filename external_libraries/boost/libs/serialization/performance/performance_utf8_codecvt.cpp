@@ -99,9 +99,9 @@ int
 test_main(int /* argc */, char * /* argv */[]) {
     std::locale old_loc;
     std::locale * utf8_locale
-        = boost::archive::add_facet(
+        = methcla_boost::archive::add_facet(
             old_loc, 
-            new boost::archive::detail::utf8_codecvt_facet
+            new methcla_boost::archive::detail::utf8_codecvt_facet
         );
 
     typedef char utf8_t;
@@ -113,14 +113,14 @@ test_main(int /* argc */, char * /* argv */[]) {
         ofs.open("test.dat", std::ios::binary);
         std::copy(
             td::utf8_encoding,
-            #if ! defined(__BORLANDC__)
+            #if ! defined(BOOST_BORLANDC)
                 // borland 5.60 complains about this
                 td::utf8_encoding + sizeof(td::utf8_encoding) / sizeof(unsigned char),
             #else
                 // so use this instead
                 td::utf8_encoding + 12,
             #endif
-            boost::archive::iterators::ostream_iterator<utf8_t>(ofs)
+            methcla_boost::archive::iterators::ostream_iterator<utf8_t>(ofs)
         );
     }
 
@@ -145,8 +145,8 @@ test_main(int /* argc */, char * /* argv */[]) {
         }
     }
 
-    // compare the data read back in with the orginal
-    #if ! defined(__BORLANDC__)
+    // compare the data read back in with the original
+    #if ! defined(BOOST_BORLANDC)
         // borland 5.60 complains about this
         BOOST_CHECK(from_file.size() == sizeof(td::wchar_encoding)/sizeof(wchar_t));
     #else
@@ -164,13 +164,13 @@ test_main(int /* argc */, char * /* argv */[]) {
         std::copy(
             from_file.begin(),
             from_file.end(),
-            boost::archive::iterators::ostream_iterator<wchar_t>(ofs)
+            methcla_boost::archive::iterators::ostream_iterator<wchar_t>(ofs)
         );
     }
 
     // Make sure that both files are the same
     {
-        typedef boost::archive::iterators::istream_iterator<utf8_t> is_iter;
+        typedef methcla_boost::archive::iterators::istream_iterator<utf8_t> is_iter;
         is_iter end_iter;
 
         std::ifstream ifs1("test.dat");
@@ -225,7 +225,7 @@ test_main(int /* argc */, char * /* argv */[]) {
         std::copy(
             test3_data,
             test3_data + l,
-            boost::archive::iterators::ostream_iterator<wchar_t>(ofs)
+            methcla_boost::archive::iterators::ostream_iterator<wchar_t>(ofs)
         );
     }
 
@@ -238,7 +238,7 @@ test_main(int /* argc */, char * /* argv */[]) {
             std::equal(
                 test3_data,
                 test3_data + l,
-                boost::archive::iterators::istream_iterator<wchar_t>(ifs)
+                methcla_boost::archive::iterators::istream_iterator<wchar_t>(ifs)
             )
         );
     }

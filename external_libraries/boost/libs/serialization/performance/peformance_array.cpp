@@ -26,7 +26,7 @@ namespace std{
 // just copy over the files from the test directory
 #include BOOST_PP_STRINGIZE(BOOST_ARCHIVE_TEST)
 
-#include <boost/detail/no_exceptions_support.hpp>
+#include <boost/core/no_exceptions_support.hpp>
 #include <boost/archive/archive_exception.hpp>
 
 #include <boost/serialization/nvp.hpp>
@@ -61,7 +61,7 @@ template<class T, class U>
 template <class T>
 int test_array(T)
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     BOOST_REQUIRE(NULL != testfile);
 
     // test array of objects
@@ -69,13 +69,13 @@ int test_array(T)
     {   
         test_ostream os(testfile, TEST_STREAM_FLAGS);
         test_oarchive oa(os, TEST_ARCHIVE_FLAGS);
-        oa << boost::serialization::make_nvp("a_array", a_array);
+        oa << methcla_boost::serialization::make_nvp("a_array", a_array);
     }
     {
         T a_array1[10];
         test_istream is(testfile, TEST_STREAM_FLAGS);
         test_iarchive ia(is, TEST_ARCHIVE_FLAGS);
-        ia >> boost::serialization::make_nvp("a_array", a_array1);
+        ia >> methcla_boost::serialization::make_nvp("a_array", a_array1);
 
         array_equal_to/*<A[10]>*/ Compare;
         BOOST_CHECK(Compare(a_array, a_array1));
@@ -87,11 +87,11 @@ int test_array(T)
             test_iarchive ia(is, TEST_ARCHIVE_FLAGS);
             bool exception_invoked = false;
             BOOST_TRY {
-                ia >> boost::serialization::make_nvp("a_array", a_array1);
+                ia >> methcla_boost::serialization::make_nvp("a_array", a_array1);
             }
-            BOOST_CATCH (boost::archive::archive_exception ae){
+            BOOST_CATCH (methcla_boost::archive::archive_exception ae){
                 BOOST_CHECK(
-                    boost::archive::archive_exception::array_size_too_short
+                    methcla_boost::archive::archive_exception::array_size_too_short
                     == ae.code
                 );
                 exception_invoked = true;
@@ -99,7 +99,7 @@ int test_array(T)
             BOOST_CATCH_END
             BOOST_CHECK(exception_invoked);
         }
-        BOOST_CATCH (boost::archive::archive_exception ae){}
+        BOOST_CATCH (methcla_boost::archive::archive_exception ae){}
         BOOST_CATCH_END
     }
     std::remove(testfile);

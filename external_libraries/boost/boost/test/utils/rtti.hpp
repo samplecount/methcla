@@ -17,8 +17,9 @@
 
 // C Runtime
 #include <cstddef>
+#include <boost/test/detail/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace rtti {
 
 // ************************************************************************** //
@@ -30,7 +31,7 @@ typedef std::ptrdiff_t id_t;
 namespace rtti_detail {
 
 template<typename T>
-struct rttid_holder {
+struct BOOST_TEST_DECL rttid_holder {
     static id_t id() { return reinterpret_cast<id_t>( &inst() ); }
 
 private:
@@ -44,7 +45,7 @@ private:
 //____________________________________________________________________________//
 
 template<typename T>
-inline id_t
+BOOST_TEST_DECL inline id_t
 type_id()
 {
     return rtti_detail::rttid_holder<T>::id();
@@ -52,12 +53,12 @@ type_id()
 
 //____________________________________________________________________________//
 
-#define BOOST_RTTI_SWITCH( type_id_ ) if( ::boost::rtti::id_t switch_by_id = type_id_ )
-#define BOOST_RTTI_CASE( type )       if( switch_by_id == ::boost::rtti::type_id<type>() )
+#define BOOST_RTTI_SWITCH( type_id_ ) if( ::methcla_boost::rtti::id_t switch_by_id = type_id_ )
+#define BOOST_RTTI_CASE( type )       if( switch_by_id == ::methcla_boost::rtti::type_id<type>() )
 
 //____________________________________________________________________________//
 
 } // namespace rtti
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TEST_UTILS_RTTI_HPP

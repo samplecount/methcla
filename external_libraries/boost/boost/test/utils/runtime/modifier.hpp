@@ -20,10 +20,20 @@
 
 // Boost.Test
 #include <boost/test/utils/named_params.hpp>
+#include <boost/test/detail/global_typedef.hpp>
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
-namespace boost {
+
+// New CLA API available only for some C++11 compilers
+#if    !defined(BOOST_NO_CXX11_AUTO_DECLARATIONS) \
+    && !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES) \
+    && !defined(BOOST_NO_CXX11_HDR_INITIALIZER_LIST) \
+    && !defined(BOOST_NO_CXX11_UNIFIED_INITIALIZATION_SYNTAX)
+#define BOOST_TEST_CLA_NEW_API
+#endif
+
+namespace methcla_boost {
 namespace runtime {
 
 // ************************************************************************** //
@@ -31,10 +41,6 @@ namespace runtime {
 // ************************************************************************** //
 
 namespace {
-
-#if !defined(BOOST_NO_CXX11_AUTO_DECLARATIONS) && !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
-#define BOOST_TEST_CLA_NEW_API
-#endif
 
 #ifdef BOOST_TEST_CLA_NEW_API
 auto const& description     = unit_test::static_constant<nfp::typed_keyword<cstring,struct description_t>>::value;
@@ -94,7 +100,7 @@ struct enum_values : unit_test::static_constant<
 } // local namespace
 
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

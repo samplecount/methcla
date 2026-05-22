@@ -22,22 +22,22 @@
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/container/detail/allocation_type.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
-typedef int allocation_type;
+using methcla_boost::container::allocation_type;
 #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
-static const allocation_type allocate_new       = boost::container::allocate_new;
-static const allocation_type expand_fwd         = boost::container::expand_fwd;
-static const allocation_type expand_bwd         = boost::container::expand_bwd;
-static const allocation_type shrink_in_place    = boost::container::shrink_in_place;
-static const allocation_type try_shrink_in_place= boost::container::try_shrink_in_place;
-static const allocation_type nothrow_allocation = boost::container::nothrow_allocation;
-static const allocation_type zero_memory        = boost::container::zero_memory;
+static const allocation_type allocate_new       = methcla_boost::container::allocate_new;
+static const allocation_type expand_fwd         = methcla_boost::container::expand_fwd;
+static const allocation_type expand_bwd         = methcla_boost::container::expand_bwd;
+static const allocation_type shrink_in_place    = methcla_boost::container::shrink_in_place;
+static const allocation_type try_shrink_in_place= methcla_boost::container::try_shrink_in_place;
+static const allocation_type nothrow_allocation = methcla_boost::container::nothrow_allocation;
+static const allocation_type zero_memory        = methcla_boost::container::zero_memory;
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

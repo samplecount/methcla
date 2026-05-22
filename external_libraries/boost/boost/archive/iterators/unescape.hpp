@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // unescape.hpp
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -21,7 +21,7 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/pointee.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace archive {
 namespace iterators {
 
@@ -29,19 +29,19 @@ namespace iterators {
 // class used by text archives to translate char strings to wchar_t
 // strings of the currently selected locale
 template<class Derived, class Base>
-class unescape 
-    : public boost::iterator_adaptor<
+class unescape
+    : public methcla_boost::iterator_adaptor<
         unescape<Derived, Base>,
-        Base, 
+        Base,
         typename pointee<Base>::type,
         single_pass_traversal_tag,
         typename pointee<Base>::type
     >
 {
-    friend class boost::iterator_core_access;
-    typedef typename boost::iterator_adaptor<
-        unescape<Derived, Base>, 
-        Base, 
+    friend class methcla_boost::iterator_core_access;
+    typedef typename methcla_boost::iterator_adaptor<
+        unescape<Derived, Base>,
+        Base,
         typename pointee<Base>::type,
         single_pass_traversal_tag,
         typename pointee<Base>::type
@@ -71,11 +71,11 @@ private:
         ++(this->base_reference());
         dereference_impl();
         m_full = false;
-    };
+    }
 
 public:
 
-    unescape(Base base) : 
+    unescape(Base base) :
         super_t(base),
         m_full(false)
     {}
@@ -84,6 +84,6 @@ public:
 
 } // namespace iterators
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_ARCHIVE_ITERATORS_UNESCAPE_HPP

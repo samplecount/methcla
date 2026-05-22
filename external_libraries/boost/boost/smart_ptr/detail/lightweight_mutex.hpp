@@ -16,27 +16,16 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-//  typedef <unspecified> boost::detail::lightweight_mutex;
+//  typedef <unspecified> methcla_boost::detail::lightweight_mutex;
 //
-//  boost::detail::lightweight_mutex is a header-only implementation of
+//  methcla_boost::detail::lightweight_mutex is a header-only implementation of
 //  a subset of the Mutex concept requirements:
 //
 //  http://www.boost.org/doc/html/threads/concepts.html#threads.concepts.Mutex
 //
-//  It maps to a CRITICAL_SECTION on Windows or a pthread_mutex on POSIX.
+//  It's obsoleted by std::mutex.
 //
 
-#include <boost/config.hpp>
-
-#if !defined(BOOST_HAS_THREADS)
-#  include <boost/smart_ptr/detail/lwm_nop.hpp>
-#elif defined(BOOST_HAS_PTHREADS)
-#  include <boost/smart_ptr/detail/lwm_pthreads.hpp>
-#elif defined(BOOST_HAS_WINTHREADS) || defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
-#  include <boost/smart_ptr/detail/lwm_win32_cs.hpp>
-#else
-// Use #define BOOST_DISABLE_THREADS to avoid the error
-#  error Unrecognized threading platform
-#endif
+#include <boost/smart_ptr/detail/lwm_std_mutex.hpp>
 
 #endif // #ifndef BOOST_SMART_PTR_DETAIL_LIGHTWEIGHT_MUTEX_HPP_INCLUDED

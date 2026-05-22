@@ -10,7 +10,7 @@
 #define BOOST_SPIRIT_PARSER_CONTEXT_HPP
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost
+namespace methcla_boost
 {
     namespace spirit
     {
@@ -145,6 +145,6 @@ namespace boost
     BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 
     } // namespace spirit
-} // namespace boost
+} // namespace methcla_boost
 
 #endif

@@ -18,7 +18,7 @@
 #include <boost/mpl/aux_/config/msvc.hpp>
 #include <boost/mpl/identity.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
   
 namespace aux {
 #if defined(BOOST_MSVC)
@@ -47,7 +47,10 @@ struct print
 #endif 
 {
 #if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wc++11-extensions"
     const int m_x = 1 / (sizeof(T) - sizeof(T));
+# pragma clang diagnostic pop
 #elif defined(BOOST_MSVC)
     enum { n = sizeof(T) + -1 };
 #elif defined(__MWERKS__)

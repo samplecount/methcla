@@ -21,7 +21,9 @@
 #  pragma once
 #endif
 
-namespace boost {
+#include <boost/intrusive/detail/workaround.hpp>
+
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -31,23 +33,26 @@ struct size_holder
    static const bool constant_time_size = ConstantSize;
    typedef SizeType  size_type;
 
-   SizeType get_size() const
+   inline SizeType get_size() const
    {  return size_;  }
 
-   void set_size(SizeType size)
+   inline void set_size(SizeType size)
    {  size_ = size; }
 
-   void decrement()
+   inline void decrement()
    {  --size_; }
 
-   void increment()
+   inline void increment()
    {  ++size_; }
 
-   void increase(SizeType n)
+   inline void increase(SizeType n)
    {  size_ += n; }
 
-   void decrease(SizeType n)
+   inline void decrease(SizeType n)
    {  size_ -= n; }
+
+   inline void swap(size_holder &other)
+   {  SizeType tmp(size_); size_ = other.size_; other.size_ = tmp; }
 
    SizeType size_;
 };
@@ -58,27 +63,29 @@ struct size_holder<false, SizeType, Tag>
    static const bool constant_time_size = false;
    typedef SizeType  size_type;
 
-   size_type get_size() const
+   inline size_type get_size() const
    {  return 0;  }
 
-   void set_size(size_type)
+   inline void set_size(size_type)
    {}
 
-   void decrement()
+   inline void decrement()
    {}
 
-   void increment()
+   inline void increment()
    {}
 
-   void increase(SizeType)
+   inline void increase(SizeType)
    {}
 
-   void decrease(SizeType)
+   inline void decrease(SizeType)
    {}
+
+   inline void swap(size_holder){}
 };
 
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_SIZE_HOLDER_HPP

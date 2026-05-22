@@ -31,7 +31,6 @@ time2_demo contained this comment:
 #define BOOST_CHRONO_TIME_POINT_HPP
 
 #include <boost/chrono/duration.hpp>
-#include <iostream>
 
 #ifndef BOOST_CHRONO_HEADER_ONLY
 // this must occur after all of the includes and before any code appears:
@@ -45,7 +44,7 @@ time2_demo contained this comment:
 //                                                                            //
 //----------------------------------------------------------------------------//
 
-namespace boost {
+namespace methcla_boost {
 namespace chrono {
 
   template <class Clock, class Duration = typename Clock::duration>
@@ -155,7 +154,7 @@ namespace chrono {
     template <class Clock, class Duration>
     class time_point
     {
-        BOOST_CHRONO_STATIC_ASSERT(boost::chrono::detail::is_duration<Duration>::value,
+        BOOST_CHRONO_STATIC_ASSERT(methcla_boost::chrono::detail::is_duration<Duration>::value,
                 BOOST_CHRONO_SECOND_TEMPLATE_PARAMETER_OF_TIME_POINT_MUST_BE_A_BOOST_CHRONO_DURATION, (Duration));
     public:
         typedef Clock                     clock;
@@ -180,10 +179,10 @@ namespace chrono {
         template <class Duration2>
         BOOST_FORCEINLINE BOOST_CONSTEXPR
         time_point(const time_point<clock, Duration2>& t
-                , typename boost::enable_if
+                , typename methcla_boost::enable_if
                 <
-                    boost::is_convertible<Duration2, duration>
-                >::type* = 0
+                    methcla_boost::is_convertible<Duration2, duration>
+                >::type* = BOOST_NULLPTR
         )
             : d_(t.time_since_epoch())
         {
@@ -370,7 +369,7 @@ namespace chrono {
     }
 
 } // namespace chrono
-} // namespace boost
+} // namespace methcla_boost
 
 #ifndef BOOST_CHRONO_HEADER_ONLY
 // the suffix header occurs after all of our code:

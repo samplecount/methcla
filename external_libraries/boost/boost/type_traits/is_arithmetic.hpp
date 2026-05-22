@@ -12,11 +12,11 @@
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_floating_point.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 template <class T>
 struct is_arithmetic : public integral_constant<bool, is_integral<T>::value || is_floating_point<T>::value> {};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_ARITHMETIC_HPP_INCLUDED

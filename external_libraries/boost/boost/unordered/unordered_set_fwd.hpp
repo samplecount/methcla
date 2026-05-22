@@ -1,5 +1,7 @@
 
 // Copyright (C) 2008-2011 Daniel James.
+// Copyright (C) 2022 Christian Mazakas
+// Copyright (C) 2024 Braden Ganetsky
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -11,53 +13,70 @@
 #pragma once
 #endif
 
-#include <memory>
+#include <boost/container_hash/hash_fwd.hpp>
 #include <functional>
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/unordered/detail/fwd.hpp>
+#include <memory>
 
-namespace boost
-{
-    namespace unordered
-    {
-        template <class T,
-            class H = boost::hash<T>,
-            class P = std::equal_to<T>,
-            class A = std::allocator<T> >
-        class unordered_set;
+#ifndef BOOST_NO_CXX17_HDR_MEMORY_RESOURCE
+#include <memory_resource>
+#endif
 
-        template <class T, class H, class P, class A>
-        inline bool operator==(unordered_set<T, H, P, A> const&,
-            unordered_set<T, H, P, A> const&);
-        template <class T, class H, class P, class A>
-        inline bool operator!=(unordered_set<T, H, P, A> const&,
-            unordered_set<T, H, P, A> const&);
-        template <class T, class H, class P, class A>
-        inline void swap(unordered_set<T, H, P, A> &m1,
-                unordered_set<T, H, P, A> &m2);
+namespace methcla_boost {
+  namespace unordered {
+    template <class T, class H = methcla_boost::hash<T>, class P = std::equal_to<T>,
+      class A = std::allocator<T> >
+    class unordered_set;
 
-        template <class T,
-            class H = boost::hash<T>,
-            class P = std::equal_to<T>,
-            class A = std::allocator<T> >
-        class unordered_multiset;
+    template <class T, class H, class P, class A>
+    inline bool operator==(
+      unordered_set<T, H, P, A> const&, unordered_set<T, H, P, A> const&);
+    template <class T, class H, class P, class A>
+    inline bool operator!=(
+      unordered_set<T, H, P, A> const&, unordered_set<T, H, P, A> const&);
+    template <class T, class H, class P, class A>
+    inline void swap(unordered_set<T, H, P, A>& m1,
+      unordered_set<T, H, P, A>& m2) noexcept(noexcept(m1.swap(m2)));
 
-        template <class T, class H, class P, class A>
-        inline bool operator==(unordered_multiset<T, H, P, A> const&,
-            unordered_multiset<T, H, P, A> const&);
-        template <class T, class H, class P, class A>
-        inline bool operator!=(unordered_multiset<T, H, P, A> const&,
-            unordered_multiset<T, H, P, A> const&);
-        template <class T, class H, class P, class A>
-        inline void swap(unordered_multiset<T, H, P, A> &m1,
-                unordered_multiset<T, H, P, A> &m2);
-    }
+    template <class K, class H, class P, class A, class Predicate>
+    typename unordered_set<K, H, P, A>::size_type erase_if(
+      unordered_set<K, H, P, A>& c, Predicate pred);
 
-    using boost::unordered::unordered_set;
-    using boost::unordered::unordered_multiset;
-    using boost::unordered::swap;
-    using boost::unordered::operator==;
-    using boost::unordered::operator!=;
-}
+    template <class T, class H = methcla_boost::hash<T>, class P = std::equal_to<T>,
+      class A = std::allocator<T> >
+    class unordered_multiset;
+
+    template <class T, class H, class P, class A>
+    inline bool operator==(unordered_multiset<T, H, P, A> const&,
+      unordered_multiset<T, H, P, A> const&);
+    template <class T, class H, class P, class A>
+    inline bool operator!=(unordered_multiset<T, H, P, A> const&,
+      unordered_multiset<T, H, P, A> const&);
+    template <class T, class H, class P, class A>
+    inline void swap(unordered_multiset<T, H, P, A>& m1,
+      unordered_multiset<T, H, P, A>& m2) noexcept(noexcept(m1.swap(m2)));
+
+    template <class K, class H, class P, class A, class Predicate>
+    typename unordered_multiset<K, H, P, A>::size_type erase_if(
+      unordered_multiset<K, H, P, A>& c, Predicate pred);
+
+    template <class N, class T, class A> class node_handle_set;
+    template <class Iter, class NodeType> struct insert_return_type_set;
+
+#ifndef BOOST_NO_CXX17_HDR_MEMORY_RESOURCE
+    namespace pmr {
+      template <class T, class H = methcla_boost::hash<T>, class P = std::equal_to<T> >
+      using unordered_set = methcla_boost::unordered::unordered_set<T, H, P,
+        std::pmr::polymorphic_allocator<T> >;
+
+      template <class T, class H = methcla_boost::hash<T>, class P = std::equal_to<T> >
+      using unordered_multiset = methcla_boost::unordered::unordered_multiset<T, H, P,
+        std::pmr::polymorphic_allocator<T> >;
+    } // namespace pmr
+#endif
+  } // namespace unordered
+
+  using methcla_boost::unordered::unordered_multiset;
+  using methcla_boost::unordered::unordered_set;
+} // namespace methcla_boost
 
 #endif

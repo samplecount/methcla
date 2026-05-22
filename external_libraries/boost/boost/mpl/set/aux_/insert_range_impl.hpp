@@ -20,7 +20,7 @@
 #include <boost/mpl/fold.hpp>
 #include <boost/mpl/insert.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<>
 struct insert_range_impl< aux::set_tag >

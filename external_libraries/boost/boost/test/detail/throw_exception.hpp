@@ -13,9 +13,9 @@
 #define BOOST_TEST_DETAIL_THROW_EXCEPTION_HPP
 
 // Boost
-#include <boost/config.hpp> // BOOST_NO_EXCEPTION
+#include <boost/config.hpp> // BOOST_NO_EXCEPTIONS
 
-#ifdef BOOST_NO_EXCEPTION
+#ifdef BOOST_NO_EXCEPTIONS
 // C RUNTIME
 #include <stdlib.h>
 
@@ -25,7 +25,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace ut_detail {
 
@@ -33,7 +33,7 @@ namespace ut_detail {
 
 template<typename E>
 BOOST_NORETURN inline void
-throw_exception(E const& e) { abort(); }
+throw_exception(E const& /*e*/) { abort(); }
 
 #define BOOST_TEST_I_TRY
 #define BOOST_TEST_I_CATCH( T, var ) for(T const& var = *(T*)0; false;)
@@ -57,13 +57,12 @@ throw_exception(E const& e) { throw e; }
 //____________________________________________________________________________//
 
 #define BOOST_TEST_I_THROW( E ) unit_test::ut_detail::throw_exception( E )
-#define BOOST_TEST_I_THROW( E ) unit_test::ut_detail::throw_exception( E )
 #define BOOST_TEST_I_ASSRT( cond, ex ) if( cond ) {} else BOOST_TEST_I_THROW( ex )
 
 
 } // namespace ut_detail
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 //____________________________________________________________________________//
 

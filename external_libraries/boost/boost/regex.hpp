@@ -13,7 +13,7 @@
   *   LOCATION:    see http://www.boost.org/libs/regex for documentation.
   *   FILE         regex.cpp
   *   VERSION      see <boost/version.hpp>
-  *   DESCRIPTION: Declares boost::basic_regex<> and associated
+  *   DESCRIPTION: Declares methcla_boost::basic_regex<> and associated
   *                functions and classes. This header is the main
   *                entry point for the template regex code.
   */
@@ -28,7 +28,7 @@
 #include <boost/regex/config.hpp>
 #endif
 
-#include <boost/regex/v4/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
 
 #endif  // include
 

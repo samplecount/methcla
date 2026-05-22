@@ -57,24 +57,17 @@
 
    #include <boost/move/detail/type_traits.hpp>
 
-   #if defined(BOOST_MOVE_ADDRESS_SANITIZER_ON)
-      #define BOOST_MOVE_TO_RV_CAST(RV_TYPE, ARG) reinterpret_cast<RV_TYPE>(ARG)
-   #else
-      #define BOOST_MOVE_TO_RV_CAST(RV_TYPE, ARG) static_cast<RV_TYPE>(ARG)
-   #endif
+   #define BOOST_MOVE_TO_RV_CAST(RV_TYPE, ARG) reinterpret_cast<RV_TYPE>(ARG)
+   #define BOOST_MOVE_TO_LV_CAST(LV_TYPE, ARG) static_cast<LV_TYPE>(ARG)
 
    //Move emulation rv breaks standard aliasing rules so add workarounds for some compilers
-   #if defined(__GNUC__) && (__GNUC__ >= 4) && \
-      (\
-         defined(BOOST_GCC) ||   \
-         (defined(BOOST_INTEL) && (BOOST_INTEL_CXX_VERSION >= 1300)) \
-      )
-      #define BOOST_MOVE_ATTRIBUTE_MAY_ALIAS __attribute__((__may_alias__))
+   #if defined(BOOST_GCC) && (BOOST_GCC >= 40400) && (BOOST_GCC < 40500)
+   #define BOOST_RV_ATTRIBUTE_MAY_ALIAS BOOST_MAY_ALIAS
    #else
-      #define BOOST_MOVE_ATTRIBUTE_MAY_ALIAS
+   #define BOOST_RV_ATTRIBUTE_MAY_ALIAS 
    #endif
 
-   namespace boost {
+   namespace methcla_boost {
 
    //////////////////////////////////////////////////////////////////////////////
    //
@@ -82,18 +75,18 @@
    //
    //////////////////////////////////////////////////////////////////////////////
    template <class T>
-   class rv
-      : public ::boost::move_detail::if_c
-         < ::boost::move_detail::is_class<T>::value
+   class BOOST_RV_ATTRIBUTE_MAY_ALIAS rv
+      : public ::methcla_boost::move_detail::if_c
+         < ::methcla_boost::move_detail::is_class<T>::value
          , T
-         , ::boost::move_detail::nat
+         , ::methcla_boost::move_detail::nat
          >::type
    {
       rv();
       ~rv() throw();
       rv(rv const&);
       void operator=(rv const&);
-   } BOOST_MOVE_ATTRIBUTE_MAY_ALIAS;
+   };
 
 
    //////////////////////////////////////////////////////////////////////////////
@@ -108,7 +101,7 @@
    struct is_rv
         //Derive from integral constant because some Boost code assummes it has
         //a "type" internal typedef
-      : integral_constant<bool, ::boost::move_detail::is_rv_impl<T>::value >
+      : integral_constant<bool, ::methcla_boost::move_detail::is_rv_impl<T>::value >
    {};
 
    template <class T>
@@ -126,31 +119,31 @@
    //////////////////////////////////////////////////////////////////////////////
    template<class T>
    struct has_move_emulation_enabled
-      : ::boost::move_detail::has_move_emulation_enabled_impl<T>
+      : ::methcla_boost::move_detail::has_move_emulation_enabled_impl<T>
    {};
 
    template<class T>
    struct has_move_emulation_disabled
    {
-      static const bool value = !::boost::move_detail::has_move_emulation_enabled_impl<T>::value;
+      static const bool value = !::methcla_boost::move_detail::has_move_emulation_enabled_impl<T>::value;
    };
 
-   }  //namespace boost {
+   }  //namespace methcla_boost {
 
    #define BOOST_RV_REF(TYPE)\
-      ::boost::rv< TYPE >& \
+      ::methcla_boost::rv< TYPE >& \
    //
 
    #define BOOST_RV_REF_2_TEMPL_ARGS(TYPE, ARG1, ARG2)\
-      ::boost::rv< TYPE<ARG1, ARG2> >& \
+      ::methcla_boost::rv< TYPE<ARG1, ARG2> >& \
    //
 
    #define BOOST_RV_REF_3_TEMPL_ARGS(TYPE, ARG1, ARG2, ARG3)\
-      ::boost::rv< TYPE<ARG1, ARG2, ARG3> >& \
+      ::methcla_boost::rv< TYPE<ARG1, ARG2, ARG3> >& \
    //
 
    #define BOOST_RV_REF_BEG\
-      ::boost::rv<   \
+      ::methcla_boost::rv<   \
    //
 
    #define BOOST_RV_REF_END\
@@ -170,11 +163,11 @@
    //
 
    #define BOOST_COPY_ASSIGN_REF(TYPE)\
-      const ::boost::rv< TYPE >& \
+      const ::methcla_boost::rv< TYPE >& \
    //
 
    #define BOOST_COPY_ASSIGN_REF_BEG \
-      const ::boost::rv<  \
+      const ::methcla_boost::rv<  \
    //
 
    #define BOOST_COPY_ASSIGN_REF_END \
@@ -182,24 +175,24 @@
    //
 
    #define BOOST_COPY_ASSIGN_REF_2_TEMPL_ARGS(TYPE, ARG1, ARG2)\
-      const ::boost::rv< TYPE<ARG1, ARG2> >& \
+      const ::methcla_boost::rv< TYPE<ARG1, ARG2> >& \
    //
 
    #define BOOST_COPY_ASSIGN_REF_3_TEMPL_ARGS(TYPE, ARG1, ARG2, ARG3)\
-      const ::boost::rv< TYPE<ARG1, ARG2, ARG3> >& \
+      const ::methcla_boost::rv< TYPE<ARG1, ARG2, ARG3> >& \
    //
 
    #define BOOST_CATCH_CONST_RLVALUE(TYPE)\
-      const ::boost::rv< TYPE >& \
+      const ::methcla_boost::rv< TYPE >& \
    //
 
-   namespace boost {
+   namespace methcla_boost {
    namespace move_detail {
 
    template <class Ret, class T>
-   inline typename ::boost::move_detail::enable_if_c
-      <  ::boost::move_detail::is_lvalue_reference<Ret>::value ||
-        !::boost::has_move_emulation_enabled<T>::value
+   BOOST_MOVE_FORCEINLINE typename ::methcla_boost::move_detail::enable_if_c
+      <  ::methcla_boost::move_detail::is_lvalue_reference<Ret>::value ||
+        !::methcla_boost::has_move_emulation_enabled<T>::value
       , T&>::type
          move_return(T& x) BOOST_NOEXCEPT
    {
@@ -207,35 +200,44 @@
    }
 
    template <class Ret, class T>
-   inline typename ::boost::move_detail::enable_if_c
-      < !::boost::move_detail::is_lvalue_reference<Ret>::value &&
-         ::boost::has_move_emulation_enabled<T>::value
-      , ::boost::rv<T>&>::type
+   BOOST_MOVE_FORCEINLINE typename ::methcla_boost::move_detail::enable_if_c
+      < !::methcla_boost::move_detail::is_lvalue_reference<Ret>::value &&
+         ::methcla_boost::has_move_emulation_enabled<T>::value
+      , ::methcla_boost::rv<T>&>::type
          move_return(T& x) BOOST_NOEXCEPT
    {
-      return *BOOST_MOVE_TO_RV_CAST(::boost::rv<T>*, ::boost::move_detail::addressof(x));
+      return *BOOST_MOVE_TO_RV_CAST(::methcla_boost::rv<T>*, ::methcla_boost::move_detail::addressof(x));
    }
 
    template <class Ret, class T>
-   inline typename ::boost::move_detail::enable_if_c
-      < !::boost::move_detail::is_lvalue_reference<Ret>::value &&
-         ::boost::has_move_emulation_enabled<T>::value
-      , ::boost::rv<T>&>::type
-         move_return(::boost::rv<T>& x) BOOST_NOEXCEPT
+   BOOST_MOVE_FORCEINLINE typename ::methcla_boost::move_detail::enable_if_c
+      < !::methcla_boost::move_detail::is_lvalue_reference<Ret>::value &&
+         ::methcla_boost::has_move_emulation_enabled<T>::value
+      , ::methcla_boost::rv<T>&>::type
+         move_return(::methcla_boost::rv<T>& x) BOOST_NOEXCEPT
    {
       return x;
    }
 
+   template <class T>
+   BOOST_MOVE_FORCEINLINE T& unrv(::methcla_boost::rv<T> &rv) BOOST_NOEXCEPT
+   {  return BOOST_MOVE_TO_LV_CAST(T&, rv);   }
+
    }  //namespace move_detail {
-   }  //namespace boost {
+   }  //namespace methcla_boost {
 
    #define BOOST_MOVE_RET(RET_TYPE, REF)\
-      boost::move_detail::move_return< RET_TYPE >(REF)
+      methcla_boost::move_detail::move_return< RET_TYPE >(REF)
    //
 
    #define BOOST_MOVE_BASE(BASE_TYPE, ARG) \
-      ::boost::move((BASE_TYPE&)(ARG))
+      ::methcla_boost::move((BASE_TYPE&)(ARG))
    //
+
+   #define BOOST_MOVE_TO_LV(ARG) \
+      ::methcla_boost::move_detail::unrv(ARG)
+   //
+
 
    //////////////////////////////////////////////////////////////////////////////
    //
@@ -245,10 +247,10 @@
    #define BOOST_MOVABLE_BUT_NOT_COPYABLE(TYPE)\
       BOOST_MOVE_IMPL_NO_COPY_CTOR_OR_ASSIGN(TYPE)\
       public:\
-      operator ::boost::rv<TYPE>&() \
-      {  return *BOOST_MOVE_TO_RV_CAST(::boost::rv<TYPE>*, this);  }\
-      operator const ::boost::rv<TYPE>&() const \
-      {  return *BOOST_MOVE_TO_RV_CAST(const ::boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator ::methcla_boost::rv<TYPE>&() \
+      {  return *BOOST_MOVE_TO_RV_CAST(::methcla_boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator const ::methcla_boost::rv<TYPE>&() const \
+      {  return *BOOST_MOVE_TO_RV_CAST(const ::methcla_boost::rv<TYPE>*, this);  }\
       private:\
    //
 
@@ -260,26 +262,26 @@
 
    #define BOOST_COPYABLE_AND_MOVABLE(TYPE)\
       public:\
-      TYPE& operator=(TYPE &t)\
-      {  this->operator=(const_cast<const TYPE &>(t)); return *this;}\
+      BOOST_MOVE_FORCEINLINE TYPE& operator=(TYPE &t)\
+      {  this->operator=(const_cast<const TYPE&>(t)); return *this;}\
       public:\
-      operator ::boost::rv<TYPE>&() \
-      {  return *BOOST_MOVE_TO_RV_CAST(::boost::rv<TYPE>*, this);  }\
-      operator const ::boost::rv<TYPE>&() const \
-      {  return *BOOST_MOVE_TO_RV_CAST(const ::boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator ::methcla_boost::rv<TYPE>&() \
+      {  return *BOOST_MOVE_TO_RV_CAST(::methcla_boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator const ::methcla_boost::rv<TYPE>&() const \
+      {  return *BOOST_MOVE_TO_RV_CAST(const ::methcla_boost::rv<TYPE>*, this);  }\
       private:\
    //
 
    #define BOOST_COPYABLE_AND_MOVABLE_ALT(TYPE)\
       public:\
-      operator ::boost::rv<TYPE>&() \
-      {  return *BOOST_MOVE_TO_RV_CAST(::boost::rv<TYPE>*, this);  }\
-      operator const ::boost::rv<TYPE>&() const \
-      {  return *BOOST_MOVE_TO_RV_CAST(const ::boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator ::methcla_boost::rv<TYPE>&() \
+      {  return *BOOST_MOVE_TO_RV_CAST(::methcla_boost::rv<TYPE>*, this);  }\
+      BOOST_MOVE_FORCEINLINE operator const ::methcla_boost::rv<TYPE>&() const \
+      {  return *BOOST_MOVE_TO_RV_CAST(const ::methcla_boost::rv<TYPE>*, this);  }\
       private:\
    //
 
-   namespace boost{
+   namespace methcla_boost{
    namespace move_detail{
 
    template< class T>
@@ -287,7 +289,7 @@
    { typedef const T &type; };
 
    template< class T>
-   struct forward_type< boost::rv<T> >
+   struct forward_type< methcla_boost::rv<T> >
    { typedef T type; };
 
    }}
@@ -301,6 +303,7 @@
       BOOST_MOVE_IMPL_NO_COPY_CTOR_OR_ASSIGN(TYPE)\
       public:\
       typedef int boost_move_emulation_t;\
+      private:\
    //
 
    //! This macro marks a type as copyable and movable.
@@ -314,7 +317,7 @@
    //
    #endif   //#if !defined(BOOST_MOVE_DOXYGEN_INVOKED)
 
-   namespace boost {
+   namespace methcla_boost {
 
    //!This trait yields to a compile-time true boolean if T was marked as
    //!BOOST_MOVABLE_BUT_NOT_COPYABLE or BOOST_COPYABLE_AND_MOVABLE and
@@ -331,7 +334,7 @@
       static const bool value = true;
    };
 
-   }  //namespace boost{
+   }  //namespace methcla_boost{
 
    //!This macro is used to achieve portable syntax in move
    //!constructors and assignments for classes marked as
@@ -444,14 +447,14 @@
 
    #else //!defined(BOOST_MOVE_MSVC_AUTO_MOVE_RETURN_BUG) || defined(BOOST_MOVE_DOXYGEN_INVOKED)
 
-      #include <boost/move/detail/meta_utils.hpp>
+      #include <boost/move/detail/meta_utils_core.hpp>
 
-      namespace boost {
+      namespace methcla_boost {
       namespace move_detail {
 
       template <class Ret, class T>
-      inline typename ::boost::move_detail::enable_if_c
-         <  ::boost::move_detail::is_lvalue_reference<Ret>::value
+      BOOST_MOVE_FORCEINLINE typename ::methcla_boost::move_detail::enable_if_c
+         <  ::methcla_boost::move_detail::is_lvalue_reference<Ret>::value
          , T&>::type
             move_return(T& x) BOOST_NOEXCEPT
       {
@@ -459,8 +462,8 @@
       }
 
       template <class Ret, class T>
-      inline typename ::boost::move_detail::enable_if_c
-         < !::boost::move_detail::is_lvalue_reference<Ret>::value
+      BOOST_MOVE_FORCEINLINE typename ::methcla_boost::move_detail::enable_if_c
+         < !::methcla_boost::move_detail::is_lvalue_reference<Ret>::value
          , Ret && >::type
             move_return(T&& t) BOOST_NOEXCEPT
       {
@@ -468,10 +471,10 @@
       }
 
       }  //namespace move_detail {
-      }  //namespace boost {
+      }  //namespace methcla_boost {
 
       #define BOOST_MOVE_RET(RET_TYPE, REF)\
-         boost::move_detail::move_return< RET_TYPE >(REF)
+         methcla_boost::move_detail::move_return< RET_TYPE >(REF)
       //
 
    #endif   //!defined(BOOST_MOVE_MSVC_AUTO_MOVE_RETURN_BUG) || defined(BOOST_MOVE_DOXYGEN_INVOKED)
@@ -479,15 +482,26 @@
    //!This macro is used to achieve portable optimal move constructors.
    //!
    //!When implementing the move constructor, in C++03 compilers the moved-from argument must be
-   //!cast to the base type before calling `::boost::move()` due to rvalue reference limitations.
+   //!cast to the base type before calling `::methcla_boost::move()` due to rvalue reference limitations.
    //!
    //!In C++11 compilers the cast from a rvalue reference of a derived type to a rvalue reference of
    //!a base type is implicit.
    #define BOOST_MOVE_BASE(BASE_TYPE, ARG) \
-      ::boost::move((BASE_TYPE&)(ARG))
+      ::methcla_boost::move((BASE_TYPE&)(ARG))
    //
 
-   namespace boost {
+   //!This macro is used to achieve portable optimal move constructors.
+   //!
+   //!In C++03 mode, when accessing a member of type through a rvalue (implemented as a `rv<T> &` type, where rv<T> derives
+   //!from T) triggers a potential UB as the program never creates objects of type rv<T>. This macro casts back `rv<T>` to
+   //!`T&` so that access to member types are done through the original type.
+   //! 
+   //!In C++11 compilers the cast from a rvalue reference of a derived type to a rvalue reference of
+   //!a base type is implicit, so it's a no-op.
+   #define BOOST_MOVE_TO_LV(ARG) ARG
+   //
+
+   namespace methcla_boost {
    namespace move_detail {
 
    template< class T> struct forward_type { typedef T type; };

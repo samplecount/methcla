@@ -17,13 +17,12 @@
 #include <boost/intrusive/intrusive_fwd.hpp>
 #include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/pack_options.hpp>
-#include <boost/intrusive/detail/mpl.hpp>
 
 #if defined(BOOST_HAS_PRAGMA_ONCE)
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 #ifndef BOOST_INTRUSIVE_DOXYGEN_INVOKED
@@ -61,14 +60,23 @@ BOOST_INTRUSIVE_OPTION_TYPE(size_type, SizeType, SizeType, size_type)
 //!comparison functor for the value type
 BOOST_INTRUSIVE_OPTION_TYPE(compare, Compare, Compare, compare)
 
-//!This option setter specifies the a function object
+//!This option setter specifies a function object
 //!that specifies the type of the key of an associative
 //!container and an operator to obtain it from a value type.
 //!
-//!This function object must the define a `key_type` and
-//!a member with signature `const key_type & operator()(const value_type &) const`
+//!This function object must the define a `type` member typedef and
+//!a member with signature `type [const&] operator()(const value_type &) const`
 //!that will return the key from a value_type of an associative container
 BOOST_INTRUSIVE_OPTION_TYPE(key_of_value, KeyOfValue, KeyOfValue, key_of_value)
+
+//!This option setter specifies a function object
+//!that specifies the type of the priority of a treap
+//!container and an operator to obtain it from a value type.
+//!
+//!This function object must the define a `type` member typedef and
+//!a member with signature `type [const&] operator()(const value_type &) const`
+//!that will return the priority from a value_type of a treap container
+BOOST_INTRUSIVE_OPTION_TYPE(priority_of_value, PrioOfValue, PrioOfValue, priority_of_value)
 
 //!This option setter for scapegoat containers specifies if
 //!the intrusive scapegoat container should use a non-variable
@@ -88,7 +96,7 @@ BOOST_INTRUSIVE_OPTION_CONSTANT(floating_point, bool, Enabled, floating_point)
 //!functor for the value type
 BOOST_INTRUSIVE_OPTION_TYPE(equal, Equal, Equal, equal)
 
-//!This option setter specifies the equality
+//!This option setter specifies the priority comparison
 //!functor for the value type
 BOOST_INTRUSIVE_OPTION_TYPE(priority, Priority, Priority, priority)
 
@@ -204,12 +212,21 @@ BOOST_INTRUSIVE_OPTION_CONSTANT(store_hash, bool, Enabled, store_hash)
 //!with the same key.
 BOOST_INTRUSIVE_OPTION_CONSTANT(optimize_multikey, bool, Enabled, optimize_multikey)
 
-//!This option setter specifies if the bucket array will be always power of two.
+//!This option setter specifies if the length of the bucket array provided by
+//!the user will always be power of two.
 //!This allows using masks instead of the default modulo operation to determine
 //!the bucket number from the hash value, leading to better performance.
-//!In debug mode, if power of two buckets mode is activated, the bucket length
-//!will be checked with assertions.
+//!In debug mode, the provided bucket array length will be checked with assertions.
 BOOST_INTRUSIVE_OPTION_CONSTANT(power_2_buckets, bool, Enabled, power_2_buckets)
+
+//!WARNING: this option is EXPERIMENTAL, don't use it in production code
+//!This option setter specifies if the length of the bucket array provided by
+//!the user will always be a value specified by the
+//!suggested_upper|lower_bucket_count call. This allows the use of some
+//!precomputed values and speeds hash to bucket index operations, leading
+//!to better performance.
+//!In debug mode, the provided bucket array length will be checked with assertions.
+BOOST_INTRUSIVE_OPTION_CONSTANT(fastmod_buckets, bool, Enabled, fastmod_buckets)
 
 //!This option setter specifies if the container will cache a pointer to the first
 //!non-empty bucket so that begin() is always constant-time.
@@ -233,6 +250,11 @@ BOOST_INTRUSIVE_OPTION_CONSTANT(compare_hash, bool, Enabled, compare_hash)
 //!(rehashing the whole bucket array) is not admisible.
 BOOST_INTRUSIVE_OPTION_CONSTANT(incremental, bool, Enabled, incremental)
 
+//!This option setter specifies if the buckets (which form a singly linked lists of nodes)
+//!are linear (true) or circular (false, default value). Linear buckets can improve performance
+//!in some cases, but the container loses some features like obtaining an iterator from a value.
+BOOST_INTRUSIVE_OPTION_CONSTANT(linear_buckets, bool, Enabled, linear_buckets)
+
 /// @cond
 
 struct hook_defaults
@@ -249,7 +271,7 @@ struct hook_defaults
 /// @endcond
 
 }  //namespace intrusive {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/intrusive/detail/config_end.hpp>
 

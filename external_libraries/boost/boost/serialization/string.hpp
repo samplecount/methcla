@@ -10,7 +10,7 @@
 // serialization/string.hpp:
 // serialization for stl string templates
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -22,9 +22,9 @@
 #include <boost/config.hpp>
 #include <boost/serialization/level.hpp>
 
-BOOST_CLASS_IMPLEMENTATION(std::string, boost::serialization::primitive_type)
+BOOST_CLASS_IMPLEMENTATION(std::string, methcla_boost::serialization::primitive_type)
 #ifndef BOOST_NO_STD_WSTRING
-BOOST_CLASS_IMPLEMENTATION(std::wstring, boost::serialization::primitive_type)
+BOOST_CLASS_IMPLEMENTATION(std::wstring, methcla_boost::serialization::primitive_type)
 #endif
 
 #endif // BOOST_SERIALIZATION_STRING_HPP

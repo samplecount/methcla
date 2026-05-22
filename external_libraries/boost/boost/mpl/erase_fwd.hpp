@@ -14,7 +14,7 @@
 // $Date$
 // $Revision$
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template< typename Tag > struct erase_impl;
 template< typename Sequence, typename First, typename Last > struct erase;

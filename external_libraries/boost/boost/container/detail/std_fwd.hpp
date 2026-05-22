@@ -23,6 +23,8 @@
 //                        Standard predeclarations
 //////////////////////////////////////////////////////////////////////////////
 
+#include <cstddef>
+
 #include <boost/move/detail/std_ns_begin.hpp>
 BOOST_MOVE_STD_NS_BEG
 
@@ -31,6 +33,9 @@ class allocator;
 
 template<class T>
 struct less;
+
+template<class T>
+struct equal_to;
 
 template<class T1, class T2>
 struct pair;
@@ -50,7 +55,21 @@ struct allocator_arg_t;
 
 struct piecewise_construct_t;
 
+template <class Ptr>
+struct pointer_traits;
+
 BOOST_MOVE_STD_NS_END
 #include <boost/move/detail/std_ns_end.hpp>
+
+#if defined(__cpp_aligned_new)
+
+//align_val_t is not usually in an inline namespace
+namespace std {
+
+enum class align_val_t : std::size_t;
+
+}  //namespace std
+
+#endif
 
 #endif //#ifndef BOOST_CONTAINER_DETAIL_STD_FWD_HPP

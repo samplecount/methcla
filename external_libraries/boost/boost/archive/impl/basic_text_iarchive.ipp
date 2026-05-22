@@ -22,7 +22,7 @@ namespace std{
 #include <boost/serialization/string.hpp>
 #include <boost/archive/basic_text_iarchive.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -35,7 +35,7 @@ basic_text_iarchive<Archive>::load_override(class_name_type & t){
     cn.reserve(BOOST_SERIALIZATION_MAX_KEY_SIZE);
     load_override(cn);
     if(cn.size() > (BOOST_SERIALIZATION_MAX_KEY_SIZE - 1))
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::invalid_class_name)
         );
     std::memcpy(t, cn.data(), cn.size());
@@ -45,18 +45,18 @@ basic_text_iarchive<Archive>::load_override(class_name_type & t){
 
 template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL void
-basic_text_iarchive<Archive>::init(void){
+basic_text_iarchive<Archive>::init() {
     // read signature in an archive version independent manner
     std::string file_signature;
     * this->This() >> file_signature;
     if(file_signature != BOOST_ARCHIVE_SIGNATURE())
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::invalid_signature)
         );
 
     // make sure the version of the reading archive library can
     // support the format of the archive being read
-    library_version_type input_library_version;
+    methcla_boost::serialization::library_version_type input_library_version;
     * this->This() >> input_library_version;
 
     #if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3205))
@@ -67,10 +67,10 @@ basic_text_iarchive<Archive>::init(void){
 
     // extra little .t is to get around borland quirk
     if(BOOST_ARCHIVE_VERSION() < input_library_version)
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::unsupported_version)
         );
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

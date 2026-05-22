@@ -47,15 +47,16 @@
 //         {}
 // This macro should only persist within this file.
 
-#define BOOST_PRIVATE_CTR_DEF( z, n, data )                            \
-    template < BOOST_PP_ENUM_PARAMS(n, typename T) >                   \
-    explicit base_from_member( BOOST_PP_ENUM_BINARY_PARAMS(n, T, x) )  \
-        : member( BOOST_PP_ENUM_PARAMS(n, x) )                         \
-        {}                                                             \
+#ifndef BOOST_UTILITY_DOCS
+#define BOOST_PRIVATE_CTR_DEF( z, n, data )                   \
+    template < BOOST_PP_ENUM_PARAMS(n, typename T) >          \
+    base_from_member( BOOST_PP_ENUM_BINARY_PARAMS(n, T, x) )  \
+        : member( BOOST_PP_ENUM_PARAMS(n, x) )                \
+        {}                                                    \
     /**/
+#endif // BOOST_UTILITY_DOCS
 
-
-namespace boost
+namespace methcla_boost
 {
 
 namespace detail
@@ -72,10 +73,10 @@ namespace detail
 template < typename T >
 struct remove_cv_ref
 {
-    typedef typename ::boost::remove_cv<typename
-     ::boost::remove_reference<T>::type>::type  type;
+    typedef typename ::methcla_boost::remove_cv<typename
+     ::methcla_boost::remove_reference<T>::type>::type  type;
 
-};  // boost::detail::remove_cv_ref
+};  // methcla_boost::detail::remove_cv_ref
 
 //  Unmarked-type comparison class template  ---------------------------------//
 
@@ -85,9 +86,9 @@ struct remove_cv_ref
 
 template < typename T, typename U >
 struct is_related
-    : public ::boost::is_same<
-     typename ::boost::detail::remove_cv_ref<T>::type,
-     typename ::boost::detail::remove_cv_ref<U>::type >
+    : public ::methcla_boost::is_same<
+     typename ::methcla_boost::detail::remove_cv_ref<T>::type,
+     typename ::methcla_boost::detail::remove_cv_ref<U>::type >
 {};
 
 //  Enable-if-on-unidentical-unmarked-type class template  -------------------//
@@ -99,16 +100,16 @@ struct is_related
 #ifndef BOOST_NO_CXX11_VARIADIC_TEMPLATES
 template<typename ...T>
 struct enable_if_unrelated
-    : public ::boost::enable_if_c<true>
+    : public ::methcla_boost::enable_if_c<true>
 {};
 
 template<typename T, typename U, typename ...U2>
 struct enable_if_unrelated<T, U, U2...>
-    : public ::boost::disable_if< ::boost::detail::is_related<T, U> >
+    : public ::methcla_boost::disable_if< ::methcla_boost::detail::is_related<T, U> >
 {};
 #endif
 
-}  // namespace boost::detail
+}  // namespace methcla_boost::detail
 
 
 //  Base-from-member class template  -----------------------------------------//
@@ -131,7 +132,7 @@ protected:
     !defined(BOOST_NO_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGS) && \
     !(defined(__GNUC__) && (__GNUC__ == 4) && (__GNUC_MINOR__ < 4))
     template <typename ...T, typename EnableIf = typename
-     ::boost::detail::enable_if_unrelated<base_from_member, T...>::type>
+     ::methcla_boost::detail::enable_if_unrelated<base_from_member, T...>::type>
     explicit BOOST_CONSTEXPR base_from_member( T&& ...x )
         BOOST_NOEXCEPT_IF( BOOST_NOEXCEPT_EXPR(::new ((void*) 0) MemberType(
          static_cast<T&&>(x)... )) )  // no std::is_nothrow_constructible...
@@ -142,11 +143,12 @@ protected:
         : member()
         {}
 
-    BOOST_PP_REPEAT_FROM_TO( 1, BOOST_PP_INC(BOOST_BASE_FROM_MEMBER_MAX_ARITY),
+    template < typename T0 > explicit base_from_member( T0 x0 ) : member( x0 ) {}
+    BOOST_PP_REPEAT_FROM_TO( 2, BOOST_PP_INC(BOOST_BASE_FROM_MEMBER_MAX_ARITY),
      BOOST_PRIVATE_CTR_DEF, _ )
 #endif
 
-};  // boost::base_from_member
+};  // methcla_boost::base_from_member
 
 template < typename MemberType, int UniqueID >
 class base_from_member<MemberType&, UniqueID>
@@ -159,9 +161,9 @@ protected:
         : member( x )
         {}
 
-};  // boost::base_from_member
+};  // methcla_boost::base_from_member
 
-}  // namespace boost
+}  // namespace methcla_boost
 
 
 // Undo any private macros

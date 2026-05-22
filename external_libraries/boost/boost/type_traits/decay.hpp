@@ -16,7 +16,7 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/type_traits/remove_cv.hpp>
 
-namespace boost 
+namespace methcla_boost 
 {
 
    namespace detail
@@ -34,10 +34,16 @@ namespace boost
     private:
         typedef typename remove_reference<T>::type Ty;
     public:
-       typedef typename boost::detail::decay_imp<Ty, boost::is_array<Ty>::value, boost::is_function<Ty>::value>::type type;
+       typedef typename methcla_boost::detail::decay_imp<Ty, methcla_boost::is_array<Ty>::value, methcla_boost::is_function<Ty>::value>::type type;
     };
     
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using decay_t = typename decay<T>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 
 #endif // BOOST_TT_DECAY_HPP_INCLUDED

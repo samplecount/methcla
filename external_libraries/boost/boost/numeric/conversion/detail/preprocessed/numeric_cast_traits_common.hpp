@@ -9,7 +9,7 @@
 	
 	
 	
-namespace boost { namespace numeric {
+namespace methcla_boost { namespace numeric {
     
     template <>
     struct numeric_cast_traits

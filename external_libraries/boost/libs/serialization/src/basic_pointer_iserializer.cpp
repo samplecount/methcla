@@ -9,15 +9,16 @@
 //  See http://www.boost.org for updates, documentation, and revision history.
 
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/detail/basic_pointer_iserializer.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
 BOOST_ARCHIVE_DECL 
 basic_pointer_iserializer::basic_pointer_iserializer(
-    const boost::serialization::extended_type_info & eti
+    const methcla_boost::serialization::extended_type_info & eti
 ) :
     basic_serializer(eti)
 {}
@@ -27,4 +28,4 @@ basic_pointer_iserializer::~basic_pointer_iserializer() {}
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
