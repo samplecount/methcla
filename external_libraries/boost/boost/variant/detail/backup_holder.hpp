@@ -13,10 +13,10 @@
 #ifndef BOOST_VARIANT_DETAIL_BACKUP_HOLDER_HPP
 #define BOOST_VARIANT_DETAIL_BACKUP_HOLDER_HPP
 
-#include "boost/config.hpp"
-#include "boost/assert.hpp"
+#include <boost/config.hpp>
+#include <boost/assert.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace detail { namespace variant {
 
 template <typename T>
@@ -90,6 +90,6 @@ void swap(backup_holder<T>& lhs, backup_holder<T>& rhs) BOOST_NOEXCEPT
 }
 
 }} // namespace detail::variant
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_VARIANT_DETAIL_BACKUP_HOLDER_HPP

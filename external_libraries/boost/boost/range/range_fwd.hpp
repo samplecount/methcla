@@ -10,7 +10,7 @@
 #ifndef BOOST_RANGE_RANGE_FWD_HPP_INCLUDED
 #define BOOST_RANGE_RANGE_FWD_HPP_INCLUDED
 
-namespace boost
+namespace methcla_boost
 {
 
 // Extension points
@@ -58,6 +58,6 @@ namespace boost
     template<typename T>
     struct has_range_const_iterator;
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // include guard

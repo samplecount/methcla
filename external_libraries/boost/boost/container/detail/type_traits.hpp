@@ -26,45 +26,50 @@
 
 #include <boost/move/detail/type_traits.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
-using ::boost::move_detail::enable_if;
-using ::boost::move_detail::enable_if_and;
-using ::boost::move_detail::is_same;
-using ::boost::move_detail::is_different;
-using ::boost::move_detail::is_pointer;
-using ::boost::move_detail::add_reference;
-using ::boost::move_detail::add_const;
-using ::boost::move_detail::add_const_reference;
-using ::boost::move_detail::remove_const;
-using ::boost::move_detail::remove_reference;
-using ::boost::move_detail::make_unsigned;
-using ::boost::move_detail::is_floating_point;
-using ::boost::move_detail::is_integral;
-using ::boost::move_detail::is_enum;
-using ::boost::move_detail::is_pod;
-using ::boost::move_detail::is_empty;
-using ::boost::move_detail::is_trivially_destructible;
-using ::boost::move_detail::is_trivially_default_constructible;
-using ::boost::move_detail::is_trivially_copy_constructible;
-using ::boost::move_detail::is_trivially_move_constructible;
-using ::boost::move_detail::is_trivially_copy_assignable;
-using ::boost::move_detail::is_trivially_move_assignable;
-using ::boost::move_detail::is_nothrow_default_constructible;
-using ::boost::move_detail::is_nothrow_copy_constructible;
-using ::boost::move_detail::is_nothrow_move_constructible;
-using ::boost::move_detail::is_nothrow_copy_assignable;
-using ::boost::move_detail::is_nothrow_move_assignable;
-using ::boost::move_detail::is_nothrow_swappable;
-using ::boost::move_detail::alignment_of;
-using ::boost::move_detail::aligned_storage;
-using ::boost::move_detail::nat;
-using ::boost::move_detail::max_align_t;
+using ::methcla_boost::move_detail::enable_if;
+using ::methcla_boost::move_detail::enable_if_and;
+using ::methcla_boost::move_detail::is_same;
+using ::methcla_boost::move_detail::is_different;
+using ::methcla_boost::move_detail::is_pointer;
+using ::methcla_boost::move_detail::add_reference;
+using ::methcla_boost::move_detail::add_const;
+using ::methcla_boost::move_detail::add_const_reference;
+using ::methcla_boost::move_detail::remove_const;
+using ::methcla_boost::move_detail::remove_reference;
+using ::methcla_boost::move_detail::remove_cvref;
+using ::methcla_boost::move_detail::make_unsigned;
+using ::methcla_boost::move_detail::is_floating_point;
+using ::methcla_boost::move_detail::is_integral;
+using ::methcla_boost::move_detail::is_enum;
+using ::methcla_boost::move_detail::is_pod;
+using ::methcla_boost::move_detail::is_empty;
+using ::methcla_boost::move_detail::is_trivially_destructible;
+using ::methcla_boost::move_detail::is_trivially_default_constructible;
+using ::methcla_boost::move_detail::is_trivially_copy_constructible;
+using ::methcla_boost::move_detail::is_trivially_move_constructible;
+using ::methcla_boost::move_detail::is_trivially_copy_assignable;
+using ::methcla_boost::move_detail::is_trivially_move_assignable;
+using ::methcla_boost::move_detail::is_nothrow_default_constructible;
+using ::methcla_boost::move_detail::is_nothrow_copy_constructible;
+using ::methcla_boost::move_detail::is_nothrow_move_constructible;
+using ::methcla_boost::move_detail::is_nothrow_copy_assignable;
+using ::methcla_boost::move_detail::is_nothrow_move_assignable;
+using ::methcla_boost::move_detail::is_nothrow_swappable;
+using ::methcla_boost::move_detail::alignment_of;
+using ::methcla_boost::move_detail::aligned_storage;
+using ::methcla_boost::move_detail::nat;
+using ::methcla_boost::move_detail::nat2;
+using ::methcla_boost::move_detail::nat3;
+using ::methcla_boost::move_detail::natN;
+using ::methcla_boost::move_detail::max_align_t;
+using ::methcla_boost::move_detail::is_convertible;
 
-}  //namespace container_detail {
+}  //namespace dtl {
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //#ifndef BOOST_CONTAINER_CONTAINER_DETAIL_TYPE_TRAITS_HPP

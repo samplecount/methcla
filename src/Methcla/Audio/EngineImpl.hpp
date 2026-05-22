@@ -154,9 +154,9 @@ namespace Methcla { namespace Audio {
             T            m_data;
         };
 
-        typedef boost::heap::priority_queue<
-            Item, boost::heap::stable<true>,
-            boost::heap::stability_counter_type<uint64_t>>
+        typedef methcla_boost::heap::priority_queue<
+            Item, methcla_boost::heap::stable<true>,
+            methcla_boost::heap::stability_counter_type<uint64_t>>
             PriorityQueue;
 
         // We need constant time size and reserve in order to avoid memory

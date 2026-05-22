@@ -15,11 +15,9 @@
 #include <boost/container/detail/std_fwd.hpp>
 
 //! \file
-//!   This header forward declares boost::container::constructible_with_allocator_prefix,
-//!   boost::container::constructible_with_allocator_suffix and
-//!   boost::container::uses_allocator. Also defines the following types:
+//!   This header forward declares methcla_boost::container::uses_allocator. Also defines the following types:
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
 
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
@@ -30,8 +28,8 @@ namespace container {
       static ::std::allocator_arg_t *dummy;
    };
 
-   template <int Dummy>
-   ::std::allocator_arg_t *std_allocator_arg_holder<Dummy>::dummy;
+   template <int Dummy>                                             //Silence null-reference compiler warnings
+   ::std::allocator_arg_t *std_allocator_arg_holder<Dummy>::dummy = reinterpret_cast< ::std::allocator_arg_t * >(0x1234);
 
 typedef const std::allocator_arg_t & allocator_arg_t;
 
@@ -68,6 +66,6 @@ struct uses_allocator;
 
 // @endcond
 
-}} // namespace boost { namespace container {
+}} // namespace methcla_boost { namespace container {
 
 #endif   //BOOST_CONTAINER_USES_ALLOCATOR_HPP

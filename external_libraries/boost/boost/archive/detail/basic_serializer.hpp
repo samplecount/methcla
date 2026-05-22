@@ -7,9 +7,9 @@
 #endif
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// basic_serializer.hpp: extenstion of type_info required for serialization.
+// basic_serializer.hpp: extension of type_info required for serialization.
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -28,24 +28,22 @@
 #  pragma warning(disable : 4511 4512)
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
-class basic_serializer : 
-    private boost::noncopyable
+class basic_serializer :
+    private methcla_boost::noncopyable
 {
-    const boost::serialization::extended_type_info * m_eti;
+    const methcla_boost::serialization::extended_type_info * m_eti;
 protected:
     explicit basic_serializer(
-        const boost::serialization::extended_type_info & eti
-    ) : 
+        const methcla_boost::serialization::extended_type_info & eti
+    ) :
         m_eti(& eti)
-    {
-        BOOST_ASSERT(NULL != & eti);
-    }
+    {}
 public:
-    inline bool 
+    inline bool
     operator<(const basic_serializer & rhs) const {
         // can't compare address since there can be multiple eti records
         // for the same type in different execution modules (that is, DLLS)
@@ -56,7 +54,7 @@ public:
     const char * get_debug_info() const {
         return m_eti->get_debug_info();
     }
-    const boost::serialization::extended_type_info & get_eti() const {
+    const methcla_boost::serialization::extended_type_info & get_eti() const {
         return * m_eti;
     }
 };
@@ -70,7 +68,7 @@ public:
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 #pragma warning(pop)

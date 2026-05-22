@@ -71,7 +71,7 @@ http://www.boost.org/LICENSE_1_0.txt)
   )                                                                            \
   /**/
 
-// boost::archive::xml::node macros
+// methcla_boost::archive::xml::node macros
 
 #define BSL_NODE_DECL_MEMBER(Z, N, _)   T ## N  element ## N  ;
 #define BSL_NODE_DECL_NONE(Z, N, _)     unused_type  element ## N  ;
@@ -121,7 +121,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define BSL_INST_BASE(Z, N, L)                                                 \
   T0 T0 ## _ ## N(BOOST_PP_ENUM_ ## Z(                                         \
     BSL_NODE_MAX, BSL_PRINT,                                                   \
-    boost::archive::xml::random<BSL_TYPE> BOOST_PP_LPAREN() BOOST_PP_RPAREN()  \
+    methcla_boost::archive::xml::random<BSL_TYPE> BOOST_PP_LPAREN() BOOST_PP_RPAREN()  \
   ));                                                                          \
   /**/
 
@@ -155,7 +155,7 @@ http://www.boost.org/LICENSE_1_0.txt)
   /**/
 
 #define BSL_TYPEDEF_NODES(Z, N, L)                                             \
-  typedef boost::archive::xml::node<                                           \
+  typedef methcla_boost::archive::xml::node<                                           \
     BOOST_PP_ENUM_ ## Z(                                                       \
       BSL_NODE_MAX, BSL_PRINT, BOOST_PP_CAT(T, BOOST_PP_SUB(N, 1))             \
     )                                                                          \
@@ -166,8 +166,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #define BSL_MAIN                                                               \
   int main (void) {                                                            \
-    using namespace boost::archive;                                            \
-    using namespace boost::archive::xml;                                       \
+    using namespace methcla_boost::archive;                                            \
+    using namespace methcla_boost::archive::xml;                                       \
                                                                                \
     typedef node<BOOST_PP_ENUM(BSL_NODE_MAX, BSL_PRINT, BSL_TYPE)> T0;         \
                                                                                \

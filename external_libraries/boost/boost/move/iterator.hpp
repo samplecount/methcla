@@ -23,10 +23,11 @@
 #endif
 
 #include <boost/move/detail/config_begin.hpp>
+#include <boost/move/detail/workaround.hpp>  //forceinline
 #include <boost/move/detail/iterator_traits.hpp>
 #include <boost/move/utility_core.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -44,102 +45,100 @@ class move_iterator
 {
    public:
    typedef It                                                              iterator_type;
-   typedef typename boost::movelib::iterator_traits<iterator_type>::value_type        value_type;
+   typedef typename methcla_boost::movelib::iterator_traits<iterator_type>::value_type        value_type;
    #if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) || defined(BOOST_MOVE_DOXYGEN_INVOKED)
    typedef value_type &&                                                   reference;
    #else
-   typedef typename ::boost::move_detail::if_
-      < ::boost::has_move_emulation_enabled<value_type>
-      , ::boost::rv<value_type>&
+   typedef typename ::methcla_boost::move_detail::if_
+      < ::methcla_boost::has_move_emulation_enabled<value_type>
+      , ::methcla_boost::rv<value_type>&
       , value_type & >::type                                               reference;
    #endif
    typedef It                                                              pointer;
-   typedef typename boost::movelib::iterator_traits<iterator_type>::difference_type   difference_type;
-   typedef typename boost::movelib::iterator_traits<iterator_type>::iterator_category iterator_category;
+   typedef typename methcla_boost::movelib::iterator_traits<iterator_type>::difference_type   difference_type;
+   typedef typename methcla_boost::movelib::iterator_traits<iterator_type>::iterator_category iterator_category;
 
-   move_iterator()
+   inline move_iterator()
+      : m_it()
    {}
 
-   explicit move_iterator(It i)
+   inline explicit move_iterator(const It &i)
       :  m_it(i)
    {}
 
    template <class U>
-   move_iterator(const move_iterator<U>& u)
-      :  m_it(u.base())
+   inline move_iterator(const move_iterator<U>& u)
+      :  m_it(u.m_it)
    {}
 
-   iterator_type base() const
-   {  return m_it;   }
-
-   reference operator*() const
+   inline reference operator*() const
    {
       #if defined(BOOST_NO_CXX11_RVALUE_REFERENCES) || defined(BOOST_MOVE_OLD_RVALUE_REF_BINDING_RULES)
       return *m_it;
       #else
-      return ::boost::move(*m_it);
+      return ::methcla_boost::move(*m_it);
       #endif
    }
 
-   pointer   operator->() const
+   inline pointer   operator->() const
    {  return m_it;   }
 
-   move_iterator& operator++()
+   inline move_iterator& operator++()
    {  ++m_it; return *this;   }
 
-   move_iterator<iterator_type>  operator++(int)
+   inline move_iterator<iterator_type>  operator++(int)
    {  move_iterator<iterator_type> tmp(*this); ++(*this); return tmp;   }
 
-   move_iterator& operator--()
+   inline move_iterator& operator--()
    {  --m_it; return *this;   }
 
-   move_iterator<iterator_type>  operator--(int)
+   inline move_iterator<iterator_type>  operator--(int)
    {  move_iterator<iterator_type> tmp(*this); --(*this); return tmp;   }
 
    move_iterator<iterator_type>  operator+ (difference_type n) const
    {  return move_iterator<iterator_type>(m_it + n);  }
 
-   move_iterator& operator+=(difference_type n)
+   inline move_iterator& operator+=(difference_type n)
    {  m_it += n; return *this;   }
 
-   move_iterator<iterator_type>  operator- (difference_type n) const
+   inline move_iterator<iterator_type>  operator- (difference_type n) const
    {  return move_iterator<iterator_type>(m_it - n);  }
 
-   move_iterator& operator-=(difference_type n)
+   inline move_iterator& operator-=(difference_type n)
    {  m_it -= n; return *this;   }
 
-   reference operator[](difference_type n) const
+   inline reference operator[](difference_type n) const
    {
       #if defined(BOOST_NO_CXX11_RVALUE_REFERENCES) || defined(BOOST_MOVE_OLD_RVALUE_REF_BINDING_RULES)
       return m_it[n];
       #else
-      return ::boost::move(m_it[n]);
+      return ::methcla_boost::move(m_it[n]);
       #endif
    }
 
-   friend bool operator==(const move_iterator& x, const move_iterator& y)
-   {  return x.base() == y.base();  }
+   inline friend bool operator==(const move_iterator& x, const move_iterator& y)
+   {  return x.m_it == y.m_it;  }
 
-   friend bool operator!=(const move_iterator& x, const move_iterator& y)
-   {  return x.base() != y.base();  }
+   inline friend bool operator!=(const move_iterator& x, const move_iterator& y)
+   {  return x.m_it != y.m_it;  }
 
-   friend bool operator< (const move_iterator& x, const move_iterator& y)
-   {  return x.base() < y.base();   }
+   inline friend bool operator< (const move_iterator& x, const move_iterator& y)
+   {  return x.m_it < y.m_it;   }
 
-   friend bool operator<=(const move_iterator& x, const move_iterator& y)
-   {  return x.base() <= y.base();  }
+   inline friend bool operator<=(const move_iterator& x, const move_iterator& y)
+   {  return x.m_it <= y.m_it;  }
 
-   friend bool operator> (const move_iterator& x, const move_iterator& y)
-   {  return x.base() > y.base();  }
+   inline friend bool operator> (const move_iterator& x, const move_iterator& y)
+   {  return x.m_it > y.m_it;  }
 
-   friend bool operator>=(const move_iterator& x, const move_iterator& y)
-   {  return x.base() >= y.base();  }
+   inline friend bool operator>=(const move_iterator& x, const move_iterator& y)
+   {  return x.m_it >= y.m_it;  }
 
-   friend difference_type operator-(const move_iterator& x, const move_iterator& y)
-   {  return x.base() - y.base();   }
+   inline friend difference_type operator-(const move_iterator& x, const move_iterator& y)
+   {  return x.m_it - y.m_it;   }
 
-   friend move_iterator operator+(difference_type n, const move_iterator& x)
-   {  return move_iterator(x.base() + n);   }
+   inline friend move_iterator operator+(difference_type n, const move_iterator& x)
+   {  return move_iterator(x.m_it + n);   }
 
    private:
    It m_it;
@@ -155,7 +154,7 @@ struct is_move_iterator
 };
 
 template <class I>
-struct is_move_iterator< ::boost::move_iterator<I> >
+struct is_move_iterator< ::methcla_boost::move_iterator<I> >
 {
    static const bool value = true;
 };
@@ -199,7 +198,7 @@ class back_move_insert_iterator
    explicit back_move_insert_iterator(C& x) : container_m(&x) { }
 
    back_move_insert_iterator& operator=(reference x)
-   { container_m->push_back(boost::move(x)); return *this; }
+   { container_m->push_back(methcla_boost::move(x)); return *this; }
 
    back_move_insert_iterator& operator=(BOOST_RV_REF(value_type) x)
    {  reference rx = x; return this->operator=(rx);  }
@@ -241,7 +240,7 @@ public:
    explicit front_move_insert_iterator(C& x) : container_m(&x) { }
 
    front_move_insert_iterator& operator=(reference x)
-   { container_m->push_front(boost::move(x)); return *this; }
+   { container_m->push_front(methcla_boost::move(x)); return *this; }
 
    front_move_insert_iterator& operator=(BOOST_RV_REF(value_type) x)
    {  reference rx = x; return this->operator=(rx);  }
@@ -284,7 +283,7 @@ class move_insert_iterator
 
    move_insert_iterator& operator=(reference x)
    {
-      pos_ = container_m->insert(pos_, ::boost::move(x));
+      pos_ = container_m->insert(pos_, ::methcla_boost::move(x));
       ++pos_;
       return *this;
    }
@@ -305,7 +304,7 @@ inline move_insert_iterator<C> move_inserter(C& x, typename C::iterator it)
    return move_insert_iterator<C>(x, it);
 }
 
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/move/detail/config_end.hpp>
 

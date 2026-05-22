@@ -18,7 +18,7 @@
 #include <boost/mpl/list/aux_/item.hpp>
 #include <boost/mpl/list/aux_/tag.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<>
 struct clear_impl< aux::list_tag >

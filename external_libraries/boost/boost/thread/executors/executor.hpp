@@ -10,6 +10,7 @@
 #define BOOST_THREAD_EXECUTORS_EXECUTOR_HPP
 
 #include <boost/thread/detail/config.hpp>
+#if defined BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION && defined BOOST_THREAD_PROVIDES_EXECUTORS && defined BOOST_THREAD_USES_MOVE
 
 #include <boost/thread/detail/delete.hpp>
 #include <boost/thread/detail/move.hpp>
@@ -17,7 +18,7 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   namespace executors
   {
@@ -38,7 +39,7 @@ namespace boost
      * \par Synchronization
      * The completion of all the closures happen before the completion of the executor destructor.
      */
-    virtual ~executor() {};
+    virtual ~executor() {}
 
     /**
      * \par Effects
@@ -89,21 +90,21 @@ namespace boost
     void submit(Closure & closure)
     {
       work w ((closure));
-      submit(boost::move(w));
+      submit(methcla_boost::move(w));
     }
 #endif
     void submit(void (*closure)())
     {
       work w ((closure));
-      submit(boost::move(w));
+      submit(methcla_boost::move(w));
     }
 
     template <typename Closure>
     void submit(BOOST_THREAD_FWD_REF(Closure) closure)
     {
-      //submit(work(boost::forward<Closure>(closure)));
-      work w((boost::forward<Closure>(closure)));
-      submit(boost::move(w));
+      //submit(work(methcla_boost::forward<Closure>(closure)));
+      work w((methcla_boost::forward<Closure>(closure)));
+      submit(methcla_boost::move(w));
     }
 
     /**
@@ -145,4 +146,5 @@ namespace boost
 
 #include <boost/config/abi_suffix.hpp>
 
+#endif
 #endif

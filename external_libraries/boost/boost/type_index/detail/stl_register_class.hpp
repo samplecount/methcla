@@ -1,5 +1,5 @@
 //
-// Copyright (c) Antony Polukhin, 2013-2014.
+// Copyright 2013-2026 Antony Polukhin.
 //
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -10,7 +10,7 @@
 #define BOOST_TYPE_INDEX_STL_REGISTER_CLASS_HPP
 
 /// \file stl_register_class.hpp
-/// \brief Contains BOOST_TYPE_INDEX_REGISTER_CLASS macro implementation that uses boost::typeindex::stl_type_index.
+/// \brief Contains BOOST_TYPE_INDEX_REGISTER_CLASS macro implementation that uses methcla_boost::typeindex::stl_type_index.
 /// Not intended for inclusion from user's code.
 
 #include <boost/type_index/stl_type_index.hpp>
@@ -19,20 +19,28 @@
 # pragma once
 #endif
 
-namespace boost { namespace typeindex { namespace detail {
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_TYPE_INDEX_INTERFACE_UNIT)
+
+namespace methcla_boost { namespace typeindex { namespace detail {
+
+BOOST_TYPE_INDEX_BEGIN_MODULE_EXPORT
 
 template <class T>
-inline const stl_type_index::type_info_t& stl_construct_typeid_ref(const T*) BOOST_NOEXCEPT {
+inline const stl_type_index::type_info_t& stl_construct_typeid_ref(const T*) noexcept {
     return typeid(T);
 }
 
-}}} // namespace boost::typeindex::detail
+BOOST_TYPE_INDEX_END_MODULE_EXPORT
+
+}}} // namespace methcla_boost::typeindex::detail
+
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_TYPE_INDEX_INTERFACE_UNIT)
 
 /// @cond
-#define BOOST_TYPE_INDEX_REGISTER_CLASS                                                                                     \
-    virtual const boost::typeindex::stl_type_index::type_info_t& boost_type_index_type_id_runtime_() const BOOST_NOEXCEPT { \
-        return boost::typeindex::detail::stl_construct_typeid_ref(this);                                                    \
-    }                                                                                                                       \
+#define BOOST_TYPE_INDEX_REGISTER_CLASS                                                                               \
+    virtual const methcla_boost::typeindex::stl_type_index::type_info_t& boost_type_index_type_id_runtime_() const noexcept { \
+        return methcla_boost::typeindex::detail::stl_construct_typeid_ref(this);                                              \
+    }                                                                                                                 \
 /**/
 /// @endcond
 

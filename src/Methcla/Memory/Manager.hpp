@@ -17,12 +17,10 @@
 
 #include "Methcla/Memory.hpp"
 
-#include <boost/type_traits/aligned_storage.hpp>
-#include <boost/type_traits/alignment_of.hpp>
-
 #include <cassert>
 #include <cstddef>
 #include <stdexcept>
+#include <type_traits>
 
 namespace Methcla { namespace Memory {
 
@@ -110,7 +108,7 @@ namespace Methcla { namespace Memory {
     {
         struct Chunk
         {
-            typedef boost::aligned_storage<1, boost::alignment_of<T>::value>
+            typedef std::aligned_storage<1, std::alignment_of<T>::value>
                 Padding;
 
             Allocator* alloc;
@@ -124,7 +122,7 @@ namespace Methcla { namespace Memory {
                 static_cast<Chunk*>(allocator.alloc(sizeof(Chunk) + size));
             chunk->alloc = &allocator;
             void* ptr = chunk + 1;
-            assert(Alignment::isAligned(boost::alignment_of<T>::value,
+            assert(Alignment::isAligned(std::alignment_of<T>::value,
                                         reinterpret_cast<std::uintptr_t>(ptr)));
             return ptr;
         }

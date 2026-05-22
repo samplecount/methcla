@@ -12,24 +12,13 @@
 #include <boost/thread/csbl/memory/config.hpp>
 
 // 20.7.7, uses_allocator
-#if defined BOOST_NO_CXX11_ALLOCATOR
-#include <boost/container/scoped_allocator.hpp>
 
-namespace boost
-{
-  namespace csbl
-  {
-    using ::boost::container::uses_allocator;
-  }
-}
-#else
-namespace boost
+namespace methcla_boost
 {
   namespace csbl
   {
     using ::std::uses_allocator;
   }
 }
-#endif // BOOST_NO_CXX11_POINTER_TRAITS
 
 #endif // header

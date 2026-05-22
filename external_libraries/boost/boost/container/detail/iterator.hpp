@@ -22,19 +22,73 @@
 #endif
 
 #include <boost/intrusive/detail/iterator.hpp>
+#include <boost/move/utility_core.hpp>
+#include <boost/container/detail/mpl.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
 
-using ::boost::intrusive::iterator_traits;
-using ::boost::intrusive::iterator_distance;
-using ::boost::intrusive::iterator_advance;
-using ::boost::intrusive::iterator;
-using ::boost::intrusive::iterator_enable_if_tag;
-using ::boost::intrusive::iterator_disable_if_tag;
-using ::boost::intrusive::iterator_arrow_result;
+using ::methcla_boost::intrusive::iterator_traits;
+using ::methcla_boost::intrusive::iter_difference;
+using ::methcla_boost::intrusive::iter_category;
+using ::methcla_boost::intrusive::iter_value;
+using ::methcla_boost::intrusive::iter_size;
+using ::methcla_boost::intrusive::iterator_distance;
+using ::methcla_boost::intrusive::iterator_udistance;
+using ::methcla_boost::intrusive::iterator_advance;
+using ::methcla_boost::intrusive::iterator_uadvance;
+using ::methcla_boost::intrusive::make_iterator_advance;
+using ::methcla_boost::intrusive::make_iterator_uadvance;
+using ::methcla_boost::intrusive::iterator;
+using ::methcla_boost::intrusive::iterator_enable_if_tag;
+using ::methcla_boost::intrusive::iterator_disable_if_tag;
+using ::methcla_boost::intrusive::iterator_arrow_result;
+
+template <class Container>
+class back_emplacer
+{
+   private:
+   Container& container;
+
+   public:
+   typedef std::output_iterator_tag iterator_category;
+   typedef void                     value_type;
+   typedef void                     difference_type;
+   typedef void                     pointer;
+   typedef void                     reference;
+
+   back_emplacer(Container& x)
+      : container(x)
+   {}
+
+   template<class U>
+   back_emplacer& operator=(BOOST_FWD_REF(U) value)
+   {
+      container.emplace_back(methcla_boost::forward<U>(value));
+      return *this;
+   }
+   back_emplacer& operator*()    { return *this; }
+   back_emplacer& operator++()   { return *this; }
+   back_emplacer& operator++(int){ return *this; }
+};
+
+#ifndef BOOST_CONTAINER_NO_CXX17_CTAD
+
+template<class InputIterator>
+using it_based_non_const_first_type_t = typename dtl::remove_const<typename iterator_traits<InputIterator>::value_type::first_type>::type;
+
+template<class InputIterator>
+using it_based_const_first_type_t = const typename dtl::remove_const<typename iterator_traits<InputIterator>::value_type::first_type>::type;
+
+template<class InputIterator>
+using it_based_second_type_t = typename iterator_traits<InputIterator>::value_type::second_type;
+
+template<class InputIterator>
+using it_based_value_type_t = typename iterator_traits<InputIterator>::value_type;
+
+#endif
 
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //#ifndef BOOST_CONTAINER_DETAIL_ITERATORS_HPP

@@ -18,7 +18,7 @@
 #include <boost/ref.hpp>
 #include <boost/mpl/aux_/config/gpu.hpp>
 
-namespace boost { namespace mpl { namespace aux {
+namespace methcla_boost { namespace mpl { namespace aux {
 
 template< typename F >
 BOOST_MPL_CFG_GPU_ENABLED

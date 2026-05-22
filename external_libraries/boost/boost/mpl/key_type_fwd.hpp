@@ -15,7 +15,7 @@
 // $Date$
 // $Revision$
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template< typename Tag > struct key_type_impl;
 template< typename AssociativeSequence, typename T > struct key_type;

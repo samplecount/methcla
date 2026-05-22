@@ -23,7 +23,7 @@
 
 #include <boost/interprocess/detail/config_begin.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 namespace ipcdetail {
 
@@ -155,7 +155,7 @@ struct is_cv_same
 
 } // namespace ipcdetail
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

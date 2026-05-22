@@ -26,7 +26,7 @@
 //
 //    void foo(std::string<char>);
 //
-//    namespace boost { namespace mpl {
+//    namespace methcla_boost { namespace mpl {
 //    template< int > struct arg;
 //    }}
 

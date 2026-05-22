@@ -23,18 +23,17 @@
 #include <boost/move/detail/workaround.hpp>
 #include <boost/move/detail/unique_ptr_meta_utils.hpp>
 #include <boost/move/utility_core.hpp>
-#include <boost/static_assert.hpp>
 
 #include <cstddef>   //For std::size_t,std::nullptr_t
 
 //!\file
 //! Describes the default deleter (destruction policy) of <tt>unique_ptr</tt>: <tt>default_delete</tt>.
 
-namespace boost{
+namespace methcla_boost{
 // @cond
 namespace move_upd {
 
-namespace bmupmu = ::boost::move_upmu;
+namespace bmupmu = ::methcla_boost::move_upmu;
 
 ////////////////////////////////////////
 ////        enable_def_del
@@ -96,13 +95,56 @@ typedef int bool_conversion::* explicit_bool_arg;
    typedef int (bool_conversion::*nullptr_type)();
 #endif
 
+template<bool B>
+struct is_array_del
+{};
+
+template<class T>
+void call_delete(T *p, is_array_del<true>)
+{
+   delete [] p;
+}
+
+template<class T>
+void call_delete(T *p, is_array_del<false>)
+{
+   delete p;
+}
+
+template< class T, class U
+        , bool enable =  def_del_compatible_cond< U, T>::value &&
+                        !move_upmu::is_array<T>::value &&
+                        !move_upmu::is_same<typename move_upmu::remove_cv<T>::type, void>::value &&
+                        !move_upmu::is_same<typename move_upmu::remove_cv<U>::type, typename move_upmu::remove_cv<T>::type>::value
+        >
+struct missing_virtual_destructor_default_delete
+{  static const bool value = !move_upmu::has_virtual_destructor<T>::value;  };
+
+template<class T, class U>
+struct missing_virtual_destructor_default_delete<T, U, false>
+{  static const bool value = false;  };
+
+//////////////////////////////////////
+//       missing_virtual_destructor
+//////////////////////////////////////
+
+template<class Deleter, class U>
+struct missing_virtual_destructor
+{  static const bool value = false;  };
+
+template<class T, class U>
+struct missing_virtual_destructor< ::methcla_boost::movelib::default_delete<T>, U >
+   : missing_virtual_destructor_default_delete<T, U>
+{};
+
+
 }  //namespace move_upd {
 // @endcond
 
 namespace movelib {
 
-namespace bmupd = boost::move_upd;
-namespace bmupmu = ::boost::move_upmu;
+namespace bmupd = methcla_boost::move_upd;
+namespace bmupmu = ::methcla_boost::move_upmu;
 
 //!The class template <tt>default_delete</tt> serves as the default deleter
 //!(destruction policy) for the class template <tt>unique_ptr</tt>.
@@ -147,7 +189,7 @@ struct default_delete
    {
       //If T is not an array type, U derives from T
       //and T has no virtual destructor, then you have a problem
-      BOOST_STATIC_ASSERT(( !::boost::move_upmu::missing_virtual_destructor<default_delete, U>::value ));
+      BOOST_MOVE_STATIC_ASSERT(( !bmupd::missing_virtual_destructor<default_delete, U>::value ));
    }
 
    //! <b>Effects</b>: Constructs a default_delete object from another <tt>default_delete<U></tt> object.
@@ -162,7 +204,7 @@ struct default_delete
    {
       //If T is not an array type, U derives from T
       //and T has no virtual destructor, then you have a problem
-      BOOST_STATIC_ASSERT(( !::boost::move_upmu::missing_virtual_destructor<default_delete, U>::value ));
+      BOOST_MOVE_STATIC_ASSERT(( !bmupd::missing_virtual_destructor<default_delete, U>::value ));
       return *this;
    }
 
@@ -179,22 +221,22 @@ struct default_delete
       operator()(U* ptr) const BOOST_NOEXCEPT
    {
       //U must be a complete type
-      BOOST_STATIC_ASSERT(sizeof(U) > 0);
+      BOOST_MOVE_STATIC_ASSERT(sizeof(U) > 0);
       //If T is not an array type, U derives from T
       //and T has no virtual destructor, then you have a problem
-      BOOST_STATIC_ASSERT(( !::boost::move_upmu::missing_virtual_destructor<default_delete, U>::value ));
+      BOOST_MOVE_STATIC_ASSERT(( !bmupd::missing_virtual_destructor<default_delete, U>::value ));
       element_type * const p = static_cast<element_type*>(ptr);
-      bmupmu::is_array<T>::value ? delete [] p : delete p;
+      move_upd::call_delete(p, move_upd::is_array_del<bmupmu::is_array<T>::value>());
    }
 
    //! <b>Effects</b>: Same as <tt>(*this)(static_cast<element_type*>(nullptr))</tt>.
    //!
    void operator()(BOOST_MOVE_DOC0PTR(bmupd::nullptr_type)) const BOOST_NOEXCEPT
-   {  BOOST_STATIC_ASSERT(sizeof(element_type) > 0);  }
+   {  BOOST_MOVE_STATIC_ASSERT(sizeof(element_type) > 0);  }
 };
 
 }  //namespace movelib {
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #include <boost/move/detail/config_end.hpp>
 

@@ -22,7 +22,9 @@
 #include <boost/thread/detail/move.hpp>
 #include <boost/thread/detail/invoke.hpp>
 
-#include <boost/bind.hpp>
+#if !defined(BOOST_THREAD_PROVIDES_INVOKE) && !defined(BOOST_THREAD_PROVIDES_INVOKE_RET)
+#include <boost/bind/bind.hpp>
+#endif
 
 #include <boost/config/abi_prefix.hpp>
 
@@ -34,7 +36,7 @@ namespace std
 }
 #endif
 
-namespace boost
+namespace methcla_boost
 {
   struct once_flag;
   namespace detail
@@ -81,7 +83,7 @@ namespace boost
 #define BOOST_THREAD_INVOKE_RET_VOID detail::invoke<void>
 #define BOOST_THREAD_INVOKE_RET_VOID_CALL
 #else
-#define BOOST_THREAD_INVOKE_RET_VOID boost::bind
+#define BOOST_THREAD_INVOKE_RET_VOID methcla_boost::bind
 #define BOOST_THREAD_INVOKE_RET_VOID_CALL ()
 #endif
 
@@ -124,7 +126,7 @@ namespace boost
             std::memcpy(mutex_name,fixed_mutex_name,sizeof(fixed_mutex_name));
             detail::int_to_string(reinterpret_cast<std::ptrdiff_t>(flag_address),
                                   mutex_name + once_mutex_name_fixed_length);
-            detail::int_to_string(win32::GetCurrentProcessId(),
+            detail::int_to_string(winapi::GetCurrentProcessId(),
                                   mutex_name + once_mutex_name_fixed_length + sizeof(void*)*2);
         }
 
@@ -136,12 +138,12 @@ namespace boost
             }
 
 #ifdef BOOST_NO_ANSI_APIS
-            return ::boost::detail::win32::OpenEventW(
+            return ::methcla_boost::winapi::OpenEventW(
 #else
-            return ::boost::detail::win32::OpenEventA(
+            return ::methcla_boost::winapi::OpenEventA(
 #endif
-                ::boost::detail::win32::synchronize |
-                ::boost::detail::win32::event_modify_state,
+                ::methcla_boost::detail::win32::synchronize |
+                ::methcla_boost::detail::win32::event_modify_state,
                 false,
                 mutex_name);
         }
@@ -152,11 +154,11 @@ namespace boost
             {
                 name_once_mutex(mutex_name,flag_address);
             }
-            
-            return ::boost::detail::win32::create_event(
+
+            return ::methcla_boost::detail::win32::create_event(
                 mutex_name, 
-                ::boost::detail::win32::manual_reset_event,
-                ::boost::detail::win32::event_initially_reset);
+                ::methcla_boost::detail::win32::manual_reset_event,
+                ::methcla_boost::detail::win32::event_initially_reset);
         }
 
         struct once_context {
@@ -186,7 +188,7 @@ namespace boost
             }
             if(ctx.event_handle)
             {
-                ::boost::detail::win32::ResetEvent(ctx.event_handle);
+                ::methcla_boost::winapi::ResetEvent(ctx.event_handle);
             }
             return true;
           }
@@ -201,13 +203,13 @@ namespace boost
           }
           BOOST_INTERLOCKED_EXCHANGE(&flag.status,ctx.function_complete_flag_value);
           if(!ctx.event_handle &&
-             (::boost::detail::interlocked_read_acquire(&flag.count)>1))
+             (::methcla_boost::detail::interlocked_read_acquire(&flag.count)>1))
           {
               ctx.event_handle=detail::create_once_event(ctx.mutex_name,&flag);
           }
           if(ctx.event_handle)
           {
-              ::boost::detail::win32::SetEvent(ctx.event_handle);
+              ::methcla_boost::winapi::SetEvent(ctx.event_handle);
           }
         }
         inline void rollback_once_region(once_flag& flag, once_context& ctx) BOOST_NOEXCEPT
@@ -219,19 +221,19 @@ namespace boost
           }
           if(ctx.event_handle)
           {
-              ::boost::detail::win32::SetEvent(ctx.event_handle);
+              ::methcla_boost::winapi::SetEvent(ctx.event_handle);
           }
         }
     }
 
 #if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES) && !defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
-//#if defined(BOOST_THREAD_RVALUE_REFERENCES_DONT_MATCH_FUNTION_PTR)
+//#if defined(BOOST_THREAD_RVALUE_REFERENCES_DONT_MATCH_FUNCTION_PTR)
     inline void call_once(once_flag& flag, void (*f)())
     {
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -253,7 +255,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -264,8 +266,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite, 0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite, 0));
         }
     }
 //#endif
@@ -275,7 +277,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -297,7 +299,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -308,8 +310,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, class A, class ...ArgTypes>
@@ -318,7 +320,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -326,9 +328,9 @@ namespace boost
                 BOOST_TRY
                 {
                   BOOST_THREAD_INVOKE_RET_VOID(
-                        thread_detail::decay_copy(boost::forward<Function>(f)),
-                        thread_detail::decay_copy(boost::forward<A>(a)),
-                        thread_detail::decay_copy(boost::forward<ArgTypes>(args))...
+                        thread_detail::decay_copy(methcla_boost::forward<Function>(f)),
+                        thread_detail::decay_copy(methcla_boost::forward<A>(a)),
+                        thread_detail::decay_copy(methcla_boost::forward<ArgTypes>(args))...
                   ) BOOST_THREAD_INVOKE_RET_VOID_CALL;
                 }
                 BOOST_CATCH(...)
@@ -344,7 +346,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -355,8 +357,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
 #else
@@ -367,7 +369,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -389,7 +391,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -400,8 +402,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1>
@@ -410,7 +412,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -432,7 +434,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -443,8 +445,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2>
@@ -453,7 +455,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -475,7 +477,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -486,8 +488,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2, typename T3>
@@ -496,7 +498,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -518,7 +520,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -529,8 +531,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
 #elif defined BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -541,7 +543,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -563,7 +565,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -574,8 +576,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1>
@@ -584,7 +586,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -606,7 +608,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -617,8 +619,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2>
@@ -627,7 +629,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -649,7 +651,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -660,8 +662,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2, typename T3>
@@ -670,7 +672,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -692,7 +694,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -703,19 +705,19 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
 #endif
 #if 1
-#if defined(BOOST_THREAD_RVALUE_REFERENCES_DONT_MATCH_FUNTION_PTR)
+#if defined(BOOST_THREAD_RVALUE_REFERENCES_DONT_MATCH_FUNCTION_PTR)
         inline void call_once(once_flag& flag, void (*f)())
         {
             // Try for a quick win: if the procedure has already been called
             // just skip through:
             detail::once_context ctx;
-            while(::boost::detail::interlocked_read_acquire(&flag.status)
+            while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
                   !=ctx.function_complete_flag_value)
             {
                 if(detail::enter_once_region(flag, ctx))
@@ -737,7 +739,7 @@ namespace boost
                 {
                     BOOST_INTERLOCKED_INCREMENT(&flag.count);
                     ctx.counted=true;
-                    long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                    long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                     if(status==ctx.function_complete_flag_value)
                     {
                         break;
@@ -748,8 +750,8 @@ namespace boost
                         continue;
                     }
                 }
-                BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                                 ctx.event_handle,::boost::detail::win32::infinite,0));
+                BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                                 ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
             }
         }
         template<typename T1>
@@ -758,7 +760,7 @@ namespace boost
             // Try for a quick win: if the procedure has already been called
             // just skip through:
             detail::once_context ctx;
-            while(::boost::detail::interlocked_read_acquire(&flag.status)
+            while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
                   !=ctx.function_complete_flag_value)
             {
                 if(detail::enter_once_region(flag, ctx))
@@ -766,7 +768,7 @@ namespace boost
                     BOOST_TRY
                     {
                        f(
-                           thread_detail::decay_copy(boost::forward<T1>(p1))
+                           thread_detail::decay_copy(methcla_boost::forward<T1>(p1))
                        );
                     }
                     BOOST_CATCH(...)
@@ -782,7 +784,7 @@ namespace boost
                 {
                     BOOST_INTERLOCKED_INCREMENT(&flag.count);
                     ctx.counted=true;
-                    long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                    long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                     if(status==ctx.function_complete_flag_value)
                     {
                         break;
@@ -793,8 +795,8 @@ namespace boost
                         continue;
                     }
                 }
-                BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                                 ctx.event_handle,::boost::detail::win32::infinite,0));
+                BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                                 ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
             }
         }
         template<typename Function, typename T1, typename T2>
@@ -803,7 +805,7 @@ namespace boost
             // Try for a quick win: if the procedure has already been called
             // just skip through:
             detail::once_context ctx;
-            while(::boost::detail::interlocked_read_acquire(&flag.status)
+            while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
                   !=ctx.function_complete_flag_value)
             {
                 if(detail::enter_once_region(flag, ctx))
@@ -811,8 +813,8 @@ namespace boost
                     BOOST_TRY
                     {
                       f(
-                          thread_detail::decay_copy(boost::forward<T1>(p1)),
-                          thread_detail::decay_copy(boost::forward<T2>(p2))
+                          thread_detail::decay_copy(methcla_boost::forward<T1>(p1)),
+                          thread_detail::decay_copy(methcla_boost::forward<T2>(p2))
                       );
                     }
                     BOOST_CATCH(...)
@@ -828,7 +830,7 @@ namespace boost
                 {
                     BOOST_INTERLOCKED_INCREMENT(&flag.count);
                     ctx.counted=true;
-                    long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                    long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                     if(status==ctx.function_complete_flag_value)
                     {
                         break;
@@ -839,8 +841,8 @@ namespace boost
                         continue;
                     }
                 }
-                BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                                 ctx.event_handle,::boost::detail::win32::infinite,0));
+                BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                                 ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
             }
         }
         template<typename Function, typename T1, typename T2, typename T3>
@@ -849,7 +851,7 @@ namespace boost
             // Try for a quick win: if the procedure has already been called
             // just skip through:
             detail::once_context ctx;
-            while(::boost::detail::interlocked_read_acquire(&flag.status)
+            while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
                   !=ctx.function_complete_flag_value)
             {
                 if(detail::enter_once_region(flag, ctx))
@@ -857,9 +859,9 @@ namespace boost
                     BOOST_TRY
                     {
                       f(
-                          thread_detail::decay_copy(boost::forward<T1>(p1)),
-                          thread_detail::decay_copy(boost::forward<T2>(p2)),
-                          thread_detail::decay_copy(boost::forward<T3>(p3))
+                          thread_detail::decay_copy(methcla_boost::forward<T1>(p1)),
+                          thread_detail::decay_copy(methcla_boost::forward<T2>(p2)),
+                          thread_detail::decay_copy(methcla_boost::forward<T3>(p3))
                       );
                     }
                     BOOST_CATCH(...)
@@ -875,7 +877,7 @@ namespace boost
                 {
                     BOOST_INTERLOCKED_INCREMENT(&flag.count);
                     ctx.counted=true;
-                    long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                    long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                     if(status==ctx.function_complete_flag_value)
                     {
                         break;
@@ -886,8 +888,8 @@ namespace boost
                         continue;
                     }
                 }
-                BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                                 ctx.event_handle,::boost::detail::win32::infinite,0));
+                BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                                 ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
             }
         }
 #endif
@@ -897,7 +899,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -919,7 +921,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -930,8 +932,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
 
@@ -941,7 +943,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -949,8 +951,8 @@ namespace boost
                 BOOST_TRY
                 {
                   BOOST_THREAD_INVOKE_RET_VOID(
-                      thread_detail::decay_copy(boost::forward<Function>(f)),
-                      thread_detail::decay_copy(boost::forward<T1>(p1))
+                      thread_detail::decay_copy(methcla_boost::forward<Function>(f)),
+                      thread_detail::decay_copy(methcla_boost::forward<T1>(p1))
                   ) BOOST_THREAD_INVOKE_RET_VOID_CALL;
                 }
                 BOOST_CATCH(...)
@@ -966,7 +968,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -977,8 +979,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2>
@@ -987,7 +989,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -995,9 +997,9 @@ namespace boost
                 BOOST_TRY
                 {
                   BOOST_THREAD_INVOKE_RET_VOID(
-                      thread_detail::decay_copy(boost::forward<Function>(f)),
-                      thread_detail::decay_copy(boost::forward<T1>(p1)),
-                      thread_detail::decay_copy(boost::forward<T2>(p2))
+                      thread_detail::decay_copy(methcla_boost::forward<Function>(f)),
+                      thread_detail::decay_copy(methcla_boost::forward<T1>(p1)),
+                      thread_detail::decay_copy(methcla_boost::forward<T2>(p2))
                   ) BOOST_THREAD_INVOKE_RET_VOID_CALL;
                 }
                 BOOST_CATCH(...)
@@ -1013,7 +1015,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -1024,8 +1026,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
     template<typename Function, typename T1, typename T2, typename T3>
@@ -1034,7 +1036,7 @@ namespace boost
         // Try for a quick win: if the procedure has already been called
         // just skip through:
         detail::once_context ctx;
-        while(::boost::detail::interlocked_read_acquire(&flag.status)
+        while(::methcla_boost::detail::interlocked_read_acquire(&flag.status)
               !=ctx.function_complete_flag_value)
         {
             if(detail::enter_once_region(flag, ctx))
@@ -1042,10 +1044,10 @@ namespace boost
                 BOOST_TRY
                 {
                   BOOST_THREAD_INVOKE_RET_VOID(
-                      thread_detail::decay_copy(boost::forward<Function>(f)),
-                      thread_detail::decay_copy(boost::forward<T1>(p1)),
-                      thread_detail::decay_copy(boost::forward<T2>(p2)),
-                      thread_detail::decay_copy(boost::forward<T3>(p3))
+                      thread_detail::decay_copy(methcla_boost::forward<Function>(f)),
+                      thread_detail::decay_copy(methcla_boost::forward<T1>(p1)),
+                      thread_detail::decay_copy(methcla_boost::forward<T2>(p2)),
+                      thread_detail::decay_copy(methcla_boost::forward<T3>(p3))
                   ) BOOST_THREAD_INVOKE_RET_VOID_CALL;
 
                 }
@@ -1062,7 +1064,7 @@ namespace boost
             {
                 BOOST_INTERLOCKED_INCREMENT(&flag.count);
                 ctx.counted=true;
-                long status=::boost::detail::interlocked_read_acquire(&flag.status);
+                long status=::methcla_boost::detail::interlocked_read_acquire(&flag.status);
                 if(status==ctx.function_complete_flag_value)
                 {
                     break;
@@ -1073,8 +1075,8 @@ namespace boost
                     continue;
                 }
             }
-            BOOST_VERIFY(!::boost::detail::win32::WaitForSingleObjectEx(
-                             ctx.event_handle,::boost::detail::win32::infinite,0));
+            BOOST_VERIFY(!::methcla_boost::winapi::WaitForSingleObjectEx(
+                             ctx.event_handle,::methcla_boost::detail::win32::infinite,0));
         }
     }
 

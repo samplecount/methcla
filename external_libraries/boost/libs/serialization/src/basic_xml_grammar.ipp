@@ -21,6 +21,9 @@
 #  pragma warning(disable : 4244 4511 4512)
 #endif
 
+#include <cerrno>   // errno
+#include <cstring>  // strerror(errno)
+
 // spirit stuff
 #include <boost/spirit/include/classic_operators.hpp>
 #include <boost/spirit/include/classic_actions.hpp>
@@ -31,7 +34,6 @@
 #endif
 
 // for head_iterator test
-//#include <boost/bind.hpp> 
 #include <boost/function.hpp>
 
 #include <boost/io/ios_state.hpp>
@@ -41,9 +43,9 @@
 #include <boost/archive/basic_xml_archive.hpp>
 #include <boost/archive/iterators/xml_unescape.hpp>
 
-using namespace boost::spirit::classic;
+using namespace methcla_boost::spirit::classic;
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -58,52 +60,53 @@ namespace xml { // anonymous
 
 template<class T>
 struct assign_impl {
-    T & t;
-    void operator()(const T t_) const {
-        t = t_;
+    T & m_t;
+    void operator()(const T & rhs) const {
+        m_t = rhs;
     }
-    assign_impl(T &  t_)
-        : t(t_)
+    assign_impl(T &  rhs)
+        : m_t(rhs)
     {}
 };
 
 template<>
 struct assign_impl<std::string> {
-    std::string & t;
+    std::string & m_t;
     void operator()(
         std::string::const_iterator b, 
         std::string::const_iterator e
     ) const {
-        t.resize(0);
+        m_t.resize(0);
         while(b != e){
-            t += * b;
+            m_t += * b;
             ++b;
         }
     }
-    assign_impl<std::string> & operator=(
-        assign_impl<std::string> & rhs
-    );
-    assign_impl(std::string & t_)
-        : t(t_)
+    assign_impl(const assign_impl & rhs)
+        : m_t(rhs.m_t)
+    {}
+    assign_impl & operator=(assign_impl & rhs);
+    assign_impl(std::string & rhs)
+        : m_t(rhs)
     {}
 };
 
 #ifndef BOOST_NO_STD_WSTRING
 template<>
 struct assign_impl<std::wstring> {
-    std::wstring & t;
+    std::wstring & m_t;
     void operator()(
         std::wstring::const_iterator b, 
         std::wstring::const_iterator e
     ) const {
-        t.resize(0);
+        m_t.resize(0);
         while(b != e){
-            t += * b;
+            m_t += * b;
             ++b;
         }
     }
-    assign_impl(std::wstring & t_)
-        : t(t_)
+    assign_impl(std::wstring & rhs)
+        : m_t(rhs)
     {}
 };
 #endif
@@ -128,7 +131,7 @@ struct append_string {
     String & contents;
     void operator()(Iterator start, Iterator end) const {
     #if 0
-        typedef boost::archive::iterators::xml_unescape<Iterator> translator;
+        typedef methcla_boost::archive::iterators::xml_unescape<Iterator> translator;
         contents.append(
             translator(BOOST_MAKE_PFTO_WRAPPER(start)), 
             translator(BOOST_MAKE_PFTO_WRAPPER(end))
@@ -145,8 +148,7 @@ template<class String>
 struct append_char {
     String & contents;
     void operator()(const unsigned int char_value) const {
-        const typename String::value_type z = char_value;
-        contents += z;
+        contents += static_cast<typename String::value_type>(char_value);
     }
     append_char(String & contents_)
         : contents(contents_)
@@ -179,34 +181,38 @@ bool basic_xml_grammar<CharType>::my_parse(
     CharType delimiter
 ) const {
     if(is.fail()){
-        boost::serialization::throw_exception(
-            archive_exception(archive_exception::input_stream_error)
-        );
+        return false;
     }
     
-    boost::io::ios_flags_saver ifs(is);
     is >> std::noskipws;
 
     std::basic_string<CharType> arg;
     
-    CharType val;
-    do{
-        typename basic_xml_grammar<CharType>::IStream::int_type
-            result = is.get();
-        if(is.fail())
+    for(;;){
+        CharType result;
+        is.get(result);
+        if(is.fail()){
+            methcla_boost::serialization::throw_exception(
+                methcla_boost::archive::archive_exception(
+                    archive_exception::input_stream_error,
+                    std::strerror(errno)
+                )
+            );
+        }
+        if(is.eof())
             return false;
-        val = static_cast<CharType>(result);
-        arg += val;
+        arg += result;
+        if(result == delimiter)
+            break;
     }
-    while(val != delimiter);
-    
+
     // read just one more character.  This will be the newline after the tag
     // this is so that the next operation will return fail if the archive
     // is terminated.  This will permit the archive to be used for debug
     // and transaction data logging in the standard way.
     
     parse_info<typename std::basic_string<CharType>::iterator> 
-        result = boost::spirit::classic::parse(arg.begin(), arg.end(), rule_);
+        result = methcla_boost::spirit::classic::parse(arg.begin(), arg.end(), rule_);
     return result.hit;
 }
 
@@ -229,7 +235,7 @@ bool basic_xml_grammar<CharType>::parse_string(IStream & is, StringType & s){
     bool result = my_parse(is, content, '<');
     // note: unget caused a problem with dinkumware.  replace with
  // is.unget();
-    // putback another dilimiter instead
+    // putback another delimiter instead
     is.putback('<');
     if(result)
         s = rv.contents;
@@ -437,31 +443,27 @@ template<class CharType>
 void basic_xml_grammar<CharType>::init(IStream & is){
     init_chset();
     if(! my_parse(is, XMLDecl))
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     if(! my_parse(is, DocTypeDecl))
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     if(! my_parse(is, SerializationWrapper))
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             xml_archive_exception(xml_archive_exception::xml_archive_parsing_error)
         );
     if(! std::equal(rv.class_name.begin(), rv.class_name.end(), BOOST_ARCHIVE_SIGNATURE()))
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::invalid_signature)
         );
 }
 
 template<class CharType>
-void basic_xml_grammar<CharType>::windup(IStream & is){
-    if(is.fail() || is.eof())
-        return;
-    // uh-oh - don't throw exception from code called by a destructor !
-    // so just ignore any failure.
-    my_parse(is, ETag);
+bool basic_xml_grammar<CharType>::windup(IStream & is) {
+    return my_parse(is, ETag);
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

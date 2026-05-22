@@ -13,7 +13,7 @@
 
 #include <boost/chrono/duration.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   namespace chrono
   {
@@ -31,6 +31,6 @@ namespace boost
     }
 
   } // namespace chrono
-} // namespace boost
+} // namespace methcla_boost
 
 #endif

@@ -10,7 +10,7 @@
 // serialization/utility.hpp:
 // serialization for stl utility templates
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -25,7 +25,7 @@
 #include <boost/serialization/is_bitwise_serializable.hpp>
 #include <boost/mpl/and.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
 
 // pair
@@ -35,12 +35,12 @@ inline void serialize(
     std::pair<F, S> & p,
     const unsigned int /* file_version */
 ){
-    // note: we remove any const-ness on the first argument.  The reason is that 
+    // note: we remove any const-ness on the first argument.  The reason is that
     // for stl maps, the type saved is pair<const key, T).  We remove
     // the const-ness in order to be able to load it.
-    typedef typename boost::remove_const<F>::type typef;
-    ar & boost::serialization::make_nvp("first", const_cast<typef &>(p.first));
-    ar & boost::serialization::make_nvp("second", p.second);
+    typedef typename methcla_boost::remove_const<F>::type typef;
+    ar & methcla_boost::serialization::make_nvp("first", const_cast<typef &>(p.first));
+    ar & methcla_boost::serialization::make_nvp("second", p.second);
 }
 
 /// specialization of is_bitwise_serializable for pairs
@@ -51,6 +51,6 @@ struct is_bitwise_serializable<std::pair<T,U> >
 };
 
 } // serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_SERIALIZATION_UTILITY_HPP

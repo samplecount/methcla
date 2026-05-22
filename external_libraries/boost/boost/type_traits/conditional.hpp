@@ -9,12 +9,20 @@
 #ifndef BOOST_TT_CONDITIONAL_HPP_INCLUDED
 #define BOOST_TT_CONDITIONAL_HPP_INCLUDED
 
-namespace boost {
+#include <boost/config.hpp>
+
+namespace methcla_boost {
 
 template <bool b, class T, class U> struct conditional { typedef T type; };
 template <class T, class U> struct conditional<false, T, U> { typedef U type; };
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <bool b, class T, class U> using conditional_t = typename conditional<b, T, U>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 
 #endif // BOOST_TT_CONDITIONAL_HPP_INCLUDED

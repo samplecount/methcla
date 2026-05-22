@@ -23,7 +23,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/nvp.hpp>
 
-namespace boost{
+namespace methcla_boost{
 namespace serialization{
 
 template <class Archive, std::size_t size>
@@ -57,7 +57,7 @@ inline void serialize(
     std::bitset<size> & t,
     const unsigned int version
 ){
-    boost::serialization::split_free( ar, t, version );
+    methcla_boost::serialization::split_free( ar, t, version );
 }
 
 // don't track bitsets since that would trigger tracking

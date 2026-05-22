@@ -23,6 +23,8 @@
 #include <boost/mpl/bool.hpp>
 #include <boost/type_traits/is_floating_point.hpp>
 #include <boost/type_traits/is_array.hpp>
+#include <boost/type_traits/is_reference.hpp>
+#include <boost/type_traits/is_void.hpp>
 #include <boost/type_traits/conditional.hpp>
 #include <boost/utility/enable_if.hpp>
 
@@ -33,7 +35,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace math {
 namespace fpc {
 
@@ -50,6 +52,23 @@ struct tolerance_based_delegate;
 template <typename T>
 struct tolerance_based_delegate<T, false> : mpl::false_ {};
 
+// from https://stackoverflow.com/a/16509511/1617295
+template<typename T>
+class is_abstract_class_or_function
+{
+    typedef char (&Two)[2];
+    template<typename U> static char test(U(*)[1]);
+    template<typename U> static Two test(...);
+
+public:
+    static const bool value =
+           !is_reference<T>::value
+        && !is_void<T>::value
+        && (sizeof(test<T>(0)) == sizeof(Two));
+};
+
+// warning: we cannot instanciate std::numeric_limits for incomplete types, we use is_abstract_class_or_function
+// prior to the specialization below
 template <typename T>
 struct tolerance_based_delegate<T, true>
 : mpl::bool_<
@@ -68,7 +87,7 @@ struct tolerance_based_delegate<T, true>
  * floating point (eg. boost.multiprecision).
  */
 template <typename T>
-struct tolerance_based : tolerance_based_delegate<T, !is_array<T>::value >::type {};
+struct tolerance_based : tolerance_based_delegate<T, !is_array<T>::value && !is_abstract_class_or_function<T>::value>::type {};
 
 // ************************************************************************** //
 // **************                 fpc::strength                ************** //
@@ -142,7 +161,7 @@ struct fpt_non_specialized_limits
 };
 
 template<typename FPT>
-struct fpt_limits : boost::conditional<std::numeric_limits<FPT>::is_specialized,
+struct fpt_limits : methcla_boost::conditional<std::numeric_limits<FPT>::is_specialized,
                                        fpt_specialized_limits<FPT>,
                                        fpt_non_specialized_limits<FPT>
                                       >::type
@@ -160,7 +179,7 @@ safe_fpt_division( FPT f1, FPT f2 )
         return fpt_limits<FPT>::max_value();
 
     // Avoid underflow.
-    if( (f1 == static_cast<FPT>(0)) ||
+    if( (fpt_abs(f1) <= fpt_limits<FPT>::min_value()) ||
         ((f2 > static_cast<FPT>(1)) && (f1 < f2*fpt_limits<FPT>::min_value())) )
         return static_cast<FPT>(0);
 
@@ -197,9 +216,11 @@ fraction_tolerance( percent_tolerance_t<FPT> tolerance )
 /*!@brief Predicate for comparing floating point numbers
  *
  * This predicate is used to compare floating point numbers. In addition the comparison produces maximum 
- * related differnce, which can be used to generate detailed error message
+ * related difference, which can be used to generate detailed error message
  * The methods for comparing floating points are detailed in the documentation. The method is chosen
- * by the @ref boost::math::fpc::strength given at construction.
+ * by the @ref methcla_boost::math::fpc::strength given at construction.
+ *
+ * This predicate is not suitable for comparing to 0 or to infinity.
  */
 template<typename FPT>
 class close_at_tolerance {
@@ -266,7 +287,7 @@ private:
 
 /*!@brief Predicate for comparing floating point numbers against 0
  *
- * Serves the same purpose as boost::math::fpc::close_at_tolerance, but used when one
+ * Serves the same purpose as methcla_boost::math::fpc::close_at_tolerance, but used when one
  * of the operand is null. 
  */
 template<typename FPT>
@@ -308,7 +329,7 @@ is_small( FPT fpv, FPT tolerance )
 
 } // namespace fpc
 } // namespace math
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

@@ -11,7 +11,7 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   template <typename Lockable>
   class testable_mutex;

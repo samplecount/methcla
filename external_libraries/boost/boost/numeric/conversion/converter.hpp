@@ -15,7 +15,7 @@
 
 #include "boost/numeric/conversion/detail/converter.hpp"
 
-namespace boost { namespace numeric 
+namespace methcla_boost { namespace numeric 
 {
 
 template<class T,
@@ -61,7 +61,7 @@ struct make_converter_from
 
 } ;
 
-} } // namespace boost::numeric
+} } // namespace methcla_boost::numeric
 
 #endif
 

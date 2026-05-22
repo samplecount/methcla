@@ -29,7 +29,7 @@
 //!\file
 //!Describes the functor to delete objects from the segment.
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
 //!A deleter that uses the segment manager's destroy_ptr
@@ -40,19 +40,19 @@ template<class T, class SegmentManager>
 class deleter
 {
    public:
-   typedef typename boost::intrusive::
+   typedef typename methcla_boost::intrusive::
       pointer_traits<typename SegmentManager::void_pointer>::template
          rebind_pointer<T>::type                pointer;
 
    private:
-   typedef typename boost::intrusive::
+   typedef typename methcla_boost::intrusive::
       pointer_traits<pointer>::template
          rebind_pointer<SegmentManager>::type                segment_manager_pointer;
 
    segment_manager_pointer mp_mngr;
 
    public:
-   deleter(segment_manager_pointer pmngr)
+   deleter(segment_manager_pointer pmngr) BOOST_NOEXCEPT
       :  mp_mngr(pmngr)
    {}
 
@@ -61,7 +61,7 @@ class deleter
 };
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

@@ -12,7 +12,7 @@
 #include <boost/detail/workaround.hpp>
 #include <boost/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 namespace detail {
 
@@ -39,7 +39,7 @@ struct add_reference_impl<T&&>
 
 template <class T> struct add_reference
 {
-   typedef typename boost::detail::add_reference_impl<T>::type type;
+   typedef typename methcla_boost::detail::add_reference_impl<T>::type type;
 };
 template <class T> struct add_reference<T&>
 {
@@ -49,11 +49,18 @@ template <class T> struct add_reference<T&>
 // these full specialisations are always required:
 template <> struct add_reference<void> { typedef void type; };
 #ifndef BOOST_NO_CV_VOID_SPECIALIZATIONS
-template <> struct add_reference<const void> { typedef void type; };
-template <> struct add_reference<const volatile void> { typedef void type; };
-template <> struct add_reference<volatile void> { typedef void type; };
+template <> struct add_reference<const void> { typedef const void type; };
+template <> struct add_reference<const volatile void> { typedef const volatile void type; };
+template <> struct add_reference<volatile void> { typedef volatile void type; };
 #endif
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+template <class T> using add_reference_t = typename add_reference<T>::type;
+
+#endif
+
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_ADD_REFERENCE_HPP_INCLUDED

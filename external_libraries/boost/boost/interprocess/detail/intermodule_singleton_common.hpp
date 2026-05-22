@@ -34,9 +34,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <typeinfo>
 #include <sstream>
 
-namespace boost{
+namespace methcla_boost{
 namespace interprocess{
 namespace ipcdetail{
 
@@ -46,8 +47,10 @@ inline void get_pid_creation_time_str(std::string &s)
 {
    std::stringstream stream;
    stream << get_current_process_id() << '_';
-   stream.precision(6);
-   stream << std::fixed << get_current_process_creation_time();
+   const unsigned long long total_microsecs = get_current_process_creation_time();
+   const unsigned long secs  = static_cast<unsigned long>(total_microsecs/1000000ul);
+   const unsigned long usecs = static_cast<unsigned long>(total_microsecs%1000000ul);
+   stream << secs << '.' << usecs;
    s = stream.str();
 }
 
@@ -78,11 +81,11 @@ class intermodule_singleton_common
    typedef void*(singleton_constructor_t)(ThreadSafeGlobalMap &);
    typedef void (singleton_destructor_t)(void *, ThreadSafeGlobalMap &);
 
-   static const ::boost::uint32_t Uninitialized       = 0u;
-   static const ::boost::uint32_t Initializing        = 1u;
-   static const ::boost::uint32_t Initialized         = 2u;
-   static const ::boost::uint32_t Broken              = 3u;
-   static const ::boost::uint32_t Destroyed           = 4u;
+   static const ::methcla_boost::uint32_t Uninitialized       = 0u;
+   static const ::methcla_boost::uint32_t Initializing        = 1u;
+   static const ::methcla_boost::uint32_t Initialized         = 2u;
+   static const ::methcla_boost::uint32_t Broken              = 3u;
+   static const ::methcla_boost::uint32_t Destroyed           = 4u;
 
    //Initialize this_module_singleton_ptr, creates the global map if needed and also creates an unique
    //opaque type in global map through a singleton_constructor_t function call,
@@ -96,13 +99,13 @@ class intermodule_singleton_common
    //All static variables declared here are shared between inside a module
    //so atomic operations will synchronize only threads of the same module.
    static void initialize_singleton_logic
-      (void *&ptr, volatile boost::uint32_t &this_module_singleton_initialized, singleton_constructor_t constructor, bool phoenix)
+      (void *&ptr, volatile methcla_boost::uint32_t &this_module_singleton_initialized, singleton_constructor_t constructor, bool phoenix)
    {
       //If current module is not initialized enter to lock free logic
       if(atomic_read32(&this_module_singleton_initialized) != Initialized){
          //Now a single thread of the module will succeed in this CAS.
          //trying to pass from Uninitialized to Initializing
-         ::boost::uint32_t previous_module_singleton_initialized = atomic_cas32
+         ::methcla_boost::uint32_t previous_module_singleton_initialized = atomic_cas32
             (&this_module_singleton_initialized, Initializing, Uninitialized);
          //If the thread succeeded the CAS (winner) it will compete with other
          //winner threads from other modules to create the global map
@@ -120,7 +123,7 @@ class intermodule_singleton_common
             }
          }
          if(previous_module_singleton_initialized == Uninitialized){
-            try{
+            BOOST_INTERPROCESS_TRY{
                //Now initialize the global map, this function must solve concurrency
                //issues between threads of several modules
                initialize_global_map_handle();
@@ -142,11 +145,11 @@ class intermodule_singleton_common
                //before this one. Now marked as initialized
                atomic_write32(&this_module_singleton_initialized, Initialized);
             }
-            catch(...){
+            BOOST_INTERPROCESS_CATCH(...){
                //Mark singleton failed to initialize
                atomic_write32(&this_module_singleton_initialized, Broken);
-               throw;
-            }
+               BOOST_INTERPROCESS_RETHROW
+            } BOOST_INTERPROCESS_CATCH_END
          }
          //If previous state was initializing, this means that another winner thread is
          //trying to initialize the singleton. Just wait until completes its work.
@@ -173,13 +176,13 @@ class intermodule_singleton_common
          //If previous state was greater than initialized, then memory is broken
          //trying to initialize the singleton.
          else{//(previous_module_singleton_initialized > Initialized)
-            throw interprocess_exception("boost::interprocess::intermodule_singleton initialization failed");
+            throw interprocess_exception("methcla_boost::interprocess::intermodule_singleton initialization failed");
          }
       }
       BOOST_ASSERT(ptr != 0);
    }
 
-   static void finalize_singleton_logic(void *&ptr, volatile boost::uint32_t &this_module_singleton_initialized, singleton_destructor_t destructor)
+   static void finalize_singleton_logic(void *&ptr, volatile methcla_boost::uint32_t &this_module_singleton_initialized, singleton_destructor_t destructor)
    {
       //Protect destruction against lazy singletons not initialized in this execution
       if(ptr){
@@ -217,7 +220,7 @@ class intermodule_singleton_common
       spin_wait swait;
       while(1){
          //Try to pass map state to initializing
-         ::boost::uint32_t tmp = atomic_cas32(&this_module_map_initialized, Initializing, Uninitialized);
+         ::methcla_boost::uint32_t tmp = atomic_cas32(&this_module_map_initialized, Initializing, Uninitialized);
          if(tmp == Initialized || tmp == Broken){
             break;
          }
@@ -231,7 +234,7 @@ class intermodule_singleton_common
          }
          else{ //(tmp == Uninitialized)
             //If not initialized try it again?
-            try{
+            BOOST_INTERPROCESS_TRY{
                //Remove old global map from the system
                intermodule_singleton_helpers::thread_safe_global_map_dependant<ThreadSafeGlobalMap>::remove_old_gmem();
                //in-place construction of the global map class
@@ -254,10 +257,10 @@ class intermodule_singleton_common
                   break;
                }
             }
-            catch(...){
+            BOOST_INTERPROCESS_CATCH(...){
                //
-               throw;
-            }
+               BOOST_INTERPROCESS_RETHROW
+            } BOOST_INTERPROCESS_CATCH_END
          }
       }
    }
@@ -280,25 +283,25 @@ class intermodule_singleton_common
 
    //Static data, zero-initalized without any dependencies
    //this_module_singleton_count is the number of singletons used by this module
-   static volatile boost::uint32_t this_module_singleton_count;
+   static volatile methcla_boost::uint32_t this_module_singleton_count;
 
    //this_module_map_initialized is the state of this module's map class object.
    //Values: Uninitialized, Initializing, Initialized, Broken
-   static volatile boost::uint32_t this_module_map_initialized;
+   static volatile methcla_boost::uint32_t this_module_map_initialized;
 
    //Raw memory to construct the global map manager
    static union mem_holder_t
    {
       unsigned char map_mem [sizeof(ThreadSafeGlobalMap)];
-      ::boost::container::container_detail::max_align_t aligner;
+      ::methcla_boost::container::dtl::max_align_t aligner;
    } mem_holder;
 };
 
 template<class ThreadSafeGlobalMap>
-volatile boost::uint32_t intermodule_singleton_common<ThreadSafeGlobalMap>::this_module_singleton_count;
+volatile methcla_boost::uint32_t intermodule_singleton_common<ThreadSafeGlobalMap>::this_module_singleton_count;
 
 template<class ThreadSafeGlobalMap>
-volatile boost::uint32_t intermodule_singleton_common<ThreadSafeGlobalMap>::this_module_map_initialized;
+volatile methcla_boost::uint32_t intermodule_singleton_common<ThreadSafeGlobalMap>::this_module_map_initialized;
 
 template<class ThreadSafeGlobalMap>
 typename intermodule_singleton_common<ThreadSafeGlobalMap>::mem_holder_t
@@ -309,13 +312,13 @@ typename intermodule_singleton_common<ThreadSafeGlobalMap>::mem_holder_t
 //the internal ptr.
 struct ref_count_ptr
 {
-   ref_count_ptr(void *p, boost::uint32_t count)
+   ref_count_ptr(void *p, methcla_boost::uint32_t count)
       : ptr(p), singleton_ref_count(count)
    {}
    void *ptr;
    //This reference count serves to count the number of attached
    //modules to this singleton
-   volatile boost::uint32_t singleton_ref_count;
+   volatile methcla_boost::uint32_t singleton_ref_count;
 };
 
 
@@ -358,7 +361,7 @@ class intermodule_singleton_impl
    //this_module_singleton_count will be used to synchronize threads of the same module
    //for access to a singleton instance, and to flag the state of the
    //singleton.
-   static volatile boost::uint32_t   this_module_singleton_initialized;
+   static volatile methcla_boost::uint32_t   this_module_singleton_initialized;
 
    //This class destructor will trigger singleton destruction
    struct lifetime_type_lazy
@@ -405,20 +408,20 @@ class intermodule_singleton_impl
             <ThreadSafeGlobalMap>::find(m_map, typeid(C).name());
          if(!rcount){
             C *p = new C;
-            try{
+            BOOST_INTERPROCESS_TRY{
                ref_count_ptr val(p, 0u);
                rcount = intermodule_singleton_helpers::thread_safe_global_map_dependant
                            <ThreadSafeGlobalMap>::insert(m_map, typeid(C).name(), val);
             }
-            catch(...){
+            BOOST_INTERPROCESS_CATCH(...){
                intermodule_singleton_helpers::thread_safe_global_map_dependant
                            <ThreadSafeGlobalMap>::erase(m_map, typeid(C).name());
                delete p;
-               throw;
-            }
+               BOOST_INTERPROCESS_RETHROW
+            } BOOST_INTERPROCESS_CATCH_END
          }
          //if(Phoenix){
-            std::atexit(&atexit_work);
+            BOOST_INTERPROCESS_ATEXIT(&atexit_work);
          //}
          atomic_inc32(&rcount->singleton_ref_count);
          ret_ptr = rcount->ptr;
@@ -489,7 +492,7 @@ template <typename C, bool L, bool P, class ThreadSafeGlobalMap>
 void *intermodule_singleton_impl<C, L, P, ThreadSafeGlobalMap>::this_module_singleton_ptr = 0;
 
 template <typename C, bool L, bool P, class ThreadSafeGlobalMap>
-volatile boost::uint32_t intermodule_singleton_impl<C, L, P, ThreadSafeGlobalMap>::this_module_singleton_initialized = 0;
+volatile methcla_boost::uint32_t intermodule_singleton_impl<C, L, P, ThreadSafeGlobalMap>::this_module_singleton_initialized = 0;
 
 template <typename C, bool L, bool P, class ThreadSafeGlobalMap>
 typename intermodule_singleton_impl<C, L, P, ThreadSafeGlobalMap>::lifetime_type
@@ -497,7 +500,7 @@ typename intermodule_singleton_impl<C, L, P, ThreadSafeGlobalMap>::lifetime_type
 
 }  //namespace ipcdetail{
 }  //namespace interprocess{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #include <boost/interprocess/detail/config_end.hpp>
 

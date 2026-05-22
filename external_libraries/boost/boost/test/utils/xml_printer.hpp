@@ -16,6 +16,7 @@
 #define BOOST_TEST_UTILS_XML_PRINTER_HPP
 
 // Boost.Test
+#include <boost/test/detail/global_typedef.hpp>
 #include <boost/test/utils/basic_cstring/basic_cstring.hpp>
 #include <boost/test/utils/custom_manip.hpp>
 #include <boost/test/utils/foreach.hpp>
@@ -26,12 +27,13 @@
 
 // STL
 #include <iostream>
+#include <map>
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace utils {
 
@@ -136,7 +138,7 @@ operator<<( custom_printer<cdata> const& p, const_string value )
 
 } // namespace utils
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

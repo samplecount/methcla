@@ -14,6 +14,7 @@
 #else
 
 #define BOOST_WARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/text_woarchive.hpp>
 #include <boost/archive/detail/archive_serializer_map.hpp>
 
@@ -22,7 +23,7 @@
 #include <boost/archive/impl/basic_text_oarchive.ipp>
 #include <boost/archive/impl/text_woarchive_impl.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 template class detail::archive_serializer_map<text_woarchive>;
@@ -30,6 +31,6 @@ template class basic_text_oarchive<text_woarchive> ;
 template class text_woarchive_impl<text_woarchive> ;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_NO_STD_WSTREAMBUF

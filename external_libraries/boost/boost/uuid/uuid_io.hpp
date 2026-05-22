@@ -1,198 +1,163 @@
-// Boost uuid_io.hpp header file  ----------------------------------------------//
+#ifndef BOOST_UUID_UUID_IO_HPP_INCLUDED
+#define BOOST_UUID_UUID_IO_HPP_INCLUDED
 
-// Copyright 2009 Andy Tompkins.
-// Distributed under the Boost Software License, Version 1.0. (See
-// accompanying file LICENSE_1_0.txt or copy at
-// http://www.boost.org/LICENSE_1_0.txt)
-
-// Revision History
-//  20 Mar 2009 - Initial Revision
-//  28 Nov 2009 - disabled deprecated warnings for MSVC
-
-#ifndef BOOST_UUID_IO_HPP
-#define BOOST_UUID_IO_HPP
+// Copyright 2009 Andy Tompkins
+// Copyright 2024 Peter Dimov
+// Distributed under the Boost Software License, Version 1.0.
+// https://www.boost.org/LICENSE_1_0.txt
 
 #include <boost/uuid/uuid.hpp>
+#include <boost/uuid/detail/to_chars.hpp>
+#include <boost/uuid/detail/from_chars.hpp>
+#include <boost/uuid/detail/static_assert.hpp>
+#include <boost/uuid/detail/uuid_from_string.hpp>
+#include <boost/config.hpp>
+#include <iosfwd>
 #include <ios>
-#include <ostream>
-#include <istream>
-#include <boost/io/ios_state.hpp>
-#include <locale>
-#include <algorithm>
+#include <iterator>
+#include <string>
+#include <cstddef>
 
-#if defined(_MSC_VER)
-#pragma warning(push) // Save warning settings.
-#pragma warning(disable : 4996) // Disable deprecated std::ctype<char>::widen, std::copy
-#endif
-
-namespace boost {
+namespace methcla_boost {
 namespace uuids {
 
-template <typename ch, typename char_traits>
-    std::basic_ostream<ch, char_traits>& operator<<(std::basic_ostream<ch, char_traits> &os, uuid const& u)
+// to_chars
+
+namespace detail
 {
-    io::ios_flags_saver flags_saver(os);
-    io::basic_ios_fill_saver<ch, char_traits> fill_saver(os);
 
-    const typename std::basic_ostream<ch, char_traits>::sentry ok(os);
-    if (ok) {
-        const std::streamsize width = os.width(0);
-        const std::streamsize uuid_width = 36;
-        const std::ios_base::fmtflags flags = os.flags();
-        const typename std::basic_ios<ch, char_traits>::char_type fill = os.fill();
-        if (flags & (std::ios_base::right | std::ios_base::internal)) {
-            for (std::streamsize i=uuid_width; i<width; i++) {
-                os << fill;
-            }
-        }
-
-        os << std::hex;
-        os.fill(os.widen('0'));
-
-        std::size_t i=0;
-        for (uuid::const_iterator i_data = u.begin(); i_data!=u.end(); ++i_data, ++i) {
-            os.width(2);
-            os << static_cast<unsigned int>(*i_data);
-            if (i == 3 || i == 5 || i == 7 || i == 9) {
-                os << os.widen('-');
-            }
-        }
-        
-        if (flags & std::ios_base::left) {
-            for (std::streamsize s=uuid_width; s<width; s++) {
-                os << fill;
-            }
-        }
-        
-        os.width(0); //used the width so reset it
-    }
-    return os;
-}
-
-template <typename ch, typename char_traits>
-    std::basic_istream<ch, char_traits>& operator>>(std::basic_istream<ch, char_traits> &is, uuid &u)
+template<class Vt> struct output_value_type
 {
-    const typename std::basic_istream<ch, char_traits>::sentry ok(is);
-    if (ok) {
-        unsigned char data[16];
+    using type = char;
+};
 
-        typedef std::ctype<ch> ctype_t;
-        ctype_t const& ctype = std::use_facet<ctype_t>(is.getloc());
+template<> struct output_value_type<wchar_t>
+{
+    using type = wchar_t;
+};
 
-        ch xdigits[16];
-        {
-            char szdigits[] = "0123456789ABCDEF";
-            ctype.widen(szdigits, szdigits+16, xdigits);
-        }
-        ch*const xdigits_end = xdigits+16;
+template<> struct output_value_type<char16_t>
+{
+    using type = char16_t;
+};
 
-        ch c;
-        for (std::size_t i=0; i<u.size() && is; ++i) {
-            is >> c;
-            c = ctype.toupper(c);
+template<> struct output_value_type<char32_t>
+{
+    using type = char32_t;
+};
 
-            ch* f = std::find(xdigits, xdigits_end, c);
-            if (f == xdigits_end) {
-                is.setstate(std::ios_base::failbit);
-                break;
-            }
+#if defined(__cpp_char8_t) && __cpp_char8_t >= 201811L
 
-            unsigned char byte = static_cast<unsigned char>(std::distance(&xdigits[0], f));
+template<> struct output_value_type<char8_t>
+{
+    using type = char8_t;
+};
 
-            is >> c;
-            c = ctype.toupper(c);
-            f = std::find(xdigits, xdigits_end, c);
-            if (f == xdigits_end) {
-                is.setstate(std::ios_base::failbit);
-                break;
-            }
-
-            byte <<= 4;
-            byte |= static_cast<unsigned char>(std::distance(&xdigits[0], f));
-
-            data[i] = byte;
-
-            if (is) {
-                if (i == 3 || i == 5 || i == 7 || i == 9) {
-                    is >> c;
-                    if (c != is.widen('-')) is.setstate(std::ios_base::failbit);
-                }
-            }
-        }
-
-        if (is) {
-            std::copy(data, data+16, u.begin());
-        }
-    }
-    return is;
-}
-
-namespace detail {
-inline char to_char(size_t i) {
-    if (i <= 9) {
-        return static_cast<char>('0' + i);
-    } else {
-        return static_cast<char>('a' + (i-10));
-    }
-}
-
-inline wchar_t to_wchar(size_t i) {
-    if (i <= 9) {
-        return static_cast<wchar_t>(L'0' + i);
-    } else {
-        return static_cast<wchar_t>(L'a' + (i-10));
-    }
-}
+#endif
 
 } // namespace detail
 
-inline std::string to_string(uuid const& u)
+template<class OutputIterator,
+    class Vt = typename std::iterator_traits<OutputIterator>::value_type
+>
+BOOST_CXX14_CONSTEXPR OutputIterator to_chars( uuid const& u, OutputIterator out )
 {
-    std::string result;
-    result.reserve(36);
+    using Ch = typename detail::output_value_type<Vt>::type;
 
-    std::size_t i=0;
-    for (uuid::const_iterator it_data = u.begin(); it_data!=u.end(); ++it_data, ++i) {
-        const size_t hi = ((*it_data) >> 4) & 0x0F;
-        result += detail::to_char(hi);
+    alignas( 16 ) Ch tmp[ 36 ] = {};
+    detail::to_chars( u, tmp );
 
-        const size_t lo = (*it_data) & 0x0F;
-        result += detail::to_char(lo);
+    for( std::size_t i = 0; i < 36; ++i )
+    {
+        *out++ = tmp[ i ];
+    }
 
-        if (i == 3 || i == 5 || i == 7 || i == 9) {
-            result += '-';
+    return out;
+}
+
+template<class Ch>
+BOOST_CXX14_CONSTEXPR inline bool to_chars( uuid const& u, Ch* first, Ch* last ) noexcept
+{
+    if( last - first < 36 )
+    {
+        return false;
+    }
+
+    detail::to_chars( u, first );
+    return true;
+}
+
+template<class Ch, std::size_t N>
+BOOST_CXX14_CONSTEXPR inline Ch* to_chars( uuid const& u, Ch (&buffer)[ N ] ) noexcept
+{
+    BOOST_UUID_STATIC_ASSERT( N >= 37 );
+
+    detail::to_chars( u, buffer + 0 );
+    buffer[ 36 ] = 0;
+
+    return buffer + 36;
+}
+
+// only provided for compatibility; deprecated
+template<class Ch>
+BOOST_DEPRECATED( "Use Ch[37] instead of Ch[36] to allow for the null terminator" )
+BOOST_CXX14_CONSTEXPR inline Ch* to_chars( uuid const& u, Ch (&buffer)[ 36 ] ) noexcept
+{
+    detail::to_chars( u, buffer + 0 );
+    return buffer + 36;
+}
+
+// operator<<
+
+template<class Ch, class Traits>
+std::basic_ostream<Ch, Traits>& operator<<( std::basic_ostream<Ch, Traits>& os, uuid const& u )
+{
+    alignas( 16 ) Ch tmp[ 37 ];
+    to_chars( u, tmp );
+
+    os << tmp;
+    return os;
+}
+
+// operator>>
+
+template<class Ch, class Traits>
+std::basic_istream<Ch, Traits>& operator>>( std::basic_istream<Ch, Traits>& is, uuid& u )
+{
+    alignas( 16 ) Ch tmp[ 37 ] = {};
+
+    is.width( 37 ); // required for pre-C++20
+
+    if( is >> tmp )
+    {
+        if( !from_chars( tmp, tmp + 36, u ) )
+        {
+            is.setstate( std::ios_base::failbit );
         }
     }
+
+    return is;
+}
+
+// to_string
+
+inline std::string to_string( uuid const& u )
+{
+    std::string result( 36, char() );
+
+    // string::data() returns const char* before C++17
+    detail::to_chars( u, &result[0] );
     return result;
 }
 
-#ifndef BOOST_NO_STD_WSTRING
-inline std::wstring to_wstring(uuid const& u)
+inline std::wstring to_wstring( uuid const& u )
 {
-    std::wstring result;
-    result.reserve(36);
+    std::wstring result( 36, wchar_t() );
 
-    std::size_t i=0;
-    for (uuid::const_iterator it_data = u.begin(); it_data!=u.end(); ++it_data, ++i) {
-        const size_t hi = ((*it_data) >> 4) & 0x0F;
-        result += detail::to_wchar(hi);
-
-        const size_t lo = (*it_data) & 0x0F;
-        result += detail::to_wchar(lo);
-
-        if (i == 3 || i == 5 || i == 7 || i == 9) {
-            result += L'-';
-        }
-    }
+    detail::to_chars( u, &result[0] );
     return result;
 }
 
-#endif
+}} //namespace methcla_boost::uuids
 
-}} //namespace boost::uuids
-
-#if defined(_MSC_VER)
-#pragma warning(pop) // Restore warnings to previous state.
-#endif
-
-#endif // BOOST_UUID_IO_HPP
+#endif // BOOST_UUID_UUID_IO_HPP_INCLUDED

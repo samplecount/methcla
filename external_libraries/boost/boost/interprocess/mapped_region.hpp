@@ -47,7 +47,6 @@
 
 #if defined (BOOST_INTERPROCESS_WINDOWS)
 #  include <boost/interprocess/detail/win32_api.hpp>
-#  include <boost/interprocess/sync/windows/sync_utils.hpp>
 #else
 #  ifdef BOOST_HAS_UNISTD_H
 #    include <fcntl.h>
@@ -68,7 +67,7 @@
 //!\file
 //!Describes mapped region class
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
@@ -103,6 +102,13 @@ class mapped_region
    //!offset "offset", and the mapping's size will be "size". The mapping
    //!can be opened for read only, read-write or copy-on-write.
    //!
+   //!The "mapping" object must be an non-empty mappable type (file, shared memory...)
+   //!or the function might fail. Check `shared_memory_object/file_mapping::get_size() != 0`
+   //!before trying to map the empty object and obtain an error.
+   //!
+   //!The "size" parameter must be bigger than zero or the function will fail
+   //!
+   //! 
    //!If an address is specified, both the offset and the address must be
    //!multiples of the page size.
    //!
@@ -136,11 +142,11 @@ class mapped_region
    //!Default constructor. Address will be 0 (nullptr).
    //!Size will be 0.
    //!Does not throw
-   mapped_region();
+   mapped_region() BOOST_NOEXCEPT;
 
    //!Move constructor. *this will be constructed taking ownership of "other"'s
    //!region and "other" will be left in default constructor state.
-   mapped_region(BOOST_RV_REF(mapped_region) other)
+   mapped_region(BOOST_RV_REF(mapped_region) other)  BOOST_NOEXCEPT
    #if defined (BOOST_INTERPROCESS_WINDOWS)
    :  m_base(0), m_size(0)
    ,  m_page_offset(0)
@@ -157,27 +163,27 @@ class mapped_region
 
    //!Move assignment. If *this owns a memory mapped region, it will be
    //!destroyed and it will take ownership of "other"'s memory mapped region.
-   mapped_region &operator=(BOOST_RV_REF(mapped_region) other)
+   mapped_region &operator=(BOOST_RV_REF(mapped_region) other) BOOST_NOEXCEPT
    {
-      mapped_region tmp(boost::move(other));
+      mapped_region tmp(methcla_boost::move(other));
       this->swap(tmp);
       return *this;
    }
 
    //!Swaps the mapped_region with another
    //!mapped region
-   void swap(mapped_region &other);
+   void swap(mapped_region &other) BOOST_NOEXCEPT;
 
    //!Returns the size of the mapping. Never throws.
-   std::size_t get_size() const;
+   std::size_t get_size() const BOOST_NOEXCEPT;
 
    //!Returns the base address of the mapping.
    //!Never throws.
-   void*       get_address() const;
+   void*       get_address() const BOOST_NOEXCEPT;
 
    //!Returns the mode of the mapping used to construct the mapped region.
    //!Never throws.
-   mode_t get_mode() const;
+   mode_t get_mode() const BOOST_NOEXCEPT;
 
    //!Flushes to the disk a byte range within the mapped memory.
    //!If 'async' is true, the function will return before flushing operation is completed
@@ -190,7 +196,7 @@ class mapped_region
    //!mapped memory page, accessing that page can trigger a segmentation fault.
    //!Depending on the OS, this operation might fail (XSI shared memory), it can decommit storage
    //!and free a portion of the virtual address space (e.g.POSIX) or this
-   //!function can release some physical memory wihout freeing any virtual address space(Windows).
+   //!function can release some physical memory without freeing any virtual address space(Windows).
    //!Returns true on success. Never throws.
    bool shrink_by(std::size_t bytes, bool from_back = true);
 
@@ -225,7 +231,7 @@ class mapped_region
    //!Returns the size of the page. This size is the minimum memory that
    //!will be used by the system when mapping a memory mappable source and
    //!will restrict the address and the offset to map.
-   static std::size_t get_page_size();
+   static std::size_t get_page_size() BOOST_NOEXCEPT;
 
    #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
    private:
@@ -269,19 +275,19 @@ class mapped_region
 
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
 
-inline void swap(mapped_region &x, mapped_region &y)
+inline void swap(mapped_region &x, mapped_region &y) BOOST_NOEXCEPT
 {  x.swap(y);  }
 
 inline mapped_region::~mapped_region()
 {  this->priv_close(); }
 
-inline std::size_t mapped_region::get_size()  const
+inline std::size_t mapped_region::get_size() const BOOST_NOEXCEPT
 {  return m_size; }
 
-inline mode_t mapped_region::get_mode()  const
+inline mode_t mapped_region::get_mode() const BOOST_NOEXCEPT
 {  return m_mode;   }
 
-inline void*    mapped_region::get_address()  const
+inline void*    mapped_region::get_address() const BOOST_NOEXCEPT
 {  return m_base; }
 
 inline void*    mapped_region::priv_map_address()  const
@@ -297,7 +303,7 @@ inline bool mapped_region::priv_flush_param_check
    if(m_base == 0)
       return false;
 
-   if(mapping_offset >= m_size || (mapping_offset + numbytes) > m_size){
+   if(mapping_offset >= m_size || numbytes > (m_size - size_t(mapping_offset))){
       return false;
    }
 
@@ -346,14 +352,14 @@ inline void mapped_region::priv_size_from_mapping_size
    (offset_t mapping_size, offset_t offset, offset_t page_offset, std::size_t &size)
 {
    //Check if mapping size fits in the user address space
-   //as offset_t is the maximum file size and its signed.
+   //as offset_t is the maximum file size and it's signed.
    if(mapping_size < offset ||
-      boost::uintmax_t(mapping_size - (offset - page_offset)) >
-         boost::uintmax_t(std::size_t(-1))){
+      methcla_boost::uintmax_t(mapping_size - (offset - page_offset)) >
+         methcla_boost::uintmax_t(std::size_t(-1))){
       error_info err(size_error);
       throw interprocess_exception(err);
    }
-   size = static_cast<std::size_t>(mapping_size - (offset - page_offset));
+   size = static_cast<std::size_t>(mapping_size - offset);
 }
 
 inline offset_t mapped_region::priv_page_offset_addr_fixup(offset_t offset, const void *&address)
@@ -365,17 +371,17 @@ inline offset_t mapped_region::priv_page_offset_addr_fixup(offset_t offset, cons
    //We calculate the difference between demanded and valid offset
    //(always less than a page in std::size_t, thus, representable by std::size_t)
    const std::size_t page_offset =
-      static_cast<std::size_t>(offset - (offset / page_size) * page_size);
+      static_cast<std::size_t>(offset - (offset / offset_t(page_size)) * offset_t(page_size));
    //Update the mapping address
    if(address){
       address = static_cast<const char*>(address) - page_offset;
    }
-   return page_offset;
+   return offset_t(page_offset);
 }
 
 #if defined (BOOST_INTERPROCESS_WINDOWS)
 
-inline mapped_region::mapped_region()
+inline mapped_region::mapped_region() BOOST_NOEXCEPT
    :  m_base(0), m_size(0), m_page_offset(0), m_mode(read_only)
    ,  m_file_or_mapping_hnd(ipcdetail::invalid_file())
 {}
@@ -383,7 +389,7 @@ inline mapped_region::mapped_region()
 template<int dummy>
 inline std::size_t mapped_region::page_size_holder<dummy>::get_page_size()
 {
-   winapi::system_info info;
+   winapi::interprocess_system_info info;
    winapi::get_system_info(&info);
    return std::size_t(info.dwAllocationGranularity);
 }
@@ -442,11 +448,11 @@ inline mapped_region::mapped_region
          //Create mapping handle
          native_mapping_handle = winapi::create_file_mapping
             ( ipcdetail::file_handle_from_mapping_handle(mapping.get_mapping_handle())
-            , protection, 0, 0, 0);
+            , protection, 0, (char*)0, 0);
 
          //Check if all is correct
          if(!native_mapping_handle){
-            error_info err = winapi::get_last_error();
+            error_info err ((int)winapi::get_last_error());
             throw interprocess_exception(err);
          }
          handle_to_close = native_mapping_handle;
@@ -466,7 +472,7 @@ inline mapped_region::mapped_region
       if(size == 0){
          offset_t mapping_size;
          if(!winapi::get_file_mapping_size(native_mapping_handle, mapping_size)){
-            error_info err = winapi::get_last_error();
+            error_info err((int)winapi::get_last_error());
             throw interprocess_exception(err);
          }
          //This can throw
@@ -477,18 +483,18 @@ inline mapped_region::mapped_region
       void *base = winapi::map_view_of_file_ex
                                  (native_mapping_handle,
                                  map_access,
-                                 offset - page_offset,
-                                 static_cast<std::size_t>(page_offset + size),
+                                 ::methcla_boost::ulong_long_type(offset - page_offset),
+                                 static_cast<std::size_t>(page_offset) + size,
                                  const_cast<void*>(address));
       //Check error
       if(!base){
-         error_info err = winapi::get_last_error();
+         error_info err((int)winapi::get_last_error());
          throw interprocess_exception(err);
       }
 
       //Calculate new base for the user
       m_base = static_cast<char*>(base) + page_offset;
-      m_page_offset = page_offset;
+      m_page_offset = static_cast<std::size_t>(page_offset);
       m_size = size;
    }
    //Windows shared memory needs the duplication of the handle if we want to
@@ -496,7 +502,7 @@ inline mapped_region::mapped_region
    //
    //For mapped files, we duplicate the file handle to be able to FlushFileBuffers
    if(!winapi::duplicate_current_process_handle(mhandle.handle, &m_file_or_mapping_hnd)){
-      error_info err = winapi::get_last_error();
+      error_info err((int)winapi::get_last_error());
       this->priv_close();
       throw interprocess_exception(err);
    }
@@ -573,7 +579,7 @@ inline void mapped_region::dont_close_on_destruction()
 
 #else    //#if defined (BOOST_INTERPROCESS_WINDOWS)
 
-inline mapped_region::mapped_region()
+inline mapped_region::mapped_region() BOOST_NOEXCEPT
    :  m_base(0), m_size(0), m_page_offset(0), m_mode(read_only), m_is_xsi(false)
 {}
 
@@ -621,7 +627,10 @@ inline mapped_region::mapped_region
          throw interprocess_exception(err);
       }
       //Attach memory
-      void *base = ::shmat(map_hnd.handle, (void*)address, flag);
+      //Some old shmat implementation take the address as a non-const void pointer
+      //so uncast it to make code portable.
+      void *const final_address = const_cast<void *>(address);
+      void *base = ::shmat(map_hnd.handle, final_address, flag);
       if(base == (void*)-1){
          error_info err(system_error_code());
          throw interprocess_exception(err);
@@ -693,7 +702,7 @@ inline mapped_region::mapped_region
 
    //Map it to the address space
    void* base = mmap ( const_cast<void*>(address)
-                     , static_cast<std::size_t>(page_offset + size)
+                     , static_cast<std::size_t>(page_offset) + size
                      , prot
                      , flags
                      , mapping.get_mapping_handle().handle
@@ -707,7 +716,7 @@ inline mapped_region::mapped_region
 
    //Calculate new base for the user
    m_base = static_cast<char*>(base) + page_offset;
-   m_page_offset = page_offset;
+   m_page_offset = static_cast<std::size_t>(page_offset);
    m_size   = size;
 
    //Check for fixed mapping error
@@ -805,10 +814,19 @@ inline bool mapped_region::advise(advice_types advice)
       default:
       return false;
    }
+   int ret = -1;
    switch(mode){
       #if defined(POSIX_MADV_NORMAL)
          case mode_padv:
-         return 0 == posix_madvise(this->priv_map_address(), this->priv_map_size(), unix_advice);
+         {
+         ret = posix_madvise(this->priv_map_address(), this->priv_map_size(), unix_advice);
+         #ifdef __CYGWIN__
+         //Cygwin returns EINVAL in some valid use cases due to DiscardVirtualMemory limitations
+         if (ret == EINVAL)
+            ret = 0;
+         #endif
+         return 0 == ret;
+         }
       #endif
       #if defined(MADV_NORMAL)
          case mode_madv:
@@ -820,7 +838,6 @@ inline bool mapped_region::advise(advice_types advice)
       #endif
       default:
       return false;
-
    }
 }
 
@@ -849,7 +866,7 @@ template<int dummy>
 const std::size_t mapped_region::page_size_holder<dummy>::PageSize
    = mapped_region::page_size_holder<dummy>::get_page_size();
 
-inline std::size_t mapped_region::get_page_size()
+inline std::size_t mapped_region::get_page_size() BOOST_NOEXCEPT
 {
    if(!page_size_holder<0>::PageSize)
       return page_size_holder<0>::get_page_size();
@@ -857,16 +874,16 @@ inline std::size_t mapped_region::get_page_size()
       return page_size_holder<0>::PageSize;
 }
 
-inline void mapped_region::swap(mapped_region &other)
+inline void mapped_region::swap(mapped_region &other) BOOST_NOEXCEPT
 {
-   ::boost::adl_move_swap(this->m_base, other.m_base);
-   ::boost::adl_move_swap(this->m_size, other.m_size);
-   ::boost::adl_move_swap(this->m_page_offset, other.m_page_offset);
-   ::boost::adl_move_swap(this->m_mode,  other.m_mode);
+   ::methcla_boost::adl_move_swap(this->m_base, other.m_base);
+   ::methcla_boost::adl_move_swap(this->m_size, other.m_size);
+   ::methcla_boost::adl_move_swap(this->m_page_offset, other.m_page_offset);
+   ::methcla_boost::adl_move_swap(this->m_mode,  other.m_mode);
    #if defined (BOOST_INTERPROCESS_WINDOWS)
-   ::boost::adl_move_swap(this->m_file_or_mapping_hnd, other.m_file_or_mapping_hnd);
+   ::methcla_boost::adl_move_swap(this->m_file_or_mapping_hnd, other.m_file_or_mapping_hnd);
    #else
-   ::boost::adl_move_swap(this->m_is_xsi, other.m_is_xsi);
+   ::methcla_boost::adl_move_swap(this->m_is_xsi, other.m_is_xsi);
    #endif
 }
 
@@ -876,14 +893,14 @@ struct null_mapped_region_function
    bool operator()(void *, std::size_t , bool) const
       {   return true;   }
 
-   std::size_t get_min_size() const
+   static std::size_t get_min_size()
    {  return 0;  }
 };
 
 #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/interprocess/detail/config_end.hpp>
 
@@ -898,7 +915,7 @@ struct null_mapped_region_function
 #  include <boost/interprocess/sync/windows/sync_utils.hpp>
 #  include <boost/interprocess/detail/windows_intermodule_singleton.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 
 template<int Dummy>
@@ -910,7 +927,7 @@ inline void mapped_region::destroy_syncs_in_range(const void *addr, std::size_t 
 }
 
 }  //namespace interprocess {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //defined(BOOST_INTERPROCESS_WINDOWS) && !defined(BOOST_INTERPROCESS_FORCE_GENERIC_EMULATION)
 

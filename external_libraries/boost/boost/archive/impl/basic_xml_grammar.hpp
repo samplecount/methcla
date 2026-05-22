@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // basic_xml_grammar.hpp
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -57,40 +57,40 @@
 #include <boost/serialization/tracking.hpp>
 #include <boost/serialization/version.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // XML grammar parsing
 
 template<class CharType>
-class basic_xml_grammar {
+class BOOST_SYMBOL_VISIBLE basic_xml_grammar {
 public:
     // The following is not necessary according to DR45, but at least
     // one compiler (Compaq C++ 6.5 in strict_ansi mode) chokes otherwise.
     struct return_values;
     friend struct return_values;
-    
+
 private:
     typedef typename std::basic_istream<CharType> IStream;
     typedef typename std::basic_string<CharType> StringType;
-    typedef typename boost::spirit::classic::chset<CharType> chset_t;
-    typedef typename boost::spirit::classic::chlit<CharType> chlit_t;
-    typedef typename boost::spirit::classic::scanner<
+    typedef typename methcla_boost::spirit::classic::chset<CharType> chset_t;
+    typedef typename methcla_boost::spirit::classic::chlit<CharType> chlit_t;
+    typedef typename methcla_boost::spirit::classic::scanner<
         typename  std::basic_string<CharType>::iterator
     > scanner_t;
-    typedef typename boost::spirit::classic::rule<scanner_t> rule_t;
+    typedef typename methcla_boost::spirit::classic::rule<scanner_t> rule_t;
     // Start grammar definition
-    rule_t    
+    rule_t
         Reference,
-        Eq, 
+        Eq,
         STag,
         ETag,
         LetterOrUnderscoreOrColon,
-        AttValue, 
-        CharRef1, 
-        CharRef2, 
-        CharRef, 
+        AttValue,
+        CharRef1,
+        CharRef2,
+        CharRef,
         AmpRef,
         LTRef,
         GTRef,
@@ -127,11 +127,11 @@ private:
     chset_t
         BaseChar,
         Ideographic,
-        Char, 
-        Letter, 
+        Char,
+        Letter,
         Digit,
         CombiningChar,
-        Extender, 
+        Extender,
         Sch,
         NameChar;
 
@@ -139,7 +139,7 @@ private:
 
     bool my_parse(
         IStream & is,
-        const rule_t &rule_, 
+        const rule_t &rule_,
         const CharType delimiter = L'>'
     ) const ;
 public:
@@ -163,11 +163,11 @@ public:
     bool parse_end_tag(IStream & is) const;
     bool parse_string(IStream & is, StringType & s) /*const*/;
     void init(IStream & is);
-    void windup(IStream & is);
+    bool windup(IStream & is);
     basic_xml_grammar();
 };
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_ARCHIVE_BASIC_XML_GRAMMAR_HPP

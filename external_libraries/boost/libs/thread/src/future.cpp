@@ -4,20 +4,20 @@
 // LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/thread/detail/config.hpp>
-#ifndef BOOST_NO_EXCEPTIONS
 
+#ifndef BOOST_NO_EXCEPTIONS
 
 #include <boost/thread/futures/future_error_code.hpp>
 #include <string>
 
-namespace boost
+namespace methcla_boost
 {
 
   namespace thread_detail
   {
 
     class  future_error_category :
-      public boost::system::error_category
+      public methcla_boost::system::error_category
     {
     public:
         virtual const char* name() const BOOST_NOEXCEPT;

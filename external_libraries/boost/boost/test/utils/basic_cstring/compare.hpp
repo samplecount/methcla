@@ -26,11 +26,11 @@
 
 //____________________________________________________________________________//
 
-# if defined(BOOST_NO_STDC_NAMESPACE) && !BOOST_WORKAROUND(__BORLANDC__, <= 0x570)
+# if defined(BOOST_NO_STDC_NAMESPACE) && !BOOST_WORKAROUND(BOOST_BORLANDC, <= 0x570)
 namespace std { using ::toupper; }
 # endif
 
-namespace boost {
+namespace methcla_boost {
 
 namespace unit_test {
 
@@ -76,9 +76,13 @@ case_ins_eq( basic_cstring<CharT> x, basic_cstring<CharT> y )
 // ************************************************************************** //
 
 template<class CharT>
-class case_ins_less : public std::binary_function<basic_cstring<CharT>,basic_cstring<CharT>,bool>
+class case_ins_less
 {
 public:
+    typedef bool result_type;
+    typedef basic_cstring<CharT> first_argument_type;
+    typedef basic_cstring<CharT> second_argument_type;
+
     bool operator()( basic_cstring<CharT> x, basic_cstring<CharT> y ) const
     {
         return x.size() != y.size()
@@ -95,10 +99,10 @@ public:
 
 template<class CharT>
 inline bool
-operator <( boost::unit_test::basic_cstring<CharT> const& x,
-            boost::unit_test::basic_cstring<CharT> const& y )
+operator <( methcla_boost::unit_test::basic_cstring<CharT> const& x,
+            methcla_boost::unit_test::basic_cstring<CharT> const& y )
 {
-    typedef typename boost::unit_test::basic_cstring<CharT>::traits_type traits_type;
+    typedef typename methcla_boost::unit_test::basic_cstring<CharT>::traits_type traits_type;
     return x.size() != y.size()
             ? x.size() < y.size()
             : traits_type::compare( x.begin(), y.begin(), x.size() ) < 0;
@@ -108,8 +112,8 @@ operator <( boost::unit_test::basic_cstring<CharT> const& x,
 
 template<class CharT>
 inline bool
-operator <=( boost::unit_test::basic_cstring<CharT> const& x,
-            boost::unit_test::basic_cstring<CharT> const& y )
+operator <=( methcla_boost::unit_test::basic_cstring<CharT> const& x,
+            methcla_boost::unit_test::basic_cstring<CharT> const& y )
 {
     return !(y < x);
 }
@@ -118,8 +122,8 @@ operator <=( boost::unit_test::basic_cstring<CharT> const& x,
 
 template<class CharT>
 inline bool
-operator >( boost::unit_test::basic_cstring<CharT> const& x,
-            boost::unit_test::basic_cstring<CharT> const& y )
+operator >( methcla_boost::unit_test::basic_cstring<CharT> const& x,
+            methcla_boost::unit_test::basic_cstring<CharT> const& y )
 {
     return y < x;
 }
@@ -128,8 +132,8 @@ operator >( boost::unit_test::basic_cstring<CharT> const& x,
 
 template<class CharT>
 inline bool
-operator >=( boost::unit_test::basic_cstring<CharT> const& x,
-            boost::unit_test::basic_cstring<CharT> const& y )
+operator >=( methcla_boost::unit_test::basic_cstring<CharT> const& x,
+            methcla_boost::unit_test::basic_cstring<CharT> const& y )
 {
     return !(x < y);
 }
@@ -138,7 +142,7 @@ operator >=( boost::unit_test::basic_cstring<CharT> const& x,
 
 } // namespace unit_test
 
-} // namespace boost
+} // namespace methcla_boost
 
 //____________________________________________________________________________//
 

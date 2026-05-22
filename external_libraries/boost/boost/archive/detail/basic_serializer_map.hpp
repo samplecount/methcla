@@ -7,9 +7,9 @@
 #endif
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// basic_serializer_map.hpp: extenstion of type_info required for serialization.
+// basic_serializer_map.hpp: extension of type_info required for serialization.
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -24,7 +24,7 @@
 
 #include <boost/archive/detail/abi_prefix.hpp> // must be the last header
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
     class extended_type_info;
 }
@@ -36,7 +36,7 @@ class basic_serializer;
 
 class BOOST_SYMBOL_VISIBLE
 basic_serializer_map : public
-    boost::noncopyable
+    methcla_boost::noncopyable
 {
     struct type_info_pointer_compare
     {
@@ -45,7 +45,7 @@ basic_serializer_map : public
         ) const ;
     };
     typedef std::set<
-        const basic_serializer *, 
+        const basic_serializer *,
         type_info_pointer_compare
     > map_type;
     map_type m_map;
@@ -53,7 +53,7 @@ public:
     BOOST_ARCHIVE_DECL bool insert(const basic_serializer * bs);
     BOOST_ARCHIVE_DECL void erase(const basic_serializer * bs);
     BOOST_ARCHIVE_DECL const basic_serializer * find(
-        const boost::serialization::extended_type_info & type_
+        const methcla_boost::serialization::extended_type_info & type_
     ) const;
 private:
     // cw 8.3 requires this
@@ -62,7 +62,7 @@ private:
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/archive/detail/abi_suffix.hpp> // must be the last header
 

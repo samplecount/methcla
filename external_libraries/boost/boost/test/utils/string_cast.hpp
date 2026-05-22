@@ -25,7 +25,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace utils {
 
@@ -62,7 +62,7 @@ string_as( const_string str, T& res )
 
 } // namespace utils
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

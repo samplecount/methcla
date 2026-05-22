@@ -40,7 +40,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace nfp { // named function parameters
 
 // ************************************************************************** //
@@ -72,7 +72,7 @@ struct is_named_param_pack<named_parameter_combine<NP,Rest> > : public mpl::true
 // **************                  param_type                  ************** //
 // ************************************************************************** //
 
-/// param_type<Params,Keyword,Default>::type is is the type of the parameter
+/// param_type<Params,Keyword,Default>::type is the type of the parameter
 /// corresponding to the Keyword (if parameter is present) or Default
 
 template<typename NP, typename Keyword, typename DefaultType=void>
@@ -91,7 +91,7 @@ struct param_type<named_parameter_combine<NP,Rest>,Keyword,DefaultType>
 // **************                  has_param                   ************** //
 // ************************************************************************** //
 
-/// has_param<Params,Keyword>::value is true id Params has parameter corresponding
+/// has_param<Params,Keyword>::value is true if Params has parameter corresponding
 /// to the Keyword
 
 template<typename NP, typename Keyword>
@@ -126,16 +126,16 @@ report_access_to_invalid_parameter( bool v )
 
 struct nil {
     template<typename T>
-#if defined(__GNUC__) || defined(__HP_aCC) || defined(__EDG__) || defined(__SUNPRO_CC)
+#if defined(__GNUC__) || defined(__HP_aCC) || defined(__EDG__) || defined(__SUNPRO_CC) || defined(BOOST_EMBTC)
     operator T() const
 #else
     operator T const&() const
 #endif
-    { nfp_detail::report_access_to_invalid_parameter(true); static T* v = 0; return *v; }
+    { nfp_detail::report_access_to_invalid_parameter(true); BOOST_TEST_UNREACHABLE_RETURN(*static_cast<T*>(0)); }
 
     template<typename T>
     T any_cast() const
-    { nfp_detail::report_access_to_invalid_parameter(true); static typename remove_reference<T>::type* v = 0; return *v; }
+    { nfp_detail::report_access_to_invalid_parameter(true); BOOST_TEST_UNREACHABLE_RETURN(*static_cast<typename std::remove_reference<T>::type*>(0)); }
 
     template<typename Arg1>
     nil operator()( Arg1 const& )
@@ -331,7 +331,7 @@ struct typed_keyword<bool,unique_id,required>
 
 template<typename T, typename Params, typename Keyword>
 inline typename enable_if_c<!has_param<Params,Keyword>::value,void>::type
-opt_assign( T& target, Params const& p, Keyword k )
+opt_assign( T& /*target*/, Params const& /*p*/, Keyword /*k*/ )
 {
 }
 
@@ -381,7 +381,7 @@ opt_append( Params const& params, NP const& )
 }
 
 } // namespace nfp
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

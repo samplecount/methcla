@@ -11,7 +11,7 @@
 #include <boost/thread/detail/config.hpp>
 #include <boost/core/scoped_enum.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   //enum class launch
   BOOST_SCOPED_ENUM_DECLARE_BEGIN(launch)
@@ -23,6 +23,7 @@ namespace boost
       executor = 4,
 #endif
       inherit = 8,
+      sync = 16,
       any = async | deferred
   }
   BOOST_SCOPED_ENUM_DECLARE_END(launch)

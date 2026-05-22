@@ -14,15 +14,15 @@
 #include <boost/thread/futures/is_future_type.hpp>
 #include <boost/thread/lock_algorithms.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 #include <boost/core/enable_if.hpp>
-#include <boost/next_prior.hpp>
 #include <boost/scoped_array.hpp>
 
 #include <iterator>
 #include <vector>
 
-namespace boost
+namespace methcla_boost
 {
   namespace detail
   {
@@ -55,20 +55,20 @@ namespace boost
         typedef count_type count_type_portable;
 #endif
         count_type_portable count;
-        boost::scoped_array<boost::unique_lock<boost::mutex> > locks;
+        methcla_boost::scoped_array<methcla_boost::unique_lock<methcla_boost::mutex> > locks;
 
         all_futures_lock(std::vector<registered_waiter>& waiters) :
-          count(waiters.size()), locks(new boost::unique_lock<boost::mutex>[count])
+          count(waiters.size()), locks(new methcla_boost::unique_lock<methcla_boost::mutex>[count])
         {
           for (count_type_portable i = 0; i < count; ++i)
           {
-            locks[i] = BOOST_THREAD_MAKE_RV_REF(boost::unique_lock<boost::mutex>(waiters[i].future_->mutex()));
+            locks[i] = BOOST_THREAD_MAKE_RV_REF(methcla_boost::unique_lock<methcla_boost::mutex>(waiters[i].future_->mutex()));
           }
         }
 
         void lock()
         {
-          boost::lock(locks.get(), locks.get() + count);
+          methcla_boost::lock(locks.get(), locks.get() + count);
         }
 
         void unlock()
@@ -80,7 +80,7 @@ namespace boost
         }
       };
 
-      boost::condition_variable_any cv;
+      methcla_boost::condition_variable_any cv;
       std::vector<registered_waiter> waiters_;
       count_type future_count;
 
@@ -145,7 +145,7 @@ namespace boost
   }
 
   template <typename Iterator>
-  typename boost::disable_if<is_future_type<Iterator> , Iterator>::type wait_for_any(Iterator begin, Iterator end)
+  typename methcla_boost::disable_if<is_future_type<Iterator> , Iterator>::type wait_for_any(Iterator begin, Iterator end)
   {
     if (begin == end) return end;
 
@@ -154,7 +154,9 @@ namespace boost
     {
       waiter.add(*current);
     }
-    return boost::next(begin, waiter.wait());
+
+    std::advance( begin, waiter.wait() );
+    return begin;
   }
 }
 

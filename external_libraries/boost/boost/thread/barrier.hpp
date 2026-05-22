@@ -26,7 +26,7 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   namespace thread_detail
   {
@@ -64,7 +64,7 @@ namespace boost
       void_completion_function fct_;
       template <typename F>
       void_functor_barrier_reseter(unsigned int size, BOOST_THREAD_RV_REF(F) funct)
-      : size_(size), fct_(boost::move(funct))
+      : size_(size), fct_(methcla_boost::move(funct))
       {}
       template <typename F>
       void_functor_barrier_reseter(unsigned int size, F& funct)
@@ -80,7 +80,7 @@ namespace boost
       }
       void_functor_barrier_reseter(BOOST_THREAD_RV_REF(void_functor_barrier_reseter) other) BOOST_NOEXCEPT :
       size_(BOOST_THREAD_RV(other).size_), fct_(BOOST_THREAD_RV(other).fct_)
-      //size_(BOOST_THREAD_RV(other).size_), fct_(boost::move(BOOST_THREAD_RV(other).fct_))
+      //size_(BOOST_THREAD_RV(other).size_), fct_(methcla_boost::move(BOOST_THREAD_RV(other).fct_))
       {
       }
 
@@ -124,7 +124,7 @@ namespace boost
   {
     static inline unsigned int check_counter(unsigned int count)
     {
-      if (count == 0) boost::throw_exception(
+      if (count == 0) methcla_boost::throw_exception(
           thread_exception(system::errc::invalid_argument, "barrier constructor: count cannot be zero."));
       return count;
     }
@@ -145,13 +145,13 @@ namespace boost
         unsigned int count,
         BOOST_THREAD_RV_REF(F) funct,
         typename enable_if<
-        typename is_void<typename result_of<F>::type>::type, dummy*
+        typename is_void<typename result_of<F()>::type>::type, dummy*
         >::type=0
     )
     : m_count(check_counter(count)),
       m_generation(0),
       fct_(BOOST_THREAD_MAKE_RV_REF(thread_detail::void_functor_barrier_reseter(count,
-        boost::move(funct)))
+        methcla_boost::move(funct)))
     )
     {
     }
@@ -160,7 +160,7 @@ namespace boost
         unsigned int count,
         F &funct,
         typename enable_if<
-        typename is_void<typename result_of<F>::type>::type, dummy*
+        typename is_void<typename result_of<F()>::type>::type, dummy*
         >::type=0
     )
     : m_count(check_counter(count)),
@@ -176,12 +176,12 @@ namespace boost
         unsigned int count,
         BOOST_THREAD_RV_REF(F) funct,
         typename enable_if<
-        typename is_same<typename result_of<F>::type, unsigned int>::type, dummy*
+        typename is_same<typename result_of<F()>::type, unsigned int>::type, dummy*
         >::type=0
     )
     : m_count(check_counter(count)),
       m_generation(0),
-      fct_(boost::move(funct))
+      fct_(methcla_boost::move(funct))
     {
     }
     template <typename F>
@@ -189,7 +189,7 @@ namespace boost
         unsigned int count,
         F& funct,
         typename enable_if<
-        typename is_same<typename result_of<F>::type, unsigned int>::type, dummy*
+        typename is_same<typename result_of<F()>::type, unsigned int>::type, dummy*
         >::type=0
     )
     : m_count(check_counter(count)),
@@ -217,7 +217,7 @@ namespace boost
 
     bool wait()
     {
-      boost::unique_lock < boost::mutex > lock(m_mutex);
+      methcla_boost::unique_lock < methcla_boost::mutex > lock(m_mutex);
       unsigned int gen = m_generation;
 
       if (--m_count == 0)
@@ -225,6 +225,7 @@ namespace boost
         m_generation++;
         m_count = static_cast<unsigned int>(fct_());
         BOOST_ASSERT(m_count != 0);
+        lock.unlock();
         m_cond.notify_all();
         return true;
       }
@@ -247,7 +248,7 @@ namespace boost
     thread_detail::size_completion_function fct_;
   };
 
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/config/abi_suffix.hpp>
 

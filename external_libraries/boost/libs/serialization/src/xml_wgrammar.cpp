@@ -15,12 +15,12 @@
 #else
 
 #define BOOST_WARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/impl/basic_xml_grammar.hpp>
 
-using namespace boost::spirit::classic;
+using namespace methcla_boost::spirit::classic;
 
 // fixup for RogueWave
-#include <boost/config.hpp>
 #if ! defined(__SGI_STL_PORT) \
 && defined(BOOST_RWSTD_VER) && BOOST_RWSTD_VER<=0x020101
 #include <string>
@@ -39,7 +39,7 @@ namespace std {
 } // namespace std
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 typedef basic_xml_grammar<wchar_t> xml_wgrammar;
@@ -141,17 +141,17 @@ void xml_wgrammar::init_chset(){
     ;
 }
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #include "basic_xml_grammar.ipp"
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 // explicit instantiation of xml for wide characters
 template class basic_xml_grammar<wchar_t>;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif

@@ -13,6 +13,7 @@
 #include <boost/chrono/config.hpp>
 #include <boost/chrono/thread_clock.hpp>
 #include <cassert>
+#include <boost/assert.hpp>
 
 #if !defined(__VXWORKS__)
 # include <sys/times.h>
@@ -20,7 +21,7 @@
 # include <pthread.h>
 # include <unistd.h>
 
-namespace boost { namespace chrono {
+namespace methcla_boost { namespace chrono {
 
     thread_clock::time_point thread_clock::now( ) BOOST_NOEXCEPT
     {
@@ -64,21 +65,21 @@ namespace boost { namespace chrono {
         if ( ::clock_gettime( clock_id, &ts ) )
 #endif
         {
-            if (BOOST_CHRONO_IS_THROWS(ec))
+            if (::methcla_boost::chrono::is_throws(ec))
             {
-                boost::throw_exception(
+                methcla_boost::throw_exception(
                         system::system_error(
                                 errno,
-                                BOOST_CHRONO_SYSTEM_CATEGORY,
+                                ::methcla_boost::system::system_category(),
                                 "chrono::thread_clock" ));
             }
             else
             {
-                ec.assign( errno, BOOST_CHRONO_SYSTEM_CATEGORY );
+                ec.assign( errno, ::methcla_boost::system::system_category() );
                 return time_point();
             }
         }
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::methcla_boost::chrono::is_throws(ec))
         {
             ec.clear();
         }

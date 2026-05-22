@@ -18,22 +18,61 @@
 // Boost.Test
 #include <boost/test/detail/config.hpp>
 #include <boost/test/detail/global_typedef.hpp>
-#include <boost/test/detail/workaround.hpp>
 
 // Boost
 #include <boost/mpl/or.hpp>
+#include <boost/static_assert.hpp>
 #include <boost/type_traits/is_array.hpp>
 #include <boost/type_traits/is_function.hpp>
 #include <boost/type_traits/is_abstract.hpp>
+#include <boost/type_traits/has_left_shift.hpp>
+
+#include <ios>
+#include <iostream>
 #include <limits>
+
+#if !defined(BOOST_NO_CXX11_NULLPTR)
+#include <cstddef>
+#endif
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 namespace tt_detail {
+
+// ************************************************************************** //
+// **************          boost_test_print_type               ************** //
+// ************************************************************************** //
+
+    namespace impl {
+        template <class T>
+        std::ostream& boost_test_print_type(std::ostream& ostr, T const& t) {
+            BOOST_STATIC_ASSERT_MSG( (methcla_boost::has_left_shift<std::ostream,T>::value),
+                                    "Type has to implement operator<< to be printable");
+            ostr << t;
+            return ostr;
+        }
+
+        struct boost_test_print_type_impl {
+            template <class R>
+            std::ostream& operator()(std::ostream& ostr, R const& r) const {
+                return boost_test_print_type(ostr, r);
+            }
+        };
+    }
+
+    // To avoid ODR violations, see N4381
+    template <class T> struct static_const { static const T value; };
+    template <class T> const T static_const<T>::value = T();
+
+    namespace {
+        static const impl::boost_test_print_type_impl& boost_test_print_type =
+            static_const<impl::boost_test_print_type_impl>::value;
+    }
+
 
 // ************************************************************************** //
 // **************                print_log_value               ************** //
@@ -47,7 +86,9 @@ struct print_log_value {
 
         std::streamsize old_precision = set_precision( ostr, cant_use_nl() );
 
-        ostr << t;
+        //ostr << t;
+        using methcla_boost::test_tools::tt_detail::boost_test_print_type;
+        boost_test_print_type(ostr, t);
 
         if( old_precision != (std::streamsize)-1 )
             ostr.precision( old_precision );
@@ -56,7 +97,7 @@ struct print_log_value {
     std::streamsize set_precision( std::ostream& ostr, mpl::false_ )
     {
         if( std::numeric_limits<T>::is_specialized && std::numeric_limits<T>::radix == 2 )
-            return ostr.precision( 2 + std::numeric_limits<T>::digits * 301/1000 );
+            return ostr.precision( 2 + std::streamsize(std::numeric_limits<T>::digits) * 301/1000 );
         else if ( std::numeric_limits<T>::is_specialized && std::numeric_limits<T>::radix == 10 ) {
 #ifdef BOOST_NO_CXX11_NUMERIC_LIMITS
             // (was BOOST_NO_NUMERIC_LIMITS_LOWEST but now deprecated).
@@ -79,7 +120,7 @@ struct print_log_value {
 
 //____________________________________________________________________________//
 
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x564))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x564))
 template<typename T, std::size_t N >
 struct print_log_value< T[N] > {
     void    operator()( std::ostream& ostr, T const* t )
@@ -93,10 +134,7 @@ struct print_log_value< T[N] > {
 
 template<>
 struct BOOST_TEST_DECL print_log_value<bool> {
-    void    operator()( std::ostream& ostr, bool t )
-    {
-         ostr << std::boolalpha << t;
-    }
+    void    operator()( std::ostream& ostr, bool t );
 };
 
 //____________________________________________________________________________//
@@ -116,6 +154,13 @@ struct BOOST_TEST_DECL print_log_value<unsigned char> {
 //____________________________________________________________________________//
 
 template<>
+struct BOOST_TEST_DECL print_log_value<wchar_t> {
+    void    operator()( std::ostream& ostr, wchar_t t );
+};
+
+//____________________________________________________________________________//
+
+template<>
 struct BOOST_TEST_DECL print_log_value<char const*> {
     void    operator()( std::ostream& ostr, char const* t );
 };
@@ -126,6 +171,16 @@ template<>
 struct BOOST_TEST_DECL print_log_value<wchar_t const*> {
     void    operator()( std::ostream& ostr, wchar_t const* t );
 };
+
+#if !defined(BOOST_NO_CXX11_NULLPTR)
+template<>
+struct print_log_value<std::nullptr_t> {
+    // declaration and definition is here because of #12969 https://svn.boost.org/trac10/ticket/12969
+    void    operator()( std::ostream& ostr, std::nullptr_t /*t*/ ) {
+        ostr << "nullptr";
+    }
+};
+#endif
 
 //____________________________________________________________________________//
 
@@ -144,7 +199,7 @@ struct print_helper_t {
 
 //____________________________________________________________________________//
 
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x564))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x564))
 // Borland suffers premature pointer decay passing arrays by reference
 template<typename T, std::size_t N >
 struct print_helper_t< T[N] > {
@@ -183,7 +238,7 @@ operator<<( std::ostream& ostr, print_helper_t<T> const& ph )
 // ************************************************************************** //
 
 #define BOOST_TEST_DONT_PRINT_LOG_VALUE( the_type )         \
-namespace boost{ namespace test_tools{ namespace tt_detail{ \
+namespace methcla_boost{ namespace test_tools{ namespace tt_detail{ \
 template<>                                                  \
 struct print_log_value<the_type > {                         \
     void    operator()( std::ostream&, the_type const& ) {} \
@@ -192,7 +247,7 @@ struct print_log_value<the_type > {                         \
 /**/
 
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

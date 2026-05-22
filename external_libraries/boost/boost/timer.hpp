@@ -17,6 +17,13 @@
 #ifndef BOOST_TIMER_HPP
 #define BOOST_TIMER_HPP
 
+#if !defined(BOOST_TIMER_ENABLE_DEPRECATED)
+# error This header is deprecated and will be removed. (You can define BOOST_TIMER_ENABLE_DEPRECATED to suppress this error.)
+#endif
+
+#include <boost/config/header_deprecated.hpp>
+BOOST_HEADER_DEPRECATED( "the facilities in <boost/timer/timer.hpp>" )
+
 #include <boost/config.hpp>
 #include <ctime>
 #include <boost/limits.hpp>
@@ -26,7 +33,7 @@
 # endif
 
 
-namespace boost {
+namespace methcla_boost {
 
 //  timer  -------------------------------------------------------------------//
 
@@ -67,6 +74,6 @@ class timer
   std::clock_t _start_time;
 }; // timer
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif  // BOOST_TIMER_HPP

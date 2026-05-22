@@ -93,7 +93,7 @@ namespace Methcla { namespace Audio {
         Id           m_id;
     };
 
-    template <class T> using ResourceRef = boost::intrusive_ptr<T>;
+    template <class T> using ResourceRef = methcla_boost::intrusive_ptr<T>;
 
     /// Simple map for holding pointers to resources.
     //
@@ -101,7 +101,7 @@ namespace Methcla { namespace Audio {
     template <typename Id, class T> class ResourceMap
     {
     public:
-        typedef boost::intrusive_ptr<T> Pointer;
+        typedef methcla_boost::intrusive_ptr<T> Pointer;
 
         ResourceMap(size_t size)
         : m_elems(size, nullptr)

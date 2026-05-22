@@ -44,14 +44,20 @@
 #include <boost/config.hpp> // for BOOST_LIKELY
 #include <boost/current_function.hpp>
 
-namespace boost
+namespace methcla_boost
 {
+#if defined(BOOST_ASSERT_HANDLER_IS_NORETURN)
+    BOOST_NORETURN
+#endif
     void assertion_failed(char const * expr, char const * function, char const * file, long line); // user defined
+#if defined(BOOST_ASSERT_HANDLER_IS_NORETURN)
+    BOOST_NORETURN
+#endif
     void assertion_failed_msg(char const * expr, char const * msg, char const * function, char const * file, long line); // user defined
-} // namespace boost
+} // namespace methcla_boost
 
-#define BOOST_ASSERT(expr) (BOOST_LIKELY(!!(expr))? ((void)0): ::boost::assertion_failed(#expr, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
-#define BOOST_ASSERT_MSG(expr, msg) (BOOST_LIKELY(!!(expr))? ((void)0): ::boost::assertion_failed_msg(#expr, msg, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
+#define BOOST_ASSERT(expr) (BOOST_LIKELY(!!(expr))? ((void)0): ::methcla_boost::assertion_failed(#expr, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
+#define BOOST_ASSERT_MSG(expr, msg) (BOOST_LIKELY(!!(expr))? ((void)0): ::methcla_boost::assertion_failed_msg(#expr, msg, BOOST_CURRENT_FUNCTION, __FILE__, __LINE__))
 
 #else
 

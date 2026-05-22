@@ -17,7 +17,7 @@
 //  See accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt
 //
-//  typedef <implementation-defined> boost::detail::atomic_count;
+//  typedef <implementation-defined> methcla_boost::detail::atomic_count;
 //
 //  atomic_count a(n);
 //
@@ -43,8 +43,7 @@
 //    Memory Ordering: acquire/release
 //
 
-#include <boost/config.hpp>
-#include <boost/smart_ptr/detail/sp_has_sync.hpp>
+#include <boost/smart_ptr/detail/deprecated_macros.hpp>
 
 #if defined( BOOST_AC_DISABLE_THREADS )
 # include <boost/smart_ptr/detail/atomic_count_nt.hpp>
@@ -52,44 +51,11 @@
 #elif defined( BOOST_AC_USE_STD_ATOMIC )
 # include <boost/smart_ptr/detail/atomic_count_std_atomic.hpp>
 
-#elif defined( BOOST_AC_USE_SPINLOCK )
-# include <boost/smart_ptr/detail/atomic_count_spin.hpp>
-
-#elif defined( BOOST_AC_USE_PTHREADS )
-# include <boost/smart_ptr/detail/atomic_count_pt.hpp>
-
 #elif defined( BOOST_SP_DISABLE_THREADS )
 # include <boost/smart_ptr/detail/atomic_count_nt.hpp>
 
-#elif defined( BOOST_SP_USE_STD_ATOMIC )
-# include <boost/smart_ptr/detail/atomic_count_std_atomic.hpp>
-
-#elif defined( BOOST_SP_USE_SPINLOCK )
-# include <boost/smart_ptr/detail/atomic_count_spin.hpp>
-
-#elif defined( BOOST_SP_USE_PTHREADS )
-# include <boost/smart_ptr/detail/atomic_count_pt.hpp>
-
-#elif defined( BOOST_DISABLE_THREADS ) && !defined( BOOST_SP_ENABLE_THREADS ) && !defined( BOOST_DISABLE_WIN32 )
-# include <boost/smart_ptr/detail/atomic_count_nt.hpp>
-
-#elif defined( __GNUC__ ) && ( defined( __i386__ ) || defined( __x86_64__ ) ) && !defined( __PATHSCALE__ )
-# include <boost/smart_ptr/detail/atomic_count_gcc_x86.hpp>
-
-#elif defined( BOOST_SP_HAS_SYNC )
-# include <boost/smart_ptr/detail/atomic_count_sync.hpp>
-
-#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
-# include <boost/smart_ptr/detail/atomic_count_win32.hpp>
-
-#elif defined(__GLIBCPP__) || defined(__GLIBCXX__)
-# include <boost/smart_ptr/detail/atomic_count_gcc.hpp>
-
-#elif !defined( BOOST_HAS_THREADS )
-# include <boost/smart_ptr/detail/atomic_count_nt.hpp>
-
 #else
-# include <boost/smart_ptr/detail/atomic_count_spin.hpp>
+# include <boost/smart_ptr/detail/atomic_count_std_atomic.hpp>
 
 #endif
 

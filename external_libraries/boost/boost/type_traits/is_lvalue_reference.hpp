@@ -23,9 +23,9 @@
 
 #include <boost/type_traits/integral_constant.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
-#if defined( __CODEGEARC__ )
+#if defined( BOOST_CODEGEARC )
    template <class T> struct is_lvalue_reference : public integral_constant<bool, __is_reference(T)>{};
 #else
 
@@ -44,7 +44,7 @@ namespace boost {
 
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_REFERENCE_HPP_INCLUDED
 

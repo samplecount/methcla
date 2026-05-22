@@ -1,5 +1,5 @@
 //
-// Copyright (c) Antony Polukhin, 2012-2014.
+// Copyright 2012-2026 Antony Polukhin.
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -12,9 +12,9 @@
 /// \brief Includes minimal set of headers required to use the Boost.TypeIndex library.
 ///
 /// By inclusion of this file most optimal type index classes will be included and used 
-/// as a boost::typeindex::type_index and boost::typeindex::type_info.
+/// as a methcla_boost::typeindex::type_index and methcla_boost::typeindex::type_info.
 
-#include <boost/config.hpp>
+#include <boost/type_index/detail/config.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 # pragma once
@@ -49,21 +49,25 @@
 #define BOOST_TYPE_INDEX_REGISTER_CLASS
 #endif
 
-namespace boost { namespace typeindex {
+#if !defined(BOOST_USE_MODULES) || defined(BOOST_TYPE_INDEX_INTERFACE_UNIT)
+
+namespace methcla_boost { namespace typeindex {
+
+BOOST_TYPE_INDEX_BEGIN_MODULE_EXPORT
 
 #if defined(BOOST_TYPE_INDEX_DOXYGEN_INVOKED)
 
 /// \def BOOST_TYPE_INDEX_FUNCTION_SIGNATURE
-/// BOOST_TYPE_INDEX_FUNCTION_SIGNATURE is used by boost::typeindex::ctti_type_index class to
+/// BOOST_TYPE_INDEX_FUNCTION_SIGNATURE is used by methcla_boost::typeindex::ctti_type_index class to
 /// deduce the name of a type. If your compiler is not recognized
-/// by the TypeIndex library and you wish to work with boost::typeindex::ctti_type_index, you may
+/// by the TypeIndex library and you wish to work with methcla_boost::typeindex::ctti_type_index, you may
 /// define this macro by yourself.
 ///
 /// BOOST_TYPE_INDEX_FUNCTION_SIGNATURE must be defined to a compiler specific macro
 /// that outputs the \b whole function signature \b including \b template \b parameters.
 ///
 /// If your compiler is not recognised and BOOST_TYPE_INDEX_FUNCTION_SIGNATURE is not defined,
-/// then a compile-time error will arise at any attempt to use boost::typeindex::ctti_type_index classes.
+/// then a compile-time error will arise at any attempt to use methcla_boost::typeindex::ctti_type_index classes.
 ///
 /// See BOOST_TYPE_INDEX_REGISTER_CTTI_PARSING_PARAMS and BOOST_TYPE_INDEX_CTTI_USER_DEFINED_PARSING
 /// for an information of how to tune the implementation to make a nice pretty_name() output.
@@ -79,20 +83,20 @@ namespace boost { namespace typeindex {
 /// \b Example:
 ///
 /// Imagine the situation when
-/// \code boost::typeindex::ctti_type_index::type_id<int>().pretty_name() \endcode
+/// \code methcla_boost::typeindex::ctti_type_index::type_id<int>().pretty_name() \endcode
 /// returns the following string:
-/// \code "static const char *boost::detail::ctti<int>::n() [T = int]" \endcode
-/// and \code boost::typeindex::ctti_type_index::type_id<short>().pretty_name() \endcode returns the following:
-/// \code "static const char *boost::detail::ctti<short>::n() [T = short]" \endcode
+/// \code "static const char *methcla_boost::detail::ctti<int>::n() [T = int]" \endcode
+/// and \code methcla_boost::typeindex::ctti_type_index::type_id<short>().pretty_name() \endcode returns the following:
+/// \code "static const char *methcla_boost::detail::ctti<short>::n() [T = short]" \endcode
 ///
-/// As we may see first 39 characters are "static const char *boost::detail::ctti<" and they do not depend on
+/// As we may see first 39 characters are "static const char *methcla_boost::detail::ctti<" and they do not depend on
 /// the type T. After first 39 characters we have a human readable type name which is duplicated at the end
 /// of a string. String always ends on ']', which consumes 1 character.
 ///
 /// Now if we define `BOOST_TYPE_INDEX_CTTI_USER_DEFINED_PARSING` to
 /// `(39, 1, false, "")` we'll be getting \code "int>::n() [T = int" \endcode
-/// for `boost::typeindex::ctti_type_index::type_id<int>().pretty_name()` and \code "short>::n() [T = short" \endcode
-/// for `boost::typeindex::ctti_type_index::type_id<short>().pretty_name()`.
+/// for `methcla_boost::typeindex::ctti_type_index::type_id<int>().pretty_name()` and \code "short>::n() [T = short" \endcode
+/// for `methcla_boost::typeindex::ctti_type_index::type_id<short>().pretty_name()`.
 ///
 /// Now we need to take additional care of the characters that go before the last mention of our type. We'll
 /// do that by telling the macro that we need to cut off everything that goes before the "T = " including the "T = "
@@ -119,29 +123,29 @@ namespace boost { namespace typeindex {
 
 
     /// Depending on a compiler flags, optimal implementation of type_index will be used 
-    /// as a default boost::typeindex::type_index.
+    /// as a default methcla_boost::typeindex::type_index.
     ///
-    /// Could be a boost::typeindex::stl_type_index, boost::typeindex::ctti_type_index or 
+    /// Could be a methcla_boost::typeindex::stl_type_index, methcla_boost::typeindex::ctti_type_index or 
     /// user defined type_index class.
     ///
-    /// \b See boost::typeindex::type_index_facade for a full description of type_index functions.
-    typedef platform_specific type_index;
+    /// \b See methcla_boost::typeindex::type_index_facade for a full description of type_index functions.
+    using type_index = platform_specific;
 #elif defined(BOOST_TYPE_INDEX_USER_TYPEINDEX)
     // Nothing to do
 #elif (!defined(BOOST_NO_RTTI) && !defined(BOOST_TYPE_INDEX_FORCE_NO_RTTI_COMPATIBILITY)) || defined(BOOST_MSVC)
-    typedef boost::typeindex::stl_type_index type_index;
+    using type_index = methcla_boost::typeindex::stl_type_index;
 #else 
-    typedef boost::typeindex::ctti_type_index type_index;
+    using type_index = methcla_boost::typeindex::ctti_type_index;
 #endif
 
 /// Depending on a compiler flags, optimal implementation of type_info will be used 
-/// as a default boost::typeindex::type_info.
+/// as a default methcla_boost::typeindex::type_info.
 ///
-/// Could be a std::type_info, boost::typeindex::detail::ctti_data or 
+/// Could be a std::type_info, methcla_boost::typeindex::detail::ctti_data or 
 /// some user defined class.
 ///
 /// type_info \b is \b not copyable or default constructible. It is \b not assignable too!
-typedef type_index::type_info_t type_info;
+using type_info = type_index::type_info_t;
 
 #if defined(BOOST_TYPE_INDEX_DOXYGEN_INVOKED)
 
@@ -181,7 +185,7 @@ typedef type_index::type_info_t type_info;
 ///
 /// C c1;
 /// A* pc1 = &c1;
-/// assert(boost::typeindex::type_id<C>() == boost::typeindex::type_id_runtime(*pc1));
+/// assert(methcla_boost::typeindex::type_id<C>() == methcla_boost::typeindex::type_id_runtime(*pc1));
 /// \endcode
 #define BOOST_TYPE_INDEX_REGISTER_CLASS nothing-or-some-virtual-functions
 
@@ -195,7 +199,7 @@ typedef type_index::type_info_t type_info;
 #endif // defined(BOOST_TYPE_INDEX_DOXYGEN_INVOKED)
 
 
-/// Function to get boost::typeindex::type_index for a type T.
+/// Function to get methcla_boost::typeindex::type_index for a type T.
 /// Removes const, volatile && and & modifiers from T.
 ///
 /// \b Example:
@@ -206,13 +210,13 @@ typedef type_index::type_info_t type_info;
 ///
 /// \tparam T Type for which type_index must be created.
 /// \throw Nothing.
-/// \return boost::typeindex::type_index with information about the specified type T.
+/// \return methcla_boost::typeindex::type_index with information about the specified type T.
 template <class T>
-inline type_index type_id() BOOST_NOEXCEPT {
+inline type_index type_id() noexcept {
     return type_index::type_id<T>();
 }
 
-/// Function for constructing boost::typeindex::type_index instance for type T. 
+/// Function for constructing methcla_boost::typeindex::type_index instance for type T. 
 /// Does not remove const, volatile, & and && modifiers from T.
 ///
 /// If T has no const, volatile, & and && modifiers, then returns exactly 
@@ -226,15 +230,15 @@ inline type_index type_id() BOOST_NOEXCEPT {
 ///
 /// \tparam T Type for which type_index must be created.
 /// \throw Nothing.
-/// \return boost::typeindex::type_index with information about the specified type T.
+/// \return methcla_boost::typeindex::type_index with information about the specified type T.
 template <class T>
-inline type_index type_id_with_cvr() BOOST_NOEXCEPT {
+inline type_index type_id_with_cvr() noexcept {
     return type_index::type_id_with_cvr<T>();
 }
 
-/// Function that works exactly like C++ typeid(rtti_val) call, but returns boost::type_index.
+/// Function that works exactly like C++ typeid(rtti_val) call, but returns methcla_boost::type_index.
 ///
-/// Retunrs runtime information about specified type.
+/// Returns runtime information about specified type.
 ///
 /// \b Requirements: RTTI available or Base and Derived classes must be marked with BOOST_TYPE_INDEX_REGISTER_CLASS.
 ///
@@ -249,17 +253,19 @@ inline type_index type_id_with_cvr() BOOST_NOEXCEPT {
 /// std::cout << ti.pretty_name();  // Outputs 'Derived'
 /// \endcode
 ///
-/// \param runtime_val Varaible which runtime type must be returned.
+/// \param runtime_val Variable which runtime type must be returned.
 /// \throw Nothing.
-/// \return boost::typeindex::type_index with information about the specified variable.
+/// \return methcla_boost::typeindex::type_index with information about the specified variable.
 template <class T>
-inline type_index type_id_runtime(const T& runtime_val) BOOST_NOEXCEPT {
+inline type_index type_id_runtime(const T& runtime_val) noexcept {
     return type_index::type_id_runtime(runtime_val);
 }
 
-}} // namespace boost::typeindex
+BOOST_TYPE_INDEX_END_MODULE_EXPORT
 
+}} // namespace methcla_boost::typeindex
 
+#endif  // #if !defined(BOOST_USE_MODULES) || defined(BOOST_TYPE_INDEX_INTERFACE_UNIT)
 
 #endif // BOOST_TYPE_INDEX_HPP
 

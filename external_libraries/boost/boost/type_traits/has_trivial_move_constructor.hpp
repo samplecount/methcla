@@ -11,6 +11,7 @@
 #ifndef BOOST_TT_HAS_TRIVIAL_MOVE_CONSTRUCTOR_HPP_INCLUDED
 #define BOOST_TT_HAS_TRIVIAL_MOVE_CONSTRUCTOR_HPP_INCLUDED
 
+#include <cstddef> // size_t
 #include <boost/type_traits/intrinsics.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 
@@ -19,15 +20,16 @@
 #if defined(BOOST_MSVC) || defined(BOOST_INTEL)
 #include <boost/type_traits/is_pod.hpp>
 #include <boost/type_traits/is_volatile.hpp>
+#include <boost/type_traits/is_reference.hpp>
 #endif
 
-#if defined(__GNUC__) || defined(__clang)
+#if defined(__GNUC__) || defined(__clang__)
 #include <boost/type_traits/is_constructible.hpp>
 #include <boost/type_traits/is_volatile.hpp>
 #endif
 
 
-namespace boost {
+namespace methcla_boost {
 
 template <typename T> struct has_trivial_move_constructor : public integral_constant<bool, BOOST_HAS_TRIVIAL_MOVE_CONSTRUCTOR(T)>{};
 
@@ -48,10 +50,10 @@ template <typename T> struct has_trivial_move_constructor : public integral_cons
 #include <boost/type_traits/is_pod.hpp>
 #include <boost/type_traits/is_volatile.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 template <typename T> struct has_trivial_move_constructor 
-   : public integral_constant<bool, ::boost::is_pod<T>::value && !::boost::is_volatile<T>::value SOLARIS_EXTRA_CHECK>{};
+   : public integral_constant<bool, ::methcla_boost::is_pod<T>::value && !::methcla_boost::is_volatile<T>::value SOLARIS_EXTRA_CHECK>{};
 
 #undef SOLARIS_EXTRA_CHECK
 
@@ -72,6 +74,6 @@ template <class T> struct has_trivial_move_constructor<T&&> : public true_type{}
 template <class T, std::size_t N> struct has_trivial_move_constructor<T[N]> : public false_type{};
 template <class T> struct has_trivial_move_constructor<T[]> : public false_type{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_HAS_TRIVIAL_MOVE_CONSTRUCTOR_HPP_INCLUDED

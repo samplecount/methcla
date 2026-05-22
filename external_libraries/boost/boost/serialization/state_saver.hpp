@@ -35,7 +35,7 @@
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/identity.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
 
 template<class T>
@@ -43,7 +43,7 @@ template<class T>
 //  - POD or object semantic (cannot be reference, function, ...)
 //  - copy constructor
 //  - operator = (no-throw one preferred)
-class state_saver : private boost::noncopyable
+class state_saver : private methcla_boost::noncopyable
 {
 private:
     const T previous_value;
@@ -59,8 +59,8 @@ private:
         static void invoke(T & previous_ref, const T & previous_value){
             BOOST_TRY{
                 previous_ref = previous_value;
-            } 
-            BOOST_CATCH(::std::exception &) { 
+            }
+            BOOST_CATCH(::std::exception &) {
                 // we must ignore it - we are in destructor
             }
             BOOST_CATCH_END
@@ -70,11 +70,11 @@ private:
 public:
     state_saver(
         T & object
-    ) : 
+    ) :
         previous_value(object),
-        previous_ref(object) 
+        previous_ref(object)
     {}
-    
+
     ~state_saver() {
         #ifndef BOOST_NO_EXCEPTIONS
             typedef typename mpl::eval_if<

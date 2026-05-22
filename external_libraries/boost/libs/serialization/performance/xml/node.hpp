@@ -22,7 +22,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #include "macro.hpp"
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
 

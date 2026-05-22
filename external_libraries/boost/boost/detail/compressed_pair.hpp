@@ -24,6 +24,7 @@
 
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/is_empty.hpp>
+#include <boost/type_traits/is_final.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/call_traits.hpp>
 
@@ -31,7 +32,7 @@
 # pragma warning(push)
 # pragma warning(disable:4512)
 #endif 
-namespace boost
+namespace methcla_boost
 {
 
 template <class T1, class T2>
@@ -42,6 +43,14 @@ class compressed_pair;
 
 namespace details
 {
+   template<class T, bool E = methcla_boost::is_final<T>::value>
+   struct compressed_pair_empty
+      : ::methcla_boost::false_type { };
+
+   template<class T>
+   struct compressed_pair_empty<T, false>
+      : ::methcla_boost::is_empty<T> { };
+
    // JM altered 26 Jan 2000:
    template <class T1, class T2, bool IsSame, bool FirstEmpty, bool SecondEmpty>
    struct compressed_pair_switch;
@@ -122,7 +131,7 @@ namespace details
       second_reference       second()       {return second_;}
       second_const_reference second() const {return second_;}
 
-      void swap(::boost::compressed_pair<T1, T2>& y)
+      void swap(::methcla_boost::compressed_pair<T1, T2>& y)
       {
          cp_swap(first_, y.first());
          cp_swap(second_, y.second());
@@ -136,7 +145,7 @@ namespace details
 
    template <class T1, class T2>
    class compressed_pair_imp<T1, T2, 1>
-      : protected ::boost::remove_cv<T1>::type
+      : protected ::methcla_boost::remove_cv<T1>::type
    {
    public:
       typedef T1                                                 first_type;
@@ -165,7 +174,7 @@ namespace details
       second_reference       second()       {return second_;}
       second_const_reference second() const {return second_;}
 
-      void swap(::boost::compressed_pair<T1,T2>& y)
+      void swap(::methcla_boost::compressed_pair<T1,T2>& y)
       {
          // no need to swap empty base class:
          cp_swap(second_, y.second());
@@ -178,7 +187,7 @@ namespace details
 
    template <class T1, class T2>
    class compressed_pair_imp<T1, T2, 2>
-      : protected ::boost::remove_cv<T2>::type
+      : protected ::methcla_boost::remove_cv<T2>::type
    {
    public:
       typedef T1                                                 first_type;
@@ -207,7 +216,7 @@ namespace details
       second_reference       second()       {return *this;}
       second_const_reference second() const {return *this;}
 
-      void swap(::boost::compressed_pair<T1,T2>& y)
+      void swap(::methcla_boost::compressed_pair<T1,T2>& y)
       {
          // no need to swap empty base class:
          cp_swap(first_, y.first());
@@ -221,8 +230,8 @@ namespace details
 
    template <class T1, class T2>
    class compressed_pair_imp<T1, T2, 3>
-      : protected ::boost::remove_cv<T1>::type,
-        protected ::boost::remove_cv<T2>::type
+      : protected ::methcla_boost::remove_cv<T1>::type,
+        protected ::methcla_boost::remove_cv<T2>::type
    {
    public:
       typedef T1                                                 first_type;
@@ -252,7 +261,7 @@ namespace details
       second_const_reference second() const {return *this;}
       //
       // no need to swap empty bases:
-      void swap(::boost::compressed_pair<T1,T2>&) {}
+      void swap(::methcla_boost::compressed_pair<T1,T2>&) {}
    };
 
    // JM
@@ -264,7 +273,7 @@ namespace details
    //      different objects (albeit both empty).
    template <class T1, class T2>
    class compressed_pair_imp<T1, T2, 4>
-      : protected ::boost::remove_cv<T1>::type
+      : protected ::methcla_boost::remove_cv<T1>::type
    {
    public:
       typedef T1                                                 first_type;
@@ -290,7 +299,7 @@ namespace details
       second_reference       second()       {return m_second;}
       second_const_reference second() const {return m_second;}
 
-      void swap(::boost::compressed_pair<T1,T2>&) {}
+      void swap(::methcla_boost::compressed_pair<T1,T2>&) {}
    private:
       T2 m_second;
    };
@@ -324,7 +333,7 @@ namespace details
       second_reference       second()       {return second_;}
       second_const_reference second() const {return second_;}
 
-      void swap(::boost::compressed_pair<T1, T2>& y)
+      void swap(::methcla_boost::compressed_pair<T1, T2>& y)
       {
          cp_swap(first_, y.first());
          cp_swap(second_, y.second());
@@ -338,22 +347,24 @@ namespace details
 
 template <class T1, class T2>
 class compressed_pair
-   : private ::boost::details::compressed_pair_imp<T1, T2,
-             ::boost::details::compressed_pair_switch<
+#ifndef BOOST_UTILITY_DOCS
+    : private ::methcla_boost::details::compressed_pair_imp<T1, T2,
+             ::methcla_boost::details::compressed_pair_switch<
                     T1,
                     T2,
-                    ::boost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-                    ::boost::is_empty<T1>::value,
-                    ::boost::is_empty<T2>::value>::value>
+                    ::methcla_boost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T1>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T2>::value>::value>
+#endif // BOOST_UTILITY_DOCS
 {
 private:
    typedef details::compressed_pair_imp<T1, T2,
-             ::boost::details::compressed_pair_switch<
+             ::methcla_boost::details::compressed_pair_switch<
                     T1,
                     T2,
-                    ::boost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-                    ::boost::is_empty<T1>::value,
-                    ::boost::is_empty<T2>::value>::value> base;
+                    ::methcla_boost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T1>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T2>::value>::value> base;
 public:
    typedef T1                                                 first_type;
    typedef T2                                                 second_type;
@@ -383,22 +394,24 @@ public:
 //
 template <class T>
 class compressed_pair<T, T>
+#ifndef BOOST_UTILITY_DOCS
    : private details::compressed_pair_imp<T, T,
-             ::boost::details::compressed_pair_switch<
+             ::methcla_boost::details::compressed_pair_switch<
                     T,
                     T,
-                    ::boost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-                    ::boost::is_empty<T>::value,
-                    ::boost::is_empty<T>::value>::value>
+                    ::methcla_boost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T>::value>::value>
+#endif // BOOST_UTILITY_DOCS
 {
 private:
    typedef details::compressed_pair_imp<T, T,
-             ::boost::details::compressed_pair_switch<
+             ::methcla_boost::details::compressed_pair_switch<
                     T,
                     T,
-                    ::boost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-                    ::boost::is_empty<T>::value,
-                    ::boost::is_empty<T>::value>::value> base;
+                    ::methcla_boost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T>::value,
+                    ::methcla_boost::details::compressed_pair_empty<T>::value>::value> base;
 public:
    typedef T                                                  first_type;
    typedef T                                                  second_type;
@@ -422,7 +435,7 @@ public:
    second_reference       second()       {return base::second();}
    second_const_reference second() const {return base::second();}
 
-   void swap(::boost::compressed_pair<T,T>& y) { base::swap(y); }
+   void swap(::methcla_boost::compressed_pair<T,T>& y) { base::swap(y); }
 };
 
 template <class T1, class T2>

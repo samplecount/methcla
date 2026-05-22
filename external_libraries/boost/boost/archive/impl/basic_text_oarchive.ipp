@@ -20,7 +20,7 @@ namespace std{
 
 #include <boost/archive/basic_text_oarchive.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
@@ -54,9 +54,9 @@ basic_text_oarchive<Archive>::init(){
     const std::string file_signature(BOOST_ARCHIVE_SIGNATURE());
     * this->This() << file_signature;
     // write library version
-    const library_version_type v(BOOST_ARCHIVE_VERSION());
+    const methcla_boost::serialization::library_version_type v(BOOST_ARCHIVE_VERSION());
     * this->This() << v;
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

@@ -22,7 +22,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 namespace utils {
 
@@ -54,7 +54,7 @@ operator<<( std::ostream& ostr, custom_manip<Uniq> const& ) { return custom_prin
 
 } // namespace utils
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

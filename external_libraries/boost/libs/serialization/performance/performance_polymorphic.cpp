@@ -49,7 +49,7 @@ namespace std{
 
 int test_main(int /* argc */, char * /* argv */ [])
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     BOOST_REQUIRE(NULL != testfile);
     const data d;
     data d1;
@@ -57,13 +57,13 @@ int test_main(int /* argc */, char * /* argv */ [])
     {
         test_ostream os(testfile, TEST_STREAM_FLAGS);
         test_oarchive oa_implementation(os);
-        boost::archive::polymorphic_oarchive & oa_interface = oa_implementation;
+        methcla_boost::archive::polymorphic_oarchive & oa_interface = oa_implementation;
         oa_interface << BOOST_SERIALIZATION_NVP(d);
     }
     {
         test_istream is(testfile, TEST_STREAM_FLAGS);
         test_iarchive  ia_implementation(is);
-        boost::archive::polymorphic_iarchive & ia_interface = ia_implementation;
+        methcla_boost::archive::polymorphic_iarchive & ia_interface = ia_implementation;
         ia_interface >> BOOST_SERIALIZATION_NVP(d1);
     }
     BOOST_CHECK(d == d1);
@@ -86,14 +86,14 @@ int test_main(int /* argc */, char * /* argv */ [])
     // test using using polymorphic implementation.
     {
         test_ostream os(testfile, TEST_STREAM_FLAGS);
-        boost::archive::polymorphic_oarchive * oa_implementation 
+        methcla_boost::archive::polymorphic_oarchive * oa_implementation 
             = new test_oarchive(os);
         *oa_implementation << BOOST_SERIALIZATION_NVP(d);
         delete oa_implementation;
     }
     {
         test_istream is(testfile, TEST_STREAM_FLAGS);
-        boost::archive::polymorphic_iarchive * ia_implementation
+        methcla_boost::archive::polymorphic_iarchive * ia_implementation
             = new test_iarchive(is);
         *ia_implementation >> BOOST_SERIALIZATION_NVP(d1);
         delete ia_implementation;

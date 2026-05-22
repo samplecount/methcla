@@ -16,9 +16,9 @@
 
 #include <climits>
 
-namespace boost {
+namespace methcla_boost {
 
-#if !defined( __CODEGEARC__ )
+#if !defined( BOOST_CODEGEARC )
 
 #if !(defined(BOOST_MSVC) && BOOST_MSVC <= 1310) &&\
     !(defined(__EDG_VERSION__) && __EDG_VERSION__ <= 238) &&\
@@ -42,7 +42,7 @@ struct is_unsigned_values
 template <class T>
 struct is_ununsigned_helper
 {
-   BOOST_STATIC_CONSTANT(bool, value = (::boost::detail::is_unsigned_values<T>::minus_one > ::boost::detail::is_unsigned_values<T>::zero));
+   BOOST_STATIC_CONSTANT(bool, value = (::methcla_boost::detail::is_unsigned_values<T>::minus_one > ::methcla_boost::detail::is_unsigned_values<T>::zero));
 };
 
 template <bool integral_type>
@@ -68,7 +68,7 @@ struct is_unsigned_select_helper<false>
 template <class T>
 struct is_unsigned
 {
-   typedef ::boost::detail::is_unsigned_select_helper< ::boost::is_integral<T>::value || ::boost::is_enum<T>::value > selector;
+   typedef ::methcla_boost::detail::is_unsigned_select_helper< ::methcla_boost::is_integral<T>::value || ::methcla_boost::is_enum<T>::value > selector;
    typedef typename selector::template rebind<T> binder;
    typedef typename binder::type type;
    BOOST_STATIC_CONSTANT(bool, value = type::value);
@@ -76,7 +76,7 @@ struct is_unsigned
 
 } // namespace detail
 
-template <class T> struct is_unsigned : public integral_constant<bool, boost::detail::is_unsigned<T>::value> {};
+template <class T> struct is_unsigned : public integral_constant<bool, methcla_boost::detail::is_unsigned<T>::value> {};
 
 #else
 
@@ -84,7 +84,7 @@ template <class T> struct is_unsigned : public false_type{};
 
 #endif
 
-#else // defined( __CODEGEARC__ )
+#else // defined( BOOST_CODEGEARC )
 template <class T> struct is_unsigned : public integral_constant<bool, __is_unsigned(T)> {};
 #endif
 
@@ -122,15 +122,15 @@ template <> struct is_unsigned<const  long> : public false_type{};
 template <> struct is_unsigned<volatile  long> : public false_type{};
 template <> struct is_unsigned<const volatile  long> : public false_type{};
 #ifdef BOOST_HAS_LONG_LONG
-template <> struct is_unsigned< ::boost::ulong_long_type> : public true_type{};
-template <> struct is_unsigned<const ::boost::ulong_long_type> : public true_type{};
-template <> struct is_unsigned<volatile ::boost::ulong_long_type> : public true_type{};
-template <> struct is_unsigned<const volatile ::boost::ulong_long_type> : public true_type{};
+template <> struct is_unsigned< ::methcla_boost::ulong_long_type> : public true_type{};
+template <> struct is_unsigned<const ::methcla_boost::ulong_long_type> : public true_type{};
+template <> struct is_unsigned<volatile ::methcla_boost::ulong_long_type> : public true_type{};
+template <> struct is_unsigned<const volatile ::methcla_boost::ulong_long_type> : public true_type{};
 
-template <> struct is_unsigned< ::boost::long_long_type> : public false_type{};
-template <> struct is_unsigned<const ::boost::long_long_type> : public false_type{};
-template <> struct is_unsigned<volatile ::boost::long_long_type> : public false_type{};
-template <> struct is_unsigned<const volatile ::boost::long_long_type> : public false_type{};
+template <> struct is_unsigned< ::methcla_boost::long_long_type> : public false_type{};
+template <> struct is_unsigned<const ::methcla_boost::long_long_type> : public false_type{};
+template <> struct is_unsigned<volatile ::methcla_boost::long_long_type> : public false_type{};
+template <> struct is_unsigned<const volatile ::methcla_boost::long_long_type> : public false_type{};
 #endif
 #if defined(CHAR_MIN) 
 #if CHAR_MIN == 0
@@ -158,6 +158,6 @@ template <> struct is_unsigned<volatile wchar_t> : public false_type{};
 template <> struct is_unsigned<const volatile wchar_t> : public false_type{};
 #endif
 #endif
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_MEMBER_FUNCTION_POINTER_HPP_INCLUDED

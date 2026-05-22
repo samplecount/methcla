@@ -16,7 +16,7 @@
 /*
  Revision history:
    15 June  2003 - Initial version.
-   31 March 2004 - improved diagnostic messages and portability 
+   31 March 2004 - improved diagnostic messages and portability
                    (Jonathan Turkanis)
    03 April 2004 - works on VC6 at class and namespace scope
                  - ported to DigitalMars
@@ -48,9 +48,9 @@
 //    unreferenced variable of this type generates a warning iff B is false.
 // 3. static_warning_impl<B>::type overloads operator& to return a dynamically
 //    allocated int pointer only is B is true, so  returning the address of an
-//    automatic variable of this type generates a warning iff B is fasle.
-// 4. static_warning_impl<B>::STATIC_WARNING is decalred as a struct iff B is 
-//    false. 
+//    automatic variable of this type generates a warning iff B is false.
+// 4. static_warning_impl<B>::STATIC_WARNING is declared as a struct iff B is
+//    false.
 // 5. static_warning_impl<B>::type is incomplete iff B is false, so deleting a
 //    pointer to this type generates a warning iff B is false.
 //
@@ -66,21 +66,22 @@
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/print.hpp>
 #include <boost/mpl/eval_if.hpp>
+#include <boost/mpl/bool_fwd.hpp>
 #include <boost/static_assert.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
 
-template<int L> 
+template<int L>
 struct BOOST_SERIALIZATION_STATIC_WARNING_LINE{};
 
 template<bool B, int L>
 struct static_warning_test{
-    typename boost::mpl::eval_if_c<
+    typename methcla_boost::mpl::eval_if_c<
         B,
-        boost::mpl::true_,
-        typename boost::mpl::identity<
-            boost::mpl::print<
+        methcla_boost::mpl::true_,
+        typename methcla_boost::mpl::identity<
+            methcla_boost::mpl::print<
                 BOOST_SERIALIZATION_STATIC_WARNING_LINE<L>
             >
         >
@@ -94,9 +95,9 @@ struct BOOST_SERIALIZATION_SS {};
 } // boost
 
 #define BOOST_SERIALIZATION_BSW(B, L) \
-    typedef boost::serialization::BOOST_SERIALIZATION_SS< \
-        sizeof( boost::serialization::static_warning_test< B, L > ) \
-    > BOOST_JOIN(STATIC_WARNING_LINE, L) BOOST_ATTRIBUTE_UNUSED; 
+    typedef methcla_boost::serialization::BOOST_SERIALIZATION_SS< \
+        sizeof( methcla_boost::serialization::static_warning_test< B, L > ) \
+    > BOOST_JOIN(STATIC_WARNING_LINE, L) BOOST_ATTRIBUTE_UNUSED;
 #define BOOST_STATIC_WARNING(B) BOOST_SERIALIZATION_BSW(B, __LINE__)
 
 #endif // BOOST_SERIALIZATION_STATIC_WARNING_HPP

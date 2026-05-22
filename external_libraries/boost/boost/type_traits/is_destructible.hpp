@@ -9,39 +9,48 @@
 #ifndef BOOST_TT_IS_DESTRUCTIBLE_HPP_INCLUDED
 #define BOOST_TT_IS_DESTRUCTIBLE_HPP_INCLUDED
 
+#include <cstddef> // size_t
 #include <boost/type_traits/integral_constant.hpp>
 #include <boost/detail/workaround.hpp>
+#include <boost/type_traits/is_complete.hpp>
+#include <boost/static_assert.hpp>
 
 #if !defined(BOOST_NO_CXX11_DECLTYPE) && !BOOST_WORKAROUND(BOOST_MSVC, < 1800)
 
 #include <boost/type_traits/detail/yes_no_type.hpp>
 #include <boost/type_traits/declval.hpp>
 
-namespace boost{
+namespace methcla_boost{
 
    namespace detail{
 
       struct is_destructible_imp
       {
-         template<typename T, typename = decltype(boost::declval<T&>().~T())>
-         static boost::type_traits::yes_type test(int);
+         template<typename T, typename = decltype(methcla_boost::declval<T&>().~T())>
+         static methcla_boost::type_traits::yes_type test(int);
          template<typename>
-         static boost::type_traits::no_type test(...);
+         static methcla_boost::type_traits::no_type test(...);
       };
 
    }
 
-   template <class T> struct is_destructible : public integral_constant<bool, sizeof(detail::is_destructible_imp::test<T>(0)) == sizeof(boost::type_traits::yes_type)>{};
+   template <class T> struct is_destructible : public integral_constant<bool, sizeof(methcla_boost::detail::is_destructible_imp::test<T>(0)) == sizeof(methcla_boost::type_traits::yes_type)>
+   {
+      BOOST_STATIC_ASSERT_MSG(methcla_boost::is_complete<T>::value, "Arguments to is_destructible must be complete types");
+   };
 
 #else
 
 #include <boost/type_traits/is_pod.hpp>
 #include <boost/type_traits/is_class.hpp>
 
-namespace boost{
+namespace methcla_boost{
 
    // We don't know how to implement this:
-   template <class T> struct is_destructible : public integral_constant<bool, is_pod<T>::value || is_class<T>::value>{};
+   template <class T> struct is_destructible : public integral_constant<bool, is_pod<T>::value || is_class<T>::value>
+   {
+      BOOST_STATIC_ASSERT_MSG(methcla_boost::is_complete<T>::value, "Arguments to is_destructible must be complete types");
+   };
 #endif
 
    template <> struct is_destructible<void> : public false_type{};
@@ -55,6 +64,6 @@ namespace boost{
    template <class T, std::size_t N> struct is_destructible<T[N]> : public is_destructible<T>{};
    template <class T> struct is_destructible<T[]> : public is_destructible<T>{};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_DESTRUCTIBLE_HPP_INCLUDED

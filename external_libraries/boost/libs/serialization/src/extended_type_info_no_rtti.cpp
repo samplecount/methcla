@@ -18,12 +18,16 @@
 namespace std{ using ::strcmp; }
 #endif
 
+// it marks our code with proper attributes as being exported when
+// we're compiling it while marking it import when just the headers
+// is being included.
 #define BOOST_SERIALIZATION_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/serialization/extended_type_info_no_rtti.hpp>
 
 #define EXTENDED_TYPE_INFO_NO_RTTI_KEY 2
 
-namespace boost { 
+namespace methcla_boost { 
 namespace serialization { 
 namespace no_rtti_system { 
 
@@ -36,7 +40,7 @@ extended_type_info_no_rtti_0::extended_type_info_no_rtti_0(
 
 BOOST_SERIALIZATION_DECL bool
 extended_type_info_no_rtti_0::is_less_than(
-    const boost::serialization::extended_type_info &rhs) const 
+    const methcla_boost::serialization::extended_type_info &rhs) const 
 {
     // shortcut for common case
     if(this == & rhs)
@@ -48,8 +52,8 @@ extended_type_info_no_rtti_0::is_less_than(
     // this method of type id are in fact exported.
     // b) This class was used (e.g. serialized through a pointer) before
     // it was exported.  Make sure that classes which use this method
-    // of type id are NOT "automatically" registered by serializating 
-    // through a pointer to the to most derived class.  OR make sure
+    // of type id are NOT "automatically" registered by serializing 
+    // through a pointer to the most derived class.  OR make sure
     // that the BOOST_CLASS_EXPORT is included in every file
     // which does this.
     BOOST_ASSERT(NULL != l);
@@ -59,7 +63,7 @@ extended_type_info_no_rtti_0::is_less_than(
 
 BOOST_SERIALIZATION_DECL bool
 extended_type_info_no_rtti_0::is_equal(
-    const boost::serialization::extended_type_info &rhs) const 
+    const methcla_boost::serialization::extended_type_info &rhs) const 
 {
     // shortcut for common case
     if(this == & rhs)
@@ -80,6 +84,6 @@ BOOST_SERIALIZATION_DECL
 extended_type_info_no_rtti_0::~extended_type_info_no_rtti_0()
 {}
 
-} // namespece detail
+} // namespace detail
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost

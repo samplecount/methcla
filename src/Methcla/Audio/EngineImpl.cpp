@@ -26,6 +26,7 @@
 
 #include <boost/heap/priority_queue.hpp>
 
+#include <cassert>
 #include <oscpp/print.hpp>
 #include <oscpp/util.hpp>
 
@@ -191,7 +192,7 @@ static inline void addNodeToTarget(Node* target, Node* node,
     }
 
     // POST: Node should be linked into node tree.
-    BOOST_ASSERT(node->parent() != nullptr);
+    assert(node->parent() != nullptr);
 }
 
 void Methcla::Audio::perform_nrt_free(Environment*, void* data)

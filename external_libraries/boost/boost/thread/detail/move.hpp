@@ -18,9 +18,7 @@
 #include <boost/type_traits/remove_extent.hpp>
 #include <boost/type_traits/is_array.hpp>
 #include <boost/type_traits/is_function.hpp>
-#include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/add_pointer.hpp>
-#include <boost/type_traits/decay.hpp>
 #endif
 
 #include <boost/thread/detail/delete.hpp>
@@ -30,7 +28,7 @@
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
 #include <type_traits>
 #endif
-namespace boost
+namespace methcla_boost
 {
 
     namespace detail
@@ -63,14 +61,14 @@ namespace boost
 
 #ifndef BOOST_NO_SFINAE
     template<typename T>
-    typename enable_if<boost::is_convertible<T&,boost::detail::thread_move_t<T> >, boost::detail::thread_move_t<T> >::type move(T& t)
+    typename enable_if<methcla_boost::is_convertible<T&,methcla_boost::detail::thread_move_t<T> >, methcla_boost::detail::thread_move_t<T> >::type move(T& t)
     {
-        return boost::detail::thread_move_t<T>(t);
+        return methcla_boost::detail::thread_move_t<T>(t);
     }
 #endif
 
     template<typename T>
-    boost::detail::thread_move_t<T> move(boost::detail::thread_move_t<T> t)
+    methcla_boost::detail::thread_move_t<T> move(methcla_boost::detail::thread_move_t<T> t)
     {
         return t;
     }
@@ -159,8 +157,8 @@ namespace boost
 #else
 
 #define BOOST_THREAD_COPY_ASSIGN_REF(TYPE) const TYPE&
-#define BOOST_THREAD_RV_REF(TYPE) boost::detail::thread_move_t< TYPE >
-#define BOOST_THREAD_RV_REF_BEG boost::detail::thread_move_t<
+#define BOOST_THREAD_RV_REF(TYPE) methcla_boost::detail::thread_move_t< TYPE >
+#define BOOST_THREAD_RV_REF_BEG methcla_boost::detail::thread_move_t<
 #define BOOST_THREAD_RV_REF_END >
 #define BOOST_THREAD_RV(V) (*V)
 #define BOOST_THREAD_FWD_REF(TYPE) BOOST_FWD_REF(TYPE)
@@ -187,33 +185,33 @@ struct enable_move_utility_emulation<
 
 #endif
 
-namespace boost
+namespace methcla_boost
 {
 namespace detail
 {
   template <typename T>
-  BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type)
+  BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type)
   make_rv_ref(T v)  BOOST_NOEXCEPT
   {
-    return (BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type))(v);
+    return (BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type))(v);
   }
 //  template <typename T>
-//  BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type)
+//  BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type)
 //  make_rv_ref(T &v)  BOOST_NOEXCEPT
 //  {
-//    return (BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type))(v);
+//    return (BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type))(v);
 //  }
 //  template <typename T>
-//  const BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type)
+//  const BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type)
 //  make_rv_ref(T const&v)  BOOST_NOEXCEPT
 //  {
-//    return (const BOOST_THREAD_RV_REF(typename ::boost::remove_cv<typename ::boost::remove_reference<T>::type>::type))(v);
+//    return (const BOOST_THREAD_RV_REF(typename ::methcla_boost::remove_cv<typename ::methcla_boost::remove_reference<T>::type>::type))(v);
 //  }
 }
 }
 
 #define BOOST_THREAD_MAKE_RV_REF(RVALUE) RVALUE.move()
-//#define BOOST_THREAD_MAKE_RV_REF(RVALUE) boost::detail::make_rv_ref(RVALUE)
+//#define BOOST_THREAD_MAKE_RV_REF(RVALUE) methcla_boost::detail::make_rv_ref(RVALUE)
 #endif
 
 
@@ -228,38 +226,38 @@ namespace detail
 #if defined BOOST_THREAD_USES_MOVE
 
 #define BOOST_THREAD_MOVABLE(TYPE) \
-    ::boost::rv<TYPE>& move()  BOOST_NOEXCEPT \
+    ::methcla_boost::rv<TYPE>& move()  BOOST_NOEXCEPT \
     { \
-      return *static_cast< ::boost::rv<TYPE>* >(this); \
+      return *static_cast< ::methcla_boost::rv<TYPE>* >(this); \
     } \
-    const ::boost::rv<TYPE>& move() const BOOST_NOEXCEPT \
+    const ::methcla_boost::rv<TYPE>& move() const BOOST_NOEXCEPT \
     { \
-      return *static_cast<const ::boost::rv<TYPE>* >(this); \
+      return *static_cast<const ::methcla_boost::rv<TYPE>* >(this); \
     } \
-    operator ::boost::rv<TYPE>&() \
+    operator ::methcla_boost::rv<TYPE>&() \
     { \
-      return *static_cast< ::boost::rv<TYPE>* >(this); \
+      return *static_cast< ::methcla_boost::rv<TYPE>* >(this); \
     } \
-    operator const ::boost::rv<TYPE>&() const \
+    operator const ::methcla_boost::rv<TYPE>&() const \
     { \
-      return *static_cast<const ::boost::rv<TYPE>* >(this); \
+      return *static_cast<const ::methcla_boost::rv<TYPE>* >(this); \
     }\
 
 #define BOOST_THREAD_COPYABLE(TYPE) \
   TYPE& operator=(TYPE &t)\
-  {  this->operator=(static_cast<const ::boost::rv<TYPE> &>(const_cast<const TYPE &>(t))); return *this;}
+  {  this->operator=(static_cast<const ::methcla_boost::rv<TYPE> &>(const_cast<const TYPE &>(t))); return *this;}
 
 
 #else
 
 #define BOOST_THREAD_MOVABLE(TYPE) \
-    operator ::boost::detail::thread_move_t<TYPE>() BOOST_NOEXCEPT \
+    operator ::methcla_boost::detail::thread_move_t<TYPE>() BOOST_NOEXCEPT \
     { \
         return move(); \
     } \
-    ::boost::detail::thread_move_t<TYPE> move() BOOST_NOEXCEPT \
+    ::methcla_boost::detail::thread_move_t<TYPE> move() BOOST_NOEXCEPT \
     { \
-      ::boost::detail::thread_move_t<TYPE> x(*this); \
+      ::methcla_boost::detail::thread_move_t<TYPE> x(*this); \
         return x; \
     } \
 
@@ -280,7 +278,7 @@ namespace detail
 
 
 
-namespace boost
+namespace methcla_boost
 {
   namespace thread_detail
   {
@@ -289,31 +287,31 @@ namespace boost
 #elif defined BOOST_THREAD_USES_MOVE
     template <class T>
     struct is_rv
-       : ::boost::move_detail::is_rv<T>
+       : ::methcla_boost::move_detail::is_rv<T>
     {};
 
 #else
     template <class T>
     struct is_rv
-       : ::boost::integral_constant<bool, false>
+       : ::methcla_boost::integral_constant<bool, false>
     {};
 
     template <class T>
-    struct is_rv< ::boost::detail::thread_move_t<T> >
-       : ::boost::integral_constant<bool, true>
+    struct is_rv< ::methcla_boost::detail::thread_move_t<T> >
+       : ::methcla_boost::integral_constant<bool, true>
     {};
 
     template <class T>
-    struct is_rv< const ::boost::detail::thread_move_t<T> >
-       : ::boost::integral_constant<bool, true>
+    struct is_rv< const ::methcla_boost::detail::thread_move_t<T> >
+       : ::methcla_boost::integral_constant<bool, true>
     {};
 #endif
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     template <class Tp>
-    struct remove_reference : boost::remove_reference<Tp> {};
+    struct remove_reference : methcla_boost::remove_reference<Tp> {};
     template <class Tp>
-    struct  decay : boost::decay<Tp> {};
+    struct  decay : methcla_boost::decay<Tp> {};
 #else
   template <class Tp>
   struct remove_reference
@@ -334,8 +332,8 @@ namespace boost
   struct  decay
   {
   private:
-    typedef typename boost::move_detail::remove_rvalue_reference<Tp>::type Up0;
-    typedef typename boost::remove_reference<Up0>::type Up;
+    typedef typename methcla_boost::move_detail::remove_rvalue_reference<Tp>::type Up0;
+    typedef typename methcla_boost::remove_reference<Up0>::type Up;
   public:
       typedef typename conditional
                        <
@@ -352,18 +350,25 @@ namespace boost
 #endif
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
-      template <class T>
-      typename decay<T>::type
-      decay_copy(T&& t)
-      {
-          return boost::forward<T>(t);
-      }
+  template <class T>
+  typename decay<T>::type
+  decay_copy(T&& t)
+  {
+      return methcla_boost::forward<T>(t);
+  }
+  typedef void (*void_fct_ptr)();
+
+//  inline void_fct_ptr
+//  decay_copy(void (&t)())
+//  {
+//      return &t;
+//  }
 #else
   template <class T>
   typename decay<T>::type
   decay_copy(BOOST_THREAD_FWD_REF(T) t)
   {
-      return boost::forward<T>(t);
+      return methcla_boost::forward<T>(t);
   }
 #endif
   }

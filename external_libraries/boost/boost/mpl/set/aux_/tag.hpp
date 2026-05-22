@@ -15,7 +15,7 @@
 // $Date$
 // $Revision$
 
-namespace boost { namespace mpl { namespace aux {
+namespace methcla_boost { namespace mpl { namespace aux {
 
 struct set_tag;
 

@@ -18,72 +18,169 @@
 #  pragma once
 #endif
 
+#include <boost/intrusive/detail/workaround.hpp>
 #include <boost/intrusive/detail/mpl.hpp>
 #include <boost/intrusive/detail/ebo_functor_holder.hpp>
+#include <boost/intrusive/pointer_traits.hpp>
 
-namespace boost{
+namespace methcla_boost{
 namespace intrusive{
 
-template<class Key, class T, class KeyCompare, class KeyOfValue>
+//Needed to support smart references to value types
+template <class From, class ValuePtr>
+struct disable_if_smartref_to
+   : detail::disable_if_c 
+      <  detail::is_same
+            <From, typename pointer_traits
+               <ValuePtr>
+                  ::reference>::value
+      || detail::is_same
+            <From, typename pointer_traits
+                     < typename pointer_rebind
+                           < ValuePtr
+                           , const typename methcla_boost::movelib::pointer_element<ValuePtr>::type>::type>
+                  ::reference>::value
+      >
+{};
+
+//This function object takes a KeyCompare function object
+//and compares values that contains keys using KeyOfValue
+template< class ValuePtr, class KeyCompare, class KeyOfValue, class Ret = bool
+        , bool = methcla_boost::intrusive::detail::is_same
+   <typename methcla_boost::movelib::pointer_element<ValuePtr>::type, typename KeyOfValue::type>::value >
 struct tree_value_compare
-   :  public boost::intrusive::detail::ebo_functor_holder<KeyCompare>
+   :  public methcla_boost::intrusive::detail::ebo_functor_holder<KeyCompare>
 {
-   typedef boost::intrusive::detail::ebo_functor_holder<KeyCompare> base_t;
-   typedef T            value_type;
-   typedef KeyCompare   key_compare;
-   typedef KeyOfValue   key_of_value;
-   typedef Key          key_type;
+   typedef typename
+      methcla_boost::movelib::pointer_element<ValuePtr>::type value_type;
+   typedef KeyCompare                                 key_compare;
+   typedef KeyOfValue                                 key_of_value;
+   typedef typename KeyOfValue::type                  key_type;
 
+   typedef methcla_boost::intrusive::detail::ebo_functor_holder<KeyCompare> base_t;
 
-   tree_value_compare()
+   inline tree_value_compare()
       :  base_t()
    {}
 
-   explicit tree_value_compare(const key_compare &kcomp)
+   inline explicit tree_value_compare(const key_compare &kcomp)
       :  base_t(kcomp)
    {}
 
-   tree_value_compare (const tree_value_compare &x)
+   inline tree_value_compare (const tree_value_compare &x)
       :  base_t(x.base_t::get())
    {}
 
-   tree_value_compare &operator=(const tree_value_compare &x)
+   inline tree_value_compare &operator=(const tree_value_compare &x)
    {  this->base_t::get() = x.base_t::get();   return *this;  }
 
-   tree_value_compare &operator=(const key_compare &x)
+   inline tree_value_compare &operator=(const key_compare &x)
    {  this->base_t::get() = x;   return *this;  }
 
-   const key_compare &key_comp() const
+   inline const key_compare &key_comp() const
    {  return static_cast<const key_compare &>(*this);  }
 
-   key_compare &key_comp()
-   {  return static_cast<key_compare &>(*this);  }
+   inline Ret operator()(const key_type &key) const
+   {  return this->key_comp()(key);   }
+
+   inline Ret operator()(const value_type &value) const
+   {  return this->key_comp()(KeyOfValue()(value));  }
 
    template<class U>
-   struct is_key
-      : boost::intrusive::detail::is_same<const U, const key_type>
-   {};
+   inline Ret operator()( const U &nonkey
+                                             , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(nonkey);  }
+
+   inline Ret operator()(const key_type &key1, const key_type &key2) const
+   {  return this->key_comp()(key1, key2);  }
+
+   inline Ret operator()(const value_type &value1, const value_type &value2) const
+   {  return this->key_comp()(KeyOfValue()(value1), KeyOfValue()(value2));  }
+
+   inline Ret operator()(const key_type &key1, const value_type &value2) const
+   {  return this->key_comp()(key1, KeyOfValue()(value2));  }
+
+   inline Ret operator()(const value_type &value1, const key_type &key2) const
+   {  return this->key_comp()(KeyOfValue()(value1), key2);  }
 
    template<class U>
-   const key_type & key_forward
-      (const U &key, typename boost::intrusive::detail::enable_if<is_key<U> >::type* = 0) const
-   {  return key; }
+   inline Ret operator()( const key_type &key1, const U &nonkey2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(key1, nonkey2);  }
 
    template<class U>
-   const key_type & key_forward
-      (const U &key, typename boost::intrusive::detail::disable_if<is_key<U> >::type* = 0) const
-   {  return KeyOfValue()(key);  }
+   inline Ret operator()( const U &nonkey1, const key_type &key2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(nonkey1, key2);  }
 
-   template<class KeyType, class KeyType2>
-   bool operator()(const KeyType &key1, const KeyType2 &key2) const
-   {  return key_compare::operator()(this->key_forward(key1), this->key_forward(key2));  }
+   template<class U>
+   inline Ret operator()( const value_type &value1, const U &nonvalue2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(KeyOfValue()(value1), nonvalue2);  }
 
-   template<class KeyType, class KeyType2>
-   bool operator()(const KeyType &key1, const KeyType2 &key2)
-   {  return key_compare::operator()(this->key_forward(key1), this->key_forward(key2));  }
+   template<class U>
+   inline Ret operator()( const U &nonvalue1, const value_type &value2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(nonvalue1, KeyOfValue()(value2));  }
+};
+
+template<class ValuePtr, class KeyCompare, class KeyOfValue, class Ret>
+struct tree_value_compare<ValuePtr, KeyCompare, KeyOfValue, Ret, true>
+   :  public methcla_boost::intrusive::detail::ebo_functor_holder<KeyCompare>
+{
+   typedef typename
+      methcla_boost::movelib::pointer_element<ValuePtr>::type value_type;
+   typedef KeyCompare                                 key_compare;
+   typedef KeyOfValue                                 key_of_value;
+   typedef typename KeyOfValue::type                  key_type;
+
+   typedef methcla_boost::intrusive::detail::ebo_functor_holder<KeyCompare> base_t;
+
+
+   inline tree_value_compare()
+      :  base_t()
+   {}
+
+   inline explicit tree_value_compare(const key_compare &kcomp)
+      :  base_t(kcomp)
+   {}
+
+   inline tree_value_compare (const tree_value_compare &x)
+      :  base_t(x.base_t::get())
+   {}
+
+   inline tree_value_compare &operator=(const tree_value_compare &x)
+   {  this->base_t::get() = x.base_t::get();   return *this;  }
+
+   inline tree_value_compare &operator=(const key_compare &x)
+   {  this->base_t::get() = x;   return *this;  }
+
+   inline const key_compare &key_comp() const
+   {  return static_cast<const key_compare &>(*this);  }
+
+   inline Ret operator()(const key_type &key) const
+   {  return this->key_comp()(key);   }
+
+   template<class U>
+   inline Ret operator()( const U &nonkey
+                                             , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(nonkey);  }
+
+   inline Ret operator()(const key_type &key1, const key_type &key2) const
+   {  return this->key_comp()(key1, key2);  }
+
+   template<class U>
+   inline Ret operator()( const key_type &key1, const U &nonkey2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(key1, nonkey2);  }
+
+   template<class U>
+   inline Ret operator()(const U &nonkey1, const key_type &key2
+                                              , typename disable_if_smartref_to<U, ValuePtr>::type* = 0) const
+   {  return this->key_comp()(nonkey1, key2);  }
 };
 
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif   //#ifdef BOOST_INTRUSIVE_DETAIL_TREE_VALUE_COMPARE_HPP

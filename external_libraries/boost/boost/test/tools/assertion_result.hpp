@@ -28,7 +28,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 
 // ************************************************************************** //
@@ -83,7 +83,7 @@ private:
 typedef assertion_result predicate_result;
 
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

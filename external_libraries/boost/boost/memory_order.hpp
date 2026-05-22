@@ -1,24 +1,24 @@
-#ifndef BOOST_MEMORY_ORDER_HPP_INCLUDED
-#define BOOST_MEMORY_ORDER_HPP_INCLUDED
-
-// MS compatible compilers support #pragma once
-
-#if defined(_MSC_VER) && (_MSC_VER >= 1020)
-# pragma once
-#endif
-
 //  boost/memory_order.hpp
 //
-//  Defines enum boost::memory_order per the C++0x working draft
+//  Defines enum methcla_boost::memory_order per the C++0x working draft
 //
 //  Copyright (c) 2008, 2009 Peter Dimov
+//  Copyright (c) 2018, 2025 Andrey Semashev
 //
 //  Distributed under the Boost Software License, Version 1.0.
 //  See accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef BOOST_MEMORY_ORDER_HPP_INCLUDED
+#define BOOST_MEMORY_ORDER_HPP_INCLUDED
 
-namespace boost
+#include <boost/config.hpp>
+
+#if defined(BOOST_HAS_PRAGMA_ONCE)
+#pragma once
+#endif
+
+namespace methcla_boost
 {
 
 //
@@ -42,16 +42,23 @@ namespace boost
 // efficiently in compare_exchange methods.
 //
 
-enum memory_order
+enum class memory_order : unsigned int
 {
-    memory_order_relaxed = 0,
-    memory_order_consume = 1,
-    memory_order_acquire = 2,
-    memory_order_release = 4,
-    memory_order_acq_rel = 6, // acquire | release
-    memory_order_seq_cst = 14 // acq_rel | 8
+    relaxed = 0,
+    consume = 1,
+    acquire = 2,
+    release = 4,
+    acq_rel = 6, // acquire | release
+    seq_cst = 14 // acq_rel | 8
 };
 
-} // namespace boost
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_relaxed = memory_order::relaxed;
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_consume = memory_order::consume;
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_acquire = memory_order::acquire;
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_release = memory_order::release;
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_acq_rel = memory_order::acq_rel;
+BOOST_INLINE_VARIABLE constexpr memory_order memory_order_seq_cst = memory_order::seq_cst;
+
+} // namespace methcla_boost
 
 #endif // #ifndef BOOST_MEMORY_ORDER_HPP_INCLUDED

@@ -16,12 +16,12 @@
 
 //  See library home page at http://www.boost.org/libs/serialization
 
-//----------------------------------------------------------------------------// 
+//----------------------------------------------------------------------------//
 
 // This header implements separate compilation features as described in
 // http://www.boost.org/more/separate_compilation.html
 
-//  enable automatic library variant selection  ------------------------------// 
+//  enable automatic library variant selection  ------------------------------//
 
 #include <boost/archive/detail/decl.hpp>
 
@@ -32,7 +32,7 @@
     // Set the name of our library, this will get undef'ed by auto_link.hpp
     // once it's done with it:
     //
-    #define BOOST_LIB_NAME boost_serialization
+    #define BOOST_LIB_NAME methcla_boost_serialization
     //
     // If we're importing code from a dll, then tell auto_link.hpp about it:
     //

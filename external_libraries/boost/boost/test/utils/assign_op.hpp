@@ -15,7 +15,7 @@
 #ifndef BOOST_TEST_UTILS_ASSIGN_OP_HPP
 #define BOOST_TEST_UTILS_ASSIGN_OP_HPP
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 // ************************************************************************** //
@@ -33,7 +33,7 @@ assign_op( T& t, S const& s, long )
 //____________________________________________________________________________//
 
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TEST_UTILS_ASSIGN_OP_HPP
 

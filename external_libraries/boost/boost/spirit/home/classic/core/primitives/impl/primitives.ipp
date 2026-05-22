@@ -22,7 +22,7 @@
 #  pragma warning(disable:4800)
 #endif
 
-namespace boost { namespace spirit {
+namespace methcla_boost { namespace spirit {
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 
@@ -375,13 +375,19 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
             return to_char_type<wchar_t>(towupper(to_int_type(c)));
         }
 
+        inline bool
+        isblank_(bool)
+        {
+            return false;
+        }
+
 #endif // !defined(BOOST_NO_CWCTYPE)
 
 }
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 
-}} // namespace boost::spirit::impl
+}} // namespace methcla_boost::spirit::impl
 
 #ifdef BOOST_MSVC
 #pragma warning (pop)

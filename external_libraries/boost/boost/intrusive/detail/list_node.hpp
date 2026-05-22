@@ -22,9 +22,10 @@
 #  pragma once
 #endif
 
+#include <boost/intrusive/detail/workaround.hpp>
 #include <boost/intrusive/pointer_rebind.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 // list_node_traits can be used with circular_list_algorithms and supplies
@@ -46,26 +47,26 @@ struct list_node_traits
    typedef typename node::node_ptr     node_ptr;
    typedef typename pointer_rebind<VoidPointer, const node>::type   const_node_ptr;
 
-   static node_ptr get_previous(const const_node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_previous(const_node_ptr n)
    {  return n->prev_;  }
 
-   static node_ptr get_previous(const node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_previous(node_ptr n)
    {  return n->prev_;  }
 
-   static void set_previous(const node_ptr & n, const node_ptr & prev)
+   BOOST_INTRUSIVE_FORCEINLINE static void set_previous(node_ptr n, node_ptr prev)
    {  n->prev_ = prev;  }
 
-   static node_ptr get_next(const const_node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_next(const_node_ptr n)
    {  return n->next_;  }
 
-   static node_ptr get_next(const node_ptr & n)
+   BOOST_INTRUSIVE_FORCEINLINE static node_ptr get_next(node_ptr n)
    {  return n->next_;  }
 
-   static void set_next(const node_ptr & n, const node_ptr & next)
+   BOOST_INTRUSIVE_FORCEINLINE static void set_next(node_ptr n, node_ptr next)
    {  n->next_ = next;  }
 };
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #endif //BOOST_INTRUSIVE_LIST_NODE_HPP

@@ -20,11 +20,13 @@
 #include <boost/date_time/compiler_config.hpp>
 #include <boost/date_time/c_time.hpp>
 #include <boost/date_time/time_clock.hpp>
-#include <boost/date_time/filetime_functions.hpp>
+#if defined(BOOST_HAS_FTIME)
+#include <boost/winapi/time.hpp>
+#endif
 
 #ifdef BOOST_DATE_TIME_HAS_HIGH_PRECISION_CLOCK
 
-namespace boost {
+namespace methcla_boost {
 namespace date_time {
 
   //! A clock providing microsecond level resolution
@@ -83,15 +85,24 @@ namespace date_time {
       timeval tv;
       gettimeofday(&tv, 0); //gettimeofday does not support TZ adjust on Linux.
       std::time_t t = tv.tv_sec;
-      boost::uint32_t sub_sec = tv.tv_usec;
+      methcla_boost::uint32_t sub_sec = tv.tv_usec;
 #elif defined(BOOST_HAS_FTIME)
-      winapi::file_time ft;
-      winapi::get_system_time_as_file_time(ft);
-      uint64_t micros = winapi::file_time_to_microseconds(ft); // it will not wrap, since ft is the current time
-                                                               // and cannot be before 1970-Jan-01
+      methcla_boost::winapi::FILETIME_ ft;
+      methcla_boost::winapi::GetSystemTimeAsFileTime(&ft);
+#if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3205))
+      // Some runtime library implementations expect local times as the norm for ctime functions.
+      {
+        methcla_boost::winapi::FILETIME_ local_ft;
+        methcla_boost::winapi::FileTimeToLocalFileTime(&ft, &local_ft);
+        ft = local_ft;
+      }
+#endif
+
+      methcla_boost::uint64_t micros = file_time_to_microseconds(ft); // it will not wrap, since ft is the current time
+                                                              // and cannot be before 1970-Jan-01
       std::time_t t = static_cast<std::time_t>(micros / 1000000UL); // seconds since epoch
       // microseconds -- static casts suppress warnings
-      boost::uint32_t sub_sec = static_cast<boost::uint32_t>(micros % 1000000UL);
+      methcla_boost::uint32_t sub_sec = static_cast<methcla_boost::uint32_t>(micros % 1000000UL);
 #else
 #error Internal Boost.DateTime error: BOOST_DATE_TIME_HAS_HIGH_PRECISION_CLOCK is defined, however neither gettimeofday nor FILETIME support is detected.
 #endif
@@ -115,6 +126,26 @@ namespace date_time {
 
       return time_type(d,td);
     }
+
+#if defined(BOOST_HAS_FTIME)
+    /*!
+     * The function converts file_time into number of microseconds elapsed since 1970-Jan-01
+     *
+     * \note Only dates after 1970-Jan-01 are supported. Dates before will be wrapped.
+     */
+    static methcla_boost::uint64_t file_time_to_microseconds(methcla_boost::winapi::FILETIME_ const& ft)
+    {
+      // shift is difference between 1970-Jan-01 & 1601-Jan-01
+      // in 100-nanosecond units
+      const methcla_boost::uint64_t shift = 116444736000000000ULL; // (27111902 << 32) + 3577643008
+
+      // 100-nanos since 1601-Jan-01
+      methcla_boost::uint64_t ft_as_integer = (static_cast< methcla_boost::uint64_t >(ft.dwHighDateTime) << 32) | static_cast< methcla_boost::uint64_t >(ft.dwLowDateTime);
+
+      ft_as_integer -= shift; // filetime is now 100-nanos since 1970-Jan-01
+      return (ft_as_integer / 10U); // truncate to microseconds
+    }
+#endif
   };
 
 

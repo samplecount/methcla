@@ -13,7 +13,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // collections_load_imp.hpp: serialization for loading stl collections
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -26,13 +26,12 @@
 #include <cstddef> // size_t
 #include <boost/config.hpp> // msvc 6.0 needs this for warning suppression
 #if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
-    using ::size_t; 
+namespace std{
+    using ::size_t;
 } // namespace std
 #endif
 #include <boost/detail/workaround.hpp>
 
-#include <boost/archive/detail/basic_iarchive.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/detail/stack_constructor.hpp>
@@ -40,8 +39,9 @@ namespace std{
 #include <boost/serialization/item_version_type.hpp>
 #include <boost/serialization/detail/is_default_constructible.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/move/utility_core.hpp>
 
-namespace boost{
+namespace methcla_boost{
 namespace serialization {
 namespace stl {
 
@@ -53,7 +53,7 @@ template<
     class Archive,
     class T
 >
-typename boost::enable_if<
+typename methcla_boost::enable_if<
     typename detail::is_default_constructible<
         typename T::value_type
     >,
@@ -63,13 +63,13 @@ collection_load_impl(
     Archive & ar,
     T & t,
     collection_size_type count,
-    item_version_type
+    item_version_type /*item_version*/
 ){
     t.resize(count);
     typename T::iterator hint;
     hint = t.begin();
     while(count-- > 0){
-        ar >> boost::serialization::make_nvp("item", *hint++);
+        ar >> methcla_boost::serialization::make_nvp("item", *hint++);
     }
 }
 
@@ -77,7 +77,7 @@ template<
     class Archive,
     class T
 >
-typename boost::disable_if<
+typename methcla_boost::disable_if<
     typename detail::is_default_constructible<
         typename T::value_type
     >,
@@ -92,14 +92,14 @@ collection_load_impl(
     t.clear();
     while(count-- > 0){
         detail::stack_construct<Archive, typename T::value_type> u(ar, item_version);
-        ar >> boost::serialization::make_nvp("item", u.reference());
-        t.push_back(u.reference());
-        ar.reset_object_address(& t.back() , & u.reference());
+        ar >> methcla_boost::serialization::make_nvp("item", u.reference());
+        t.push_back(methcla_boost::move(u.reference()));
+        ar.reset_object_address(& t.back() , u.address());
      }
 }
 
-} // namespace stl 
+} // namespace stl
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif //BOOST_SERIALIZATION_COLLECTIONS_LOAD_IMP_HPP

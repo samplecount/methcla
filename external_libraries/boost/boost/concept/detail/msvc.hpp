@@ -10,7 +10,7 @@
 
 # ifdef BOOST_OLD_CONCEPT_SUPPORT
 #  include <boost/concept/detail/has_constraints.hpp>
-#  include <boost/mpl/if.hpp>
+#  include <boost/type_traits/conditional.hpp>
 # endif
 
 # ifdef BOOST_MSVC
@@ -18,7 +18,7 @@
 #  pragma warning(disable:4100)
 # endif
 
-namespace boost { namespace concepts {
+namespace methcla_boost { namespace concepts {
 
 
 template <class Model>
@@ -54,7 +54,7 @@ namespace detail
 
 template <class Model>
 struct require
-  : mpl::if_c<
+  : methcla_boost::conditional<
         not_satisfied<Model>::value
       , detail::constraint
 # ifndef BOOST_NO_PARTIAL_SPECIALIZATION
@@ -97,7 +97,7 @@ struct require<void(*)(Model)>
 enum                                                \
 {                                                   \
     BOOST_PP_CAT(boost_concept_check,__LINE__) =    \
-    sizeof(::boost::concepts::require<ModelFnPtr>)    \
+    sizeof(::methcla_boost::concepts::require<ModelFnPtr>)    \
 }
   
 # else // Not vc-7.1
@@ -110,7 +110,7 @@ require_(void(*)(Model));
 enum                                                    \
 {                                                       \
     BOOST_PP_CAT(boost_concept_check,__LINE__) =        \
-      sizeof(::boost::concepts::require_((ModelFnPtr)0)) \
+      sizeof(::methcla_boost::concepts::require_((ModelFnPtr)0)) \
 }
   
 # endif

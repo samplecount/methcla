@@ -21,7 +21,7 @@
 
 #include <windows.h>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
     ///////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ namespace xml {
         {
             LARGE_INTEGER frequency;
             if (!QueryPerformanceFrequency(&frequency))
-                boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
 
             start_time.QuadPart = (LONGLONG)(t * frequency.QuadPart); 
         } 
@@ -72,17 +72,17 @@ namespace xml {
         void restart() 
         { 
             if (!QueryPerformanceCounter(&start_time))
-                boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
         } 
         double elapsed() const                  // return elapsed time in seconds
         { 
             LARGE_INTEGER now;
             if (!QueryPerformanceCounter(&now))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
 
             LARGE_INTEGER frequency;
             if (!QueryPerformanceFrequency(&frequency))
-                boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
 
             return double(now.QuadPart - start_time.QuadPart) / frequency.QuadPart;
         }
@@ -91,7 +91,7 @@ namespace xml {
         {
             LARGE_INTEGER frequency;
             if (!QueryPerformanceFrequency(&frequency))
-                boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
 
             return double((std::numeric_limits<LONGLONG>::max)() - start_time.QuadPart) / 
                 double(frequency.QuadPart); 
@@ -101,7 +101,7 @@ namespace xml {
         { 
             LARGE_INTEGER frequency;
             if (!QueryPerformanceFrequency(&frequency))
-                boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't acquire frequency"));
 
             return 1.0 / frequency.QuadPart; 
         }
@@ -118,7 +118,7 @@ namespace xml {
 
 #if _POSIX_THREAD_CPUTIME > 0   // timer always supported
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
 
@@ -154,20 +154,20 @@ namespace xml {
         {
             timespec now;
             if (-1 == clock_gettime(CLOCK_REALTIME, &now))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
             return double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
         }
 
         void restart() 
         { 
             if (-1 == clock_gettime(CLOCK_REALTIME, &start_time))
-                boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
         } 
         double elapsed() const                  // return elapsed time in seconds
         { 
             timespec now;
             if (-1 == clock_gettime(CLOCK_REALTIME, &now))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
 
             if (now.tv_sec == start_time.tv_sec)
                 return double(now.tv_nsec - start_time.tv_nsec) * 1e-9;
@@ -185,7 +185,7 @@ namespace xml {
         { 
             timespec resolution;
             if (-1 == clock_getres(CLOCK_REALTIME, &resolution))
-                boost::throw_exception(std::runtime_error("Couldn't get resolution"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get resolution"));
             return double(resolution.tv_sec + resolution.tv_nsec * 1e-9); 
         }
 
@@ -202,7 +202,7 @@ namespace xml {
 #include <boost/timer.hpp>
 
 // availability of high performance timers must be checked at runtime
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
     ///////////////////////////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ namespace xml {
 
             timespec now;
             if (-1 == clock_gettime(CLOCK_REALTIME, &now))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
             return double(now.tv_sec) + double(now.tv_nsec) * 1e-9;
         }
 
@@ -255,7 +255,7 @@ namespace xml {
             if (use_backup)
                 start_time_backup.restart();
             else if (-1 == clock_gettime(CLOCK_REALTIME, &start_time))
-                boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
         } 
         double elapsed() const                  // return elapsed time in seconds
         { 
@@ -264,7 +264,7 @@ namespace xml {
 
             timespec now;
             if (-1 == clock_gettime(CLOCK_REALTIME, &now))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
 
             if (now.tv_sec == start_time.tv_sec)
                 return double(now.tv_nsec - start_time.tv_nsec) * 1e-9;
@@ -288,14 +288,14 @@ namespace xml {
 
             timespec resolution;
             if (-1 == clock_getres(CLOCK_REALTIME, &resolution))
-                boost::throw_exception(std::runtime_error("Couldn't get resolution"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get resolution"));
             return double(resolution.tv_sec + resolution.tv_nsec * 1e-9); 
         }
 
     private:
         bool use_backup;
         timespec start_time;
-        boost::timer start_time_backup;
+        methcla_boost::timer start_time_backup;
     }; 
 
 } // xml
@@ -315,7 +315,7 @@ namespace xml {
 // GETTIMEOFDAY, which is still preferable to std::clock()
 #include <sys/time.h>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
 
@@ -392,21 +392,21 @@ namespace xml {
             // error.
             timeval now;
             if (gettimeofday(&now, NULL))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
             return double(now.tv_sec) + double(now.tv_usec) * 1e-6;
         }
 
         void restart() 
         { 
             if (gettimeofday(&start_time, NULL))
-                boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't initialize start_time"));
         } 
 
         double elapsed() const                  // return elapsed time in seconds
         { 
             timeval now;
             if (gettimeofday(&now, NULL))
-                boost::throw_exception(std::runtime_error("Couldn't get current time"));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get current time"));
             return elapsed(now,start_time);
         }
 
@@ -426,13 +426,13 @@ namespace xml {
             double delta(0);
 
             if (gettimeofday(&t0, NULL)) 
-                boost::throw_exception(std::runtime_error("Couldn't get resolution."));
+                methcla_boost::throw_exception(std::runtime_error("Couldn't get resolution."));
 
             // Spin around in a tight loop until we observe a change
             // in the reported timer value.
             do {
                 if (gettimeofday(&t1, NULL)) 
-                    boost::throw_exception(std::runtime_error("Couldn't get resolution."));
+                    methcla_boost::throw_exception(std::runtime_error("Couldn't get resolution."));
                 delta = elapsed(t1, t0);
             } while (delta <= 0.0);
 
@@ -450,15 +450,15 @@ namespace xml {
 #else // BOOST_HAS_GETTIMEOFDAY
 
 //  For platforms other than Windows or Linux, or not implementing gettimeofday
-//  simply fall back to boost::timer
+//  simply fall back to methcla_boost::timer
 #include <boost/timer.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
 
     struct high_resolution_timer
-        : boost::timer
+        : methcla_boost::timer
     {
         static double now()
         {
@@ -484,6 +484,6 @@ namespace xml {
 // * seconds and *decrement* the microseconds field.  Consequently
 // * when subtracting these unsigned microseconds fields a wrap-around
 // * error can occur.  For this reason elapsed(t1, t0) is used in a
-// * similar maner to cycle.h this preserves the sign of the
+// * similar manner to cycle.h this preserves the sign of the
 // * difference.
 //

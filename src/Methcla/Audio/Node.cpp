@@ -16,6 +16,8 @@
 #include "Methcla/Audio/Group.hpp"
 #include "Methcla/Audio/Node.hpp"
 
+#include <cassert>
+
 using namespace Methcla::Audio;
 
 Node::Node(Environment& env, NodeId nodeId)
@@ -35,9 +37,9 @@ Node::~Node()
         m_parent->remove(this);
     }
 
-    BOOST_ASSERT(m_parent == nullptr);
-    BOOST_ASSERT(m_prev == nullptr);
-    BOOST_ASSERT(m_next == nullptr);
+    assert(m_parent == nullptr);
+    assert(m_prev == nullptr);
+    assert(m_next == nullptr);
 }
 
 void Node::process(size_t numFrames)

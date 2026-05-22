@@ -10,17 +10,23 @@
 
 #include <cstddef> // NULL
 #include <algorithm> // std::copy
+#include <boost/config.hpp>
+#if defined(BOOST_NO_STDC_NAMESPACE)
+namespace std{ 
+    using ::size_t; 
+} // namespace std
+#endif
+
+#include <boost/core/uncaught_exceptions.hpp>
 
 #include <boost/archive/basic_text_oprimitive.hpp>
-#include <boost/archive/codecvt_null.hpp>
-#include <boost/archive/add_facet.hpp>
 
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/insert_linebreaks.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/ostream_iterator.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 // translate to base64 and copy in to buffer.
@@ -36,16 +42,16 @@ basic_text_oprimitive<OStream>::save_binary(
         return;
     
     if(os.fail())
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::output_stream_error)
         );
         
     os.put('\n');
     
     typedef 
-        boost::archive::iterators::insert_linebreaks<
-            boost::archive::iterators::base64_from_binary<
-                boost::archive::iterators::transform_width<
+        methcla_boost::archive::iterators::insert_linebreaks<
+            methcla_boost::archive::iterators::base64_from_binary<
+                methcla_boost::archive::iterators::transform_width<
                     const char *,
                     6,
                     8
@@ -56,7 +62,7 @@ basic_text_oprimitive<OStream>::save_binary(
         > 
         base64_text;
 
-    boost::archive::iterators::ostream_iterator<CharType> oi(os);
+    methcla_boost::archive::iterators::ostream_iterator<CharType> oi(os);
     std::copy(
         base64_text(static_cast<const char *>(address)),
         base64_text(
@@ -79,35 +85,33 @@ basic_text_oprimitive<OStream>::basic_text_oprimitive(
     OStream & os_,
     bool no_codecvt
 ) : 
-#ifndef BOOST_NO_STD_LOCALE
     os(os_),
     flags_saver(os_),
+#ifndef BOOST_NO_STD_LOCALE
     precision_saver(os_),
-    locale_saver(* os_.rdbuf())
+    codecvt_null_facet(1),
+    archive_locale(os.getloc(), & codecvt_null_facet),
+    locale_saver(os)
 {
     if(! no_codecvt){
-        archive_locale.reset(
-            add_facet(
-                std::locale::classic(),
-                new boost::archive::codecvt_null<typename OStream::char_type>
-            )
-        );
-        //os.imbue(* archive_locale);
+        os_.flush();
+        os_.imbue(archive_locale);
     }
-    os << std::noboolalpha;
+    os_ << std::noboolalpha;
 }
 #else
-    os(os_),
-    flags_saver(os_),
     precision_saver(os_)
 {}
 #endif
 
+
 template<class OStream>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL
 basic_text_oprimitive<OStream>::~basic_text_oprimitive(){
+    if(methcla_boost::core::uncaught_exceptions() > 0)
+        return;
     os << std::endl;
 }
 
-} //namespace boost 
+} //namespace methcla_boost 
 } //namespace archive 

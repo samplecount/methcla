@@ -11,7 +11,7 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
   struct exceptional_ptr {
     exception_ptr ptr_;
@@ -19,12 +19,12 @@ namespace boost
     exceptional_ptr() : ptr_() {}
     explicit exceptional_ptr(exception_ptr ex) : ptr_(ex) {}
     template <class E>
-    explicit exceptional_ptr(BOOST_FWD_REF(E) ex) : ptr_(boost::copy_exception(boost::forward<E>(ex))) {}
+    explicit exceptional_ptr(BOOST_FWD_REF(E) ex) : ptr_(methcla_boost::copy_exception(methcla_boost::forward<E>(ex))) {}
   };
 
   template <class E>
   inline exceptional_ptr make_exceptional(BOOST_FWD_REF(E) ex) {
-    return exceptional_ptr(boost::forward<E>(ex));
+    return exceptional_ptr(methcla_boost::forward<E>(ex));
   }
 
   inline exceptional_ptr make_exceptional(exception_ptr ex)
@@ -37,7 +37,7 @@ namespace boost
     return exceptional_ptr();
   }
 
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/config/abi_suffix.hpp>
 

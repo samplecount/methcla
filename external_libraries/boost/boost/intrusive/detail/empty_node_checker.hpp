@@ -21,7 +21,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -34,11 +34,11 @@ struct empty_node_checker
 
    struct return_type {};
 
-   void operator () (const const_node_ptr&, const return_type&, const return_type&, return_type&) {}
+   void operator () (const_node_ptr, const return_type&, const return_type&, return_type&) {}
 };
 
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_EMPTY_NODE_CHECKER_HPP

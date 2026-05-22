@@ -30,7 +30,7 @@
 
 #include <boost/test/detail/suppress_warnings.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 
 // ************************************************************************** //
@@ -124,7 +124,7 @@ private:
 };
 
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

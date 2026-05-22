@@ -26,7 +26,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 /// Namespace for results reporter interfaces
@@ -61,13 +61,13 @@ public:
 /// Sets reporting level
 
 /// There are only four possible levels for results report:
-/// - confirmation report (boost::unit_test::CONFIRMATION_REPORT). This report level only produces short confirmation
+/// - confirmation report (methcla_boost::unit_test::CONFIRMATION_REPORT). This report level only produces short confirmation
 ///   message about test module pass/fail status
-/// - short report (boost::unit_test::SHORT_REPORT). This report level produces short summary report for failed/passed
+/// - short report (methcla_boost::unit_test::SHORT_REPORT). This report level produces short summary report for failed/passed
 ///   assertions and test units.
-/// - detailed report (boost::unit_test::DETAILED_REPORT). This report level produces detailed report per test unit for
+/// - detailed report (methcla_boost::unit_test::DETAILED_REPORT). This report level produces detailed report per test unit for
 ///   passed/failed assertions and uncaught exceptions
-/// - no report (boost::unit_test::NO_REPORT). This report level produces no results report. This is used for test modules
+/// - no report (methcla_boost::unit_test::NO_REPORT). This report level produces no results report. This is used for test modules
 ///   running as part of some kind of continues integration framework
 /// @param[in] l report level
 BOOST_TEST_DECL void    set_level( report_level l );
@@ -81,8 +81,8 @@ BOOST_TEST_DECL void    set_stream( std::ostream& );
 /// Sets one of the predefined formats
 
 /// The framework implements two results report formats:
-/// - plain human readable format (boost::unit_test::OF_CLF)
-/// - XML format (boost::unit_test::OF_XML)
+/// - plain human readable format (methcla_boost::unit_test::OF_CLF)
+/// - XML format (methcla_boost::unit_test::OF_XML)
 /// @param[in] of one of the presefined enumeration values for output formats
 BOOST_TEST_DECL void    set_format( output_format of );
 
@@ -114,7 +114,7 @@ inline void             detailed_report( test_unit_id id = INV_TEST_UNIT_ID )
 
 } // namespace results_reporter
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

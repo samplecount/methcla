@@ -15,10 +15,10 @@
 #ifndef BOOST_VARIANT_DETAIL_OVER_SEQUENCE_HPP
 #define BOOST_VARIANT_DETAIL_OVER_SEQUENCE_HPP
 
-#include "boost/mpl/aux_/config/ctps.hpp"
+#include <boost/mpl/aux_/config/ctps.hpp>
 
 
-namespace boost {
+namespace methcla_boost {
 namespace detail { namespace variant {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,6 +53,6 @@ struct is_over_sequence< over_sequence<Types> >
 
 
 }} // namespace detail::variant
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_VARIANT_DETAIL_OVER_SEQUENCE_HPP

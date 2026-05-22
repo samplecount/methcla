@@ -22,9 +22,8 @@
 
 //Based on Boost.Core's swap.
 //Many thanks to Steven Watanabe, Joseph Gauterin and Niels Dekker.
-
-#include <boost/config.hpp>
 #include <cstddef> //for std::size_t
+#include <boost/move/detail/workaround.hpp>  //forceinline
 
 //Try to avoid including <algorithm>, as it's quite big
 #if defined(_MSC_VER) && defined(BOOST_DINKUMWARE_STDLIB)
@@ -41,6 +40,8 @@
       //In GCC 4.4 stl_move.h was renamed to move.h
       #include <bits/move.h>
    #endif
+#elif defined(_LIBCPP_VERSION) && (_LIBCPP_VERSION >= 13000)
+   #include <__utility/swap.h>  //libc++ refactored <utility> headers in smaller headers
 #elif defined(_LIBCPP_VERSION)
    #include <type_traits>  //The initial import of libc++ defines std::swap and still there
 #elif __cplusplus >= 201103L
@@ -49,12 +50,12 @@
    #include <algorithm>  //Fallback for C++98/03
 #endif
 
-#include <boost/move/utility_core.hpp> //for boost::move
+#include <boost/move/utility_core.hpp> //for methcla_boost::move
 
 #if !defined(BOOST_MOVE_DOXYGEN_INVOKED)
 
 #if defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
-namespace boost_move_member_swap {
+namespace methcla_boost_move_member_swap {
 
 struct dont_care
 {
@@ -123,9 +124,9 @@ struct has_member_swap : public has_member_swap_impl
       <Fun, has_member_function_named_swap<Fun>::value>
 {};
 
-}  //namespace boost_move_member_swap
+}  //namespace methcla_boost_move_member_swap
 
-namespace boost_move_adl_swap{
+namespace methcla_boost_move_adl_swap{
 
 template<class P1, class P2, bool = P1::value>
 struct and_op_impl
@@ -156,7 +157,7 @@ struct and_op_not
 {};
 
 template<class T>
-void swap_proxy(T& x, T& y, typename boost::move_detail::enable_if_c<!boost::move_detail::has_move_emulation_enabled_impl<T>::value>::type* = 0)
+inline void swap_proxy(T& x, T& y, typename methcla_boost::move_detail::enable_if_c<!methcla_boost::move_detail::has_move_emulation_enabled_impl<T>::value>::type* = 0)
 {
    //use std::swap if argument dependent lookup fails
    //Use using directive ("using namespace xxx;") instead as some older compilers
@@ -167,50 +168,50 @@ void swap_proxy(T& x, T& y, typename boost::move_detail::enable_if_c<!boost::mov
 
 template<class T>
 void swap_proxy(T& x, T& y
-               , typename boost::move_detail::enable_if< and_op_not_impl<boost::move_detail::has_move_emulation_enabled_impl<T>
-                                                                        , boost_move_member_swap::has_member_swap<T> >
+               , typename methcla_boost::move_detail::enable_if< and_op_not_impl<methcla_boost::move_detail::has_move_emulation_enabled_impl<T>
+                                                                        , methcla_boost_move_member_swap::has_member_swap<T> >
                                                        >::type* = 0)
-{  T t(::boost::move(x)); x = ::boost::move(y); y = ::boost::move(t);  }
+{  T t(::methcla_boost::move(x)); x = ::methcla_boost::move(y); y = ::methcla_boost::move(t);  }
 
 template<class T>
-void swap_proxy(T& x, T& y
-               , typename boost::move_detail::enable_if< and_op_impl< boost::move_detail::has_move_emulation_enabled_impl<T>
-                                                                    , boost_move_member_swap::has_member_swap<T> >
+inline void swap_proxy(T& x, T& y
+               , typename methcla_boost::move_detail::enable_if< and_op_impl< methcla_boost::move_detail::has_move_emulation_enabled_impl<T>
+                                                                    , methcla_boost_move_member_swap::has_member_swap<T> >
                                                        >::type* = 0)
 {  x.swap(y);  }
 
-}  //namespace boost_move_adl_swap{
+}  //namespace methcla_boost_move_adl_swap{
 
 #else
 
-namespace boost_move_adl_swap{
+namespace methcla_boost_move_adl_swap{
 
 template<class T>
-void swap_proxy(T& x, T& y)
+inline void swap_proxy(T& x, T& y)
 {
    using std::swap;
    swap(x, y);
 }
 
-}  //namespace boost_move_adl_swap{
+}  //namespace methcla_boost_move_adl_swap{
 
 #endif   //#if defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
 
-namespace boost_move_adl_swap{
+namespace methcla_boost_move_adl_swap{
 
 template<class T, std::size_t N>
 void swap_proxy(T (& x)[N], T (& y)[N])
 {
    for (std::size_t i = 0; i < N; ++i){
-      ::boost_move_adl_swap::swap_proxy(x[i], y[i]);
+      ::methcla_boost_move_adl_swap::swap_proxy(x[i], y[i]);
    }
 }
 
-}  //namespace boost_move_adl_swap {
+}  //namespace methcla_boost_move_adl_swap {
 
 #endif   //!defined(BOOST_MOVE_DOXYGEN_INVOKED)
 
-namespace boost{
+namespace methcla_boost{
 
 //! Exchanges the values of a and b, using Argument Dependent Lookup (ADL) to select a
 //! specialized swap function if available. If no specialized swap function is available,
@@ -221,13 +222,53 @@ namespace boost{
 //!
 //!   -  If T has a <code>T::swap(T&)</code> member, that member is called.
 //!   -  Otherwise a move-based swap is called, equivalent to: 
-//!      <code>T t(::boost::move(x)); x = ::boost::move(y); y = ::boost::move(t);</code>.
+//!      <code>T t(::methcla_boost::move(x)); x = ::methcla_boost::move(y); y = ::methcla_boost::move(t);</code>.
 template<class T>
-void adl_move_swap(T& x, T& y)
+inline void adl_move_swap(T& x, T& y)
 {
-   ::boost_move_adl_swap::swap_proxy(x, y);
+   ::methcla_boost_move_adl_swap::swap_proxy(x, y);
 }
 
-}  //namespace boost{
+//! Exchanges elements between range [first1, last1) and another range starting at first2
+//! using methcla_boost::adl_move_swap.
+//! 
+//! Parameters:
+//!   first1, last1   -   the first range of elements to swap
+//!   first2   -   beginning of the second range of elements to swap
+//!
+//! Type requirements:
+//!   - ForwardIt1, ForwardIt2 must meet the requirements of ForwardIterator.
+//!   - The types of dereferenced ForwardIt1 and ForwardIt2 must meet the
+//!     requirements of Swappable
+//!
+//! Return value: Iterator to the element past the last element exchanged in the range
+//! beginning with first2.
+template<class ForwardIt1, class ForwardIt2>
+ForwardIt2 adl_move_swap_ranges(ForwardIt1 first1, ForwardIt1 last1, ForwardIt2 first2)
+{
+    while (first1 != last1) {
+      ::methcla_boost::adl_move_swap(*first1, *first2);
+      ++first1;
+      ++first2;
+    }
+   return first2;
+}
+
+template<class BidirIt1, class BidirIt2>
+BidirIt2 adl_move_swap_ranges_backward(BidirIt1 first1, BidirIt1 last1, BidirIt2 last2)
+{
+   while (first1 != last1) {
+      ::methcla_boost::adl_move_swap(*(--last1), *(--last2));
+   }
+   return last2;
+}
+
+template<class ForwardIt1, class ForwardIt2>
+void adl_move_iter_swap(ForwardIt1 a, ForwardIt2 b)
+{
+   methcla_boost::adl_move_swap(*a, *b); 
+}
+
+}  //namespace methcla_boost{
 
 #endif   //#ifndef BOOST_MOVE_ADL_MOVE_SWAP_HPP

@@ -11,15 +11,16 @@
 #include <cstddef> // NULL
 
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/detail/basic_iserializer.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
 BOOST_ARCHIVE_DECL 
 basic_iserializer::basic_iserializer(
-    const boost::serialization::extended_type_info & eti
+    const methcla_boost::serialization::extended_type_info & eti
 ) :
     basic_serializer(eti), 
     m_bpis(NULL)
@@ -30,4 +31,4 @@ basic_iserializer::~basic_iserializer(){}
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

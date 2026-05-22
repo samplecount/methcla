@@ -21,7 +21,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 template<class Node, class Tag, unsigned int>
@@ -30,6 +30,6 @@ struct node_holder
 {};
 
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_NODE_HOLDER_HPP

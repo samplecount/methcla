@@ -55,7 +55,7 @@
 #include <boost/assert.hpp>
 #include <boost/interprocess/interprocess_fwd.hpp>
 
-namespace boost {  namespace interprocess {
+namespace methcla_boost {  namespace interprocess {
 
 //!A streambuf class that controls the transmission of elements to and from
 //!a basic_xbufferstream. The elements are transmitted from a to a fixed
@@ -70,14 +70,14 @@ class basic_bufferbuf
    typedef typename CharTraits::pos_type                 pos_type;
    typedef typename CharTraits::off_type                 off_type;
    typedef CharTraits                                    traits_type;
-   typedef std::basic_streambuf<char_type, traits_type>  base_t;
+   typedef std::basic_streambuf<char_type, traits_type>  basic_streambuf_t;
 
    public:
    //!Constructor.
    //!Does not throw.
    explicit basic_bufferbuf(std::ios_base::openmode mode
                             = std::ios_base::in | std::ios_base::out)
-      :  base_t(), m_mode(mode), m_buffer(0), m_length(0)
+      :  basic_streambuf_t(), m_mode(mode), m_buffer(0), m_length(0)
       {}
 
    //!Constructor. Assigns formatting buffer.
@@ -85,10 +85,10 @@ class basic_bufferbuf
    explicit basic_bufferbuf(CharT *buf, std::size_t length,
                             std::ios_base::openmode mode
                               = std::ios_base::in | std::ios_base::out)
-      :  base_t(), m_mode(mode), m_buffer(buf), m_length(length)
+      :  basic_streambuf_t(), m_mode(mode), m_buffer(buf), m_length(length)
       {  this->set_pointers();   }
 
-   virtual ~basic_bufferbuf(){}
+   virtual ~basic_bufferbuf() BOOST_OVERRIDE {}
 
    public:
    //!Returns the pointer and size of the internal buffer.
@@ -115,14 +115,14 @@ class basic_bufferbuf
    }
 
    protected:
-   virtual int_type underflow()
+   virtual int_type underflow() BOOST_OVERRIDE
    {
       // Precondition: gptr() >= egptr(). Returns a character, if available.
       return this->gptr() != this->egptr() ?
          CharTraits::to_int_type(*this->gptr()) : CharTraits::eof();
    }
 
-   virtual int_type pbackfail(int_type c = CharTraits::eof())
+   virtual int_type pbackfail(int_type c = CharTraits::eof()) BOOST_OVERRIDE
    {
       if(this->gptr() != this->eback()) {
          if(!CharTraits::eq_int_type(c, CharTraits::eof())) {
@@ -132,7 +132,7 @@ class basic_bufferbuf
             }
             else if(m_mode & std::ios_base::out) {
                this->gbump(-1);
-               *this->gptr() = c;
+               *this->gptr() = CharTraits::to_char_type(c);
                return c;
             }
             else
@@ -147,7 +147,7 @@ class basic_bufferbuf
          return CharTraits::eof();
    }
 
-   virtual int_type overflow(int_type c = CharTraits::eof())
+   virtual int_type overflow(int_type c = CharTraits::eof()) BOOST_OVERRIDE
    {
       if(m_mode & std::ios_base::out) {
          if(!CharTraits::eq_int_type(c, CharTraits::eof())) {
@@ -181,7 +181,7 @@ class basic_bufferbuf
 
    virtual pos_type seekoff(off_type off, std::ios_base::seekdir dir,
                               std::ios_base::openmode mode
-                                 = std::ios_base::in | std::ios_base::out)
+                                 = std::ios_base::in | std::ios_base::out) BOOST_OVERRIDE
    {
       bool in  = false;
       bool out = false;
@@ -238,7 +238,7 @@ class basic_bufferbuf
             return pos_type(off_type(-1));
          else {
             this->setp(this->pbase(), this->pbase() + n);
-            this->pbump(off);
+            this->pbump(static_cast<int>(off));
          }
       }
 
@@ -246,7 +246,7 @@ class basic_bufferbuf
    }
 
    virtual pos_type seekpos(pos_type pos, std::ios_base::openmode mode
-                                 = std::ios_base::in | std::ios_base::out)
+                                 = std::ios_base::in | std::ios_base::out) BOOST_OVERRIDE
    {  return seekoff(pos - pos_type(off_type(0)), std::ios_base::beg, mode);  }
 
    private:
@@ -277,7 +277,7 @@ class basic_ibufferstream :
    private:
    typedef basic_bufferbuf<CharT, CharTraits>         bufferbuf_t;
    typedef std::basic_ios<char_type, CharTraits>      basic_ios_t;
-   typedef std::basic_istream<char_type, CharTraits>  base_t;
+   typedef std::basic_istream<char_type, CharTraits>  basic_streambuf_t;
    bufferbuf_t &       get_buf()      {  return *this;  }
    const bufferbuf_t & get_buf() const{  return *this;  }
    #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
@@ -292,7 +292,7 @@ class basic_ibufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
         bufferbuf_t(mode | std::ios_base::in)
-      , base_t(&get_buf())
+      , basic_streambuf_t(this)
       {}
 
    //!Constructor. Assigns formatting buffer.
@@ -305,10 +305,10 @@ class basic_ibufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
         bufferbuf_t(const_cast<CharT*>(buf), length, mode | std::ios_base::in)
-      , base_t(&get_buf())
+      , basic_streambuf_t(this)
       {}
 
-   ~basic_ibufferstream(){};
+   ~basic_ibufferstream(){}
 
    public:
    //!Returns the address of the stored
@@ -348,7 +348,7 @@ class basic_obufferstream :
    private:
    typedef basic_bufferbuf<CharT, CharTraits>         bufferbuf_t;
    typedef std::basic_ios<char_type, CharTraits>      basic_ios_t;
-   typedef std::basic_ostream<char_type, CharTraits>  base_t;
+   typedef std::basic_ostream<char_type, CharTraits>  basic_ostream_t;
    bufferbuf_t &       get_buf()      {  return *this;  }
    const bufferbuf_t & get_buf() const{  return *this;  }
    #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
@@ -363,7 +363,7 @@ class basic_obufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
          bufferbuf_t(mode | std::ios_base::out)
-      ,  base_t(&get_buf())
+      ,  basic_ostream_t(this)
       {}
 
    //!Constructor. Assigns formatting buffer.
@@ -376,7 +376,7 @@ class basic_obufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
          bufferbuf_t(buf, length, mode | std::ios_base::out)
-      ,  base_t(&get_buf())
+      ,  basic_ostream_t(this)
       {}
 
    ~basic_obufferstream(){}
@@ -420,7 +420,7 @@ class basic_bufferstream :
    private:
    typedef basic_bufferbuf<CharT, CharTraits>         bufferbuf_t;
    typedef std::basic_ios<char_type, CharTraits>      basic_ios_t;
-   typedef std::basic_iostream<char_type, CharTraits> base_t;
+   typedef std::basic_iostream<char_type, CharTraits> basic_iostream_t;
    bufferbuf_t &       get_buf()      {  return *this;  }
    const bufferbuf_t & get_buf() const{  return *this;  }
    #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
@@ -436,7 +436,7 @@ class basic_bufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
          bufferbuf_t(mode)
-      ,  base_t(&get_buf())
+      ,  basic_iostream_t(this)
       {}
 
    //!Constructor. Assigns formatting buffer.
@@ -450,7 +450,7 @@ class basic_bufferstream :
          //As bufferbuf_t's constructor does not throw there is no risk of
          //calling the basic_ios_t's destructor without calling basic_ios_t::init()
          bufferbuf_t(buf, length, mode)
-      ,  base_t(&get_buf())
+      ,  basic_iostream_t(this)
       {}
 
    ~basic_bufferstream(){}
@@ -484,7 +484,7 @@ typedef basic_ibufferstream<wchar_t> wibufferstream;
 typedef basic_obufferstream<wchar_t> wobufferstream;
 
 
-}} //namespace boost {  namespace interprocess {
+}} //namespace methcla_boost {  namespace interprocess {
 
 #include <boost/interprocess/detail/config_end.hpp>
 

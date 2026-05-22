@@ -25,7 +25,7 @@
 #include <boost/intrusive/detail/mpl.hpp>
 #include <boost/intrusive/detail/hook_traits.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 #ifndef BOOST_INTRUSIVE_DOXYGEN_INVOKED
@@ -215,7 +215,7 @@ struct get_node_traits
 #endif   //BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
 }  //namespace intrusive {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/intrusive/detail/config_end.hpp>
 

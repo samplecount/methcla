@@ -29,10 +29,10 @@
 #endif
 #endif
 
-namespace boost {
+namespace methcla_boost {
 
 #ifndef BOOST_IS_ENUM
-#if !(defined(__BORLANDC__) && (__BORLANDC__ <= 0x551))
+#if !(defined(BOOST_BORLANDC) && (BOOST_BORLANDC <= 0x551))
 
 namespace detail {
 
@@ -41,7 +41,7 @@ namespace detail {
 template <typename T>
 struct is_class_or_union
 {
-   BOOST_STATIC_CONSTANT(bool, value = ::boost::is_class<T>::value || ::boost::is_union<T>::value);
+   BOOST_STATIC_CONSTANT(bool, value = ::methcla_boost::is_class<T>::value || ::methcla_boost::is_union<T>::value);
 };
 
 #else
@@ -49,20 +49,20 @@ struct is_class_or_union
 template <typename T>
 struct is_class_or_union
 {
-# if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x581))// we simply can't detect it this way.
+# if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x581))// we simply can't detect it this way.
     BOOST_STATIC_CONSTANT(bool, value = false);
 # else
-    template <class U> static ::boost::type_traits::yes_type is_class_or_union_tester(void(U::*)(void));
+    template <class U> static ::methcla_boost::type_traits::yes_type is_class_or_union_tester(void(U::*)(void));
 
 #  if BOOST_WORKAROUND(__MWERKS__, <= 0x3000) // no SFINAE
-    static ::boost::type_traits::no_type is_class_or_union_tester(...);
+    static ::methcla_boost::type_traits::no_type is_class_or_union_tester(...);
     BOOST_STATIC_CONSTANT(
-        bool, value = sizeof(is_class_or_union_tester(0)) == sizeof(::boost::type_traits::yes_type));
+        bool, value = sizeof(is_class_or_union_tester(0)) == sizeof(::methcla_boost::type_traits::yes_type));
 #  else
     template <class U>
-    static ::boost::type_traits::no_type is_class_or_union_tester(...);
+    static ::methcla_boost::type_traits::no_type is_class_or_union_tester(...);
     BOOST_STATIC_CONSTANT(
-        bool, value = sizeof(is_class_or_union_tester<T>(0)) == sizeof(::boost::type_traits::yes_type));
+        bool, value = sizeof(is_class_or_union_tester<T>(0)) == sizeof(::methcla_boost::type_traits::yes_type));
 #  endif
 # endif
 };
@@ -89,13 +89,13 @@ struct is_enum_helper<false>
 {
     template <typename T> struct type
     {
-       static const bool value = ::boost::is_convertible<typename boost::add_reference<T>::type, ::boost::detail::int_convertible>::value;
+       static const bool value = ::methcla_boost::is_convertible<typename methcla_boost::add_reference<T>::type, ::methcla_boost::detail::int_convertible>::value;
     };
 };
 
 template <typename T> struct is_enum_impl
 {
-   //typedef ::boost::add_reference<T> ar_t;
+   //typedef ::methcla_boost::add_reference<T> ar_t;
    //typedef typename ar_t::type r_type;
 
 #if defined(__GNUC__)
@@ -106,37 +106,37 @@ template <typename T> struct is_enum_impl
    // order to correctly deduce that noncopyable types are not enums
    // (dwa 2002/04/15)...
    BOOST_STATIC_CONSTANT(bool, selector =
-           ::boost::is_arithmetic<T>::value
-         || ::boost::is_reference<T>::value
-         || ::boost::is_function<T>::value
+           ::methcla_boost::is_arithmetic<T>::value
+         || ::methcla_boost::is_reference<T>::value
+         || ::methcla_boost::is_function<T>::value
          || is_class_or_union<T>::value
          || is_array<T>::value);
 #else
    // ...however, not checking is_class_or_union on non-conforming
    // compilers prevents a dependency recursion.
    BOOST_STATIC_CONSTANT(bool, selector =
-           ::boost::is_arithmetic<T>::value
-         || ::boost::is_reference<T>::value
-         || ::boost::is_function<T>::value
+           ::methcla_boost::is_arithmetic<T>::value
+         || ::methcla_boost::is_reference<T>::value
+         || ::methcla_boost::is_function<T>::value
          || is_array<T>::value);
 #endif // BOOST_TT_HAS_CONFORMING_IS_CLASS_IMPLEMENTATION
 
 #else // !defined(__GNUC__):
     
    BOOST_STATIC_CONSTANT(bool, selector =
-           ::boost::is_arithmetic<T>::value
-         || ::boost::is_reference<T>::value
+           ::methcla_boost::is_arithmetic<T>::value
+         || ::methcla_boost::is_reference<T>::value
          || is_class_or_union<T>::value
          || is_array<T>::value);
     
 #endif
 
-#if BOOST_WORKAROUND(__BORLANDC__, < 0x600)
-    typedef ::boost::detail::is_enum_helper<
-          ::boost::detail::is_enum_impl<T>::selector
+#if BOOST_WORKAROUND(BOOST_BORLANDC, < 0x600)
+    typedef ::methcla_boost::detail::is_enum_helper<
+          ::methcla_boost::detail::is_enum_impl<T>::selector
         > se_t;
 #else
-    typedef ::boost::detail::is_enum_helper<selector> se_t;
+    typedef ::methcla_boost::detail::is_enum_helper<selector> se_t;
 #endif
 
     typedef typename se_t::template type<T> helper;
@@ -145,9 +145,9 @@ template <typename T> struct is_enum_impl
 
 } // namespace detail
 
-template <class T> struct is_enum : public integral_constant<bool, ::boost::detail::is_enum_impl<T>::value> {};
+template <class T> struct is_enum : public integral_constant<bool, ::methcla_boost::detail::is_enum_impl<T>::value> {};
 
-#else // __BORLANDC__
+#else // BOOST_BORLANDC
 //
 // buggy is_convertible prevents working
 // implementation of is_enum:
@@ -161,6 +161,6 @@ template <class T> struct is_enum : public integral_constant<bool, BOOST_IS_ENUM
 
 #endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_ENUM_HPP_INCLUDED

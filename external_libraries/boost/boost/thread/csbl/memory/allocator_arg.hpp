@@ -12,19 +12,8 @@
 #include <boost/thread/csbl/memory/config.hpp>
 
 // 20.7.6, allocator argument tag
-#if defined BOOST_NO_CXX11_ALLOCATOR
-#include <boost/container/scoped_allocator.hpp>
 
-namespace boost
-{
-  namespace csbl
-  {
-    using ::boost::container::allocator_arg_t;
-    using ::boost::container::allocator_arg;
-  }
-}
-#else
-namespace boost
+namespace methcla_boost
 {
   namespace csbl
   {
@@ -32,10 +21,11 @@ namespace boost
     using ::std::allocator_arg;
   }
 }
-#endif // BOOST_NO_CXX11_ALLOCATOR
-namespace boost
+
+namespace methcla_boost
 {
-  using ::boost::csbl::allocator_arg_t;
-  using ::boost::csbl::allocator_arg;
+  using ::methcla_boost::csbl::allocator_arg_t;
+  using ::methcla_boost::csbl::allocator_arg;
 }
+
 #endif // header

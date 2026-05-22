@@ -15,8 +15,6 @@
 #include <cstddef> // NULL
 
 #include <boost/limits.hpp>
-#include <boost/serialization/state_saver.hpp>
-#include <boost/serialization/throw_exception.hpp>
 
 // including this here to work around an ICC in intel 7.0
 // normally this would be part of basic_oarchive.hpp below.
@@ -24,6 +22,10 @@
 // include this to prevent linker errors when the
 // same modules are marked export and import.
 #define BOOST_SERIALIZATION_SOURCE
+#include <boost/serialization/config.hpp>
+#include <boost/serialization/state_saver.hpp>
+#include <boost/serialization/throw_exception.hpp>
+#include <boost/serialization/extended_type_info.hpp>
 
 #include <boost/archive/detail/decl.hpp>
 #include <boost/archive/basic_archive.hpp>
@@ -31,16 +33,15 @@
 #include <boost/archive/detail/basic_pointer_oserializer.hpp>
 #include <boost/archive/detail/basic_oarchive.hpp>
 #include <boost/archive/archive_exception.hpp>
-#include <boost/serialization/extended_type_info.hpp>
 
 #ifdef BOOST_MSVC
 #  pragma warning(push)
 #  pragma warning(disable : 4251 4231 4660 4275)
 #endif
 
-using namespace boost::serialization;
+using namespace methcla_boost::serialization;
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
@@ -66,13 +67,6 @@ class basic_oarchive_impl {
             if( address > rhs.address )
                 return false;
             return class_id < rhs.class_id;
-        }
-        aobject & operator=(const aobject & rhs)
-        {
-            address = rhs.address;
-            class_id = rhs.class_id;
-            object_id = rhs.object_id;
-            return *this;
         }
         aobject(
             const void *a,
@@ -105,8 +99,9 @@ class basic_oarchive_impl {
             m_class_id(class_id),
             m_initialized(false)
         {}
-        cobject_type(const basic_oserializer & bos)
-            : m_bos_ptr(& bos)
+        cobject_type(const basic_oserializer & bos) :
+            m_bos_ptr(& bos),
+            m_initialized(false)
         {}
         cobject_type(
             const cobject_type & rhs
@@ -132,7 +127,7 @@ class basic_oarchive_impl {
     // keyed on object id
     std::set<object_id_type> stored_pointers;
 
-    // address of the most recent object serialized as a poiner
+    // address of the most recent object serialized as a pointer
     // whose data itself is now pending serialization
     const void * pending_object;
     const basic_oserializer * pending_bos;
@@ -177,33 +172,33 @@ basic_oarchive_impl::find(const serialization::extended_type_info & ti) const {
     class bosarg : 
         public basic_oserializer
     {
-        bool class_info() const {
+        bool class_info() const BOOST_OVERRIDE {
             BOOST_ASSERT(false); 
             return false;
         }
         // returns true if objects should be tracked
-        bool tracking(const unsigned int) const {
+        bool tracking(const unsigned int) const BOOST_OVERRIDE {
             BOOST_ASSERT(false);
             return false;
         }
         // returns class version
-        version_type version() const {
+        version_type version() const BOOST_OVERRIDE {
             BOOST_ASSERT(false);
             return version_type(0);
         }
         // returns true if this class is polymorphic
-        bool is_polymorphic() const{
+        bool is_polymorphic() const BOOST_OVERRIDE {
             BOOST_ASSERT(false);
             return false;
         }
         void save_object_data(      
             basic_oarchive & /*ar*/, const void * /*x*/
-        ) const {
+        ) const BOOST_OVERRIDE {
             BOOST_ASSERT(false);
         }
     public:
         bosarg(const serialization::extended_type_info & eti) :
-          boost::archive::detail::basic_oserializer(eti)
+          methcla_boost::archive::detail::basic_oserializer(eti)
         {}
     };
     #ifdef BOOST_MSVC
@@ -267,11 +262,11 @@ basic_oarchive_impl::save_object(
     }
 
     // we're not tracking this type of object
-    if(! bos.tracking(m_flags)){
+    if(! co.m_bos_ptr->tracking(m_flags)){
         // just windup the preamble - no object id to write
         ar.end_preamble();
         // and save the data
-        (bos.save_object_data)(ar, t);
+        (co.m_bos_ptr->save_object_data)(ar, t);
         return;
     }
 
@@ -289,7 +284,7 @@ basic_oarchive_impl::save_object(
         ar.vsave(oid);
         ar.end_preamble();
         // and data
-        (bos.save_object_data)(ar, t);
+        (co.m_bos_ptr->save_object_data)(ar, t);
         return;
     }
 
@@ -297,17 +292,16 @@ basic_oarchive_impl::save_object(
     if(stored_pointers.end() != stored_pointers.find(oid)){
         // this has to be a user error.  loading such an archive
         // would create duplicate objects
-        boost::serialization::throw_exception(
+        methcla_boost::serialization::throw_exception(
             archive_exception(archive_exception::pointer_conflict)
         );
     }
     // just save the object id
     ar.vsave(object_reference_type(oid));
     ar.end_preamble();
-    return;
 }
 
-// save a pointer to an object instance
+// colle
 inline void
 basic_oarchive_impl::save_pointer(
     basic_oarchive & ar,
@@ -332,9 +326,9 @@ basic_oarchive_impl::save_pointer(
                     // is permitted by the standard but rarely seen in practice
                     const class_name_type cn(key);
                     if(cn.size() > (BOOST_SERIALIZATION_MAX_KEY_SIZE - 1))
-                        boost::serialization::throw_exception(
-                            boost::archive::archive_exception(
-                                boost::archive::archive_exception::
+                        methcla_boost::serialization::throw_exception(
+                            methcla_boost::archive::archive_exception(
+                                methcla_boost::archive::archive_exception::
                                     invalid_class_name)
                             );
                     // write out the external class identifier
@@ -343,7 +337,7 @@ basic_oarchive_impl::save_pointer(
                 else
                     // without an external class name
                     // we won't be able to de-serialize it so bail now
-                    boost::serialization::throw_exception(
+                    methcla_boost::serialization::throw_exception(
                         archive_exception(archive_exception::unregistered_class)
                     );
             }
@@ -359,7 +353,7 @@ basic_oarchive_impl::save_pointer(
     }
 
     // if we're not tracking
-    if(! bos.tracking(m_flags)){
+    if(! co.m_bos_ptr->tracking(m_flags)){
         // just save the data itself
         ar.end_preamble();
         serialization::state_saver<const void *> x(pending_object);
@@ -401,12 +395,12 @@ basic_oarchive_impl::save_pointer(
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 //////////////////////////////////////////////////////////////////////
 // implementation of basic_oarchive functions
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
@@ -461,7 +455,7 @@ basic_oarchive::get_helper_collection(){
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 #pragma warning(pop)

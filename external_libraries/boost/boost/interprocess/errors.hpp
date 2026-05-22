@@ -6,7 +6,7 @@
 //
 // See http://www.boost.org/libs/interprocess for documentation.
 //
-// Parts of this code are taken from boost::filesystem library
+// Parts of this code are taken from methcla_boost::filesystem library
 //
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -34,14 +34,13 @@
 
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/interprocess/detail/workaround.hpp>
-#include <stdarg.h>
 #include <string>
 
 #if defined (BOOST_INTERPROCESS_WINDOWS)
 #  include <boost/interprocess/detail/win32_api.hpp>
 #else
 #  ifdef BOOST_HAS_UNISTD_H
-#    include <errno.h>        //Errors
+#    include <cerrno>         //Errors
 #    include <cstring>        //strerror
 #  else  //ifdef BOOST_HAS_UNISTD_H
 #    error Unknown platform
@@ -51,13 +50,13 @@
 //!\file
 //!Describes the error numbering of interprocess classes
 
-namespace boost {
+namespace methcla_boost {
 namespace interprocess {
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
 inline int system_error_code() // artifact of POSIX and WINDOWS error reporting
 {
    #if defined (BOOST_INTERPROCESS_WINDOWS)
-   return winapi::get_last_error();
+   return (int)winapi::get_last_error();
    #else
    return errno; // GCC 3.1 won't accept ::errno
    #endif
@@ -68,22 +67,27 @@ inline int system_error_code() // artifact of POSIX and WINDOWS error reporting
 inline void fill_system_message(int sys_err_code, std::string &str)
 {
    void *lpMsgBuf;
-   winapi::format_message(
+   unsigned long ret = winapi::format_message(
       winapi::format_message_allocate_buffer |
       winapi::format_message_from_system |
       winapi::format_message_ignore_inserts,
       0,
-      sys_err_code,
+      (unsigned long)sys_err_code,
       winapi::make_lang_id(winapi::lang_neutral, winapi::sublang_default), // Default language
       reinterpret_cast<char *>(&lpMsgBuf),
       0,
       0
    );
-   str += static_cast<const char*>(lpMsgBuf);
-   winapi::local_free( lpMsgBuf ); // free the buffer
-   while ( str.size()
-      && (str[str.size()-1] == '\n' || str[str.size()-1] == '\r') )
-      str.erase( str.size()-1 );
+   if (ret != 0){
+      str += static_cast<const char*>(lpMsgBuf);
+      winapi::local_free( lpMsgBuf ); // free the buffer
+      while ( str.size()
+         && (str[str.size()-1] == '\n' || str[str.size()-1] == '\r') )
+         str.erase( str.size()-1 );
+   }
+   else{
+      str += "WinApi FormatMessage returned error";
+   }
 }
 # else
 inline void fill_system_message( int system_error, std::string &str)
@@ -119,7 +123,8 @@ enum error_code_t
    invalid_argument,
    timeout_when_locking_error,
    timeout_when_waiting_error,
-   owner_dead_error
+   owner_dead_error,
+   not_recoverable
 };
 
 typedef int    native_error_t;
@@ -234,7 +239,7 @@ struct error_info
 #endif   //#ifndef BOOST_INTERPROCESS_DOXYGEN_INVOKED
 
 }  // namespace interprocess {
-}  // namespace boost
+}  // namespace methcla_boost
 
 #include <boost/interprocess/detail/config_end.hpp>
 

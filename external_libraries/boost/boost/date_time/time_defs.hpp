@@ -16,7 +16,7 @@
   reprsentations.
 */
 
-namespace boost {
+namespace methcla_boost {
 namespace date_time {
 
   //!Defines some nice types for handling time level resolutions

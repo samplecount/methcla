@@ -21,7 +21,7 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 namespace tt_detail {
 
@@ -65,7 +65,7 @@ make_it_pair( T const* b, T const* e ) { return it_pair<T const*>( b, e ); }
 
 } // namespace tt_detail
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

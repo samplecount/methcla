@@ -8,16 +8,17 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #define BOOST_WARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/codecvt_null.hpp>
 
 // codecvt implementation for passing wchar_t objects to char output
 // without any translation whatever.  Used to implement binary output
 // of wchar_t objects.
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
-BOOST_WARCHIVE_DECL std::codecvt_base::result
+BOOST_SYMBOL_EXPORT std::codecvt_base::result
 codecvt_null<wchar_t>::do_out(
     std::mbstate_t & /*state*/,
     const wchar_t * first1, 
@@ -45,7 +46,7 @@ codecvt_null<wchar_t>::do_out(
     return std::codecvt_base::ok;
 }
 
-BOOST_WARCHIVE_DECL std::codecvt_base::result
+BOOST_SYMBOL_EXPORT std::codecvt_base::result
 codecvt_null<wchar_t>::do_in(
     std::mbstate_t & /*state*/,
     const char * first1, 
@@ -79,5 +80,12 @@ codecvt_null<wchar_t>::do_in(
     return std::codecvt_base::ok;
 }
 
+BOOST_SYMBOL_EXPORT codecvt_null<wchar_t>::codecvt_null(std::size_t no_locale_manage) :
+    std::codecvt<wchar_t, char, std::mbstate_t>(no_locale_manage)
+{}
+
+BOOST_SYMBOL_EXPORT codecvt_null<wchar_t>::~codecvt_null()
+{}
+
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

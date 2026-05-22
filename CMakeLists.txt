@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 
 project(methcla VERSION 0.3.0)
 
@@ -8,7 +8,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(LINUX TRUE)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 99)
 
 set(methcla_warnings
@@ -24,6 +24,7 @@ add_compile_options(
 )
 
 include(CTest)
+include(cmake/dependencies.cmake)
 
 add_subdirectory(external_libraries)
 add_subdirectory(platform)

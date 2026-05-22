@@ -30,13 +30,41 @@
 #include <utility>
 #endif
 
+// GCC < 10 workaround for std::optional comparison ambiguity (see below)
+#if ((defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 10)) || (defined(__clang__) && __clang_major__ < 11)) && \
+    (__cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L))
+#include <optional>
+#endif
+
 #include <boost/test/detail/suppress_warnings.hpp>
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace test_tools {
 namespace assertion {
+
+// ************************************************************************** //
+// **************         assertion::is_std_optional            ************** //
+// ************************************************************************** //
+// Trait to detect std::optional. Used for GCC < 10 workaround.
+
+template<typename T>
+struct is_std_optional : std::false_type {};
+
+#if ((defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 10)) || (defined(__clang__) && __clang_major__ < 11)) && \
+    (__cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L))
+
+template<typename T>
+struct is_std_optional<std::optional<T>> : std::true_type {};
+template<typename T>
+struct is_std_optional<std::optional<T>&> : std::true_type {};
+template<typename T>
+struct is_std_optional<std::optional<T> const&> : std::true_type {};
+template<typename T>
+struct is_std_optional<std::optional<T>&&> : std::true_type {};
+
+#endif
 
 // ************************************************************************** //
 // **************             assertion::operators             ************** //
@@ -65,39 +93,45 @@ namespace assertion {
 namespace op {
 
 #define BOOST_TEST_FOR_EACH_COMP_OP(action) \
-    action( < , LT, >= )                    \
-    action( <=, LE, >  )                    \
-    action( > , GT, <= )                    \
-    action( >=, GE, <  )                    \
-    action( ==, EQ, != )                    \
-    action( !=, NE, == )                    \
+    action( < , LT, >=, GE )                \
+    action( <=, LE, > , GT )                \
+    action( > , GT, <=, LE )                \
+    action( >=, GE, < , LT )                \
+    action( ==, EQ, !=, NE )                \
+    action( !=, NE, ==, EQ )                \
 /**/
 
 //____________________________________________________________________________//
 
 #ifndef BOOST_NO_CXX11_DECLTYPE
 
+// Non-comparison operators (never need SFINAE workaround)
+#define BOOST_TEST_FOR_EACH_NONCOMP_OP(action)\
+    action(->*, MEMP, ->*, MEMP )           \
+                                            \
+    action( * , MUL , *  , MUL  )           \
+    action( / , DIV , /  , DIV  )           \
+    action( % , MOD , %  , MOD  )           \
+                                            \
+    action( + , ADD , +  , ADD  )           \
+    action( - , SUB , -  , SUB  )           \
+                                            \
+    action( <<, LSH , << , LSH  )           \
+    action( >>, RSH , >> , RSH  )           \
+                                            \
+    action( & , BAND, &  , BAND )           \
+    action( ^ , XOR , ^  , XOR  )           \
+    action( | , BOR , |  , BOR  )           \
+/**/
+
 #define BOOST_TEST_FOR_EACH_CONST_OP(action)\
-    action(->*, MEMP, ->* )                 \
-                                            \
-    action( * , MUL, * )                    \
-    action( / , DIV, / )                    \
-    action( % , MOD, % )                    \
-                                            \
-    action( + , ADD, + )                    \
-    action( - , SUB, - )                    \
-                                            \
-    action( <<, LSH, << )                   \
-    action( >>, RSH, >> )                   \
-                                            \
+    BOOST_TEST_FOR_EACH_NONCOMP_OP(action)  \
     BOOST_TEST_FOR_EACH_COMP_OP(action)     \
-                                            \
-    action( & , BAND, & )                   \
-    action( ^ , XOR, ^ )                    \
-    action( | , BOR, | )                    \
 /**/
 
 #else
+
+#define BOOST_TEST_FOR_EACH_NONCOMP_OP(action)
 
 #define BOOST_TEST_FOR_EACH_CONST_OP(action)\
     BOOST_TEST_FOR_EACH_COMP_OP(action)     \
@@ -108,35 +142,44 @@ namespace op {
 //____________________________________________________________________________//
 
 #define BOOST_TEST_FOR_EACH_MUT_OP(action)  \
-    action( = , SET , =  )                  \
-    action( +=, IADD, += )                  \
-    action( -=, ISUB, -= )                  \
-    action( *=, IMUL, *= )                  \
-    action( /=, IDIV, /= )                  \
-    action( %=, IMOD, %= )                  \
-    action(<<=, ILSH, <<=)                  \
-    action(>>=, IRSH, >>=)                  \
-    action( &=, IAND, &= )                  \
-    action( ^=, IXOR, ^= )                  \
-    action( |=, IOR , |= )                  \
+    action( = , SET , =  , SET  )           \
+    action( +=, IADD, += , IADD )           \
+    action( -=, ISUB, -= , ISUB )           \
+    action( *=, IMUL, *= , IMUL )           \
+    action( /=, IDIV, /= , IDIV )           \
+    action( %=, IMOD, %= , IMOD )           \
+    action(<<=, ILSH, <<=, ILSH )           \
+    action(>>=, IRSH, >>=, IRSH )           \
+    action( &=, IAND, &= , IAND )           \
+    action( ^=, IXOR, ^= , IXOR )           \
+    action( |=, IOR , |= , IOR  )           \
 /**/
 
 //____________________________________________________________________________//
 
 #ifndef BOOST_NO_CXX11_DECLTYPE
 #   define DEDUCE_RESULT_TYPE( oper )                                   \
-    decltype(boost::declval<Lhs>() oper boost::declval<Rhs>() ) optype; \
-    typedef typename boost::remove_reference<optype>::type              \
+    decltype(methcla_boost::declval<Lhs>() oper methcla_boost::declval<Rhs>() ) optype; \
+    typedef typename methcla_boost::remove_reference<optype>::type              \
 /**/
 #else
 #   define DEDUCE_RESULT_TYPE( oper ) bool
 #endif
 
-#define DEFINE_CONST_OPER( oper, name, rev )        \
+#define DEFINE_CONST_OPER_FWD_DECL( oper, name, rev, name_inverse ) \
 template<typename Lhs, typename Rhs,                \
          typename Enabler=void>                     \
+struct name;                                        \
+/**/
+
+BOOST_TEST_FOR_EACH_CONST_OP( DEFINE_CONST_OPER_FWD_DECL )
+
+#define DEFINE_CONST_OPER( oper, name, rev, name_inverse ) \
+template<typename Lhs, typename Rhs,                \
+         typename Enabler>                          \
 struct name {                                       \
     typedef DEDUCE_RESULT_TYPE( oper ) result_type; \
+    typedef name_inverse<Lhs, Rhs> inverse;         \
                                                     \
     static result_type                              \
     eval( Lhs const& lhs, Rhs const& rhs )          \
@@ -155,6 +198,8 @@ struct name {                                       \
              << tt_detail::print_helper( rhs );     \
     }                                               \
                                                     \
+    static char const* forward()                    \
+    { return " " #oper " "; }                       \
     static char const* revert()                     \
     { return " " #rev " "; }                        \
 };                                                  \
@@ -170,21 +215,88 @@ BOOST_TEST_FOR_EACH_CONST_OP( DEFINE_CONST_OPER )
 } // namespace op
 
 // ************************************************************************** //
+// **************    assertion::optional_friends_base          ************** //
+// ************************************************************************** //
+// GCC < 10 workaround: Base class that conditionally provides hidden friend
+// comparison operators only when ValType is std::optional. Hidden friends are
+// found via ADL and as non-templates beat std::optional's template operators.
+// See: https://github.com/boostorg/test/issues/475
+
+template<typename Lhs, typename Rhs, typename OP> class binary_expr;
+
+#if ((defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 10)) || (defined(__clang__) && __clang_major__ < 11)) && \
+    (__cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L))
+
+// Primary template - empty (for non-optional types)
+template<typename ExprType, typename ValType, bool IsOptional = is_std_optional<ValType>::value>
+struct optional_friends_base {};
+
+// Specialization for std::optional types - provides hidden friend operators
+template<typename ExprType, typename ValType>
+struct optional_friends_base<ExprType, ValType, true> {
+    friend binary_expr<ExprType, ValType, op::EQ<ValType, ValType>>
+    operator==( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::EQ<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+
+    friend binary_expr<ExprType, ValType, op::NE<ValType, ValType>>
+    operator!=( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::NE<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+
+    friend binary_expr<ExprType, ValType, op::LT<ValType, ValType>>
+    operator<( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::LT<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+
+    friend binary_expr<ExprType, ValType, op::LE<ValType, ValType>>
+    operator<=( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::LE<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+
+    friend binary_expr<ExprType, ValType, op::GT<ValType, ValType>>
+    operator>( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::GT<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+
+    friend binary_expr<ExprType, ValType, op::GE<ValType, ValType>>
+    operator>=( ExprType lhs, ValType rhs )
+    {
+        return binary_expr<ExprType, ValType, op::GE<ValType, ValType>>(
+            std::move(lhs), std::move(rhs));
+    }
+};
+
+#else // Not GCC < 10
+template<typename ExprType, typename ValType, bool IsOptional = false>
+struct optional_friends_base {};
+#endif // GCC < 10 && C++17
+
+// ************************************************************************** //
 // **************          assertion::expression_base          ************** //
 // ************************************************************************** //
 // Defines expression operators
 
-template<typename Lhs, typename Rhs, typename OP> class binary_expr;
-
 template<typename ExprType,typename ValType>
-class expression_base {
+class expression_base : public optional_friends_base<ExprType, ValType> {
 public:
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
     template<typename T>
     struct RhsT : remove_const<typename remove_reference<T>::type> {};
-    
-#define ADD_OP_SUPPORT( oper, name, _ )                         \
+
+// Regular operator support (non-comparison operators)
+#define ADD_OP_SUPPORT( oper, name, _, _i )                     \
     template<typename T>                                        \
     binary_expr<ExprType,T,                                     \
         op::name<ValType,typename RhsT<T>::type> >              \
@@ -197,24 +309,54 @@ public:
               std::forward<T>(rhs) );                           \
     }                                                           \
 /**/
-#else
 
-#define ADD_OP_SUPPORT( oper, name, _ )                         \
+// GCC < 10 workaround: comparison operators with SFINAE to exclude std::optional
+// when ValType is also std::optional. The hidden friend operators in the base class
+// optional_friends_base will handle the optional==optional case instead.
+#if ((defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 10)) || (defined(__clang__) && __clang_major__ < 11)) && \
+    (__cplusplus >= 201703L || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L))
+#define ADD_OP_SUPPORT_COMP( oper, name, _, _i )                              \
+    template<typename T,                                                      \
+             typename std::enable_if<                                         \
+                 !is_std_optional<ValType>::value ||                          \
+                 !is_std_optional<typename RhsT<T>::type>::value, int>::type = 0> \
+    binary_expr<ExprType,T,                                                   \
+        op::name<ValType,typename RhsT<T>::type> >                            \
+    operator oper( T&& rhs )                                                  \
+    {                                                                         \
+        return binary_expr<ExprType,T,                                        \
+         op::name<ValType,typename RhsT<T>::type> >                           \
+            ( std::forward<ExprType>(                                         \
+                *static_cast<ExprType*>(this) ),                              \
+              std::forward<T>(rhs) );                                         \
+    }                                                                         \
+/**/
+#else
+#define ADD_OP_SUPPORT_COMP ADD_OP_SUPPORT
+#endif
+
+#else // BOOST_NO_CXX11_RVALUE_REFERENCES
+
+#define ADD_OP_SUPPORT( oper, name, _, _i )                     \
     template<typename T>                                        \
-    binary_expr<ExprType,typename boost::decay<T const>::type,  \
-        op::name<ValType,typename boost::decay<T const>::type> >\
+    binary_expr<ExprType,typename methcla_boost::decay<T const>::type,  \
+        op::name<ValType,typename methcla_boost::decay<T const>::type> >\
     operator oper( T const& rhs ) const                         \
     {                                                           \
-        typedef typename boost::decay<T const>::type Rhs;       \
+        typedef typename methcla_boost::decay<T const>::type Rhs;       \
         return binary_expr<ExprType,Rhs,op::name<ValType,Rhs> > \
             ( *static_cast<ExprType const*>(this),              \
               rhs );                                            \
     }                                                           \
 /**/
-#endif
+#define ADD_OP_SUPPORT_COMP ADD_OP_SUPPORT
 
-    BOOST_TEST_FOR_EACH_CONST_OP( ADD_OP_SUPPORT )
+#endif // BOOST_NO_CXX11_RVALUE_REFERENCES
+
+    BOOST_TEST_FOR_EACH_NONCOMP_OP( ADD_OP_SUPPORT )
+    BOOST_TEST_FOR_EACH_COMP_OP( ADD_OP_SUPPORT_COMP )
     #undef ADD_OP_SUPPORT
+    #undef ADD_OP_SUPPORT_COMP
 
 #ifndef BOOST_NO_CXX11_AUTO_DECLARATIONS
     // Disabled operators
@@ -277,11 +419,11 @@ public:
     }
     void                        report( std::ostream& ostr ) const
     {
-        ostr << tt_detail::print_helper( m_value );
+        ostr << tt_detail::print_helper( value() );
     }
 
     // Mutating operators
-#define ADD_OP_SUPPORT( OPER, ID, _ )   \
+#define ADD_OP_SUPPORT( OPER, ID, _, _i)\
     template<typename U>                \
     value_expr<T>&                      \
     operator OPER( U const& rhs )       \
@@ -309,8 +451,11 @@ public:
 
 private:
     template<typename U>
-    static void format_message( wrap_stringstream& ostr, U const& v )   { ostr << "[(bool)" << v << " is false]"; }
-    static void format_message( wrap_stringstream& /*ostr*/, bool /*v*/ )       {}
+    static void format_message( wrap_stringstream& ostr, U const& v )
+    {
+        ostr << "['" << tt_detail::print_helper(v) << "' evaluates to false]";
+    }
+    static void format_message( wrap_stringstream& /*ostr*/, bool /*v*/ ) {}
     static void format_message( wrap_stringstream& /*ostr*/, assertion_result const& /*v*/ ) {}
 
     // Data members
@@ -403,7 +548,7 @@ public:
 
 } // namespace assertion
 } // namespace test_tools
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

@@ -4,13 +4,13 @@
 #ifndef BOOST_CONCEPT_BACKWARD_COMPATIBILITY_DWA200968_HPP
 # define BOOST_CONCEPT_BACKWARD_COMPATIBILITY_DWA200968_HPP
 
-namespace boost
+namespace methcla_boost
 {
   namespace concepts {}
 
 # if defined(BOOST_HAS_CONCEPTS) && !defined(BOOST_CONCEPT_NO_BACKWARD_KEYWORD)
   namespace concept = concepts;
 # endif 
-} // namespace boost::concept
+} // namespace methcla_boost::concept
 
 #endif // BOOST_CONCEPT_BACKWARD_COMPATIBILITY_DWA200968_HPP

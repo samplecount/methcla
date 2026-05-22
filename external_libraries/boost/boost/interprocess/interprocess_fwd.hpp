@@ -26,100 +26,100 @@
 
 //! \file
 //! This header file forward declares the basic interprocess types:
-//!   - boost::interprocess::offset_ptr;
-//!   - boost::interprocess::permissions;
-//!   - boost::interprocess::mapped_region;
-//!   - boost::interprocess::file_mapping;
-//!   - boost::interprocess::shared_memory_object;
-//!   - boost::interprocess::windows_shared_memory;
-//!   - boost::interprocess::xsi_shared_memory;
+//!   - methcla_boost::interprocess::offset_ptr;
+//!   - methcla_boost::interprocess::permissions;
+//!   - methcla_boost::interprocess::mapped_region;
+//!   - methcla_boost::interprocess::file_mapping;
+//!   - methcla_boost::interprocess::shared_memory_object;
+//!   - methcla_boost::interprocess::windows_shared_memory;
+//!   - methcla_boost::interprocess::xsi_shared_memory;
 //!
 //! The following synchronization mechanisms and locks:
-//!   - boost::interprocess::null_mutex;
-//!   - boost::interprocess::interprocess_mutex;
-//!   - boost::interprocess::interprocess_recursive_mutex;
-//!   - boost::interprocess::interprocess_semaphore;
-//!   - boost::interprocess::named_mutex;
-//!   - boost::interprocess::named_recursive_mutex;
-//!   - boost::interprocess::named_semaphore;
-//!   - boost::interprocess::interprocess_sharable_mutex;
-//!   - boost::interprocess::interprocess_condition;
-//!   - boost::interprocess::scoped_lock;
-//!   - boost::interprocess::sharable_lock;
-//!   - boost::interprocess::upgradable_lock;
+//!   - methcla_boost::interprocess::null_mutex;
+//!   - methcla_boost::interprocess::interprocess_mutex;
+//!   - methcla_boost::interprocess::interprocess_recursive_mutex;
+//!   - methcla_boost::interprocess::interprocess_semaphore;
+//!   - methcla_boost::interprocess::named_mutex;
+//!   - methcla_boost::interprocess::named_recursive_mutex;
+//!   - methcla_boost::interprocess::named_semaphore;
+//!   - methcla_boost::interprocess::interprocess_sharable_mutex;
+//!   - methcla_boost::interprocess::interprocess_condition;
+//!   - methcla_boost::interprocess::scoped_lock;
+//!   - methcla_boost::interprocess::sharable_lock;
+//!   - methcla_boost::interprocess::upgradable_lock;
 //!
 //! The following mutex families:
-//!   - boost::interprocess::mutex_family;
-//!   - boost::interprocess::null_mutex_family;
+//!   - methcla_boost::interprocess::mutex_family;
+//!   - methcla_boost::interprocess::null_mutex_family;
 //!
 //! The following allocators:
-//!   - boost::interprocess::allocator;
-//!   - boost::interprocess::node_allocator;
-//!   - boost::interprocess::private_node_allocator;
-//!   - boost::interprocess::cached_node_allocator;
-//!   - boost::interprocess::adaptive_pool;
-//!   - boost::interprocess::private_adaptive_pool;
-//!   - boost::interprocess::cached_adaptive_pool;
+//!   - methcla_boost::interprocess::allocator;
+//!   - methcla_boost::interprocess::node_allocator;
+//!   - methcla_boost::interprocess::private_node_allocator;
+//!   - methcla_boost::interprocess::cached_node_allocator;
+//!   - methcla_boost::interprocess::adaptive_pool;
+//!   - methcla_boost::interprocess::private_adaptive_pool;
+//!   - methcla_boost::interprocess::cached_adaptive_pool;
 //!
 //! The following allocation algorithms:
-//!   - boost::interprocess::simple_seq_fit;
-//!   - boost::interprocess::rbtree_best_fit;
+//!   - methcla_boost::interprocess::simple_seq_fit;
+//!   - methcla_boost::interprocess::rbtree_best_fit;
 //!
 //! The following index types:
-//!   - boost::interprocess::flat_map_index;
-//!   - boost::interprocess::iset_index;
-//!   - boost::interprocess::iunordered_set_index;
-//!   - boost::interprocess::map_index;
-//!   - boost::interprocess::null_index;
-//!   - boost::interprocess::unordered_map_index;
+//!   - methcla_boost::interprocess::flat_map_index;
+//!   - methcla_boost::interprocess::iset_index;
+//!   - methcla_boost::interprocess::iunordered_set_index;
+//!   - methcla_boost::interprocess::map_index;
+//!   - methcla_boost::interprocess::null_index;
+//!   - methcla_boost::interprocess::unordered_map_index;
 //!
 //! The following managed memory types:
-//!   - boost::interprocess::segment_manager;
-//!   - boost::interprocess::basic_managed_external_buffer
-//!   - boost::interprocess::managed_external_buffer
-//!   - boost::interprocess::wmanaged_external_buffer
-//!   - boost::interprocess::basic_managed_shared_memory
-//!   - boost::interprocess::managed_shared_memory
-//!   - boost::interprocess::wmanaged_shared_memory
-//!   - boost::interprocess::basic_managed_windows_shared_memory
-//!   - boost::interprocess::managed_windows_shared_memory
-//!   - boost::interprocess::wmanaged_windows_shared_memory
-//!   - boost::interprocess::basic_managed_xsi_shared_memory
-//!   - boost::interprocess::managed_xsi_shared_memory
-//!   - boost::interprocess::wmanaged_xsi_shared_memory
-//!   - boost::interprocess::fixed_managed_shared_memory
-//!   - boost::interprocess::wfixed_managed_shared_memory
-//!   - boost::interprocess::basic_managed_heap_memory
-//!   - boost::interprocess::managed_heap_memory
-//!   - boost::interprocess::wmanaged_heap_memory
-//!   - boost::interprocess::basic_managed_mapped_file
-//!   - boost::interprocess::managed_mapped_file
-//!   - boost::interprocess::wmanaged_mapped_file
+//!   - methcla_boost::interprocess::segment_manager;
+//!   - methcla_boost::interprocess::basic_managed_external_buffer
+//!   - methcla_boost::interprocess::managed_external_buffer
+//!   - methcla_boost::interprocess::wmanaged_external_buffer
+//!   - methcla_boost::interprocess::basic_managed_shared_memory
+//!   - methcla_boost::interprocess::managed_shared_memory
+//!   - methcla_boost::interprocess::wmanaged_shared_memory
+//!   - methcla_boost::interprocess::basic_managed_windows_shared_memory
+//!   - methcla_boost::interprocess::managed_windows_shared_memory
+//!   - methcla_boost::interprocess::wmanaged_windows_shared_memory
+//!   - methcla_boost::interprocess::basic_managed_xsi_shared_memory
+//!   - methcla_boost::interprocess::managed_xsi_shared_memory
+//!   - methcla_boost::interprocess::wmanaged_xsi_shared_memory
+//!   - methcla_boost::interprocess::fixed_managed_shared_memory
+//!   - methcla_boost::interprocess::wfixed_managed_shared_memory
+//!   - methcla_boost::interprocess::basic_managed_heap_memory
+//!   - methcla_boost::interprocess::managed_heap_memory
+//!   - methcla_boost::interprocess::wmanaged_heap_memory
+//!   - methcla_boost::interprocess::basic_managed_mapped_file
+//!   - methcla_boost::interprocess::managed_mapped_file
+//!   - methcla_boost::interprocess::wmanaged_mapped_file
 //!
 //! The following exception types:
-//!   - boost::interprocess::interprocess_exception
-//!   - boost::interprocess::lock_exception
-//!   - boost::interprocess::bad_alloc
+//!   - methcla_boost::interprocess::interprocess_exception
+//!   - methcla_boost::interprocess::lock_exception
+//!   - methcla_boost::interprocess::bad_alloc
 //!
 //! The following stream types:
-//!   - boost::interprocess::basic_bufferbuf
-//!   - boost::interprocess::basic_ibufferstream
-//!   - boost::interprocess::basic_obufferstream
-//!   - boost::interprocess::basic_bufferstream
-//!   - boost::interprocess::basic_vectorbuf
-//!   - boost::interprocess::basic_ivectorstream
-//!   - boost::interprocess::basic_ovectorstream
-//!   - boost::interprocess::basic_vectorstream
+//!   - methcla_boost::interprocess::basic_bufferbuf
+//!   - methcla_boost::interprocess::basic_ibufferstream
+//!   - methcla_boost::interprocess::basic_obufferstream
+//!   - methcla_boost::interprocess::basic_bufferstream
+//!   - methcla_boost::interprocess::basic_vectorbuf
+//!   - methcla_boost::interprocess::basic_ivectorstream
+//!   - methcla_boost::interprocess::basic_ovectorstream
+//!   - methcla_boost::interprocess::basic_vectorstream
 //!
 //! The following smart pointer types:
-//!   - boost::interprocess::scoped_ptr
-//!   - boost::interprocess::intrusive_ptr
-//!   - boost::interprocess::shared_ptr
-//!   - boost::interprocess::weak_ptr
+//!   - methcla_boost::interprocess::scoped_ptr
+//!   - methcla_boost::interprocess::intrusive_ptr
+//!   - methcla_boost::interprocess::shared_ptr
+//!   - methcla_boost::interprocess::weak_ptr
 //!
 //! The following interprocess communication types:
-//!   - boost::interprocess::message_queue_t;
-//!   - boost::interprocess::message_queue;
+//!   - methcla_boost::interprocess::message_queue_t;
+//!   - methcla_boost::interprocess::message_queue;
 
 #include <boost/interprocess/detail/config_begin.hpp>
 #include <boost/interprocess/detail/workaround.hpp>
@@ -132,10 +132,10 @@
 //                        Standard predeclarations
 //////////////////////////////////////////////////////////////////////////////
 
-namespace boost{  namespace intrusive{ }  }
-namespace boost{  namespace interprocess{ namespace bi = boost::intrusive; }  }
+namespace methcla_boost{  namespace intrusive{ }  }
+namespace methcla_boost{  namespace interprocess{ namespace bi = methcla_boost::intrusive; }  }
 
-namespace boost { namespace interprocess {
+namespace methcla_boost { namespace interprocess {
 
 //////////////////////////////////////////////////////////////////////////////
 //                            permissions
@@ -243,7 +243,7 @@ static const std::size_t offset_type_alignment = 0;
 
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
 #  ifdef BOOST_HAS_INTPTR_T
-      using ::boost::uintptr_t;
+      using ::methcla_boost::uintptr_t;
 #  else
       typedef std::size_t uintptr_t;
 #  endif
@@ -258,10 +258,10 @@ class offset_ptr;
 //////////////////////////////////////////////////////////////////////////////
 
 //Single segment memory allocation algorithms
-template<class MutexFamily, class VoidMutex = offset_ptr<void> >
+template<class MutexFamily, class VoidPointer = offset_ptr<void> >
 class simple_seq_fit;
 
-template<class MutexFamily, class VoidMutex = offset_ptr<void>, std::size_t MemAlignment = 0>
+template<class MutexFamily, class VoidPointer = offset_ptr<void>, std::size_t MemAlignment = 0>
 class rbtree_best_fit;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -507,7 +507,7 @@ class message_queue_t;
 
 typedef message_queue_t<offset_ptr<void> > message_queue;
 
-}}  //namespace boost { namespace interprocess {
+}}  //namespace methcla_boost { namespace interprocess {
 
 #endif   //#if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
 

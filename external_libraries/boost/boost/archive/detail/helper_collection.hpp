@@ -27,7 +27,7 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 namespace archive {
 namespace detail {
@@ -42,23 +42,24 @@ class helper_collection
 
     typedef std::pair<
         const void *,
-        boost::shared_ptr<void>
+        methcla_boost::shared_ptr<void>
     > helper_value_type;
     template<class T>
-    boost::shared_ptr<void> make_helper_ptr(){
-        // use boost::shared_ptr rather than std::shared_ptr to maintain
+    methcla_boost::shared_ptr<void> make_helper_ptr(){
+        // use methcla_boost::shared_ptr rather than std::shared_ptr to maintain
         // c++03 compatibility
-        return boost::make_shared<T>();
+        return methcla_boost::make_shared<T>();
     }
 
     typedef std::vector<helper_value_type> collection;
     collection m_collection;
 
     struct predicate {
+        BOOST_DEFAULTED_FUNCTION(predicate(const predicate& rhs), : m_ti(rhs.m_ti) {})
         BOOST_DELETED_FUNCTION(predicate & operator=(const predicate & rhs))
     public:
         const void * const m_ti;
-        bool operator()(helper_value_type const &rhs) const {
+        bool operator()(helper_value_type const &rhs){
             return m_ti == rhs.first;
         }
         predicate(const void * ti) :
@@ -94,6 +95,6 @@ public:
 
 } // namespace detail
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_ARCHIVE_DETAIL_HELPER_COLLECTION_HPP

@@ -10,19 +10,19 @@
 #ifndef BOOST_NUMERIC_CONVERSION_CONVERTER_POLICIES_FLC_12NOV2002_HPP
 #define BOOST_NUMERIC_CONVERSION_CONVERTER_POLICIES_FLC_12NOV2002_HPP
 
+#include <functional>
 #include <typeinfo> // for std::bad_cast
 
+#include <boost/config.hpp>
 #include <boost/config/no_tr1/cmath.hpp> // for std::floor and std::ceil
 #include <boost/throw_exception.hpp>
-
-#include <functional>
 
 #include "boost/type_traits/is_arithmetic.hpp"
 
 #include "boost/mpl/if.hpp"
 #include "boost/mpl/integral_c.hpp"
 
-namespace boost { namespace numeric
+namespace methcla_boost { namespace numeric
 {
 
 template<class S>
@@ -136,7 +136,7 @@ class bad_numeric_cast : public std::bad_cast
 {
   public:
 
-    virtual const char * what() const throw()
+    const char * what() const BOOST_NOEXCEPT_OR_NOTHROW BOOST_OVERRIDE
       {  return "bad numeric conversion: overflow"; }
 };
 
@@ -144,14 +144,14 @@ class negative_overflow : public bad_numeric_cast
 {
   public:
 
-    virtual const char * what() const throw()
+    const char * what() const BOOST_NOEXCEPT_OR_NOTHROW BOOST_OVERRIDE
       {  return "bad numeric conversion: negative overflow"; }
 };
 class positive_overflow : public bad_numeric_cast
 {
   public:
 
-    virtual const char * what() const throw()
+    const char * what() const BOOST_NOEXCEPT_OR_NOTHROW BOOST_OVERRIDE
       { return "bad numeric conversion: positive overflow"; }
 };
 
@@ -166,9 +166,9 @@ struct def_overflow_handler
            throw positive_overflow() ;
 #else
     if ( r == cNegOverflow )
-      ::boost::throw_exception(negative_overflow()) ;
+      ::methcla_boost::throw_exception(negative_overflow()) ;
     else if ( r == cPosOverflow )
-           ::boost::throw_exception(positive_overflow()) ;
+           ::methcla_boost::throw_exception(positive_overflow()) ;
 #endif
   }
 } ;
@@ -189,6 +189,6 @@ struct raw_converter
 
 struct UseInternalRangeChecker {} ;
 
-} } // namespace boost::numeric
+} } // namespace methcla_boost::numeric
 
 #endif

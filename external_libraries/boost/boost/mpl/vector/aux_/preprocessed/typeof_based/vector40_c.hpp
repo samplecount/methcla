@@ -9,7 +9,7 @@
 // Preprocessed version of "boost/mpl/vector/vector40_c.hpp" header
 // -- DO NOT modify by hand!
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template<
       typename T

@@ -17,7 +17,7 @@
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 enum xtime_clock_types
 {
@@ -46,28 +46,28 @@ struct xtime
 
     operator system_time() const
     {
-        return boost::posix_time::from_time_t(0)+
-            boost::posix_time::seconds(static_cast<long>(sec))+
+        return methcla_boost::posix_time::from_time_t(0)+
+            methcla_boost::posix_time::seconds(static_cast<long>(sec))+
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-            boost::posix_time::nanoseconds(nsec);
+            methcla_boost::posix_time::nanoseconds(nsec);
 #else
-        boost::posix_time::microseconds((nsec+500)/1000);
+        methcla_boost::posix_time::microseconds((nsec+500)/1000);
 #endif
     }
 
 };
 
-inline xtime get_xtime(boost::system_time const& abs_time)
+inline ::methcla_boost::xtime get_xtime(methcla_boost::system_time const& abs_time)
 {
-    xtime res;
-    boost::posix_time::time_duration const time_since_epoch=abs_time-boost::posix_time::from_time_t(0);
+    ::methcla_boost::xtime res;
+    methcla_boost::posix_time::time_duration const time_since_epoch=abs_time-methcla_boost::posix_time::from_time_t(0);
 
-    res.sec=static_cast<xtime::xtime_sec_t>(time_since_epoch.total_seconds());
-    res.nsec=static_cast<xtime::xtime_nsec_t>(time_since_epoch.fractional_seconds()*(1000000000/time_since_epoch.ticks_per_second()));
+    res.sec=static_cast< ::methcla_boost::xtime::xtime_sec_t>(time_since_epoch.total_seconds());
+    res.nsec=static_cast< ::methcla_boost::xtime::xtime_nsec_t>(time_since_epoch.fractional_seconds()*(1000000000/time_since_epoch.ticks_per_second()));
     return res;
 }
 
-inline int xtime_get(struct xtime* xtp, int clock_type)
+inline int xtime_get(struct ::methcla_boost::xtime* xtp, int clock_type)
 {
     if (clock_type == TIME_UTC_)
     {
@@ -78,7 +78,7 @@ inline int xtime_get(struct xtime* xtp, int clock_type)
 }
 
 
-inline int xtime_cmp(const xtime& xt1, const xtime& xt2)
+inline int xtime_cmp(const ::methcla_boost::xtime& xt1, const ::methcla_boost::xtime& xt2)
 {
     if (xt1.sec == xt2.sec)
         return (int)(xt1.nsec - xt2.nsec);
@@ -86,7 +86,7 @@ inline int xtime_cmp(const xtime& xt1, const xtime& xt2)
         return (xt1.sec > xt2.sec) ? 1 : -1;
 }
 
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/config/abi_suffix.hpp>
 #endif

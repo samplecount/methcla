@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // mb_from_wchar.hpp
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -18,20 +18,22 @@
 
 #include <boost/assert.hpp>
 #include <cstddef> // size_t
-#include <cwchar> // for mbstate_t and wcrtomb()
-
+#include <cstring> // memcpy
+#ifndef BOOST_NO_CWCHAR
+#include <cwchar> //  mbstate_t
+#endif
 #include <boost/config.hpp>
 #if defined(BOOST_NO_STDC_NAMESPACE)
-namespace std{ 
-    using ::size_t; 
+namespace std{
     using ::mbstate_t;
-    using ::wcrtomb;
+    using ::memcpy;
 } // namespace std
 #endif
 
+#include <boost/archive/detail/utf8_codecvt_facet.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace archive {
 namespace iterators {
 
@@ -40,19 +42,19 @@ namespace iterators {
 // strings of the currently selected locale
 template<class Base>    // the input iterator
 class mb_from_wchar
-    : public boost::iterator_adaptor<
-        mb_from_wchar<Base>, 
-        Base, 
+    : public methcla_boost::iterator_adaptor<
+        mb_from_wchar<Base>,
+        Base,
         wchar_t,
         single_pass_traversal_tag,
         char
     >
 {
-    friend class boost::iterator_core_access;
+    friend class methcla_boost::iterator_core_access;
 
-    typedef typename boost::iterator_adaptor<
-        mb_from_wchar<Base>, 
-        Base, 
+    typedef typename methcla_boost::iterator_adaptor<
+        mb_from_wchar<Base>,
+        Base,
         wchar_t,
         single_pass_traversal_tag,
         char
@@ -67,15 +69,15 @@ class mb_from_wchar
         }
         return m_buffer[m_bnext];
     }
+
     char dereference() const {
         return (const_cast<this_t *>(this))->dereference_impl();
     }
-
     // test for iterator equality
     bool equal(const mb_from_wchar<Base> & rhs) const {
         // once the value is filled, the base_reference has been incremented
         // so don't permit comparison anymore.
-        return 
+        return
             0 == m_bend
             && 0 == m_bnext
             && this->base_reference() == rhs.base_reference()
@@ -83,51 +85,63 @@ class mb_from_wchar
     }
 
     void fill(){
-        std::mbstate_t mbs;
-        std::wcrtomb(0, 0, &mbs);
         wchar_t value = * this->base_reference();
-        m_bend = std::wcrtomb(m_buffer, value, &mbs);
-        BOOST_ASSERT(-1 != m_bend);
-        BOOST_ASSERT((std::size_t)m_bend <= sizeof(m_buffer));
-        BOOST_ASSERT(m_bend > 0);
+        const wchar_t *wend;
+        char *bend;
+        BOOST_VERIFY(
+            m_codecvt_facet.out(
+                m_mbs,
+                & value, & value + 1, wend,
+                m_buffer, m_buffer + sizeof(m_buffer), bend
+            )
+            ==
+            std::codecvt_base::ok
+        );
         m_bnext = 0;
+        m_bend = bend - m_buffer;
     }
 
     void increment(){
         if(++m_bnext < m_bend)
             return;
-        m_bend = 
+        m_bend =
         m_bnext = 0;
         ++(this->base_reference());
         m_full = false;
     }
 
+    methcla_boost::archive::detail::utf8_codecvt_facet m_codecvt_facet;
+    std::mbstate_t m_mbs;
     // buffer to handle pending characters
-    int m_bend;
-    int m_bnext;
-    char m_buffer[9];
+    char m_buffer[9 /* MB_CUR_MAX */];
+    std::size_t m_bend;
+    std::size_t m_bnext;
     bool m_full;
 
 public:
-    // make composible buy using templated constructor
+    // make composable by using templated constructor
     template<class T>
     mb_from_wchar(T start) :
         super_t(Base(static_cast< T >(start))),
+        m_mbs(std::mbstate_t()),
         m_bend(0),
         m_bnext(0),
         m_full(false)
     {}
     // intel 7.1 doesn't like default copy constructor
-    mb_from_wchar(const mb_from_wchar & rhs) : 
+    mb_from_wchar(const mb_from_wchar & rhs) :
         super_t(rhs.base_reference()),
+        m_mbs(rhs.m_mbs),
         m_bend(rhs.m_bend),
         m_bnext(rhs.m_bnext),
         m_full(rhs.m_full)
-    {}
+    {
+        std::memcpy(m_buffer, rhs.m_buffer, sizeof(m_buffer));
+    }
 };
 
 } // namespace iterators
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_ARCHIVE_ITERATORS_MB_FROM_WCHAR_HPP

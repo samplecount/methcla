@@ -15,11 +15,12 @@
 #define BOOST_CONCEPT_ARCHETYPES_HPP
 
 #include <boost/config.hpp>
-#include <boost/iterator.hpp>
-#include <boost/mpl/identity.hpp>
+#include <boost/config/workaround.hpp>
 #include <functional>
+#include <iterator>  // iterator tags
+#include <cstddef>   // std::ptrdiff_t
 
-namespace boost {
+namespace methcla_boost {
 
   //===========================================================================
   // Basic Archetype Classes
@@ -56,7 +57,7 @@ namespace boost {
   public:
       static T& get()
       {
-#if BOOST_WORKAROUND(__BORLANDC__, BOOST_TESTED_AT(0x564))
+#if BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x564))
           return *reinterpret_cast<T*>(0);
 #else 
           static char d[sizeof(T)];
@@ -421,6 +422,8 @@ namespace boost {
     };
     typedef const T* pointer;
     typedef std::ptrdiff_t difference_type;
+    input_iterator_archetype() { }
+    input_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -440,6 +443,8 @@ namespace boost {
     typedef const T& reference;
     typedef const T* pointer;
     typedef std::ptrdiff_t difference_type;
+    input_iterator_archetype_no_proxy() { }
+    input_iterator_archetype_no_proxy(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -492,6 +497,7 @@ namespace boost {
     typedef const T* pointer;
     typedef std::ptrdiff_t difference_type;
     input_output_iterator_archetype() { }
+    input_output_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -512,6 +518,7 @@ namespace boost {
     typedef T const* pointer;
     typedef std::ptrdiff_t difference_type;
     forward_iterator_archetype() { }
+    forward_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -532,6 +539,7 @@ namespace boost {
     typedef T* pointer;
     typedef std::ptrdiff_t difference_type;
     mutable_forward_iterator_archetype() { }
+    mutable_forward_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -552,6 +560,7 @@ namespace boost {
     typedef T* pointer;
     typedef std::ptrdiff_t difference_type;
     bidirectional_iterator_archetype() { }
+    bidirectional_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -574,6 +583,7 @@ namespace boost {
     typedef T* pointer;
     typedef std::ptrdiff_t difference_type;
     mutable_bidirectional_iterator_archetype() { }
+    mutable_bidirectional_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -596,6 +606,7 @@ namespace boost {
     typedef T* pointer;
     typedef std::ptrdiff_t difference_type;
     random_access_iterator_archetype() { }
+    random_access_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -636,6 +647,7 @@ namespace boost {
     typedef T* pointer;
     typedef std::ptrdiff_t difference_type;
     mutable_random_access_iterator_archetype() { }
+    mutable_random_access_iterator_archetype(const self&) { }
     self& operator=(const self&) { return *this;  }
     bool operator==(const self&) const { return true; }
     bool operator!=(const self&) const { return true; }
@@ -664,6 +676,6 @@ namespace boost {
      const mutable_random_access_iterator_archetype<T>& x) 
     { return x; }
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_CONCEPT_ARCHETYPES_H

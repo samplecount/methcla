@@ -22,9 +22,11 @@
 #endif
 
 #include <boost/config.hpp>
-#include <boost/core/no_exceptions_support.hpp>
+#include <boost/intrusive/detail/workaround.hpp>
+#include <boost/move/detail/placement_new.hpp>
+#include <boost/move/detail/force_ptr.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -36,7 +38,7 @@ union max_align
    int         int_;
    long        long_;
    #ifdef BOOST_HAS_LONG_LONG
-   ::boost::long_long_type  long_long_;
+   ::methcla_boost::long_long_type  long_long_;
    #endif
    float       float_;
    double      double_;
@@ -53,20 +55,20 @@ class array_initializer
    {
       char *init_buf = (char*)rawbuf;
       std::size_t i = 0;
-      BOOST_TRY{
+      BOOST_INTRUSIVE_TRY{
          for(; i != N; ++i){
-            new(init_buf)T(init);
+            ::new(init_buf, boost_move_new_t()) T(init);
             init_buf += sizeof(T);
          }
       }
-      BOOST_CATCH(...){
+      BOOST_INTRUSIVE_CATCH(...){
          while(i--){
             init_buf -= sizeof(T);
-            ((T*)init_buf)->~T();
+            move_detail::force_ptr<T*>(init_buf)->~T();
          }
-         BOOST_RETHROW;
+         BOOST_INTRUSIVE_RETHROW;
       }
-      BOOST_CATCH_END
+      BOOST_INTRUSIVE_CATCH_END
    }
 
    operator T* ()
@@ -80,7 +82,7 @@ class array_initializer
       char *init_buf = (char*)rawbuf + N*sizeof(T);
       for(std::size_t i = 0; i != N; ++i){
          init_buf -= sizeof(T);
-         ((T*)init_buf)->~T();
+         move_detail::force_ptr<T*>(init_buf)->~T();
       }
    }
 
@@ -90,6 +92,6 @@ class array_initializer
 
 }  //namespace detail{
 }  //namespace intrusive{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #endif //BOOST_INTRUSIVE_DETAIL_ARRAY_INITIALIZER_HPP

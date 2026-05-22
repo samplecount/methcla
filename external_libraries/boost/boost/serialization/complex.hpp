@@ -10,7 +10,7 @@
 // serialization/utility.hpp:
 // serialization for stl utility templates
 
-// (C) Copyright 2007 Matthias Troyer . 
+// (C) Copyright 2007 Matthias Troyer .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -24,16 +24,16 @@
 #include <boost/serialization/is_bitwise_serializable.hpp>
 #include <boost/serialization/split_free.hpp>
 
-namespace boost { 
+namespace methcla_boost {
 namespace serialization {
 
 template<class Archive, class T>
 inline void serialize(
     Archive & ar,
     std::complex< T > & t,
-    const unsigned int file_version 
+    const unsigned int file_version
 ){
-    boost::serialization::split_free(ar, t, file_version);
+    methcla_boost::serialization::split_free(ar, t, file_version);
 }
 
 template<class Archive, class T>
@@ -44,20 +44,20 @@ inline void save(
 ){
     const T re = t.real();
     const T im = t.imag();
-    ar << boost::serialization::make_nvp("real", re);
-    ar << boost::serialization::make_nvp("imag", im);
+    ar << methcla_boost::serialization::make_nvp("real", re);
+    ar << methcla_boost::serialization::make_nvp("imag", im);
 }
 
 template<class Archive, class T>
 inline void load(
     Archive & ar,
     std::complex< T >& t,
-    const unsigned int /* file_version */ 
+    const unsigned int /* file_version */
 ){
     T re;
     T im;
-    ar >> boost::serialization::make_nvp("real", re);
-    ar >> boost::serialization::make_nvp("imag", im);
+    ar >> methcla_boost::serialization::make_nvp("real", re);
+    ar >> methcla_boost::serialization::make_nvp("imag", im);
     t = std::complex< T >(re,im);
 }
 
@@ -76,6 +76,6 @@ struct tracking_level<std::complex< T > >
     : mpl::int_<track_never> {} ;
 
 } // serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_SERIALIZATION_COMPLEX_HPP

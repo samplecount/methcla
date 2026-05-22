@@ -10,7 +10,7 @@
 #define BOOST_SPIRIT_SKIPPER_IPP
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace boost { namespace spirit {
+namespace methcla_boost { namespace spirit {
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 
@@ -98,12 +98,12 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
                 ParserT const&      p,
                 SkipT const&        skip)
             {
-                typedef skip_parser_iteration_policy<SkipT> iter_policy_t;
-                typedef scanner_policies<iter_policy_t> scanner_policies_t;
-                typedef scanner<IteratorT, scanner_policies_t> scanner_t;
+                typedef skip_parser_iteration_policy<SkipT> it_policy_t;
+                typedef scanner_policies<it_policy_t> scan_policies_t;
+                typedef scanner<IteratorT, scan_policies_t> scanner_t;
 
-                iter_policy_t iter_policy(skip);
-                scanner_policies_t policies(iter_policy);
+                it_policy_t iter_policy(skip);
+                scan_policies_t policies(iter_policy);
                 IteratorT first = first_;
                 scanner_t scan(first, last, policies);
                 match<nil_t> hit = p.parse(scan);
@@ -124,9 +124,9 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
                 ParserT const&      p,
                 space_parser const&)
             {
-                typedef skipper_iteration_policy<> iter_policy_t;
-                typedef scanner_policies<iter_policy_t> scanner_policies_t;
-                typedef scanner<IteratorT, scanner_policies_t> scanner_t;
+                typedef skipper_iteration_policy<> it_policy_t;
+                typedef scanner_policies<it_policy_t> scan_policies_t;
+                typedef scanner<IteratorT, scan_policies_t> scanner_t;
 
                 IteratorT first = first_;
                 scanner_t scan(first, last);
@@ -175,7 +175,7 @@ BOOST_SPIRIT_CLASSIC_NAMESPACE_BEGIN
 
 BOOST_SPIRIT_CLASSIC_NAMESPACE_END
 
-}} // namespace boost::spirit
+}} // namespace methcla_boost::spirit
 
 #endif
 

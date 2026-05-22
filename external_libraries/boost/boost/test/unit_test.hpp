@@ -25,8 +25,10 @@
 // ************************************************************************** //
 
 #if !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_TEST_NO_LIB) && \
-    !defined(BOOST_TEST_SOURCE) && !defined(BOOST_TEST_INCLUDED)
-#  define BOOST_LIB_NAME boost_unit_test_framework
+    !defined(BOOST_UNIT_TEST_FRAMEWORK_NO_LIB) && \
+    !defined(BOOST_TEST_SOURCE) && !defined(BOOST_TEST_INCLUDED) && \
+    defined(BOOST_TEST_MAIN)
+#  define BOOST_LIB_NAME methcla_boost_unit_test_framework
 
 #  if defined(BOOST_ALL_DYN_LINK) || defined(BOOST_TEST_DYN_LINK)
 #    define BOOST_DYN_LINK
@@ -40,7 +42,7 @@
 // **************                  unit_test_main              ************** //
 // ************************************************************************** //
 
-namespace boost { namespace unit_test {
+namespace methcla_boost { namespace unit_test {
 
 int BOOST_TEST_DECL unit_test_main( init_unit_test_func init_func, int argc, char* argv[] );
 
@@ -60,7 +62,7 @@ namespace unit_test_framework=unit_test;
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
-    return ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
+    return ::methcla_boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 }
 
 //____________________________________________________________________________//

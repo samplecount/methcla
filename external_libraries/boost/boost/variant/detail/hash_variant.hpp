@@ -3,8 +3,7 @@
 // See http://www.boost.org for updates, documentation, and revision history.
 //-----------------------------------------------------------------------------
 //
-// Copyright (c) 2011
-// Antony Polukhin
+// Copyright (c) 2011-2026 Antony Polukhin
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -23,13 +22,13 @@
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/functional/hash_fwd.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
     namespace detail { namespace variant {
-        struct variant_hasher: public boost::static_visitor<std::size_t> {
+        struct variant_hasher: public methcla_boost::static_visitor<std::size_t> {
             template <class T>
             std::size_t operator()(T const& val) const {
-                boost::hash<T> hasher;
+                methcla_boost::hash<T> hasher;
                 return hasher(val);
             }
         };
@@ -37,7 +36,7 @@ namespace boost {
 
     template < BOOST_VARIANT_ENUM_PARAMS(typename T) >
     std::size_t hash_value(variant< BOOST_VARIANT_ENUM_PARAMS(T) > const& val) {
-        std::size_t seed = boost::apply_visitor(detail::variant::variant_hasher(), val);
+        std::size_t seed = methcla_boost::apply_visitor(detail::variant::variant_hasher(), val);
         hash_combine(seed, val.which());
         return seed;
     }

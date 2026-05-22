@@ -13,6 +13,7 @@
 #endif
 
 #define BOOST_ARCHIVE_SOURCE
+#include <boost/serialization/config.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/detail/archive_serializer_map.hpp>
 
@@ -21,7 +22,7 @@
 #include <boost/archive/impl/basic_text_iarchive.ipp>
 #include <boost/archive/impl/text_iarchive_impl.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 template class detail::archive_serializer_map<text_iarchive>;
@@ -29,4 +30,4 @@ template class basic_text_iarchive<text_iarchive> ;
 template class text_iarchive_impl<text_iarchive> ;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

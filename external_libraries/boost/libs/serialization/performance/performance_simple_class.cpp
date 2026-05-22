@@ -35,19 +35,19 @@ namespace std{
 int 
 test_main( int /* argc */, char* /* argv */[] )
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     BOOST_REQUIRE(NULL != testfile);
 
     A a, a1;
     {   
         test_ostream os(testfile, TEST_STREAM_FLAGS);
         test_oarchive oa(os, TEST_ARCHIVE_FLAGS);
-        oa << boost::serialization::make_nvp("a", a);
+        oa << methcla_boost::serialization::make_nvp("a", a);
     }
     {
         test_istream is(testfile, TEST_STREAM_FLAGS);
         test_iarchive ia(is, TEST_ARCHIVE_FLAGS);
-        ia >> boost::serialization::make_nvp("a", a1);
+        ia >> methcla_boost::serialization::make_nvp("a", a1);
     }
     BOOST_CHECK_EQUAL(a, a1);
     std::remove(testfile);

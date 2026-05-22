@@ -17,7 +17,12 @@
 #include <string> // to make converting-ctor std::string(char const*) visible
 #endif
 
-namespace boost {
+namespace methcla_boost {
+
+#if defined(__clang__)
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wweak-vtables"
+#endif
 
 class bad_optional_access : public std::logic_error
 {
@@ -27,6 +32,10 @@ public:
     {}
 };
 
-} // namespace boost
+#if defined(__clang__)
+# pragma clang diagnostic pop
+#endif
+
+} // namespace methcla_boost
 
 #endif

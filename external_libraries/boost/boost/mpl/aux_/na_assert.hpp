@@ -22,12 +22,12 @@
     && !BOOST_WORKAROUND(__EDG_VERSION__, <= 243)
 #   include <boost/mpl/assert.hpp>
 #   define BOOST_MPL_AUX_ASSERT_NOT_NA(x) \
-    BOOST_MPL_ASSERT_NOT((boost::mpl::is_na<type>)) \
+    BOOST_MPL_ASSERT_NOT((methcla_boost::mpl::is_na<x>)) \
 /**/
 #else
 #   include <boost/static_assert.hpp>
 #   define BOOST_MPL_AUX_ASSERT_NOT_NA(x) \
-    BOOST_STATIC_ASSERT(!boost::mpl::is_na<x>::value) \
+    BOOST_STATIC_ASSERT(!methcla_boost::mpl::is_na<x>::value) \
 /**/
 #endif
 

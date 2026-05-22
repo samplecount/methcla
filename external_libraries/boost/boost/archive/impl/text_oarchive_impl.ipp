@@ -10,7 +10,6 @@
 
 #include <string>
 #include <boost/config.hpp>
-#include <locale>
 #include <cstddef> // size_t
 
 #include <boost/config.hpp>
@@ -27,10 +26,9 @@ namespace std{ using ::wcslen; }
 #endif
 #endif
 
-#include <boost/archive/add_facet.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
-namespace boost { 
+namespace methcla_boost { 
 namespace archive {
 
 //////////////////////////////////////////////////////////////////////
@@ -95,12 +93,6 @@ text_oarchive_impl<Archive>::text_oarchive_impl(
     ),
     basic_text_oarchive<Archive>(flags)
 {
-    if(0 == (flags & no_header))
-        #if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3205))
-        this->init();
-        #else
-        this->basic_text_oarchive<Archive>::init();
-        #endif
 }
 
 template<class Archive>
@@ -120,5 +112,5 @@ text_oarchive_impl<Archive>::save_binary(const void *address, std::size_t count)
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 

@@ -24,7 +24,7 @@
 // C Runtime
 #include <stdlib.h>
 
-namespace boost {
+namespace methcla_boost {
 namespace runtime {
 namespace env {
 
@@ -32,7 +32,7 @@ namespace env_detail {
 
 #ifndef UNDER_CE
 
-#ifdef BOOST_MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4996) // getenv
 #endif
@@ -46,7 +46,7 @@ sys_read_var( cstring var_name )
     return std::make_pair( cstring(res), res != NULL );
 }
 
-#ifdef BOOST_MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
@@ -101,7 +101,7 @@ fetch_absent( parameters_store const& params, runtime::arguments_store& args )
 
 } // namespace env
 } // namespace runtime
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

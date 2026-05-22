@@ -23,7 +23,7 @@
 #include <boost/mpl/aux_/common_name_wknd.hpp>
 #include <boost/mpl/aux_/na_spec.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 BOOST_MPL_AUX_COMMON_NAME_WKND(max_element)
 

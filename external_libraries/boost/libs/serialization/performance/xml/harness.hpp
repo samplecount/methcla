@@ -51,7 +51,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #include "node.hpp" // includes macro.hpp
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace xml {
 
@@ -59,7 +59,7 @@ template<typename T> T random (void);
 
 template<typename T> T
 random (void) {
-  using namespace boost::uuids;
+  using namespace methcla_boost::uuids;
 
   hash<uuid> hash;
   basic_random_generator<mt19937> gen;
@@ -69,7 +69,7 @@ random (void) {
 
 template<> std::string
 random<std::string> (void) {
-  using namespace boost::uuids;
+  using namespace methcla_boost::uuids;
 
   basic_random_generator<mt19937> gen;
   uuid u = gen();

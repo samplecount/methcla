@@ -12,6 +12,7 @@
 #ifndef BOOST_CHRONO_CONFIG_HPP
 #define BOOST_CHRONO_CONFIG_HPP
 
+#include <boost/chrono/detail/requires_cxx11.hpp>
 #include <boost/config.hpp>
 #include <boost/predef.h>
 
@@ -199,7 +200,7 @@
 // Set the name of our library; this will get undef'ed by auto_link.hpp
 // once it's done with it:
 //
-#define BOOST_LIB_NAME boost_chrono
+#define BOOST_LIB_NAME methcla_boost_chrono
 //
 // If we're importing code from a dll, then tell auto_link.hpp about it:
 //
@@ -212,5 +213,6 @@
 #include <boost/config/auto_link.hpp>
 #endif  // auto-linking disabled
 #endif // BOOST_CHRONO_HEADER_ONLY
+
 #endif // BOOST_CHRONO_CONFIG_HPP
 

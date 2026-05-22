@@ -6,8 +6,8 @@
 //  See http://www.boost.org/libs/test for the library home page.
 //
 /// @file
-/// Defines @ref boost::unit_test::test_unit "test_unit", @ref boost::unit_test::test_case "test_case",
-/// @ref boost::unit_test::test_suite "test_suite" and @ref boost::unit_test::master_test_suite_t "master_test_suite_t"
+/// Defines @ref methcla_boost::unit_test::test_unit "test_unit", @ref methcla_boost::unit_test::test_case "test_case",
+/// @ref methcla_boost::unit_test::test_suite "test_suite" and @ref methcla_boost::unit_test::master_test_suite_t "master_test_suite_t"
 // ***************************************************************************
 
 #ifndef BOOST_TEST_TREE_TEST_UNIT_HPP_100211GER
@@ -20,6 +20,7 @@
 
 #include <boost/test/tree/decorator.hpp>
 #include <boost/test/tree/fixture.hpp>
+#include <boost/test/framework.hpp>
 
 #include <boost/test/tools/assertion_result.hpp>
 
@@ -38,11 +39,11 @@
 
 //____________________________________________________________________________//
 
-namespace boost {
+namespace methcla_boost {
 namespace unit_test {
 
 namespace framework {
-class state;
+  class state;
 }
 
 // ************************************************************************** //
@@ -64,7 +65,7 @@ public:
     typedef std::vector<decorator::base_ptr>                                decor_list_t;
     typedef BOOST_READONLY_PROPERTY(std::vector<std::string>,(test_unit))   label_list_t;
 
-    typedef boost::function<test_tools::assertion_result (test_unit_id)>    precondition_t;
+    typedef methcla_boost::function<test_tools::assertion_result (test_unit_id)>    precondition_t;
     typedef BOOST_READONLY_PROPERTY(std::vector<precondition_t>,(test_unit)) precond_list_t;
 
     // preconditions management
@@ -113,8 +114,6 @@ protected:
     test_unit( const_string tu_name, const_string tc_file, std::size_t tc_line, test_unit_type t );
     // Master test suite constructor
     explicit                            test_unit( const_string module_name );
-
-private:
 };
 
 // ************************************************************************** //
@@ -138,11 +137,11 @@ public:
     enum { type = TUT_CASE };
 
     // Constructor
-    test_case( const_string tc_name, boost::function<void ()> const& test_func );
-    test_case( const_string tc_name, const_string tc_file, std::size_t tc_line, boost::function<void ()> const& test_func );
+    test_case( const_string tc_name, methcla_boost::function<void ()> const& test_func );
+    test_case( const_string tc_name, const_string tc_file, std::size_t tc_line, methcla_boost::function<void ()> const& test_func );
 
     // Public property
-    typedef BOOST_READONLY_PROPERTY(boost::function<void ()>,(test_case))  test_func;
+    typedef BOOST_READONLY_PROPERTY(methcla_boost::function<void ()>,(test_case))  test_func;
 
     test_func   p_test_func;
 
@@ -175,11 +174,21 @@ public:
     void            add( test_unit_generator const& gen, unsigned timeout = 0 );
 
     /// @overload
-    void            add( test_unit_generator const& gen, decorator::collector& decorators );
+    void            add( test_unit_generator const& gen, decorator::collector_t& decorators );
+  
+    /// @overload
+    void            add( methcla_boost::shared_ptr<test_unit_generator> gen_ptr, decorator::collector_t& decorators );
 
     //! Removes a test from the test suite.
     void            remove( test_unit_id id );
+  
+    //! Generates all the delayed test_units from the generators
+    void            generate( );
 
+    //! Check for duplicates name in test cases
+    //!
+    //! Raises a setup_error if there are duplicates
+    void            check_for_duplicate_test_cases();
 
     // access methods
     test_unit_id    get( const_string tu_name ) const;
@@ -199,6 +208,8 @@ protected:
 
     test_unit_id_list   m_children;
     children_per_rank   m_ranked_children; ///< maps child sibling rank to list of children with that rank
+  
+    std::vector< std::pair<methcla_boost::shared_ptr<test_unit_generator>, std::vector<decorator::base_ptr> > > m_generators; /// lazy evaluation
 };
 
 // ************************************************************************** //
@@ -206,12 +217,17 @@ protected:
 // ************************************************************************** //
 
 class BOOST_TEST_DECL master_test_suite_t : public test_suite {
-public:
+private:
     master_test_suite_t();
-
+    master_test_suite_t(const master_test_suite_t&); // undefined
+    master_test_suite_t& operator=(master_test_suite_t const &); // undefined
+  
+public:
     // Data members
     int      argc;
     char**   argv;
+  
+    friend BOOST_TEST_DECL master_test_suite_t& methcla_boost::unit_test::framework::master_test_suite();
 };
 
 // ************************************************************************** //
@@ -244,7 +260,7 @@ struct user_tc_method_invoker {
 // ************************************************************************** //
 
 inline test_case*
-make_test_case( boost::function<void ()> const& test_func, const_string tc_name, const_string tc_file, std::size_t tc_line )
+make_test_case( methcla_boost::function<void ()> const& test_func, const_string tc_name, const_string tc_file, std::size_t tc_line )
 {
     return new test_case( ut_detail::normalize_test_case_name( tc_name ), tc_file, tc_line, test_func );
 }
@@ -257,7 +273,7 @@ make_test_case( void (UserTestCase::*           test_method )(),
                 const_string                    tc_name,
                 const_string                    tc_file,
                 std::size_t                     tc_line,
-                boost::shared_ptr<InstanceType> user_test_case )
+                methcla_boost::shared_ptr<InstanceType> user_test_case )
 {
     return new test_case( ut_detail::normalize_test_case_name( tc_name ),
                           tc_file,
@@ -268,7 +284,7 @@ make_test_case( void (UserTestCase::*           test_method )(),
 //____________________________________________________________________________//
 
 } // namespace unit_test
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/test/detail/enable_warnings.hpp>
 

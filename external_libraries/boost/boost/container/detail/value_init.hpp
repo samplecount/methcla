@@ -24,25 +24,27 @@
 #include <boost/container/detail/config_begin.hpp>
 #include <boost/container/detail/workaround.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 template<class T>
 struct value_init
 {
-   value_init()
+   BOOST_CONTAINER_FORCEINLINE value_init()
       : m_t()
    {}
 
-   operator T &() { return m_t; }
+   BOOST_CONTAINER_FORCEINLINE operator T &() { return m_t; }
+
+   BOOST_CONTAINER_FORCEINLINE T &get() { return m_t; }
 
    T m_t;
 };
 
-}  //namespace container_detail {
+}  //namespace dtl {
 }  //namespace container {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #include <boost/container/detail/config_end.hpp>
 

@@ -17,7 +17,7 @@
 #include <boost/archive/detail/basic_serializer_map.hpp>
 #include <boost/serialization/singleton.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 namespace detail {
 
@@ -39,7 +39,7 @@ namespace extra_detail { // anon
 template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL bool
 archive_serializer_map<Archive>::insert(const basic_serializer * bs){
-    return boost::serialization::singleton<
+    return methcla_boost::serialization::singleton<
         extra_detail::map<Archive>
     >::get_mutable_instance().insert(bs);
 }
@@ -47,11 +47,15 @@ archive_serializer_map<Archive>::insert(const basic_serializer * bs){
 template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL void
 archive_serializer_map<Archive>::erase(const basic_serializer * bs){
-    if(boost::serialization::singleton<
+    // note: previously this conditional was a runtime assertion with
+    // BOOST_ASSERT.  We've changed it because we've discovered that at
+    // least one platform is not guaranteed to destroy singletons in
+    // reverse order of distruction.
+    if(methcla_boost::serialization::singleton<
         extra_detail::map<Archive>
     >::is_destroyed())
         return;
-    boost::serialization::singleton<
+    methcla_boost::serialization::singleton<
         extra_detail::map<Archive>
     >::get_mutable_instance().erase(bs);
 }
@@ -59,13 +63,13 @@ archive_serializer_map<Archive>::erase(const basic_serializer * bs){
 template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL const basic_serializer *
 archive_serializer_map<Archive>::find(
-    const boost::serialization::extended_type_info & eti
+    const methcla_boost::serialization::extended_type_info & eti
 ) {
-    return boost::serialization::singleton<
+    return methcla_boost::serialization::singleton<
         extra_detail::map<Archive>
     >::get_const_instance().find(eti);
 }
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

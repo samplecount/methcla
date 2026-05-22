@@ -16,18 +16,18 @@
 #include <boost/type_traits/is_empty.hpp>
 #include <boost/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 template <typename T>
 struct is_stateless
  : public integral_constant<bool,  
-      (::boost::has_trivial_constructor<T>::value
-      && ::boost::has_trivial_copy<T>::value
-      && ::boost::has_trivial_destructor<T>::value
-      && ::boost::is_class<T>::value
-      && ::boost::is_empty<T>::value)>
+      (::methcla_boost::has_trivial_constructor<T>::value
+      && ::methcla_boost::has_trivial_copy<T>::value
+      && ::methcla_boost::has_trivial_destructor<T>::value
+      && ::methcla_boost::is_class<T>::value
+      && ::methcla_boost::is_empty<T>::value)>
 {};
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TT_IS_STATELESS_HPP_INCLUDED

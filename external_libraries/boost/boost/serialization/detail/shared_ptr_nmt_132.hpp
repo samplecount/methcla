@@ -27,7 +27,7 @@
 #include <functional>       // for std::less
 #include <new>              // for std::bad_alloc
 
-namespace boost
+namespace methcla_boost
 {
 
 template<class T> class shared_ptr
@@ -51,7 +51,7 @@ public:
         }
         catch(...)
         {
-            boost::checked_delete(p);
+            methcla_boost::checked_delete(p);
             throw;
         }
 
@@ -61,8 +61,8 @@ public:
 
         if(pn == 0)
         {
-            boost::checked_delete(p);
-            boost::serialization::throw_exception(std::bad_alloc());
+            methcla_boost::checked_delete(p);
+            methcla_boost::serialization::throw_exception(std::bad_alloc());
         }
 
 #endif
@@ -72,7 +72,7 @@ public:
     {
         if(--*pn == 0)
         {
-            boost::checked_delete(px);
+            methcla_boost::checked_delete(px);
             delete pn;
         }
     }
@@ -92,10 +92,10 @@ public:
 #ifndef BOOST_NO_AUTO_PTR
 
     explicit shared_ptr(std::auto_ptr< T > & r)
-    { 
+    {
         pn = new count_type(1); // may throw
         px = r.release(); // fix: moved here to stop leak if new throws
-    } 
+    }
 
     shared_ptr & operator=(std::auto_ptr< T > & r)
     {
@@ -137,7 +137,7 @@ public:
     {
         return *pn == 1;
     }
-    
+
     void swap(shared_ptr< T > & other)  // never throws
     {
         std::swap(px, other.px);
@@ -170,13 +170,13 @@ template<class T> void swap(shared_ptr< T > & a, shared_ptr< T > & b)
     a.swap(b);
 }
 
-// get_pointer() enables boost::mem_fn to recognize shared_ptr
+// get_pointer() enables methcla_boost::mem_fn to recognize shared_ptr
 
 template<class T> inline T * get_pointer(shared_ptr< T > const & p)
 {
     return p.get();
 }
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif  // #ifndef BOOST_DETAIL_SHARED_PTR_NMT_132_HPP_INCLUDED

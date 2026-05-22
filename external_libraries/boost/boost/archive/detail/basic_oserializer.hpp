@@ -7,9 +7,9 @@
 #endif
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// basic_oserializer.hpp: extenstion of type_info required for serialization.
+// basic_oserializer.hpp: extension of type_info required for serialization.
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -31,7 +31,7 @@
 #  pragma warning(disable : 4511 4512)
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     class extended_type_info;
 } // namespace serialization
@@ -50,7 +50,7 @@ private:
     basic_pointer_oserializer *m_bpos;
 protected:
     explicit BOOST_ARCHIVE_DECL basic_oserializer(
-        const boost::serialization::extended_type_info & type_
+        const methcla_boost::serialization::extended_type_info & type_
     );
     virtual BOOST_ARCHIVE_DECL ~basic_oserializer();
 public:
@@ -78,7 +78,7 @@ public:
 
 } // namespace detail
 } // namespace serialization
-} // namespace boost
+} // namespace methcla_boost
 
 #ifdef BOOST_MSVC
 #pragma warning(pop)

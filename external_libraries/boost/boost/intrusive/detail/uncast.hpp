@@ -25,7 +25,7 @@
 #include <boost/intrusive/pointer_traits.hpp>
 #include <boost/intrusive/detail/mpl.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 namespace detail {
 
@@ -48,7 +48,7 @@ static typename uncast_types<ConstNodePtr>::non_const_pointer
 
 } //namespace detail {
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #include <boost/intrusive/detail/config_end.hpp>
 

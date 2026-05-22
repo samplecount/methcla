@@ -36,7 +36,7 @@
 #include <string>
 #include <boost/container/map.hpp>
 
-namespace boost{
+namespace methcla_boost{
 namespace interprocess{
 namespace ipcdetail{
 
@@ -54,14 +54,14 @@ namespace intermodule_singleton_helpers {
 //    max and current semaphore count.
 class windows_semaphore_based_map
 {
-   typedef boost::container::map<boost::container::string, ref_count_ptr> map_type;
+   typedef methcla_boost::container::map<methcla_boost::container::string, ref_count_ptr> map_type;
 
    public:
    windows_semaphore_based_map()
    {
       map_type *m = new map_type;
-      boost::uint32_t initial_count = 0;
-      boost::uint32_t max_count = 0;
+      methcla_boost::uint32_t initial_count = 0;
+      methcla_boost::uint32_t max_count = 0;
 
       //Windows user address space sizes:
       //32 bit windows: [32 bit processes] 2GB or 3GB (31/32 bits)
@@ -72,7 +72,7 @@ class windows_semaphore_based_map
       //those values can't be negative, so we have 31 bits to store something
       //in max_count and initial count parameters.
       //Also, max count must be bigger than 0 and bigger or equal than initial count.
-      if(sizeof(void*) == sizeof(boost::uint32_t)){
+      BOOST_IF_CONSTEXPR(sizeof(void*) == sizeof(methcla_boost::uint32_t)){
          //This means that for 32 bit processes, a semaphore count (31 usable bits) is
          //enough to store 4 byte aligned memory (4GB -> 32 bits - 2 bits = 30 bits).
          //The max count will hold the pointer value and current semaphore count
@@ -83,20 +83,20 @@ class windows_semaphore_based_map
          union caster_union
          {
             void *addr;
-            boost::uint32_t addr_uint32;
+            methcla_boost::uint32_t addr_uint32;
          } caster;
          caster.addr = m;
          //memory is at least 4 byte aligned in windows
-         BOOST_ASSERT((caster.addr_uint32 & boost::uint32_t(3)) == 0);
+         BOOST_ASSERT((caster.addr_uint32 & methcla_boost::uint32_t(3)) == 0);
          max_count = caster.addr_uint32 >> 2;
       }
-      else if(sizeof(void*) == sizeof(boost::uint64_t)){
+      else BOOST_IF_CONSTEXPR(sizeof(void*) == sizeof(methcla_boost::uint64_t)){
          //Relying in UB with a cast through union, but all known windows compilers
          //accept this (C11 accepts this).
          union caster_union
          {
             void *addr;
-            boost::uint64_t addr_uint64;
+            methcla_boost::uint64_t addr_uint64;
          } caster;
          caster.addr = m;
          //We'll encode the address using 30 bits in each 32 bit high and low parts.
@@ -113,14 +113,14 @@ class windows_semaphore_based_map
          //   and less than 1 ExbiBytes ( 2^60 bytes, ~1 ExaByte). User-level address space in Windows 64
          //   is much less than this (8TB, 2^43 bytes): "1 EByte (or it was 640K?) ought to be enough for anybody" ;-).
          caster.addr = m;
-         BOOST_ASSERT((caster.addr_uint64 & boost::uint64_t(3)) == 0);
-         max_count = boost::uint32_t(caster.addr_uint64 >> 32);
-         initial_count = boost::uint32_t(caster.addr_uint64);
+         BOOST_ASSERT((caster.addr_uint64 & methcla_boost::uint64_t(3)) == 0);
+         max_count = methcla_boost::uint32_t(caster.addr_uint64 >> 32);
+         initial_count = methcla_boost::uint32_t(caster.addr_uint64 & methcla_boost::uint64_t(0x00000000FFFFFFFF));
          initial_count = initial_count/4;
          //Make sure top two bits are zero
-         BOOST_ASSERT((max_count & boost::uint32_t(0xC0000000)) == 0);
+         BOOST_ASSERT((max_count & methcla_boost::uint32_t(0xC0000000)) == 0);
          //Set quasi-top bit
-         max_count |= boost::uint32_t(0x40000000);
+         max_count |= methcla_boost::uint32_t(0x40000000);
       }
       bool created = false;
       const permissions & perm = permissions();
@@ -138,7 +138,7 @@ class windows_semaphore_based_map
          name = "bipc_gmap_sem_map_";
          name += pid_creation_time;
          success = success && m_sem_map.open_or_create
-            (name.c_str(), initial_count, max_count, perm, created);
+            (name.c_str(), (long)initial_count, (long)max_count, perm, created);
          if(!success){
             delete m;
             //winapi_xxx wrappers do the cleanup...
@@ -156,29 +156,30 @@ class windows_semaphore_based_map
 
    map_type &get_map_unlocked()
    {
-      if(sizeof(void*) == sizeof(boost::uint32_t)){
+      BOOST_IF_CONSTEXPR(sizeof(void*) == sizeof(methcla_boost::uint32_t)){
          union caster_union
          {
             void *addr;
-            boost::uint32_t addr_uint32;
+            methcla_boost::uint32_t addr_uint32;
          } caster;
          caster.addr = 0;
-         caster.addr_uint32 = m_sem_map.limit();
-         caster.addr_uint32 = caster.addr_uint32 << 2;
+         caster.addr_uint32 = methcla_boost::uint32_t(m_sem_map.limit());
+         caster.addr_uint32 = caster.addr_uint32 << 2u;
          return *static_cast<map_type*>(caster.addr);
       }
       else{
          union caster_union
          {
             void *addr;
-            boost::uint64_t addr_uint64;
+            methcla_boost::uint64_t addr_uint64;
          } caster;
-         boost::uint32_t max_count(m_sem_map.limit()), initial_count(m_sem_map.value());
+         methcla_boost::uint32_t max_count(methcla_boost::uint32_t(m_sem_map.limit()))
+                       , initial_count(methcla_boost::uint32_t(m_sem_map.value()));
          //Clear quasi-top bit
-         max_count &= boost::uint32_t(0xBFFFFFFF);
+         max_count &= methcla_boost::uint32_t(0xBFFFFFFF);
          caster.addr_uint64 = max_count;
-         caster.addr_uint64 =  caster.addr_uint64 << 32;
-         caster.addr_uint64 |= boost::uint64_t(initial_count) << 2;
+         caster.addr_uint64 =  caster.addr_uint64 << 32u;
+         caster.addr_uint64 |= methcla_boost::uint64_t(initial_count) << 2;
          return *static_cast<map_type*>(caster.addr);
       }
    }
@@ -187,7 +188,7 @@ class windows_semaphore_based_map
    {
       scoped_lock<winapi_mutex_wrapper> lck(m_mtx_lock);
       map_type &map = this->get_map_unlocked();
-      map_type::iterator it = map.find(boost::container::string(name));
+      map_type::iterator it = map.find(methcla_boost::container::string(name));
       if(it != map.end()){
          return &it->second;
       }
@@ -200,7 +201,7 @@ class windows_semaphore_based_map
    {
       scoped_lock<winapi_mutex_wrapper> lck(m_mtx_lock);
       map_type &map = this->get_map_unlocked();
-      map_type::iterator it = map.insert(map_type::value_type(boost::container::string(name), ref)).first;
+      map_type::iterator it = map.insert(map_type::value_type(methcla_boost::container::string(name), ref)).first;
       return &it->second;
    }
 
@@ -208,7 +209,7 @@ class windows_semaphore_based_map
    {
       scoped_lock<winapi_mutex_wrapper> lck(m_mtx_lock);
       map_type &map = this->get_map_unlocked();
-      return map.erase(boost::container::string(name)) != 0;
+      return map.erase(methcla_boost::container::string(name)) != 0;
    }
 
    template<class F>
@@ -307,7 +308,7 @@ class windows_intermodule_singleton
 
 }  //namespace ipcdetail{
 }  //namespace interprocess{
-}  //namespace boost{
+}  //namespace methcla_boost{
 
 #include <boost/interprocess/detail/config_end.hpp>
 

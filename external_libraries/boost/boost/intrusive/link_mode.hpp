@@ -17,7 +17,7 @@
 #  pragma once
 #endif
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 //!This enumeration defines the type of value_traits that can be defined
@@ -58,6 +58,6 @@ struct is_safe_autounlink
 #endif   //BOOST_INTRUSIVE_DOXYGEN_INVOKED
 
 } //namespace intrusive
-} //namespace boost
+} //namespace methcla_boost
 
 #endif //BOOST_INTRUSIVE_LINK_MODE_HPP

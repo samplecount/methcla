@@ -8,11 +8,11 @@
 
 #include <boost/type_traits/add_reference.hpp>
 
-namespace boost{
+namespace methcla_boost{
 
 template <class T> struct add_lvalue_reference
 {
-   typedef typename boost::add_reference<T>::type type; 
+   typedef typename methcla_boost::add_reference<T>::type type; 
 };
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
@@ -20,6 +20,12 @@ template <class T> struct add_lvalue_reference<T&&>
 {
    typedef T& type;
 };
+#endif
+
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using add_lvalue_reference_t = typename add_lvalue_reference<T>::type;
+
 #endif
 
 }

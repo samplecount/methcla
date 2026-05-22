@@ -29,36 +29,36 @@
 //! This header file forward declares most Intrusive classes.
 //!
 //! It forward declares the following containers and hooks:
-//!   - boost::intrusive::slist / boost::intrusive::slist_base_hook / boost::intrusive::slist_member_hook
-//!   - boost::intrusive::list / boost::intrusive::list_base_hook / boost::intrusive::list_member_hook
-//!   - boost::intrusive::bstree / boost::intrusive::bs_set / boost::intrusive::bs_multiset /
-//!      boost::intrusive::bs_set_base_hook / boost::intrusive::bs_set_member_hook
-//!   - boost::intrusive::rbtree / boost::intrusive::set / boost::intrusive::multiset /
-//!      boost::intrusive::set_base_hook / boost::intrusive::set_member_hook
-//!   - boost::intrusive::avltree / boost::intrusive::avl_set / boost::intrusive::avl_multiset /
-//!      boost::intrusive::avl_set_base_hook / boost::intrusive::avl_set_member_hook
-//!   - boost::intrusive::splaytree / boost::intrusive::splay_set / boost::intrusive::splay_multiset
-//!   - boost::intrusive::sgtree / boost::intrusive::sg_set / boost::intrusive::sg_multiset
-//!   - boost::intrusive::treap / boost::intrusive::treap_set / boost::intrusive::treap_multiset
-//!   - boost::intrusive::hashtable / boost::intrusive::unordered_set / boost::intrusive::unordered_multiset /
-//!      boost::intrusive::unordered_set_base_hook / boost::intrusive::unordered_set_member_hook /
-//!   - boost::intrusive::any_base_hook / boost::intrusive::any_member_hook
+//!   - methcla_boost::intrusive::slist / methcla_boost::intrusive::slist_base_hook / methcla_boost::intrusive::slist_member_hook
+//!   - methcla_boost::intrusive::list / methcla_boost::intrusive::list_base_hook / methcla_boost::intrusive::list_member_hook
+//!   - methcla_boost::intrusive::bstree / methcla_boost::intrusive::bs_set / methcla_boost::intrusive::bs_multiset /
+//!      methcla_boost::intrusive::bs_set_base_hook / methcla_boost::intrusive::bs_set_member_hook
+//!   - methcla_boost::intrusive::rbtree / methcla_boost::intrusive::set / methcla_boost::intrusive::multiset /
+//!      methcla_boost::intrusive::set_base_hook / methcla_boost::intrusive::set_member_hook
+//!   - methcla_boost::intrusive::avltree / methcla_boost::intrusive::avl_set / methcla_boost::intrusive::avl_multiset /
+//!      methcla_boost::intrusive::avl_set_base_hook / methcla_boost::intrusive::avl_set_member_hook
+//!   - methcla_boost::intrusive::splaytree / methcla_boost::intrusive::splay_set / methcla_boost::intrusive::splay_multiset
+//!   - methcla_boost::intrusive::sgtree / methcla_boost::intrusive::sg_set / methcla_boost::intrusive::sg_multiset
+//!   - methcla_boost::intrusive::treap / methcla_boost::intrusive::treap_set / methcla_boost::intrusive::treap_multiset
+//!   - methcla_boost::intrusive::hashtable / methcla_boost::intrusive::unordered_set / methcla_boost::intrusive::unordered_multiset /
+//!      methcla_boost::intrusive::unordered_set_base_hook / methcla_boost::intrusive::unordered_set_member_hook /
+//!   - methcla_boost::intrusive::any_base_hook / methcla_boost::intrusive::any_member_hook
 //!
 //! It forward declares the following container or hook options:
-//!   - boost::intrusive::constant_time_size / boost::intrusive::size_type / boost::intrusive::compare / boost::intrusive::equal
-//!   - boost::intrusive::floating_point / boost::intrusive::priority / boost::intrusive::hash
-//!   - boost::intrusive::value_traits / boost::intrusive::member_hook / boost::intrusive::function_hook / boost::intrusive::base_hook
-//!   - boost::intrusive::void_pointer / boost::intrusive::tag / boost::intrusive::link_mode
-//!   - boost::intrusive::optimize_size / boost::intrusive::linear / boost::intrusive::cache_last
-//!   - boost::intrusive::bucket_traits / boost::intrusive::store_hash / boost::intrusive::optimize_multikey
-//!   - boost::intrusive::power_2_buckets / boost::intrusive::cache_begin / boost::intrusive::compare_hash / boost::intrusive::incremental
+//!   - methcla_boost::intrusive::constant_time_size / methcla_boost::intrusive::size_type / methcla_boost::intrusive::compare / methcla_boost::intrusive::equal
+//!   - methcla_boost::intrusive::floating_point / methcla_boost::intrusive::priority / methcla_boost::intrusive::hash
+//!   - methcla_boost::intrusive::value_traits / methcla_boost::intrusive::member_hook / methcla_boost::intrusive::function_hook / methcla_boost::intrusive::base_hook
+//!   - methcla_boost::intrusive::void_pointer / methcla_boost::intrusive::tag / methcla_boost::intrusive::link_mode
+//!   - methcla_boost::intrusive::optimize_size / methcla_boost::intrusive::linear / methcla_boost::intrusive::cache_last
+//!   - methcla_boost::intrusive::bucket_traits / methcla_boost::intrusive::store_hash / methcla_boost::intrusive::optimize_multikey
+//!   - methcla_boost::intrusive::power_2_buckets / methcla_boost::intrusive::cache_begin / methcla_boost::intrusive::compare_hash / methcla_boost::intrusive::incremental
 //!
 //! It forward declares the following value traits utilities:
-//!   - boost::intrusive::value_traits / boost::intrusive::derivation_value_traits /
-//!      boost::intrusive::trivial_value_traits
+//!   - methcla_boost::intrusive::value_traits / methcla_boost::intrusive::derivation_value_traits /
+//!      methcla_boost::intrusive::trivial_value_traits
 //!
 //! Finally it forward declares the following general purpose utilities:
-//!   - boost::intrusive::pointer_plus_bits / boost::intrusive::priority_compare.
+//!   - methcla_boost::intrusive::pointer_plus_bits / methcla_boost::intrusive::priority_compare.
 
 #if !defined(BOOST_INTRUSIVE_DOXYGEN_INVOKED)
 
@@ -66,12 +66,12 @@
 #include <boost/intrusive/link_mode.hpp>
 #include <boost/intrusive/detail/workaround.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace intrusive {
 
 #if !defined(BOOST_INTERPROCESS_DOXYGEN_INVOKED)
 #  ifdef BOOST_HAS_INTPTR_T
-      using ::boost::uintptr_t;
+      using ::methcla_boost::uintptr_t;
 #  else
       typedef std::size_t uintptr_t;
 #  endif
@@ -384,6 +384,7 @@ template
    , class O4  = void
    , class O5  = void
    , class O6  = void
+   , class O7  = void
    >
 #else
 template<class T, class ...Options>
@@ -399,6 +400,7 @@ template
    , class O4  = void
    , class O5  = void
    , class O6  = void
+   , class O7  = void
    >
 #else
 template<class T, class ...Options>
@@ -414,6 +416,7 @@ template
    , class O4  = void
    , class O5  = void
    , class O6  = void
+   , class O7  = void
    >
 #else
 template<class T, class ...Options>
@@ -567,6 +570,7 @@ template
    , class O8  = void
    , class O9  = void
    , class O10 = void
+   , class O11 = void
    >
 #else
 template<class T, class ...Options>
@@ -586,6 +590,7 @@ template
    , class O8  = void
    , class O9  = void
    , class O10 = void
+   , class O11 = void
    >
 #else
 template<class T, class ...Options>
@@ -756,7 +761,7 @@ template<typename T>
 struct pointer_traits<T *>;
 
 }  //namespace intrusive {
-}  //namespace boost {
+}  //namespace methcla_boost {
 
 #endif   //#if !defined(BOOST_INTRUSIVE_DOXYGEN_INVOKED)
 

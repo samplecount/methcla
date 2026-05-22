@@ -9,7 +9,7 @@
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // basic_iarchive.hpp:
 
-// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com . 
+// (C) Copyright 2002 Robert Ramey - http://www.rrsd.com .
 // Use, modification and distribution is subject to the Boost Software
 // License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
@@ -28,7 +28,7 @@
 #include <boost/archive/detail/helper_collection.hpp>
 #include <boost/archive/detail/abi_prefix.hpp> // must be the last header
 
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
     class extended_type_info;
 } // namespace serialization
@@ -43,12 +43,12 @@ class basic_pointer_iserializer;
 //////////////////////////////////////////////////////////////////////
 // class basic_iarchive - read serialized objects from a input stream
 class BOOST_SYMBOL_VISIBLE basic_iarchive :
-    private boost::noncopyable,
-    public boost::archive::detail::helper_collection
+    private methcla_boost::noncopyable,
+    public methcla_boost::archive::detail::helper_collection
 {
     friend class basic_iarchive_impl;
     // hide implementation of this class to minimize header conclusion
-    boost::scoped_ptr<basic_iarchive_impl> pimpl;
+    methcla_boost::scoped_ptr<basic_iarchive_impl> pimpl;
 
     virtual void vload(version_type &t) =  0;
     virtual void vload(object_id_type &t) =  0;
@@ -58,7 +58,7 @@ class BOOST_SYMBOL_VISIBLE basic_iarchive :
     virtual void vload(tracking_type &t) = 0;
 protected:
     BOOST_ARCHIVE_DECL basic_iarchive(unsigned int flags);
-    boost::archive::detail::helper_collection &
+    methcla_boost::archive::detail::helper_collection &
     get_helper_collection(){
         return *this;
     }
@@ -72,33 +72,33 @@ public:
         const basic_iserializer & bis
     );
     BOOST_ARCHIVE_DECL void load_object(
-        void *t, 
+        void *t,
         const basic_iserializer & bis
     );
-    BOOST_ARCHIVE_DECL const basic_pointer_iserializer * 
+    BOOST_ARCHIVE_DECL const basic_pointer_iserializer *
     load_pointer(
-        void * & t, 
+        void * & t,
         const basic_pointer_iserializer * bpis_ptr,
         const basic_pointer_iserializer * (*finder)(
-            const boost::serialization::extended_type_info & eti
+            const methcla_boost::serialization::extended_type_info & eti
         )
     );
     // real public API starts here
-    BOOST_ARCHIVE_DECL void 
-    set_library_version(library_version_type archive_library_version);
-    BOOST_ARCHIVE_DECL library_version_type 
+    BOOST_ARCHIVE_DECL void
+    set_library_version(methcla_boost::serialization::library_version_type archive_library_version);
+    BOOST_ARCHIVE_DECL methcla_boost::serialization::library_version_type
     get_library_version() const;
     BOOST_ARCHIVE_DECL unsigned int
     get_flags() const;
-    BOOST_ARCHIVE_DECL void 
+    BOOST_ARCHIVE_DECL void
     reset_object_address(const void * new_address, const void * old_address);
-    BOOST_ARCHIVE_DECL void 
+    BOOST_ARCHIVE_DECL void
     delete_created_pointers();
 };
 
 } // namespace detail
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #include <boost/archive/detail/abi_suffix.hpp> // pops abi_suffix.hpp pragmas
 

@@ -18,6 +18,9 @@
 #if defined BOOST_THREAD_USES_DATETIME
 #include <boost/thread/xtime.hpp>
 #endif
+#if defined BOOST_THREAD_PROVIDES_INTERRUPTIONS
+#include <boost/thread/interruption.hpp>
+#endif
 #include <boost/thread/detail/thread_heap_alloc.hpp>
 #include <boost/thread/detail/make_tuple_indices.hpp>
 #include <boost/thread/detail/invoke.hpp>
@@ -27,7 +30,6 @@
 #include <algorithm>
 #include <boost/core/ref.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/bind.hpp>
 #include <stdlib.h>
 #include <memory>
 #include <boost/core/enable_if.hpp>
@@ -36,6 +38,7 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/decay.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/thread/detail/platform_time.hpp>
 #ifdef BOOST_THREAD_USES_CHRONO
 #include <boost/chrono/system_clocks.hpp>
 #include <boost/chrono/ceil.hpp>
@@ -43,6 +46,8 @@
 
 #if defined(BOOST_THREAD_PROVIDES_VARIADIC_THREAD)
 #include <tuple>
+#else
+#include <boost/bind/bind.hpp>
 #endif
 #include <boost/config/abi_prefix.hpp>
 
@@ -51,7 +56,7 @@
 #pragma warning(disable:4251)
 #endif
 
-namespace boost
+namespace methcla_boost
 {
 
     namespace detail
@@ -66,7 +71,7 @@ namespace boost
       public:
           BOOST_THREAD_NO_COPYABLE(thread_data)
             thread_data(BOOST_THREAD_RV_REF(F) f_, BOOST_THREAD_RV_REF(ArgTypes)... args_):
-              fp(boost::forward<F>(f_), boost::forward<ArgTypes>(args_)...)
+              fp(methcla_boost::forward<F>(f_), methcla_boost::forward<ArgTypes>(args_)...)
             {}
           template <std::size_t ...Indices>
           void run2(tuple_indices<Indices...>)
@@ -94,7 +99,7 @@ namespace boost
             BOOST_THREAD_NO_COPYABLE(thread_data)
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
               thread_data(BOOST_THREAD_RV_REF(F) f_):
-                f(boost::forward<F>(f_))
+                f(methcla_boost::forward<F>(f_))
               {}
 // This overloading must be removed if we want the packaged_task's tests to pass.
 //            thread_data(F& f_):
@@ -121,14 +126,14 @@ namespace boost
         };
 
         template<typename F>
-        class thread_data<boost::reference_wrapper<F> >:
+        class thread_data<methcla_boost::reference_wrapper<F> >:
             public detail::thread_data_base
         {
         private:
             F& f;
         public:
             BOOST_THREAD_NO_COPYABLE(thread_data)
-            thread_data(boost::reference_wrapper<F> f_):
+            thread_data(methcla_boost::reference_wrapper<F> f_):
                 f(f_)
             {}
             void run()
@@ -138,14 +143,14 @@ namespace boost
         };
 
         template<typename F>
-        class thread_data<const boost::reference_wrapper<F> >:
+        class thread_data<const methcla_boost::reference_wrapper<F> >:
             public detail::thread_data_base
         {
         private:
             F& f;
         public:
             BOOST_THREAD_NO_COPYABLE(thread_data)
-            thread_data(const boost::reference_wrapper<F> f_):
+            thread_data(const methcla_boost::reference_wrapper<F> f_):
                 f(f_)
             {}
             void run()
@@ -177,14 +182,14 @@ namespace boost
         {
           if (!start_thread_noexcept())
           {
-            boost::throw_exception(thread_resource_error());
+            methcla_boost::throw_exception(thread_resource_error());
           }
         }
         void start_thread(const attributes& attr)
         {
           if (!start_thread_noexcept(attr))
           {
-            boost::throw_exception(thread_resource_error());
+            methcla_boost::throw_exception(thread_resource_error());
           }
         }
 
@@ -198,9 +203,9 @@ namespace boost
         static inline detail::thread_data_ptr make_thread_info(BOOST_THREAD_RV_REF(F) f, BOOST_THREAD_RV_REF(ArgTypes)... args)
         {
             return detail::thread_data_ptr(detail::heap_new<
-                  detail::thread_data<typename boost::remove_reference<F>::type, ArgTypes...>
+                  detail::thread_data<typename methcla_boost::remove_reference<F>::type, ArgTypes...>
                   >(
-                    boost::forward<F>(f), boost::forward<ArgTypes>(args)...
+                    methcla_boost::forward<F>(f), methcla_boost::forward<ArgTypes>(args)...
                   )
                 );
         }
@@ -208,20 +213,20 @@ namespace boost
         template<typename F>
         static inline detail::thread_data_ptr make_thread_info(BOOST_THREAD_RV_REF(F) f)
         {
-            return detail::thread_data_ptr(detail::heap_new<detail::thread_data<typename boost::remove_reference<F>::type> >(
-                boost::forward<F>(f)));
+            return detail::thread_data_ptr(detail::heap_new<detail::thread_data<typename methcla_boost::remove_reference<F>::type> >(
+                methcla_boost::forward<F>(f)));
         }
 #endif
         static inline detail::thread_data_ptr make_thread_info(void (*f)())
         {
             return detail::thread_data_ptr(detail::heap_new<detail::thread_data<void(*)()> >(
-                boost::forward<void(*)()>(f)));
+                methcla_boost::forward<void(*)()>(f)));
         }
 #else
         template<typename F>
         static inline detail::thread_data_ptr make_thread_info(F f
             , typename disable_if_c<
-                //boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F)>::value ||
+                //methcla_boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F)>::value ||
                 is_same<typename decay<F>::type, thread>::value,
                 dummy* >::type=0
                 )
@@ -260,7 +265,7 @@ namespace boost
         explicit thread(BOOST_THREAD_RV_REF(F) f
         //, typename disable_if<is_same<typename decay<F>::type, thread>, dummy* >::type=0
         ):
-          thread_info(make_thread_info(thread_detail::decay_copy(boost::forward<F>(f))))
+          thread_info(make_thread_info(thread_detail::decay_copy(methcla_boost::forward<F>(f))))
         {
             start_thread();
         }
@@ -268,7 +273,7 @@ namespace boost
           class F
         >
         thread(attributes const& attrs, BOOST_THREAD_RV_REF(F) f):
-          thread_info(make_thread_info(thread_detail::decay_copy(boost::forward<F>(f))))
+          thread_info(make_thread_info(thread_detail::decay_copy(methcla_boost::forward<F>(f))))
         {
             start_thread(attrs);
         }
@@ -291,8 +296,8 @@ namespace boost
         template <class F>
         explicit thread(F f
         , typename disable_if_c<
-        boost::thread_detail::is_rv<F>::value // todo ass a thread_detail::is_rv
-        //boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F)>::value
+        methcla_boost::thread_detail::is_rv<F>::value // todo as a thread_detail::is_rv
+        //methcla_boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F)>::value
             //|| is_same<typename decay<F>::type, thread>::value
            , dummy* >::type=0
         ):
@@ -302,8 +307,8 @@ namespace boost
         }
         template <class F>
         thread(attributes const& attrs, F f
-            , typename disable_if<boost::thread_detail::is_rv<F>, dummy* >::type=0
-            //, typename disable_if<boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F) >, dummy* >::type=0
+            , typename disable_if<methcla_boost::thread_detail::is_rv<F>, dummy* >::type=0
+            //, typename disable_if<methcla_boost::thread_detail::is_convertible<F&,BOOST_THREAD_RV_REF(F) >, dummy* >::type=0
         ):
             thread_info(make_thread_info(f))
         {
@@ -315,7 +320,7 @@ namespace boost
         , typename disable_if<is_same<typename decay<F>::type, thread>, dummy* >::type=0
         ):
 #ifdef BOOST_THREAD_USES_MOVE
-        thread_info(make_thread_info(boost::move<F>(f))) // todo : Add forward
+        thread_info(make_thread_info(methcla_boost::move<F>(f))) // todo : Add forward
 #else
         thread_info(make_thread_info(f)) // todo : Add forward
 #endif
@@ -326,7 +331,7 @@ namespace boost
         template <class F>
         thread(attributes const& attrs, BOOST_THREAD_RV_REF(F) f):
 #ifdef BOOST_THREAD_USES_MOVE
-            thread_info(make_thread_info(boost::move<F>(f))) // todo : Add forward
+            thread_info(make_thread_info(methcla_boost::move<F>(f))) // todo : Add forward
 #else
             thread_info(make_thread_info(f)) // todo : Add forward
 #endif
@@ -366,9 +371,9 @@ namespace boost
         template <class F, class Arg, class ...Args>
         thread(F&& f, Arg&& arg, Args&&... args) :
           thread_info(make_thread_info(
-              thread_detail::decay_copy(boost::forward<F>(f)),
-              thread_detail::decay_copy(boost::forward<Arg>(arg)),
-              thread_detail::decay_copy(boost::forward<Args>(args))...)
+              thread_detail::decay_copy(methcla_boost::forward<F>(f)),
+              thread_detail::decay_copy(methcla_boost::forward<Arg>(arg)),
+              thread_detail::decay_copy(methcla_boost::forward<Args>(args))...)
           )
 
         {
@@ -377,9 +382,9 @@ namespace boost
         template <class F, class Arg, class ...Args>
         thread(attributes const& attrs, F&& f, Arg&& arg, Args&&... args) :
           thread_info(make_thread_info(
-              thread_detail::decay_copy(boost::forward<F>(f)),
-              thread_detail::decay_copy(boost::forward<Arg>(arg)),
-              thread_detail::decay_copy(boost::forward<Args>(args))...)
+              thread_detail::decay_copy(methcla_boost::forward<F>(f)),
+              thread_detail::decay_copy(methcla_boost::forward<Arg>(arg)),
+              thread_detail::decay_copy(methcla_boost::forward<Args>(args))...)
           )
 
         {
@@ -387,63 +392,63 @@ namespace boost
         }
 #else
         template <class F,class A1>
-        thread(F f,A1 a1,typename disable_if<boost::thread_detail::is_convertible<F&,thread_attributes >, dummy* >::type=0):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1)))
+        thread(F f,A1 a1,typename disable_if<methcla_boost::thread_detail::is_convertible<F&,thread_attributes >, dummy* >::type=0):
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1)))
         {
             start_thread();
         }
         template <class F,class A1,class A2>
         thread(F f,A1 a1,A2 a2):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3>
         thread(F f,A1 a1,A2 a2,A3 a3):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4,class A5>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4,A5 a5):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4,a5)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4,a5)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4,class A5,class A6>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4,A5 a5,A6 a6):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4,a5,a6)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4,a5,a6)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4,class A5,class A6,class A7>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4,A5 a5,A6 a6,A7 a7):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4,class A5,class A6,class A7,class A8>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4,A5 a5,A6 a6,A7 a7,A8 a8):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7,a8)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7,a8)))
         {
             start_thread();
         }
 
         template <class F,class A1,class A2,class A3,class A4,class A5,class A6,class A7,class A8,class A9>
         thread(F f,A1 a1,A2 a2,A3 a3,A4 a4,A5 a5,A6 a6,A7 a7,A8 a8,A9 a9):
-            thread_info(make_thread_info(boost::bind(boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7,a8,a9)))
+            thread_info(make_thread_info(methcla_boost::bind(methcla_boost::type<void>(),f,a1,a2,a3,a4,a5,a6,a7,a8,a9)))
         {
             start_thread();
         }
@@ -454,104 +459,80 @@ namespace boost
         }
 
         class id;
-#ifdef BOOST_THREAD_PLATFORM_PTHREAD
-        inline id get_id()  const BOOST_NOEXCEPT;
-#else
         id get_id() const BOOST_NOEXCEPT;
-#endif
-
 
         bool joinable() const BOOST_NOEXCEPT;
     private:
         bool join_noexcept();
+        bool do_try_join_until_noexcept(detail::internal_platform_timepoint const &timeout, bool& res);
+        bool do_try_join_until(detail::internal_platform_timepoint const &timeout);
     public:
-        inline void join();
+        void join();
 
 #ifdef BOOST_THREAD_USES_CHRONO
-#if defined(BOOST_THREAD_PLATFORM_WIN32)
-        template <class Rep, class Period>
-        bool try_join_for(const chrono::duration<Rep, Period>& rel_time)
+        template <class Duration>
+        bool try_join_until(const chrono::time_point<detail::internal_chrono_clock, Duration>& t)
         {
-          chrono::milliseconds rel_time2= chrono::ceil<chrono::milliseconds>(rel_time);
-          return do_try_join_until(rel_time2.count());
+          return do_try_join_until(methcla_boost::detail::internal_platform_timepoint(t));
         }
-#else
+
+        template <class Clock, class Duration>
+        bool try_join_until(const chrono::time_point<Clock, Duration>& t)
+        {
+          typedef typename common_type<Duration, typename Clock::duration>::type common_duration;
+          common_duration d(t - Clock::now());
+          d = (std::min)(d, common_duration(chrono::milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS)));
+          while ( ! try_join_until(detail::internal_chrono_clock::now() + d) )
+          {
+            d = t - Clock::now();
+            if ( d <= common_duration::zero() ) return false; // timeout occurred
+            d = (std::min)(d, common_duration(chrono::milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS)));
+          }
+          return true;
+        }
+
         template <class Rep, class Period>
         bool try_join_for(const chrono::duration<Rep, Period>& rel_time)
         {
           return try_join_until(chrono::steady_clock::now() + rel_time);
         }
 #endif
-        template <class Clock, class Duration>
-        bool try_join_until(const chrono::time_point<Clock, Duration>& t)
-        {
-          using namespace chrono;
-          bool joined= false;
-          do {
-            system_clock::time_point     s_now = system_clock::now();
-            typename Clock::duration   d = ceil<nanoseconds>(t-Clock::now());
-            if (d <= Clock::duration::zero()) return false; // in case the Clock::time_point t is already reached
-            joined = try_join_until(s_now + d);
-          } while (! joined);
-          return true;
-        }
-        template <class Duration>
-        bool try_join_until(const chrono::time_point<chrono::system_clock, Duration>& t)
-        {
-          using namespace chrono;
-          typedef time_point<system_clock, nanoseconds> nano_sys_tmpt;
-          return try_join_until(nano_sys_tmpt(ceil<nanoseconds>(t.time_since_epoch())));
-        }
-#endif
-#if defined(BOOST_THREAD_PLATFORM_WIN32)
-    private:
-        bool do_try_join_until_noexcept(uintmax_t milli, bool& res);
-        inline bool do_try_join_until(uintmax_t milli);
-    public:
-        bool timed_join(const system_time& abs_time);
-        //{
-        //  return do_try_join_until(get_milliseconds_until(wait_until));
-        //}
-
-#ifdef BOOST_THREAD_USES_CHRONO
-        bool try_join_until(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
-        {
-          chrono::milliseconds rel_time= chrono::ceil<chrono::milliseconds>(tp-chrono::system_clock::now());
-          return do_try_join_until(rel_time.count());
-        }
-#endif
-
-
-#else
-    private:
-        bool do_try_join_until_noexcept(struct timespec const &timeout, bool& res);
-        inline bool do_try_join_until(struct timespec const &timeout);
-    public:
 #if defined BOOST_THREAD_USES_DATETIME
         bool timed_join(const system_time& abs_time)
         {
-          struct timespec const ts=detail::to_timespec(abs_time);
+          const detail::real_platform_timepoint ts(abs_time);
+#if defined BOOST_THREAD_INTERNAL_CLOCK_IS_MONO
+          detail::platform_duration d(ts - detail::real_platform_clock::now());
+          d = (std::min)(d, detail::platform_milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS));
+          while ( ! do_try_join_until(detail::internal_platform_clock::now() + d) )
+          {
+            d = ts - detail::real_platform_clock::now();
+            if ( d <= detail::platform_duration::zero() ) return false; // timeout occurred
+            d = (std::min)(d, detail::platform_milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS));
+          }
+          return true;
+#else
           return do_try_join_until(ts);
+#endif
         }
-#endif
-#ifdef BOOST_THREAD_USES_CHRONO
-        bool try_join_until(const chrono::time_point<chrono::system_clock, chrono::nanoseconds>& tp)
-        {
-          using namespace chrono;
-          nanoseconds d = tp.time_since_epoch();
-          timespec ts = boost::detail::to_timespec(d);
-          return do_try_join_until(ts);
-        }
-#endif
 
-#endif
-      public:
-
-#if defined BOOST_THREAD_USES_DATETIME
         template<typename TimeDuration>
-        inline bool timed_join(TimeDuration const& rel_time)
+        bool timed_join(TimeDuration const& rel_time)
         {
-            return timed_join(get_system_time()+rel_time);
+          detail::platform_duration d(rel_time);
+#if defined(BOOST_THREAD_HAS_MONO_CLOCK) && !defined(BOOST_THREAD_INTERNAL_CLOCK_IS_MONO)
+          const detail::mono_platform_timepoint ts(detail::mono_platform_clock::now() + d);
+          d = (std::min)(d, detail::platform_milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS));
+          while ( ! do_try_join_until(detail::internal_platform_clock::now() + d) )
+          {
+            d = ts - detail::mono_platform_clock::now();
+            if ( d <= detail::platform_duration::zero() ) return false; // timeout occurred
+            d = (std::min)(d, detail::platform_milliseconds(BOOST_THREAD_POLL_INTERVAL_MILLISECONDS));
+          }
+          return true;
+#else
+          return do_try_join_until(detail::internal_platform_clock::now() + d);
+#endif
         }
 #endif
         void detach();
@@ -605,19 +586,13 @@ namespace boost
     namespace this_thread
     {
 #ifdef BOOST_THREAD_PLATFORM_PTHREAD
-        inline thread::id get_id() BOOST_NOEXCEPT;
+        thread::id get_id() BOOST_NOEXCEPT;
 #else
         thread::id BOOST_THREAD_DECL get_id() BOOST_NOEXCEPT;
 #endif
 
-#if defined BOOST_THREAD_PROVIDES_INTERRUPTIONS
-        void BOOST_THREAD_DECL interruption_point();
-        bool BOOST_THREAD_DECL interruption_enabled() BOOST_NOEXCEPT;
-        bool BOOST_THREAD_DECL interruption_requested() BOOST_NOEXCEPT;
-#endif
-
 #if defined BOOST_THREAD_USES_DATETIME
-        inline BOOST_SYMBOL_VISIBLE void sleep(xtime const& abs_time)
+        inline BOOST_SYMBOL_VISIBLE void sleep(::methcla_boost::xtime const& abs_time)
         {
             sleep(system_time(abs_time));
         }
@@ -627,6 +602,9 @@ namespace boost
     class BOOST_SYMBOL_VISIBLE thread::id
     {
     private:
+    
+    #if !defined(BOOST_EMBTC)
+      
         friend inline
         std::size_t
         hash_value(const thread::id &v)
@@ -638,6 +616,14 @@ namespace boost
 #endif
         }
 
+    #else
+      
+        friend
+        std::size_t
+        hash_value(const thread::id &v);
+
+    #endif
+      
 #if defined BOOST_THREAD_PROVIDES_BASIC_THREAD_ID
 #if defined(BOOST_THREAD_PLATFORM_WIN32)
         typedef unsigned int data;
@@ -661,10 +647,6 @@ namespace boost
 #else
         thread_data()
 #endif
-        {}
-
-        id(const id& other) BOOST_NOEXCEPT :
-            thread_data(other.thread_data)
         {}
 
         bool operator==(const id& y) const BOOST_NOEXCEPT
@@ -734,9 +716,24 @@ namespace boost
 #endif
 #endif
     };
+    
+#if defined(BOOST_EMBTC)
+
+        inline
+        std::size_t
+        hash_value(const thread::id &v)
+        {
+#if defined BOOST_THREAD_PROVIDES_BASIC_THREAD_ID
+          return hash_value(v.thread_data);
+#else
+          return hash_value(v.thread_data.get());
+#endif
+        }
+
+#endif
 
 #ifdef BOOST_THREAD_PLATFORM_PTHREAD
-    thread::id thread::get_id() const BOOST_NOEXCEPT
+    inline thread::id thread::get_id() const BOOST_NOEXCEPT
     {
     #if defined BOOST_THREAD_PROVIDES_BASIC_THREAD_ID
         return const_cast<thread*>(this)->native_handle();
@@ -753,29 +750,25 @@ namespace boost
         #if defined BOOST_THREAD_PROVIDES_BASIC_THREAD_ID
              return pthread_self();
         #else
-            boost::detail::thread_data_base* const thread_info=get_or_make_current_thread_data();
+            methcla_boost::detail::thread_data_base* const thread_info=get_or_make_current_thread_data();
             return (thread_info?thread::id(thread_info->shared_from_this()):thread::id());
         #endif
         }
     }
 #endif
-    void thread::join() {
+    inline void thread::join() {
         if (this_thread::get_id() == get_id())
-          boost::throw_exception(thread_resource_error(static_cast<int>(system::errc::resource_deadlock_would_occur), "boost thread: trying joining itself"));
+          methcla_boost::throw_exception(thread_resource_error(static_cast<int>(system::errc::resource_deadlock_would_occur), "boost thread: trying joining itself"));
 
         BOOST_THREAD_VERIFY_PRECONDITION( join_noexcept(),
             thread_resource_error(static_cast<int>(system::errc::invalid_argument), "boost thread: thread not joinable")
         );
     }
 
-#ifdef BOOST_THREAD_PLATFORM_PTHREAD
-    bool thread::do_try_join_until(struct timespec const &timeout)
-#else
-    bool thread::do_try_join_until(uintmax_t timeout)
-#endif
+    inline bool thread::do_try_join_until(detail::internal_platform_timepoint const &timeout)
     {
         if (this_thread::get_id() == get_id())
-          boost::throw_exception(thread_resource_error(static_cast<int>(system::errc::resource_deadlock_would_occur), "boost thread: trying joining itself"));
+          methcla_boost::throw_exception(thread_resource_error(static_cast<int>(system::errc::resource_deadlock_would_occur), "boost thread: trying joining itself"));
         bool res;
         if (do_try_join_until_noexcept(timeout, res))
         {
@@ -838,6 +831,7 @@ namespace boost
         };
 
         void BOOST_THREAD_DECL add_thread_exit_function(thread_exit_function_base*);
+//#ifndef BOOST_NO_EXCEPTIONS
         struct shared_state_base;
 #if defined(BOOST_THREAD_PLATFORM_WIN32)
         inline void make_ready_at_thread_exit(shared_ptr<shared_state_base> as)
@@ -851,12 +845,13 @@ namespace boost
 #else
         void BOOST_THREAD_DECL make_ready_at_thread_exit(shared_ptr<shared_state_base> as);
 #endif
+//#endif
     }
 
     namespace this_thread
     {
         template<typename F>
-        void at_thread_exit(F f)
+        void methcla_boostat_thread_exit(F f)
         {
             detail::thread_exit_function_base* const thread_exit_func=detail::heap_new<detail::thread_exit_function<F> >(f);
             detail::add_thread_exit_function(thread_exit_func);

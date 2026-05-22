@@ -21,8 +21,9 @@
 
 #include <boost/current_function.hpp>
 #include <functional>
+#include <cstring>
 
-namespace boost
+namespace methcla_boost
 {
 
 namespace core
@@ -36,26 +37,43 @@ private:
     typeinfo& operator=( typeinfo const& );
 
     char const * name_;
+    void (*lib_id_)();
 
 public:
 
-    explicit typeinfo( char const * name ): name_( name )
+    typeinfo( char const * name, void (*lib_id)() ): name_( name ), lib_id_( lib_id )
     {
     }
 
     bool operator==( typeinfo const& rhs ) const
     {
+#if ( defined(_WIN32) || defined(__CYGWIN__) ) && ( defined(__GNUC__) || defined(__clang__) ) && !defined(BOOST_DISABLE_CURRENT_FUNCTION)
+
+        return lib_id_ == rhs.lib_id_? this == &rhs: std::strcmp( name_, rhs.name_ ) == 0;
+
+#else
+
         return this == &rhs;
+
+#endif
     }
 
     bool operator!=( typeinfo const& rhs ) const
     {
-        return this != &rhs;
+        return !( *this == rhs );
     }
 
     bool before( typeinfo const& rhs ) const
     {
+#if ( defined(_WIN32) || defined(__CYGWIN__) ) && ( defined(__GNUC__) || defined(__clang__) ) && !defined(BOOST_DISABLE_CURRENT_FUNCTION)
+
+        return lib_id_ == rhs.lib_id_? std::less< typeinfo const* >()( this, &rhs ): std::strcmp( name_, rhs.name_ ) < 0;
+
+#else
+
         return std::less< typeinfo const* >()( this, &rhs );
+
+#endif
     }
 
     char const* name() const
@@ -74,9 +92,9 @@ inline char const * demangled_name( core::typeinfo const & ti )
 namespace detail
 {
 
-template<class T> struct core_typeid_
+template<class T> struct BOOST_SYMBOL_VISIBLE core_typeid_
 {
-    static boost::core::typeinfo ti_;
+    static methcla_boost::core::typeinfo ti_;
 
     static char const * name()
     {
@@ -84,13 +102,11 @@ template<class T> struct core_typeid_
     }
 };
 
-#if defined(__SUNPRO_CC)
-// see #4199, the Sun Studio compiler gets confused about static initialization 
-// constructor arguments. But an assignment works just fine. 
-template<class T> boost::core::typeinfo core_typeid_< T >::ti_ = core_typeid_< T >::name();
-#else
-template<class T> boost::core::typeinfo core_typeid_< T >::ti_(core_typeid_< T >::name());
-#endif
+BOOST_SYMBOL_VISIBLE inline void core_typeid_lib_id()
+{
+}
+
+template<class T> methcla_boost::core::typeinfo core_typeid_< T >::ti_( core_typeid_< T >::name(), &core_typeid_lib_id );
 
 template<class T> struct core_typeid_< T & >: core_typeid_< T >
 {
@@ -110,16 +126,16 @@ template<class T> struct core_typeid_< T const volatile >: core_typeid_< T >
 
 } // namespace detail
 
-} // namespace boost
+} // namespace methcla_boost
 
-#define BOOST_CORE_TYPEID(T) (boost::detail::core_typeid_<T>::ti_)
+#define BOOST_CORE_TYPEID(T) (methcla_boost::detail::core_typeid_<T>::ti_)
 
 #else
 
 #include <boost/core/demangle.hpp>
 #include <typeinfo>
 
-namespace boost
+namespace methcla_boost
 {
 
 namespace core
@@ -142,7 +158,7 @@ inline std::string demangled_name( core::typeinfo const & ti )
 
 } // namespace core
 
-} // namespace boost
+} // namespace methcla_boost
 
 #define BOOST_CORE_TYPEID(T) typeid(T)
 

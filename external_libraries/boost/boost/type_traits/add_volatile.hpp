@@ -12,7 +12,7 @@
 
 #include <boost/config.hpp>
 
-namespace boost {
+namespace methcla_boost {
 
 // * convert a type T to volatile type - add_volatile<T>
 // this is not required since the result is always
@@ -35,6 +35,12 @@ template <class T> struct add_volatile{ typedef T volatile type; };
 
 template <class T> struct add_volatile<T&>{ typedef T& type; };
 
-} // namespace boost
+#if !defined(BOOST_NO_CXX11_TEMPLATE_ALIASES)
+
+   template <class T> using add_volatile_t = typename add_volatile<T>::type;
+
+#endif
+
+} // namespace methcla_boost
 
 #endif // BOOST_TT_ADD_VOLATILE_HPP_INCLUDED

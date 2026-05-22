@@ -12,7 +12,7 @@
 #ifndef BOOST_TEST_FWD_DECL_HPP_011605GER
 #define BOOST_TEST_FWD_DECL_HPP_011605GER
 
-namespace boost {
+namespace methcla_boost {
 
 class  execution_monitor;
 class  execution_exception;
@@ -26,6 +26,8 @@ class  master_test_suite_t;
 
 class  test_tree_visitor;
 class  test_observer;
+class  test_unit_fixture;
+class  global_fixture;
 
 // singletons
 class  unit_test_monitor_t;
@@ -39,7 +41,7 @@ class lazy_ostream;
 
 } // namespace unit_test
 
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_TEST_FWD_DECL_HPP_011605GER
 

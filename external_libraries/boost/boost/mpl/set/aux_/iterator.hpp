@@ -24,7 +24,7 @@
 #include <boost/mpl/identity.hpp>
 #include <boost/mpl/aux_/config/ctps.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 // used by 's_iter_get'
 template< typename Set, typename Tail > struct s_iter;

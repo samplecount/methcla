@@ -22,7 +22,7 @@
 #include <boost/archive/impl/basic_binary_oprimitive.ipp>
 #include <boost/archive/impl/basic_binary_oarchive.ipp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 template class detail::archive_serializer_map<binary_woarchive>;
@@ -39,6 +39,6 @@ template class binary_oarchive_impl<
 >;
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost
 
 #endif // BOOST_NO_STD_WSTREAMBUF

@@ -35,7 +35,7 @@ namespace Methcla { namespace Utility { namespace Hash {
             size_t seed = 0;
             for (const char* it = str; *it != '\0'; it++)
             {
-                boost::hash_combine(seed, *it);
+                methcla_boost::hash_combine(seed, *it);
             }
             return seed;
         }

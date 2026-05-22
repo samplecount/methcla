@@ -11,7 +11,7 @@
 
 #if defined BOOST_THREAD_PROVIDES_INTERRUPTIONS
 
-namespace boost
+namespace methcla_boost
 {
     namespace this_thread
     {

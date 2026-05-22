@@ -18,12 +18,12 @@
 #  pragma once
 #endif
 
-namespace boost { namespace interprocess {
+namespace methcla_boost { namespace interprocess {
 
 template<class T>
 void simple_swap(T&x, T&y)
 {  T tmp(x); x = y; y = tmp;  }
 
-}}  //namespace boost{ namespace interprocess {
+}}  //namespace methcla_boost{ namespace interprocess {
 
 #endif //#ifndef BOOST_INTERPROCESS_DETAIL_SWAP_HPP

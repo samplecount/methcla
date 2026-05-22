@@ -10,12 +10,13 @@
 #define BOOST_THREAD_EXECUTORS_EXECUTOR_ADAPTOR_HPP
 
 #include <boost/thread/detail/config.hpp>
+#if defined BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION && defined BOOST_THREAD_PROVIDES_EXECUTORS && defined BOOST_THREAD_USES_MOVE
 
 #include <boost/thread/executors/executor.hpp>
 
 #include <boost/config/abi_prefix.hpp>
 
-namespace boost
+namespace methcla_boost
 {
 namespace executors
 {
@@ -38,7 +39,7 @@ namespace executors
      */
 #if ! defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
     template <typename ...Args>
-    executor_adaptor(BOOST_THREAD_RV_REF(Args) ... args) : ex(boost::forward<Args>(args)...) {}
+    executor_adaptor(BOOST_THREAD_RV_REF(Args) ... args) : ex(methcla_boost::forward<Args>(args)...) {}
 #else
     /**
      * executor_adaptor constructor
@@ -50,7 +51,7 @@ namespace executors
         BOOST_THREAD_FWD_REF(A1) a1
         ) :
       ex(
-          boost::forward<A1>(a1)
+          methcla_boost::forward<A1>(a1)
           ) {}
     template <typename A1, typename A2>
     executor_adaptor(
@@ -58,8 +59,8 @@ namespace executors
         BOOST_THREAD_FWD_REF(A2) a2
         ) :
       ex(
-          boost::forward<A1>(a1),
-          boost::forward<A2>(a2)
+          methcla_boost::forward<A1>(a1),
+          methcla_boost::forward<A2>(a2)
           ) {}
     template <typename A1, typename A2, typename A3>
     executor_adaptor(
@@ -68,9 +69,9 @@ namespace executors
         BOOST_THREAD_FWD_REF(A3) a3
         ) :
       ex(
-          boost::forward<A1>(a1),
-          boost::forward<A2>(a2),
-          boost::forward<A3>(a3)
+          methcla_boost::forward<A1>(a1),
+          methcla_boost::forward<A2>(a2),
+          methcla_boost::forward<A3>(a3)
           ) {}
 #endif
     Executor& underlying_executor() { return ex; }
@@ -96,7 +97,7 @@ namespace executors
      * Whatever exception that can be throw while storing the closure.
      */
     void submit(BOOST_THREAD_RV_REF(work) closure)  {
-      return ex.submit(boost::move(closure));
+      return ex.submit(methcla_boost::move(closure));
     }
 
 #if defined(BOOST_NO_CXX11_RVALUE_REFERENCES)
@@ -114,9 +115,9 @@ namespace executors
     template <typename Closure>
     void submit(BOOST_THREAD_FWD_REF(Closure) closure)
     {
-      //submit(work(boost::forward<Closure>(closure)));
-      work w((boost::forward<Closure>(closure)));
-      submit(boost::move(w));
+      //submit(work(methcla_boost::forward<Closure>(closure)));
+      work w((methcla_boost::forward<Closure>(closure)));
+      submit(methcla_boost::move(w));
     }
 
     /**
@@ -133,4 +134,5 @@ using executors::executor_adaptor;
 
 #include <boost/config/abi_suffix.hpp>
 
+#endif
 #endif

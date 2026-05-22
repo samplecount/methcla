@@ -22,7 +22,7 @@ namespace std{
 #include <boost/archive/xml_archive_exception.hpp>
 #include <boost/core/no_exceptions_support.hpp>
 
-namespace boost {
+namespace methcla_boost {
 namespace archive {
 
 namespace detail {
@@ -33,7 +33,7 @@ struct XML_name {
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0, // -.
-            1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0, // 0-9
+            1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0, // 0-9
             0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // A-
             1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1, // -Z _
             0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // a-
@@ -44,7 +44,7 @@ struct XML_name {
         if((unsigned)t > 127)
             return;
         if(0 == lookup_table[(unsigned)t])
-            boost::serialization::throw_exception(
+            methcla_boost::serialization::throw_exception(
                 xml_archive_exception(
                     xml_archive_exception::xml_archive_tag_name_error
                 )
@@ -247,26 +247,26 @@ basic_xml_oarchive<Archive>::init(){
 }
 
 template<class Archive>
+BOOST_ARCHIVE_OR_WARCHIVE_DECL void
+basic_xml_oarchive<Archive>::windup(){
+    // xml_trailer
+    this->This()->put("</boost_serialization>\n");
+}
+
+template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL
 basic_xml_oarchive<Archive>::basic_xml_oarchive(unsigned int flags) :
     detail::common_oarchive<Archive>(flags),
     depth(0),
-    indent_next(false),
-    pending_preamble(false)
+    pending_preamble(false),
+    indent_next(false)
 {
 }
 
 template<class Archive>
 BOOST_ARCHIVE_OR_WARCHIVE_DECL
 basic_xml_oarchive<Archive>::~basic_xml_oarchive(){
-    if(0 == (this->get_flags() & no_header)){
-        BOOST_TRY{
-                this->This()->put("</boost_serialization>\n");
-        }
-        BOOST_CATCH(...){}
-        BOOST_CATCH_END
-    }
 }
 
 } // namespace archive
-} // namespace boost
+} // namespace methcla_boost

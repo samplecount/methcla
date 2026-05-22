@@ -7,7 +7,7 @@
 #endif
 
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
-// shared_ptr_helper.hpp: serialization for boost shared pointern
+// shared_ptr_helper.hpp: serialization for boost shared pointer
 
 // (C) Copyright 2004-2009 Robert Ramey, Martin Ecker and Takatoshi Kondo
 // Use, modification and distribution is subject to the Boost Software
@@ -31,14 +31,11 @@
 #include <boost/serialization/throw_exception.hpp>
 #include <boost/serialization/type_info_implementation.hpp>
 #include <boost/archive/archive_exception.hpp>
-#include <boost/archive/detail/decl.hpp>
 
-#include <boost/archive/detail/abi_prefix.hpp> // must be the last headern
-
-namespace boost_132 {
+namespace methcla_boost_132 {
     template<class T> class shared_ptr;
 }
-namespace boost {
+namespace methcla_boost {
 namespace serialization {
 
 #ifndef BOOST_NO_MEMBER_TEMPLATE_FRIENDS
@@ -60,7 +57,7 @@ class shared_ptr_helper {
         SPT<const void> // address shared ptr to single instance
     > object_shared_pointer_map;
 
-    // list of shared_pointers create accessable by raw pointer. This
+    // list of shared_pointers create accessible by raw pointer. This
     // is used to "match up" shared pointers loaded at different
     // points in the archive. Note, we delay construction until
     // it is actually used since this is by default included as
@@ -77,7 +74,7 @@ class shared_ptr_helper {
 public:
 #else
     template<class Archive, class U>
-    friend void boost::serialization::load(
+    friend void methcla_boost::serialization::load(
         Archive & ar,
         SPT< U > &t,
         const unsigned int file_version
@@ -88,37 +85,37 @@ public:
     // list of loaded pointers.  This is used to be sure that the pointers
     // stay around long enough to be "matched" with other pointers loaded
     // by the same archive.  These are created with a "null_deleter" so that
-    // when this list is destroyed - the underlaying raw pointers are not
+    // when this list is destroyed - the underlying raw pointers are not
     // destroyed.  This has to be done because the pointers are also held by
     // new system which is disjoint from this set.  This is implemented
     // by a change in load_construct_data below.  It makes this file suitable
     // only for loading pointers into a 1.33 or later boost system.
-    std::list<boost_132::shared_ptr<const void> > * m_pointers_132;
-    BOOST_ARCHIVE_DECL void
-    append(const boost_132::shared_ptr<const void> & t){
+    std::list<methcla_boost_132::shared_ptr<const void> > * m_pointers_132;
+    void
+    append(const methcla_boost_132::shared_ptr<const void> & t){
         if(NULL == m_pointers_132)
-            m_pointers_132 = new std::list<boost_132::shared_ptr<const void> >;
+            m_pointers_132 = new std::list<methcla_boost_132::shared_ptr<const void> >;
         m_pointers_132->push_back(t);
     }
     #endif
 
     struct non_polymorphic {
         template<class U>
-        static const boost::serialization::extended_type_info * 
+        static const methcla_boost::serialization::extended_type_info *
         get_object_type(U & ){
-            return & boost::serialization::singleton<
-                typename 
-                boost::serialization::type_info_implementation< U >::type
+            return & methcla_boost::serialization::singleton<
+                typename
+                methcla_boost::serialization::type_info_implementation< U >::type
             >::get_const_instance();
         }
     };
     struct polymorphic {
         template<class U>
-        static const boost::serialization::extended_type_info * 
+        static const methcla_boost::serialization::extended_type_info *
         get_object_type(U & u){
-            return boost::serialization::singleton<
-                typename 
-                boost::serialization::type_info_implementation< U >::type
+            return methcla_boost::serialization::singleton<
+                typename
+                methcla_boost::serialization::type_info_implementation< U >::type
             >::get_const_instance().get_derived_extended_type_info(u);
         }
     };
@@ -130,27 +127,27 @@ public:
             s.reset();
             return;
         }
-        const boost::serialization::extended_type_info * this_type
-            = & boost::serialization::type_info_implementation< T >::type
+        const methcla_boost::serialization::extended_type_info * this_type
+            = & methcla_boost::serialization::type_info_implementation< T >::type
                     ::get_const_instance();
 
         // get pointer to the most derived object's eti.  This is effectively
-        // the object type identifer
+        // the object type identifier
         typedef typename mpl::if_<
             is_polymorphic< T >,
             polymorphic,
             non_polymorphic
         >::type type;
 
-        const boost::serialization::extended_type_info * true_type
+        const methcla_boost::serialization::extended_type_info * true_type
             = type::get_object_type(*t);
 
-        // note:if this exception is thrown, be sure that derived pointern
+        // note:if this exception is thrown, be sure that derived pointer
         // is either registered or exported.
         if(NULL == true_type)
-            boost::serialization::throw_exception(
-                boost::archive::archive_exception(
-                    boost::archive::archive_exception::unregistered_class,
+            methcla_boost::serialization::throw_exception(
+                methcla_boost::archive::archive_exception(
+                    methcla_boost::archive::archive_exception::unregistered_class,
                     this_type->get_debug_info()
                 )
             );
@@ -163,9 +160,9 @@ public:
             t
         );
         if(NULL == oid)
-            boost::serialization::throw_exception(
-                boost::archive::archive_exception(
-                    boost::archive::archive_exception::unregistered_cast,
+            methcla_boost::serialization::throw_exception(
+                methcla_boost::archive::archive_exception(
+                    methcla_boost::archive::archive_exception::unregistered_cast,
                     true_type->get_debug_info(),
                     this_type->get_debug_info()
                 )
@@ -207,8 +204,6 @@ public:
 };
 
 } // namespace serialization
-} // namespace boost
-
-#include <boost/archive/detail/abi_suffix.hpp> // pops abi_suffix.hpp pragmas
+} // namespace methcla_boost
 
 #endif // BOOST_SERIALIZATION_SHARED_PTR_HELPER_HPP

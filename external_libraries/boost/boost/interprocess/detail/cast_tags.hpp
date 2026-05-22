@@ -19,13 +19,13 @@
 #  pragma once
 #endif
 
-namespace boost { namespace interprocess { namespace ipcdetail {
+namespace methcla_boost { namespace interprocess { namespace ipcdetail {
 
 struct static_cast_tag {};
 struct const_cast_tag {};
 struct dynamic_cast_tag {};
 struct reinterpret_cast_tag {};
 
-}}}  //namespace boost { namespace interprocess { namespace ipcdetail {
+}}}  //namespace methcla_boost { namespace interprocess { namespace ipcdetail {
 
 #endif   //#ifndef BOOST_INTERPROCESS_DETAIL_CAST_TAGS_HPP

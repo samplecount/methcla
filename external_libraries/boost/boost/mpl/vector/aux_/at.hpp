@@ -24,7 +24,7 @@
 #include <boost/mpl/aux_/config/typeof.hpp>
 #include <boost/mpl/aux_/config/ctps.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 #if defined(BOOST_MPL_CFG_TYPEOF_BASED_SEQUENCES)
 
@@ -65,7 +65,7 @@ template< BOOST_MPL_AUX_NTTP_DECL(long, n_) >
 struct at_impl< aux::vector_tag<n_> >
 {
     template< typename Vector, typename N > struct apply
-#if !defined(__BORLANDC__)
+#if !defined(BOOST_BORLANDC)
         : v_at<
               Vector
             , BOOST_MPL_AUX_VALUE_WKND(N)::value

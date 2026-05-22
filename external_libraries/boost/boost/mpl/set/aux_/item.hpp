@@ -23,7 +23,7 @@
 #include <boost/mpl/aux_/type_wrapper.hpp>
 #include <boost/mpl/aux_/config/arrays.hpp>
 
-namespace boost { namespace mpl {
+namespace methcla_boost { namespace mpl {
 
 template< typename T, typename Base >
 struct s_item

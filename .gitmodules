@@ -1,11 +1,6 @@
 [submodule "engine/external_libraries/tlsf"]
 	path = external_libraries/tlsf
 	url = https://github.com/mattconte/tlsf.git
-[submodule "engine/external_libraries/oscpp"]
-	path = external_libraries/oscpp
-	url = https://github.com/kaoskorobase/oscpp.git
-        branch = master
-        ignore = untracked
 [submodule "external_libraries/tinydir"]
 	path = external_libraries/tinydir
 	url = https://github.com/cxong/tinydir.git

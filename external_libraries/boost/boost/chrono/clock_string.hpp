@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace boost
+namespace methcla_boost
 {
   namespace chrono
   {

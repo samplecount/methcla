@@ -14,23 +14,16 @@
 #include "boost/detail/workaround.hpp"
 #include "boost/config.hpp"
 
-namespace boost { namespace numeric
+namespace methcla_boost { namespace numeric
 {
 
 template<class T, class S>
 struct conversion_traits 
     : convdetail::get_conversion_traits<T,S>::type 
 {
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-    typedef typename convdetail::get_conversion_traits<T,S>::type base_;
-    typedef typename base_::target_type     target_type;
-    typedef typename base_::source_type     source_type;
-    typedef typename base_::result_type     result_type;
-    typedef typename base_::argument_type   argument_type;
-#endif
 } ;
 
-} } // namespace boost::numeric
+} } // namespace methcla_boost::numeric
 
 #endif
 //

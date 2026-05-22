@@ -16,7 +16,7 @@
 //   12 Nov 00  Merged <boost/stdint.h> (Jens Maurer)
 //   23 Sep 00  Added INTXX_C macro support (John Maddock).
 //   22 Sep 00  Better 64-bit support (John Maddock)
-//   29 Jun 00  Reimplement to avoid including stdint.h within namespace boost
+//   29 Jun 00  Reimplement to avoid including stdint.h within namespace methcla_boost
 //    8 Aug 99  Initial version (Beman Dawes)
 
 
@@ -34,6 +34,17 @@
 #endif
 
 #include <boost/config.hpp>
+//
+// For the following code we get several warnings along the lines of:
+//
+// boost/cstdint.hpp:428:35: error: use of C99 long long integer constant
+//
+// So we declare this a system header to suppress these warnings.
+// See also https://github.com/boostorg/config/issues/190
+//
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#pragma GCC system_header
+#endif
 
 //
 // Note that GLIBC is a bit inconsistent about whether int64_t is defined or not
@@ -41,9 +52,9 @@
 // so we disable use of stdint.h when GLIBC does not define __GLIBC_HAVE_LONG_LONG.
 // See https://svn.boost.org/trac/boost/ticket/3548 and http://sources.redhat.com/bugzilla/show_bug.cgi?id=10990
 //
-#if defined(BOOST_HAS_STDINT_H)					\
-  && (!defined(__GLIBC__)					\
-      || defined(__GLIBC_HAVE_LONG_LONG)			\
+#if defined(BOOST_HAS_STDINT_H)            \
+  && (!defined(__GLIBC__)                  \
+      || defined(__GLIBC_HAVE_LONG_LONG)   \
       || (defined(__GLIBC__) && ((__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 17)))))
 
 // The following #include is an implementation artifact; not part of interface.
@@ -60,7 +71,7 @@
 #   include <stdint.h>
 
 // There is a bug in Cygwin two _C macros
-#   if defined(__STDC_CONSTANT_MACROS) && defined(__CYGWIN__)
+#   if defined(INTMAX_C) && defined(__CYGWIN__)
 #     undef INTMAX_C
 #     undef UINTMAX_C
 #     define INTMAX_C(c) c##LL
@@ -100,7 +111,7 @@ typedef ::uintfast64_t uint_fast64_t;
 
 #endif
 
-namespace boost
+namespace methcla_boost
 {
 
   using ::int8_t;
@@ -138,13 +149,13 @@ namespace boost
   using ::intmax_t;
   using ::uintmax_t;
 
-} // namespace boost
+} // namespace methcla_boost
 
 #elif defined(__FreeBSD__) && (__FreeBSD__ <= 4) || defined(__osf__) || defined(__VMS) || defined(__SOLARIS9__) || defined(__NetBSD__)
 // FreeBSD and Tru64 have an <inttypes.h> that contains much of what we need.
 # include <inttypes.h>
 
-namespace boost {
+namespace methcla_boost {
 
   using ::int8_t;
   typedef int8_t int_least8_t;
@@ -186,7 +197,7 @@ namespace boost {
 
 # endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 #else  // BOOST_HAS_STDINT_H
 
@@ -194,7 +205,7 @@ namespace boost {
 # include <limits.h>         // needed for limits macros
 
 
-namespace boost
+namespace methcla_boost
 {
 
 //  These are fairly safe guesses for some 16-bit, and most 32-bit and 64-bit
@@ -295,7 +306,7 @@ namespace boost
 //  64-bit types + intmax_t and uintmax_t  ----------------------------------//
 
 # if defined(BOOST_HAS_LONG_LONG) && \
-   !defined(BOOST_MSVC) && !defined(__BORLANDC__) && \
+   !defined(BOOST_MSVC) && !defined(BOOST_BORLANDC) && \
    (!defined(__GLIBCPP__) || defined(_GLIBCPP_USE_LONG_LONG)) && \
    (defined(ULLONG_MAX) || defined(ULONG_LONG_MAX) || defined(ULONGLONG_MAX))
 #    if defined(__hpux)
@@ -306,14 +317,14 @@ namespace boost
 #       error defaults not correct; you must hand modify boost/cstdint.hpp
 #    endif
 
-     typedef  ::boost::long_long_type            intmax_t;
-     typedef  ::boost::ulong_long_type   uintmax_t;
-     typedef  ::boost::long_long_type            int64_t;
-     typedef  ::boost::long_long_type            int_least64_t;
-     typedef  ::boost::long_long_type            int_fast64_t;
-     typedef  ::boost::ulong_long_type   uint64_t;
-     typedef  ::boost::ulong_long_type   uint_least64_t;
-     typedef  ::boost::ulong_long_type   uint_fast64_t;
+     typedef  ::methcla_boost::long_long_type            intmax_t;
+     typedef  ::methcla_boost::ulong_long_type   uintmax_t;
+     typedef  ::methcla_boost::long_long_type            int64_t;
+     typedef  ::methcla_boost::long_long_type            int_least64_t;
+     typedef  ::methcla_boost::long_long_type            int_fast64_t;
+     typedef  ::methcla_boost::ulong_long_type   uint64_t;
+     typedef  ::methcla_boost::ulong_long_type   uint_least64_t;
+     typedef  ::methcla_boost::ulong_long_type   uint_fast64_t;
 
 # elif ULONG_MAX != 0xffffffff
 
@@ -356,7 +367,7 @@ namespace boost
      typedef uint32_t             uintmax_t;
 # endif
 
-} // namespace boost
+} // namespace methcla_boost
 
 
 #endif // BOOST_HAS_STDINT_H
@@ -367,16 +378,13 @@ namespace boost
 #include <stddef.h>
 #endif
 
-// PGI seems to not support intptr_t/uintptr_t properly. BOOST_HAS_STDINT_H is not defined for this compiler by Boost.Config.
-#if !defined(__PGIC__)
-
 #if (defined(BOOST_WINDOWS) && !defined(_WIN32_WCE)) \
     || (defined(_XOPEN_UNIX) && (_XOPEN_UNIX+0 > 0) && !defined(__UCLIBC__)) \
-    || defined(__CYGWIN__) \
+    || defined(__CYGWIN__) || defined(__VXWORKS__) \
     || defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__) \
-    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(sun)
+    || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || (defined(sun) && !defined(BOOST_HAS_STDINT_H)) || defined(INTPTR_MAX)
 
-namespace boost {
+namespace methcla_boost {
     using ::intptr_t;
     using ::uintptr_t;
 }
@@ -385,15 +393,13 @@ namespace boost {
 // Clang pretends to be GCC, so it'll match this condition
 #elif defined(__GNUC__) && defined(__INTPTR_TYPE__) && defined(__UINTPTR_TYPE__)
 
-namespace boost {
+namespace methcla_boost {
     typedef __INTPTR_TYPE__ intptr_t;
     typedef __UINTPTR_TYPE__ uintptr_t;
 }
 #define BOOST_HAS_INTPTR_T
 
 #endif
-
-#endif // !defined(__PGIC__)
 
 #endif // BOOST_CSTDINT_HPP
 
@@ -413,15 +419,19 @@ INT#_C macros if they're not already defined (John Maddock).
 #if !defined(BOOST__STDC_CONSTANT_MACROS_DEFINED) && \
    (!defined(INT8_C) || !defined(INT16_C) || !defined(INT32_C) || !defined(INT64_C))
 //
-// For the following code we get several warnings along the lines of:
+// Undef the macros as a precaution, since we may get here if <stdint.h> has failed
+// to define them all, see https://svn.boost.org/trac/boost/ticket/12786
 //
-// boost/cstdint.hpp:428:35: error: use of C99 long long integer constant
-//
-// So we declare this a system header to suppress these warnings.
-//
-#if defined(__GNUC__) && (__GNUC__ >= 4)
-#pragma GCC system_header
-#endif
+#undef INT8_C
+#undef INT16_C
+#undef INT32_C
+#undef INT64_C
+#undef INTMAX_C
+#undef UINT8_C
+#undef UINT16_C
+#undef UINT32_C
+#undef UINT64_C
+#undef UINTMAX_C
 
 #include <limits.h>
 # define BOOST__STDC_CONSTANT_MACROS_DEFINED
@@ -441,7 +451,7 @@ INT#_C macros if they're not already defined (John Maddock).
 #ifndef INT64_C
 #  define INT64_C(value)    value##i64
 #endif
-#  ifdef __BORLANDC__
+#  ifdef BOOST_BORLANDC
     // Borland bug: appending ui8 makes the type a signed char
 #   define UINT8_C(value)    static_cast<unsigned char>(value##u)
 #  else
@@ -467,15 +477,15 @@ INT#_C macros if they're not already defined (John Maddock).
 //  8-bit types  ------------------------------------------------------------//
 
 #  if (UCHAR_MAX == 0xff) && !defined(INT8_C)
-#   define INT8_C(value) static_cast<boost::int8_t>(value)
-#   define UINT8_C(value) static_cast<boost::uint8_t>(value##u)
+#   define INT8_C(value) static_cast<methcla_boost::int8_t>(value)
+#   define UINT8_C(value) static_cast<methcla_boost::uint8_t>(value##u)
 #  endif
 
 //  16-bit types  -----------------------------------------------------------//
 
 #  if (USHRT_MAX == 0xffff) && !defined(INT16_C)
-#   define INT16_C(value) static_cast<boost::int16_t>(value)
-#   define UINT16_C(value) static_cast<boost::uint16_t>(value##u)
+#   define INT16_C(value) static_cast<methcla_boost::int16_t>(value)
+#   define UINT16_C(value) static_cast<methcla_boost::uint16_t>(value##u)
 #  endif
 
 //  32-bit types  -----------------------------------------------------------//

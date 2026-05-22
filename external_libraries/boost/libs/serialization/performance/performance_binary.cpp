@@ -32,16 +32,16 @@ namespace std{
 #include <boost/serialization/binary_object.hpp>
 
 class A {
-    friend class boost::serialization::access;
+    friend class methcla_boost::serialization::access;
     char data[150];
     // note: from an aesthetic perspective, I would much prefer to have this
     // defined out of line.  Unfortunately, this trips a bug in the VC 6.0
     // compiler. So hold our nose and put it her to permit running of tests.
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* file_version */){
-        ar & boost::serialization::make_nvp(
+        ar & methcla_boost::serialization::make_nvp(
             "data",
-            boost::serialization::make_binary_object(data, sizeof(data))
+            methcla_boost::serialization::make_binary_object(data, sizeof(data))
         );
     }
 
@@ -66,7 +66,7 @@ bool A::operator==(const A & rhs) const {
 
 int test_main( int /* argc */, char* /* argv */[] )
 {
-    const char * testfile = boost::archive::tmpnam(NULL);
+    const char * testfile = methcla_boost::archive::tmpnam(NULL);
     BOOST_REQUIRE(NULL != testfile);
 
     const A a;
