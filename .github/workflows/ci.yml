@@ -56,3 +56,15 @@ jobs:
           cmake -S tests/consumers/find_package -B build/consumer-b \
             -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
           cmake --build build/consumer-b --config ${{ matrix.build_type }}
+
+  all-passed:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all matrix jobs passed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "build matrix failed"
+            exit 1
+          fi
