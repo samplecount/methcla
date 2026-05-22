@@ -83,8 +83,7 @@ target_compile_options(methcla PRIVATE
 )
 
 if (LINUX)
-    target_link_libraries(methcla PRIVATE atomic)
-    target_link_libraries(methcla PUBLIC dl pthread)
+    target_link_libraries(methcla PUBLIC atomic dl pthread)
 endif ()
 
 add_library(methcla::methcla ALIAS methcla)
