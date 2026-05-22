@@ -125,8 +125,8 @@ static void initStreamFormat(AudioStreamBasicDescription& desc,
 
 RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
 : Driver(options)
-, m_numInputs(options.numInputs >= 0 ? options.numInputs : 2)
-, m_numOutputs(options.numOutputs >= 0 ? options.numOutputs : 2)
+, m_numInputs(options.numInputs.value_or(2))
+, m_numOutputs(options.numOutputs.value_or(2))
 , m_inputBuffers(nullptr)
 , m_outputBuffers(nullptr)
 {
@@ -167,9 +167,9 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
     // Configure hardware buffer size
     Float32 hwBufferDuration;
 
-    if (options.bufferSize >= 0)
+    if (options.bufferSize.has_value())
     {
-        hwBufferDuration = (double)options.bufferSize / m_sampleRate;
+        hwBufferDuration = (double)*options.bufferSize / m_sampleRate;
         METHCLA_THROW_IF_ERROR(
             AudioSessionSetProperty(
                 kAudioSessionProperty_PreferredHardwareIOBufferDuration,

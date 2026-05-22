@@ -72,10 +72,10 @@ Methcla::Audio::IO::Driver::Options
 Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
 {
     Methcla::Audio::IO::Driver::Options result;
-    result.sampleRate = options->sample_rate;
-    result.numInputs = options->num_inputs;
-    result.numOutputs = options->num_outputs;
-    result.bufferSize = options->buffer_size;
+    if (options->sample_rate != -1) result.sampleRate = options->sample_rate;
+    if (options->num_inputs != -1)  result.numInputs  = options->num_inputs;
+    if (options->num_outputs != -1) result.numOutputs = options->num_outputs;
+    if (options->buffer_size != -1) result.bufferSize = options->buffer_size;
     return result;
 }
 

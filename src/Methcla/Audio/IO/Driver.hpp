@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 namespace Methcla { namespace Audio { namespace IO {
 
@@ -30,10 +31,10 @@ namespace Methcla { namespace Audio { namespace IO {
 
         struct Options
         {
-            double sampleRate = -1.;
-            int    numInputs = -1;
-            int    numOutputs = -1;
-            int    bufferSize = -1;
+            std::optional<double> sampleRate;
+            std::optional<int>    numInputs;
+            std::optional<int>    numOutputs;
+            std::optional<int>    bufferSize;
         };
 
         typedef void (*ProcessCallback)(void* data, Methcla_Time currentTime,
