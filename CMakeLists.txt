@@ -26,6 +26,8 @@ function(methcla_target_warnings target)
     )
 endfunction()
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 include(CTest)
 include(cmake/dependencies.cmake)
 
@@ -36,3 +38,17 @@ add_subdirectory(src)
 if(METHCLA_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+
+install(EXPORT methclaTargets
+    NAMESPACE methcla::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/methcla)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/methclaConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+
+install(FILES
+    cmake/methclaConfig.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/methclaConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/methcla)
