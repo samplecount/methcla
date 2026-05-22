@@ -53,20 +53,14 @@ set(sources
 add_library(methcla ${sources})
 
 target_include_directories(methcla PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
-target_include_directories(methcla
-    PRIVATE
+target_include_directories(methcla PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ../external_libraries
-)
-
-target_include_directories(methcla
-    SYSTEM PRIVATE
-    ../external_libraries/boost
 )
 
 if(METHCLA_ENABLE_RTAUDIO)
@@ -76,12 +70,12 @@ else()
 endif()
 
 target_link_libraries(methcla
-    PUBLIC
-    oscpp::oscpp
+    PUBLIC oscpp::oscpp
     PRIVATE
-    tinydir
-    tlsf
-    ${methcla_driver})
+        boost_headers
+        tinydir
+        tlsf
+        ${methcla_driver})
 
 # GCC false positives triggered by third-party headers (boost::lockfree, tinydir)
 target_compile_options(methcla PRIVATE
@@ -89,10 +83,7 @@ target_compile_options(methcla PRIVATE
 )
 
 if (LINUX)
-    target_link_libraries(methcla
-        PUBLIC
-        atomic
-        dl
-        pthread
-    )
+    target_link_libraries(methcla PUBLIC atomic dl pthread)
 endif ()
+
+add_library(methcla::methcla ALIAS methcla)
