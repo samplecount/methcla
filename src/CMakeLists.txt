@@ -77,7 +77,7 @@ endif()
 
 target_link_libraries(methcla
     PUBLIC
-    oscpp
+    oscpp::oscpp
     PRIVATE
     tinydir
     tlsf

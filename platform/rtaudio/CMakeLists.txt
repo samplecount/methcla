@@ -21,5 +21,5 @@ target_link_libraries(driver_rtaudio
     PUBLIC
     PkgConfig::rtaudio
     PRIVATE
-    oscpp
+    oscpp::oscpp
 )
