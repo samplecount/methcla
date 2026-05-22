@@ -1,3 +1,5 @@
+if(METHCLA_BUILD_TESTS)
+
 # =============================================================================
 # Plugin directories
 
@@ -7,6 +9,11 @@ set(PLUGIN_DIRECTORIES
 string(REPLACE ";" "," PLUGIN_DIRECTORIES "${PLUGIN_DIRECTORIES}")
 
 configure_file(config.cpp.in config.cpp)
+
+target_compile_options(gtest PRIVATE
+    -Wno-missing-field-initializers
+    -Wno-unused-const-variable
+)
 
 # =============================================================================
 # methcla_tests
@@ -53,3 +60,5 @@ target_link_libraries(methcla_engine_tests PRIVATE
 )
 
 add_test(methcla_engine_tests methcla_engine_tests)
+
+endif() # METHCLA_BUILD_TESTS

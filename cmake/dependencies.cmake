@@ -10,11 +10,13 @@ FetchContent_Declare(oscpp
 )
 FetchContent_MakeAvailable(oscpp)
 
-# googletest — test-only dependency
-FetchContent_Declare(googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.14.0
-    FIND_PACKAGE_ARGS NAMES GTest
-)
-set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+if(METHCLA_BUILD_TESTS)
+    # googletest — test-only dependency
+    FetchContent_Declare(googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+        FIND_PACKAGE_ARGS NAMES GTest
+    )
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
