@@ -31,3 +31,21 @@ _Avoid_: channel, buffer, bus (acceptable shorthand in code)
 **Soundfile API**:
 A Plugin category that provides file I/O capabilities to other Plugins (disksampler, sampler). Multiple soundfile API Plugins may be registered; the Engine selects by capability. Platform implementations: ExtAudioFile (macOS), libsndfile (Linux).
 _Avoid_: audio file backend, file reader
+
+## Build system
+
+CMake 3.24+, C++17, C99. Presets: `debug` and `release` (`CMakePresets.json`).
+
+### Dependencies
+
+All declared in `cmake/dependencies.cmake` via `FetchContent`, included before any `add_subdirectory`.
+
+| Dependency | Kind | How |
+|---|---|---|
+| **oscpp** | header-only OSC library; part of the public API | FetchContent (pinned git SHA); provides `oscpp::oscpp` target |
+| **googletest v1.14** | test-only | FetchContent |
+| **tlsf** | two-level segregated-fit allocator; merged directly into `libmethcla` | vendored in `external_libraries/tlsf/`; CMake `OBJECT` library |
+| **tinydir** | header-only directory listing | vendored in `external_libraries/tinydir/`; CMake `INTERFACE` library |
+| **Boost** (lockfree, heap, container\_hash, smart\_ptr) | header-only subset; namespaced as `methcla_boost` | vendored in `external_libraries/boost/`; re-extracted with `tools/copy-boost.sh <version>` |
+| **RtAudio** | optional desktop audio Driver | system package via `pkg-config` (`-DMETHCLA_ENABLE_RTAUDIO=ON`) |
+| **libsndfile** | Soundfile API Plugin on Linux | system package via `pkg-config` |
