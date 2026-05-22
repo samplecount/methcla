@@ -2,7 +2,7 @@ find_package(PkgConfig)
 
 pkg_check_modules(rtaudio rtaudio REQUIRED IMPORTED_TARGET)
 
-add_library(driver_rtaudio STATIC
+add_library(driver_rtaudio OBJECT
     Methcla/Audio/IO/RtAudioDriver.cpp
 )
 

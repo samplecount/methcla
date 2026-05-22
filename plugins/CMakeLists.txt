@@ -10,6 +10,8 @@ function(add_methcla_plugin name source)
     )
     target_link_libraries(${target} PRIVATE oscpp::oscpp)
     methcla_target_warnings(${target})
+    install(TARGETS ${target}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/methcla/plugins)
     if (source MATCHES ".*\\.c$")
         target_compile_options(${target} PRIVATE
             "$<$<CXX_COMPILER_ID:Clang>:-Wno-unused-parameter>"
