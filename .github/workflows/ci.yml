@@ -45,3 +45,26 @@ jobs:
       - run: cmake --preset ${{ matrix.preset }} -DMETHCLA_ENABLE_RTAUDIO=OFF
       - run: cmake --build build/${{ matrix.preset }} --config ${{ matrix.build_type }}
       - run: ctest --test-dir build/${{ matrix.preset }} -C ${{ matrix.build_type }} --output-on-failure
+      - run: cmake --install build/${{ matrix.preset }} --prefix ${{ github.workspace }}/install --config ${{ matrix.build_type }}
+      - name: Consumer A (add_subdirectory)
+        run: |
+          cmake -S tests/consumers/add_subdirectory -B build/consumer-a \
+            -DMETHCLA_BUILD_TESTS=OFF -DMETHCLA_ENABLE_RTAUDIO=OFF
+          cmake --build build/consumer-a --config ${{ matrix.build_type }}
+      - name: Consumer B (find_package)
+        run: |
+          cmake -S tests/consumers/find_package -B build/consumer-b \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/install
+          cmake --build build/consumer-b --config ${{ matrix.build_type }}
+
+  all-passed:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all matrix jobs passed
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "build matrix failed"
+            exit 1
+          fi

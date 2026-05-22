@@ -54,34 +54,34 @@ add_library(methcla ${sources})
 
 target_sources(methcla PUBLIC
     FILE_SET HEADERS
-    BASE_DIRS ${CMAKE_SOURCE_DIR}/include
+    BASE_DIRS ${METHCLA_SOURCE_DIR}/include
     FILES
-        ${CMAKE_SOURCE_DIR}/include/methcla/common.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/detail.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/detail/result.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/engine.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/engine.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/file.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/file.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/log.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/log.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/platform/ios.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/platform/rtaudio.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugin.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugin.hpp
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/disksampler.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/node_control.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/patch_cable.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/sampler.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/sine.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/soundfile_api_dummy.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/soundfile_api_extaudiofile.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/plugins/soundfile_api_libsndfile.h
-        ${CMAKE_SOURCE_DIR}/include/methcla/types.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/common.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/detail.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/detail/result.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/engine.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/engine.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/file.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/file.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/log.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/log.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/platform/ios.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/platform/rtaudio.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugin.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugin.hpp
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/disksampler.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/node_control.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/patch_cable.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sampler.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sine.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_dummy.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_extaudiofile.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_libsndfile.h
+        ${METHCLA_SOURCE_DIR}/include/methcla/types.h
 )
 
 target_include_directories(methcla PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${METHCLA_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
