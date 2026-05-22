@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.24)
 
 project(methcla VERSION 0.3.0)
 
+set(METHCLA_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 option(METHCLA_ENABLE_RTAUDIO "Enable RtAudio audio driver" ON)
 option(METHCLA_BUILD_TESTS "Build the test suite" ${PROJECT_IS_TOP_LEVEL})
 
