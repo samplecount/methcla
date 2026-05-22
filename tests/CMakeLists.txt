@@ -34,6 +34,7 @@ target_link_libraries(methcla_tests PRIVATE
     GTest::gtest
     methcla
 )
+methcla_target_warnings(methcla_tests)
 
 add_test(methcla_tests methcla_tests)
 
@@ -58,6 +59,7 @@ target_link_libraries(methcla_engine_tests PRIVATE
     GTest::gtest
     methcla
 )
+methcla_target_warnings(methcla_engine_tests)
 
 add_test(methcla_engine_tests methcla_engine_tests)
 

@@ -6,5 +6,6 @@ else()
         ../include
         ../src
     )
+    methcla_target_warnings(driver_dummy)
 endif()
 

@@ -86,4 +86,6 @@ if (LINUX)
     target_link_libraries(methcla PUBLIC atomic dl pthread)
 endif ()
 
+methcla_target_warnings(methcla)
+
 add_library(methcla::methcla ALIAS methcla)
