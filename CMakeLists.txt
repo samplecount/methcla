@@ -18,11 +18,13 @@ set(methcla_warnings
     -Wstrict-aliasing
     -Werror)
 
-add_compile_options(
-    "$<$<CXX_COMPILER_ID:Clang>:${methcla_warnings}>"
-    "$<$<CXX_COMPILER_ID:AppleClang>:${methcla_warnings}>"
-    "$<$<CXX_COMPILER_ID:GNU>:${methcla_warnings}>"
-)
+function(methcla_target_warnings target)
+    target_compile_options(${target} PRIVATE
+        "$<$<CXX_COMPILER_ID:Clang>:${methcla_warnings}>"
+        "$<$<CXX_COMPILER_ID:AppleClang>:${methcla_warnings}>"
+        "$<$<CXX_COMPILER_ID:GNU>:${methcla_warnings}>"
+    )
+endfunction()
 
 include(CTest)
 include(cmake/dependencies.cmake)

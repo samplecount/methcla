@@ -34,6 +34,7 @@ foreach(plugin ${plugins})
         $<INSTALL_INTERFACE:include>
     )
     target_link_libraries(${plugin_target} PRIVATE oscpp::oscpp)
+    methcla_target_warnings(${plugin_target})
     if (plugin MATCHES ".*\.c$")
         # C99 doesn't allow to not declare a parameter name
         set(c99_warnings -Wno-unused-parameter)

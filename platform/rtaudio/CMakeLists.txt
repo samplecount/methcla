@@ -23,3 +23,5 @@ target_link_libraries(driver_rtaudio
     PRIVATE
     oscpp::oscpp
 )
+
+methcla_target_warnings(driver_rtaudio)
