@@ -1,7 +1,6 @@
 *.a
 *.d
 *.exe
-*.hi
 *.mode1v3
 *.o
 *.pbxuser
@@ -11,12 +10,6 @@ errors.err
 tags
 tmtags
 build/
-config/env.sh
-dist/
 engine/tests/output/*
-.shake.database
-.shake.journal
-.stack-work
 xcuserdata/
 *.xcworkspace/
-.scratch/
