@@ -176,7 +176,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
     Methcla_PortCount      controlOutputIndex = 0;
     Methcla_PortCount      audioInputIndex = 0;
     Methcla_PortCount      audioOutputIndex = 0;
-    for (size_t i = 0; m_synthDef.portDescriptor(synthOptions, i, &port); i++)
+    for (Methcla_PortCount i = 0; m_synthDef.portDescriptor(synthOptions, i, &port); i++)
     {
         switch (port.type)
         {
@@ -361,7 +361,7 @@ void Synth::doProcess(size_t numFrames)
     }
     else if (m_flags.state == kStateActivating)
     {
-        const size_t sampleOffset = std::floor(m_sampleOffset);
+        const size_t sampleOffset = static_cast<size_t>(std::floor(m_sampleOffset));
         assert(m_sampleOffset < (double)numFrames && sampleOffset < numFrames);
         const size_t remainingFrames = numFrames - sampleOffset;
 

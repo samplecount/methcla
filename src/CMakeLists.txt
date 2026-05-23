@@ -23,7 +23,6 @@ set(sources
     Methcla/Audio/MultiChannelBuffer.hpp
     Methcla/Audio/Node.cpp
     Methcla/Audio/Node.hpp
-    Methcla/Audio/Resource.cpp
     Methcla/Audio/Resource.hpp
     Methcla/Audio/Synth.cpp
     Methcla/Audio/Synth.hpp
@@ -37,8 +36,8 @@ set(sources
     Methcla/Memory.cpp
     Methcla/Memory.hpp
     Methcla/Platform.hpp
-    Methcla/Plugin/Loader.cpp
     Methcla/Plugin/Loader.hpp
+    Methcla/Plugin/LoaderPosix.cpp
     Methcla/Plugin/Manager.cpp
     Methcla/Plugin/Manager.hpp
     Methcla/Utility/Hash.hpp

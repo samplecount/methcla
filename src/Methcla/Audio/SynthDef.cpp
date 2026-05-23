@@ -63,7 +63,8 @@ SynthDef::configure(OSCPP::Server::ArgStream options) const
     return nullptr;
 }
 
-bool SynthDef::portDescriptor(const Methcla_SynthOptions* options, size_t index,
+bool SynthDef::portDescriptor(const Methcla_SynthOptions* options,
+                              Methcla_PortCount index,
                               Methcla_PortDescriptor* port) const
 {
     return m_descriptor->port_descriptor(options, index, port);

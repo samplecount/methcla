@@ -227,7 +227,7 @@ namespace Methcla { namespace Audio {
         void activate(double sampleOffset = 0.);
 
         /// Sample offset for sample accurate synth scheduling.
-        float sampleOffset() const { return m_sampleOffset; }
+        float sampleOffset() const { return static_cast<float>(m_sampleOffset); }
 
     private:
         enum State

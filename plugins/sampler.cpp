@@ -304,7 +304,7 @@ namespace {
                 break;
             }
 
-            const double x = phase - findex;
+            const float x = static_cast<float>(phase - findex);
 
             out0[k] = amp * hermite1(x, xm[bufferChannel1], x0[bufferChannel1],
                                      x1[bufferChannel1], x2[bufferChannel1]);
@@ -313,7 +313,7 @@ namespace {
 
             phase += rate;
 
-            if (wrapPhase)
+            if constexpr (wrapPhase)
             {
                 if (phase < 0.)
                     phase += maxPhase;

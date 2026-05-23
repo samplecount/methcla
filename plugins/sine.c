@@ -95,7 +95,7 @@ static void process(Methcla_World* world, Methcla_Synth* synth,
 
     for (size_t k = 0; k < numFrames; k++)
     {
-        output[k] = amp * sin(phase);
+        output[k] = amp * sinf((float)phase);
         phase += phaseInc;
     }
 

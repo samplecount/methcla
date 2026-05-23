@@ -138,7 +138,8 @@ static Methcla_Error soundfile_open(Methcla_SoundFileAPI* /*api*/,
 {
     std::default_random_engine         generator;
     std::uniform_int_distribution<int> channelDist(1, 2);
-    std::uniform_int_distribution<int> framesDist(0.1 * 44100, 10 * 44100);
+    std::uniform_int_distribution<int> framesDist(static_cast<int>(0.1 * 44100),
+                                                   static_cast<int>(10 * 44100));
 
     SoundFileHandle* handle = (SoundFileHandle*)malloc(sizeof(SoundFileHandle));
     if (handle == nullptr)
@@ -164,8 +165,8 @@ static Methcla_Error soundfile_open(Methcla_SoundFileAPI* /*api*/,
     *outFile = file;
 
     info->frames = handle->numFrames;
-    info->channels = handle->numChannels;
-    info->samplerate = handle->sampleRate;
+    info->channels = static_cast<unsigned int>(handle->numChannels);
+    info->samplerate = static_cast<unsigned int>(handle->sampleRate);
 
     METHCLA_PRINT_DEBUG("soundfile_open: %s %" PRId64 " %u %u", path,
                         info->frames, info->channels, info->samplerate);

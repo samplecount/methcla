@@ -295,7 +295,7 @@ static void methcla_api_world_perform_command(Methcla_World*,
 Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
                          const Options& options, MessageQueue* messageQueue,
                          Worker* worker)
-: m_sampleRate(options.sampleRate)
+: m_sampleRate(static_cast<double>(options.sampleRate))
 , m_blockSize(options.blockSize)
 // Methcla_Host interface
 , m_host({this, methcla_api_host_register_synthdef,

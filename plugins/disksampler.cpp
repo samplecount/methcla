@@ -803,7 +803,7 @@ inline size_t resample(float* out0, float* out1, size_t numFrames,
             break;
         }
 
-        const double x = bufferPhase - findex;
+        const float x = static_cast<float>(bufferPhase - findex);
 
         out0[k] = amp * hermite1(x, xm[bufferChannel1], x0[bufferChannel1],
                                  x1[bufferChannel1], x2[bufferChannel1]);
@@ -813,8 +813,10 @@ inline size_t resample(float* out0, float* out1, size_t numFrames,
         bufferPhase += rate;
         filePhase += rate;
 
-        if (wrapPhase && bufferPhase >= maxBufferPhase)
-            bufferPhase -= maxBufferPhase;
+        if constexpr (wrapPhase) {
+            if (bufferPhase >= maxBufferPhase)
+                bufferPhase -= maxBufferPhase;
+        }
     }
 
     return k;
@@ -882,7 +884,7 @@ static inline size_t process_disk_interp(Methcla_World* world,
     }
 
     assert(bufferPhase >= 0 && bufferPhase < (double)bufferFrames);
-    const size_t nextReadPos = std::floor(bufferPhase);
+    const size_t nextReadPos = static_cast<size_t>(std::floor(bufferPhase));
     assert(nextReadPos < bufferFrames);
     if (nextReadPos != readPos)
     {

@@ -184,15 +184,15 @@ public:
                     if (m_state == kAttackPhase)
                     {
                         m_state = kSustainPhase;
-                        m_numFramesLeft =
-                            m_options.sustainTime * world.sampleRate();
+                        m_numFramesLeft = static_cast<size_t>(std::llround(
+                            m_options.sustainTime * world.sampleRate()));
                         m_slope = 0.f;
                     }
                     else if (m_state == kSustainPhase)
                     {
                         m_state = kReleasePhase;
-                        m_numFramesLeft =
-                            m_options.releaseTime * world.sampleRate();
+                        m_numFramesLeft = static_cast<size_t>(std::llround(
+                            m_options.releaseTime * world.sampleRate()));
                         m_slope = -(m_level / m_numFramesLeft);
                     }
                     else
@@ -279,9 +279,9 @@ public:
                     const Methcla_SynthDef*,
                     const ExponentialFadeOptions& options)
     : m_state(kRunning)
-    , m_numFramesLeft((size_t)(options.duration * world.sampleRate() + 0.5f))
-    , m_growth(std::pow(options.endLevel / options.startLevel,
-                        1.0 / m_numFramesLeft))
+    , m_numFramesLeft(static_cast<size_t>(std::llround(options.duration * world.sampleRate())))
+    , m_growth(static_cast<float>(std::pow(options.endLevel / options.startLevel,
+                                           1.0 / m_numFramesLeft)))
     , m_level(options.startLevel)
     {
         std::fill(m_ports, m_ports + ExponentialFadePorts::numPorts(), nullptr);

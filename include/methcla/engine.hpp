@@ -867,7 +867,7 @@ namespace Methcla {
                 .openMessage("/node/set", 3)
                 .int32(node.id())
                 .int32(static_cast<int32_t>(index))
-                .float32(value)
+                .float32(static_cast<float>(value))
                 .closeMessage();
         }
 
