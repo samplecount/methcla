@@ -566,7 +566,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                });
             }
 
-            synth->mapInput(index, AudioBusId(busId), flags);
+            synth->mapInput(static_cast<Methcla_PortCount>(index), AudioBusId(busId), flags);
         }
         else if (msg == "/synth/map/output")
         {
@@ -607,7 +607,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                });
             }
 
-            synth->mapOutput(index, AudioBusId(busId), flags);
+            synth->mapOutput(static_cast<Methcla_PortCount>(index), AudioBusId(busId), flags);
         }
         else if (msg == "/synth/property/doneFlags/set")
         {
@@ -647,7 +647,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                });
             }
 
-            synth->controlInput(index) = value;
+            synth->controlInput(static_cast<Methcla_PortCount>(index)) = value;
         }
         else if (msg == "/node/tree/statistics")
         {
@@ -703,8 +703,8 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                         OSCPP::Size::message(address, 2) +
                         OSCPP::Size::int32(2));
                     packet.openMessage(address, 2);
-                    packet.int32(m_stats.numGroups);
-                    packet.int32(m_stats.numSynths);
+                    packet.int32(static_cast<int32_t>(m_stats.numGroups));
+                    packet.int32(static_cast<int32_t>(m_stats.numSynths));
                     packet.closeMessage();
                     env->reply(m_requestId, packet);
                     env->sendFromWorker(perform_rt_free, this);
@@ -742,8 +742,8 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                         OSCPP::Size::message(address, 2) +
                         OSCPP::Size::int32(2));
                     packet.openMessage(address, 2);
-                    packet.int32(m_stats.freeNumBytes);
-                    packet.int32(m_stats.usedNumBytes);
+                    packet.int32(static_cast<int32_t>(m_stats.freeNumBytes));
+                    packet.int32(static_cast<int32_t>(m_stats.usedNumBytes));
                     packet.closeMessage();
                     env->reply(m_requestId, packet);
                     env->sendFromWorker(perform_rt_free, this);

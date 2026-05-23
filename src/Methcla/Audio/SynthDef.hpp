@@ -57,7 +57,8 @@ namespace Methcla { namespace Audio {
         configure(OSCPP::Server::ArgStream options) const;
 
         //* Return port descriptor at index.
-        bool portDescriptor(const Methcla_SynthOptions* options, size_t index,
+        bool portDescriptor(const Methcla_SynthOptions* options,
+                            Methcla_PortCount index,
                             Methcla_PortDescriptor* port) const;
 
         void construct(Methcla_World*              world,

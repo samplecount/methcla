@@ -19,7 +19,7 @@
 #include <memory>
 #include <stdexcept>
 
-#if defined(__ANDROID__) || defined(__native_client__) || defined(__MINGW32__)
+#if defined(__ANDROID__) || defined(__native_client__)
 #    include <malloc.h>
 #endif
 
@@ -47,8 +47,6 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
 
 #if defined(__ANDROID__) || defined(__native_client__)
     ptr = memalign(align, size);
-#elif defined(__MINGW32__)
-    ptr = _aligned_malloc(size, align);
 #else
     int err = posix_memalign(&ptr, align, size);
     if (err != 0)
@@ -65,9 +63,5 @@ void* Methcla::Memory::allocAligned(Alignment align, size_t size)
 
 void Methcla::Memory::freeAligned(void* ptr) noexcept
 {
-#if defined(__MINGW32__)
-    _aligned_free(ptr);
-#else
     Methcla::Memory::free(ptr);
-#endif
 }
