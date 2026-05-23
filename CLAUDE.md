@@ -85,6 +85,8 @@ Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `doc
 - When merging PRs via gh, update the working copy accordingly (pull and delete PR branch).
 - Keep PR branch name descriptive but short. No prefixes like `feat/`. Dashes: `my-awesome-new-feature`.
 - See `CONTRIBUTING.md` for the human-facing version of these workflows.
+- When adding features or fixes, add an entry under `## [Unreleased]` in `CHANGELOG.md` using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Security.
+- To cut a release: run `tools/release.py <version>` then `git push && git push --tags`.
 
 ## Domain and API references
 
