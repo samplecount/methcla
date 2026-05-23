@@ -40,6 +40,9 @@ add_subdirectory(src)
 if(METHCLA_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+if(PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(tools)
+endif()
 
 install(EXPORT methclaTargets
     NAMESPACE methcla::

@@ -1,58 +1,85 @@
-[![Build Status](https://travis-ci.org/samplecount/methcla.svg?branch=develop)](https://travis-ci.org/samplecount/methcla)
+[![CI](https://github.com/samplecount/methcla/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/samplecount/methcla/actions/workflows/ci.yml)
 
-# Methcla - Mobile sound engine
+# Methcla
 
-Methcla is a light-weight, efficient sound engine for mobile devices, see our [website](http://methc.la) for the full picture.
+A real-time C++ audio engine library for macOS and Linux. Exposes a C API with C++ bindings for embedding in host applications.
 
-## Build requirements
+## Requirements
 
-* GCC >= 4.7 or Clang >= 3.3
+- CMake 3.24+, C++17 (GCC or Clang)
+- Optional: [RtAudio](https://www.music.mcgill.ca/~gary/rtaudio/) for audio I/O (`-DMETHCLA_ENABLE_RTAUDIO=ON`)
+- Optional: [libsndfile](https://libsndfile.github.io/libsndfile/) for soundfile support on Linux
 
-## Building the sound engine
+## Build
 
-Our build system is written in Haskell using the [Shake](https://github.com/ndmitchell/shake) library and you need to install the latest [Haskell platform](http://www.haskell.org/platform/) before building Methcla.
+```sh
+cmake --preset debug        # configure (or: release)
+cmake --build build/debug   # build
+ctest --test-dir build/debug --output-on-failure  # test
+```
 
-First off, don't forget to
+## Usage
 
-    git submodule update --init --recursive
+```cpp
+#include <methcla/engine.hpp>
+#include <methcla/plugins/sine.h>
 
-after pulling from Methcla's repository.
+Methcla::EngineOptions options;
+options.addLibrary(methcla_plugins_sine);
 
-To build a specific target (see below for a list of possible targets):
+Methcla::Engine engine(options);
+engine.start();
 
-    ./shake TARGET
+// Create a sine synth (freq=440 Hz, amp=0.5) on hardware output bus 0
+Methcla::Request request(&engine);
+request.openBundle();
+auto synth = request.synth(METHCLA_PLUGINS_SINE_URI, engine.root(), {440.f, 0.5f});
+request.activate(synth);
+request.mapOutput(synth, 0, Methcla::AudioBusId(0), Methcla::kBusMappingExternal);
+request.closeBundle();
+request.send();
 
-To clean everything
+// Free the synth when done
+Methcla::Request stop(&engine);
+stop.openBundle();
+stop.free(synth);
+stop.closeBundle();
+stop.send();
+```
 
-    ./shake clean
+See [`docs/osc-api.md`](docs/osc-api.md) for the full command protocol and [`docs/architecture.md`](docs/architecture.md) for an overview of audio routing.
 
-Use the `-j` flag for parallel builds:
+## Integration
 
-    ./shake -j4 test
+**add_subdirectory:**
 
-The build script automatically passes the number of core in your build machine, use `-j1` to force a sequential build.
+```cmake
+add_subdirectory(path/to/methcla)
+target_link_libraries(myapp PRIVATE methcla::methcla)
+```
 
-The `-c` flag allows to select a build configuration (*release* or *debug*):
+**FetchContent:**
 
-    ./shake -c release test
+```cmake
+include(FetchContent)
+FetchContent_Declare(methcla
+    GIT_REPOSITORY https://github.com/samplecount/methcla.git
+    GIT_TAG        develop)
+FetchContent_MakeAvailable(methcla)
+target_link_libraries(myapp PRIVATE methcla::methcla)
+```
 
-Display the list of Shake command line options:
+**find_package** (after `cmake --install`):
 
-    ./shake -h
-
-All built files are put in the `build` directory.
-
-Here's a non-exhaustive list of targets:
-
-* `test`: Run the test suite; this should be first thing to do when porting to a new platform.
-* `desktop`: Build a shared library for the host operating system
-* `iphoneos`: Build a static library for iOS devices
-* `iphone-universal`: Build a static library for iOS devices and simulator
-* `android`: Build a static library for Android
-* `pnacl`: Build a static library for Pepper/PNaCl
+```cmake
+find_package(methcla REQUIRED)
+target_link_libraries(myapp PRIVATE methcla::methcla)
+```
 
 ## Examples
 
-[thADDeus](https://github.com/samplecount/methcla/tree/develop/engine/examples/thADDeus) is an example project that builds the engine for iOS and Android devices and provides a simple multitouch sine synthesizer.
+See [`examples/`](examples/) for sample applications.
 
-The [sampler](https://github.com/samplecount/methcla/tree/develop/engine/examples/sampler) example is a simple multitouch sampler application.
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md).
