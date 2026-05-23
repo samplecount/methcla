@@ -3,8 +3,8 @@
 ## Build and test
 
 ```sh
-cmake --preset debug
-cmake --build build/debug
+cmake --preset debug         # or: release
+cmake --build build/debug    # or: build/release
 ctest --test-dir build/debug --output-on-failure
 ```
 
