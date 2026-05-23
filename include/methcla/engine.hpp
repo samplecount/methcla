@@ -879,7 +879,7 @@ namespace Methcla {
                 .openMessage("/node/free", 1)
                 .int32(node.id())
                 .closeMessage();
-            m_engine->nodeIdAllocator().free(node.id());
+            m_engine->nodeIdAllocator().free(node);
         }
 
         void whenDone(SynthId synth, NodeDoneFlags flags)
