@@ -1,5 +1,20 @@
 # Contributing
 
+## Setup
+
+Install the pre-commit hooks after cloning:
+
+```sh
+pip install pre-commit   # or: brew install pre-commit
+pre-commit install
+```
+
+Hooks run automatically on `git commit`. To format all files manually:
+
+```sh
+pre-commit run --all-files
+```
+
 ## Build and test
 
 ```sh

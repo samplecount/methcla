@@ -42,9 +42,7 @@
 
 ### Formatting
 
-- 4-space indentation, no tabs.
-- Allman brace style for functions and control flow (opening brace on its own line).
-- Braces on the same line for namespace and class bodies.
+Enforced by clang-format. Configuration is in `.clang-format`. Run `pre-commit run --all-files` rather than formatting manually.
 
 ## C API
 
@@ -62,3 +60,7 @@
 - `pathlib.Path` for file paths, not string concatenation.
 - `subprocess.run(..., check=True)` — don't silently swallow non-zero exit codes.
 - Keep scripts short and single-purpose. Extract helpers only when reused.
+
+### Formatting
+
+Enforced by black. Run `pre-commit run --all-files` rather than formatting manually.
