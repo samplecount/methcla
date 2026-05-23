@@ -1,5 +1,3 @@
-// c++ -std=c++11 -stdlib=libc++ -I include -o build/dumposcfile
-// tools/dumposcfile.cpp
 
 #include <iostream>
 #include <sstream>
@@ -31,14 +29,13 @@ int main(int argc, const char* const* argv)
 
         while (true)
         {
-            int32_t size;
-            size_t  n = fread(&size, sizeof(size), 1, file);
-            if (n != 1)
+            int32_t rawSize;
+            if (fread(&rawSize, sizeof(rawSize), 1, file) != 1)
                 break;
-            size = OSCPP::convert32<OSCPP::NetworkByteOrder>(size);
+            const size_t size = static_cast<size_t>(OSCPP::convert32<OSCPP::NetworkByteOrder>(rawSize));
             if (buffer.size() < size)
                 buffer.resize(size);
-            n = fread(buffer.data(), 1, size, file);
+            const size_t n = fread(buffer.data(), 1, size, file);
             if (n != size)
                 throw std::runtime_error("Couldn't read packet");
             OSCPP::Server::Packet packet(buffer.data(), size);
