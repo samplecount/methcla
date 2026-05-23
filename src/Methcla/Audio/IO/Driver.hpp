@@ -32,9 +32,9 @@ namespace Methcla { namespace Audio { namespace IO {
         struct Options
         {
             std::optional<double> sampleRate;
-            std::optional<int>    numInputs;
-            std::optional<int>    numOutputs;
-            std::optional<int>    bufferSize;
+            std::optional<size_t> numInputs;
+            std::optional<size_t> numOutputs;
+            std::optional<size_t> bufferSize;
         };
 
         typedef void (*ProcessCallback)(void* data, Methcla_Time currentTime,

@@ -28,18 +28,19 @@
 #include <functional>
 #include <iostream>
 #include <new>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
 #include <oscpp/server.hpp>
 
-typedef struct Methcla_AudioDriverOptions
+struct Methcla_AudioDriverOptions
 {
-    int sample_rate;
-    int num_inputs;
-    int num_outputs;
-    int buffer_size;
-} Methcla_AudioDriverOptions;
+    std::optional<size_t> sample_rate;
+    std::optional<size_t> num_inputs;
+    std::optional<size_t> num_outputs;
+    std::optional<size_t> buffer_size;
+};
 
 struct Methcla_AudioDriver
 {
@@ -72,10 +73,10 @@ Methcla::Audio::IO::Driver::Options
 Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
 {
     Methcla::Audio::IO::Driver::Options result;
-    if (options->sample_rate != -1) result.sampleRate = options->sample_rate;
-    if (options->num_inputs != -1)  result.numInputs  = options->num_inputs;
-    if (options->num_outputs != -1) result.numOutputs = options->num_outputs;
-    if (options->buffer_size != -1) result.bufferSize = options->buffer_size;
+    if (options->sample_rate) result.sampleRate = static_cast<double>(*options->sample_rate);
+    if (options->num_inputs)  result.numInputs  = *options->num_inputs;
+    if (options->num_outputs) result.numOutputs = *options->num_outputs;
+    if (options->buffer_size) result.bufferSize = *options->buffer_size;
     return result;
 }
 
@@ -154,7 +155,7 @@ public:
         m_driver = std::unique_ptr<Methcla_AudioDriver>(driver);
         m_driver->driver()->setProcessCallback(processCallback, this);
 
-        engineOptions.sampleRate = m_driver->driver()->sampleRate();
+        engineOptions.sampleRate = static_cast<size_t>(m_driver->driver()->sampleRate());
         engineOptions.blockSize = m_driver->driver()->bufferSize();
         engineOptions.numHardwareInputChannels =
             m_driver->driver()->numInputs();
@@ -269,13 +270,6 @@ METHCLA_EXPORT Methcla_Error methcla_audio_driver_options_new(
         *audio_driver_options = new Methcla_AudioDriverOptions;
     }
     METHCLA_API_CATCH
-
-    Methcla_AudioDriverOptions* options = *audio_driver_options;
-
-    options->sample_rate = -1;
-    options->num_inputs = -1;
-    options->num_outputs = -1;
-    options->buffer_size = -1;
 
     return methcla_no_error();
 }

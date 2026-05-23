@@ -56,9 +56,10 @@ RtAudioDriver::RtAudioDriver(Options options)
     else if (*options.numInputs > 0)
     {
         iParams.deviceId = m_audio.getDefaultInputDevice();
-        int available = m_audio.getDeviceInfo(iParams.deviceId).inputChannels;
+        const auto available = std::max(
+            0u, m_audio.getDeviceInfo(iParams.deviceId).inputChannels);
         // clamp to number of available channels
-        iParams.nChannels = std::min(*options.numInputs, available);
+        iParams.nChannels = std::min(static_cast<unsigned int>(*options.numInputs), available);
         if (0 < iParams.nChannels)
             iParamsPtr = &iParams;
     }
@@ -71,11 +72,11 @@ RtAudioDriver::RtAudioDriver(Options options)
     }
     else
     {
-        oParams.nChannels = *options.numOutputs;
+        oParams.nChannels = static_cast<unsigned int>(*options.numOutputs);
     }
 
     const unsigned int sampleRate = options.sampleRate.value_or(44100);
-    unsigned int bufferFrames = options.bufferSize.value_or(kDefaultBufferSize);
+    unsigned int bufferFrames = static_cast<unsigned int>(options.bufferSize.value_or(kDefaultBufferSize));
 
     RtAudio::StreamOptions streamOptions;
     streamOptions.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
