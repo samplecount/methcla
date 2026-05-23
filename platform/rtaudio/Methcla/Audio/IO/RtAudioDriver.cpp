@@ -46,16 +46,15 @@ RtAudioDriver::RtAudioDriver(Options options)
     RtAudio::StreamParameters  iParams, oParams;
     RtAudio::StreamParameters* iParamsPtr = nullptr;
 
+    iParams.deviceId = m_audio.getDefaultInputDevice();
     if (!options.numInputs.has_value())
     {
-        iParams.deviceId = m_audio.getDefaultInputDevice();
         iParams.nChannels =
             m_audio.getDeviceInfo(iParams.deviceId).inputChannels;
         iParamsPtr = &iParams;
     }
     else if (*options.numInputs > 0)
     {
-        iParams.deviceId = m_audio.getDefaultInputDevice();
         const auto available = std::max(
             0u, m_audio.getDeviceInfo(iParams.deviceId).inputChannels);
         // clamp to number of available channels
@@ -65,15 +64,9 @@ RtAudioDriver::RtAudioDriver(Options options)
     }
 
     oParams.deviceId = m_audio.getDefaultOutputDevice();
-    if (!options.numOutputs.has_value())
-    {
-        oParams.nChannels =
-            m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
-    }
-    else
-    {
-        oParams.nChannels = static_cast<unsigned int>(*options.numOutputs);
-    }
+    oParams.nChannels = options.numOutputs.has_value()
+        ? static_cast<unsigned int>(*options.numOutputs)
+        : m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
 
     const unsigned int sampleRate = options.sampleRate.value_or(44100);
     unsigned int bufferFrames = static_cast<unsigned int>(options.bufferSize.value_or(kDefaultBufferSize));
