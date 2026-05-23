@@ -45,7 +45,7 @@ TEST(Methcla_Engine, Freeing_invalid_node_id_should_not_crash)
     auto engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine());
 
     engine->start();
-    engine->free(-1);
+    engine->free(Methcla::NodeId(-1));
     sleepFor(0.25);
 }
 
