@@ -94,3 +94,4 @@ Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `doc
 - Before changing build structure or dependencies, check `docs/adr/` for prior decisions.
 - When working with synth, node, or bus commands, consult `docs/osc-api.md`.
 - For audio routing and node tree structure, see `docs/architecture.md`.
+- Follow `docs/coding-style.md` for all code changes.

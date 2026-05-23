@@ -19,7 +19,7 @@ Always build and run tests before submitting changes.
 
 ## Code style
 
-Match the style of the surrounding code. C++17, C99. No new dependencies without discussion.
+See [`docs/coding-style.md`](docs/coding-style.md). C++17, C99. No new dependencies without discussion.
 
 ## Changelog
 
