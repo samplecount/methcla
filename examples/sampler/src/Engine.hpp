@@ -28,9 +28,15 @@ namespace Methcla { namespace Examples { namespace Sampler {
     public:
         Sound(const Methcla::Engine& engine, const std::string& path);
 
-        const std::string& path() const { return m_path; }
+        const std::string& path() const
+        {
+            return m_path;
+        }
 
-        float duration() const { return m_duration; }
+        float duration() const
+        {
+            return m_duration;
+        }
 
     private:
         std::string m_path;
@@ -48,7 +54,10 @@ namespace Methcla { namespace Examples { namespace Sampler {
                std::pow(outMax / outMin, (x - inMin) / (inMax - inMin));
     }
 
-    template <typename T> T dbamp(T db) { return std::pow(T(10), db / T(20)); }
+    template <typename T> T dbamp(T db)
+    {
+        return std::pow(T(10), db / T(20));
+    }
 
     class Engine
     {
@@ -82,7 +91,10 @@ namespace Methcla { namespace Examples { namespace Sampler {
         void stopVoice(VoiceId voice);
 
     private:
-        Methcla::Engine& engine() { return *m_engine; }
+        Methcla::Engine& engine()
+        {
+            return *m_engine;
+        }
 
     private:
         std::vector<Sound>                            m_sounds;

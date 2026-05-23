@@ -159,9 +159,15 @@ int JackDriver::processCallback(jack_nframes_t nframes, void* arg)
     return 0;
 }
 
-void JackDriver::start() { jack_activate(m_jackClient); }
+void JackDriver::start()
+{
+    jack_activate(m_jackClient);
+}
 
-void JackDriver::stop() { jack_deactivate(m_jackClient); }
+void JackDriver::stop()
+{
+    jack_deactivate(m_jackClient);
+}
 
 Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {

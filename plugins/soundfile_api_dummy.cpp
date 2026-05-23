@@ -139,7 +139,7 @@ static Methcla_Error soundfile_open(Methcla_SoundFileAPI* /*api*/,
     std::default_random_engine         generator;
     std::uniform_int_distribution<int> channelDist(1, 2);
     std::uniform_int_distribution<int> framesDist(static_cast<int>(0.1 * 44100),
-                                                   static_cast<int>(10 * 44100));
+                                                  static_cast<int>(10 * 44100));
 
     SoundFileHandle* handle = (SoundFileHandle*)malloc(sizeof(SoundFileHandle));
     if (handle == nullptr)
@@ -177,8 +177,8 @@ static Methcla_Error soundfile_open(Methcla_SoundFileAPI* /*api*/,
 static Methcla_SoundFileAPI kSoundFileAPI = {nullptr, nullptr, soundfile_open};
 
 METHCLA_EXPORT Methcla_Library*
-               METHCLA_PLUGIN_LOAD(methcla_soundfile_api_dummy)(Methcla_Host* host,
-                                                     const char*)
+METHCLA_PLUGIN_LOAD(methcla_soundfile_api_dummy)(Methcla_Host* host,
+                                                 const char*)
 {
     methcla_host_register_soundfile_api(host, &kSoundFileAPI);
     return nullptr;

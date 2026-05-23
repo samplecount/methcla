@@ -31,17 +31,35 @@ namespace Methcla { namespace Audio {
         , m_data(makeBuffers(m_numChannels, m_numFrames))
         {}
 
-        ~MultiChannelBuffer() { freeBuffers(m_numChannels, m_data); }
+        ~MultiChannelBuffer()
+        {
+            freeBuffers(m_numChannels, m_data);
+        }
 
-        size_t numChannels() const { return m_numChannels; }
+        size_t numChannels() const
+        {
+            return m_numChannels;
+        }
 
-        size_t numFrames() const { return m_numFrames; }
+        size_t numFrames() const
+        {
+            return m_numFrames;
+        }
 
-        size_t numSamples() const { return numChannels() * numFrames(); }
+        size_t numSamples() const
+        {
+            return numChannels() * numFrames();
+        }
 
-        Methcla_AudioSample* const* data() { return m_data; }
+        Methcla_AudioSample* const* data()
+        {
+            return m_data;
+        }
 
-        const Methcla_AudioSample* const* data() const { return m_data; }
+        const Methcla_AudioSample* const* data() const
+        {
+            return m_data;
+        }
 
         void deinterleave(const Methcla_AudioSample* src, size_t srcFrames)
         {
@@ -114,5 +132,5 @@ namespace Methcla { namespace Audio {
         Methcla_AudioSample** m_data;
     };
 
-}}     // namespace Methcla::Audio
+}} // namespace Methcla::Audio
 #endif // METHCLA_AUDIO_MULTICHANNELBUFFER_HPP_INCLUDED

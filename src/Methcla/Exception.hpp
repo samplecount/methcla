@@ -36,7 +36,10 @@ namespace Methcla {
         , m_message(message)
         {}
 
-        Methcla_ErrorCode errorCode() const noexcept { return m_code; }
+        Methcla_ErrorCode errorCode() const noexcept
+        {
+            return m_code;
+        }
 
         const char* errorMessage() const noexcept
         {
@@ -44,7 +47,10 @@ namespace Methcla {
                                      : m_message.c_str();
         }
 
-        const char* what() const noexcept override { return errorMessage(); }
+        const char* what() const noexcept override
+        {
+            return errorMessage();
+        }
     };
 } // namespace Methcla
 

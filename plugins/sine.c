@@ -116,8 +116,8 @@ static const Methcla_SynthDef descriptor = {METHCLA_PLUGINS_SINE_URI,
 static Methcla_Library library = {NULL, NULL};
 
 METHCLA_EXPORT Methcla_Library*
-               METHCLA_PLUGIN_LOAD(methcla_plugins_sine)(Methcla_Host* host,
-                                              const char*   bundlePath)
+METHCLA_PLUGIN_LOAD(methcla_plugins_sine)(Methcla_Host* host,
+                                          const char*   bundlePath)
 {
     methcla_host_register_synthdef(host, &descriptor);
     return &library;

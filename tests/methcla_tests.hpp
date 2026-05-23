@@ -31,11 +31,11 @@
 
 #include "gtest/gtest.h"
 
-#define PRINTF(...)                      \
-    do                                   \
-    {                                    \
-        printf("[          ] ");         \
-        printf(__VA_ARGS__);             \
+#define PRINTF(...)              \
+    do                           \
+    {                            \
+        printf("[          ] "); \
+        printf(__VA_ARGS__);     \
     } while (0)
 
 #define TEST_COUT Methcla::Tests::TestCout()

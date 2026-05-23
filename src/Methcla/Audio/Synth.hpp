@@ -55,7 +55,10 @@ namespace Methcla { namespace Audio {
         , m_bus(nullptr)
         {}
 
-        Methcla_PortCount index() const { return m_index; }
+        Methcla_PortCount index() const
+        {
+            return m_index;
+        }
 
         bool connect(Bus* bus, Methcla_BusMappingFlags flags)
         {
@@ -70,8 +73,14 @@ namespace Methcla { namespace Audio {
         }
 
     protected:
-        Methcla_BusMappingFlags flags() const { return m_flags; }
-        Bus*                    bus() { return m_bus; }
+        Methcla_BusMappingFlags flags() const
+        {
+            return m_flags;
+        }
+        Bus* bus()
+        {
+            return m_bus;
+        }
     };
 
     class AudioInputConnection : public Connection<AudioBus>
@@ -177,20 +186,32 @@ namespace Methcla { namespace Audio {
         // Convert Methcla_Synth to Synth.
         static Synth* fromSynth(Methcla_Synth* synth);
 
-        virtual bool isSynth() const override { return true; }
+        virtual bool isSynth() const override
+        {
+            return true;
+        }
 
         //* Return this synth's SynthDef.
-        const SynthDef& synthDef() const { return m_synthDef; }
+        const SynthDef& synthDef() const
+        {
+            return m_synthDef;
+        }
 
         //* Return number of audio inputs.
-        Methcla_PortCount numAudioInputs() const { return m_numAudioInputs; }
+        Methcla_PortCount numAudioInputs() const
+        {
+            return m_numAudioInputs;
+        }
 
         //* Map input to bus.
         void mapInput(Methcla_PortCount input, const AudioBusId& busId,
                       Methcla_BusMappingFlags flags);
 
         //* Return number of audio outputs.
-        Methcla_PortCount numAudioOutputs() const { return m_numAudioOutputs; }
+        Methcla_PortCount numAudioOutputs() const
+        {
+            return m_numAudioOutputs;
+        }
 
         //* Map output to bus.
         void mapOutput(Methcla_PortCount output, const AudioBusId& busId,
@@ -227,7 +248,10 @@ namespace Methcla { namespace Audio {
         void activate(double sampleOffset = 0.);
 
         /// Sample offset for sample accurate synth scheduling.
-        float sampleOffset() const { return static_cast<float>(m_sampleOffset); }
+        float sampleOffset() const
+        {
+            return static_cast<float>(m_sampleOffset);
+        }
 
     private:
         enum State

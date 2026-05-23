@@ -143,7 +143,10 @@ Engine::~Engine()
     delete m_engine;
 }
 
-size_t Engine::numSounds() const { return m_sounds.size(); }
+size_t Engine::numSounds() const
+{
+    return m_sounds.size();
+}
 
 void Engine::useDisk(bool flag)
 {

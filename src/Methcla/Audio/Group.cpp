@@ -19,13 +19,13 @@
 
 using namespace Methcla::Audio;
 
-#define METHCLA_ASSERT_NODE_IS_BLANK(node)   \
-    assert(node != nullptr);           \
-    assert(node->m_parent == nullptr); \
-    assert(node->m_prev == nullptr);   \
+#define METHCLA_ASSERT_NODE_IS_BLANK(node) \
+    assert(node != nullptr);               \
+    assert(node->m_parent == nullptr);     \
+    assert(node->m_prev == nullptr);       \
     assert(node->m_next == nullptr);
 
-#define METHCLA_ASSERT_NODE_IS_LINKED(node)                   \
+#define METHCLA_ASSERT_NODE_IS_LINKED(node)             \
     assert(m_first != nullptr);                         \
     assert(m_last != nullptr);                          \
     assert(node != nullptr);                            \
@@ -40,7 +40,10 @@ Group::Group(Environment& env, NodeId nodeId)
 , m_last(nullptr)
 {}
 
-Group::~Group() { freeAll(); }
+Group::~Group()
+{
+    freeAll();
+}
 
 Group* Group::construct(Environment& env, NodeId nodeId)
 {

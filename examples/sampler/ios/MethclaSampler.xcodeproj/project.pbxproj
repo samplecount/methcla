@@ -373,7 +373,7 @@
 				ARCHS = armv7;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MethclaSampler/MethclaSampler-Prefix.pch";
-				HEADER_SEARCH_PATHS = ../libs/tinydir;
+				HEADER_SEARCH_PATHS = ../../../external_libraries/tinydir;
 				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -387,7 +387,7 @@
 				ARCHS = armv7;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MethclaSampler/MethclaSampler-Prefix.pch";
-				HEADER_SEARCH_PATHS = ../libs/tinydir;
+				HEADER_SEARCH_PATHS = ../../../external_libraries/tinydir;
 				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";

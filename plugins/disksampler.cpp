@@ -813,7 +813,8 @@ inline size_t resample(float* out0, float* out1, size_t numFrames,
         bufferPhase += rate;
         filePhase += rate;
 
-        if constexpr (wrapPhase) {
+        if constexpr (wrapPhase)
+        {
             if (bufferPhase >= maxBufferPhase)
                 bufferPhase -= maxBufferPhase;
         }
@@ -954,8 +955,7 @@ static void process(Methcla_World* world, Methcla_Synth* synth,
     {
         case kIdle:
         case kFilling:
-        case kFinishing:
-        {
+        case kFinishing: {
             const size_t numFramesProduced =
                 withInterp
                     ? process_disk_interp(world, self, numFrames, amp, rate,
@@ -1017,9 +1017,9 @@ static const Methcla_SynthDef kDiskSamplerDef = {
 
 static Methcla_Library kDiskSamplerLibrary = {nullptr, nullptr};
 
-METHCLA_EXPORT Methcla_Library* METHCLA_PLUGIN_LOAD(
-    methcla_plugins_disksampler)(Methcla_Host* host,
-                                 const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+METHCLA_PLUGIN_LOAD(methcla_plugins_disksampler)(Methcla_Host* host,
+                                                 const char* /* bundlePath */)
 {
     methcla_host_register_synthdef(host, &kDiskSamplerDef);
     return &kDiskSamplerLibrary;

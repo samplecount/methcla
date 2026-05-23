@@ -22,14 +22,29 @@ namespace Methcla { namespace Audio {
     class Group : public Node
     {
     public:
-        const Node* first() const { return m_first; }
-        Node*       first() { return m_first; }
-        const Node* last() const { return m_last; }
-        Node*       last() { return m_last; }
+        const Node* first() const
+        {
+            return m_first;
+        }
+        Node* first()
+        {
+            return m_first;
+        }
+        const Node* last() const
+        {
+            return m_last;
+        }
+        Node* last()
+        {
+            return m_last;
+        }
 
         static Group* construct(Environment& env, NodeId nodeId);
 
-        virtual bool isGroup() const override { return true; }
+        virtual bool isGroup() const override
+        {
+            return true;
+        }
 
         bool isEmpty() const;
 

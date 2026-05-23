@@ -46,76 +46,79 @@ set(sources
     Methcla/Utility/MessageQueueInterface.hpp
     Methcla/Utility/Semaphore.cpp
     Methcla/Utility/Semaphore.hpp
-    Methcla/Utility/WorkerInterface.hpp
-)
+    Methcla/Utility/WorkerInterface.hpp)
 
 add_library(methcla ${sources})
 
-target_sources(methcla PUBLIC
-    FILE_SET HEADERS
-    BASE_DIRS ${METHCLA_SOURCE_DIR}/include
+target_sources(
+  methcla
+  PUBLIC
+    FILE_SET
+    HEADERS
+    BASE_DIRS
+    ${METHCLA_SOURCE_DIR}/include
     FILES
-        ${METHCLA_SOURCE_DIR}/include/methcla/common.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/detail.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/detail/result.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/engine.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/engine.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/file.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/file.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/log.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/log.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/platform/ios.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/platform/rtaudio.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugin.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugin.hpp
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/disksampler.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/node_control.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/patch_cable.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sampler.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sine.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_dummy.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_extaudiofile.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_libsndfile.h
-        ${METHCLA_SOURCE_DIR}/include/methcla/types.h
-)
+    ${METHCLA_SOURCE_DIR}/include/methcla/common.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/detail.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/detail/result.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/engine.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/engine.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/file.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/file.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/log.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/log.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/platform/ios.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/platform/rtaudio.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugin.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugin.hpp
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/disksampler.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/node_control.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/patch_cable.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sampler.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/sine.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_dummy.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_extaudiofile.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/plugins/soundfile_api_libsndfile.h
+    ${METHCLA_SOURCE_DIR}/include/methcla/types.h)
 
-target_include_directories(methcla PUBLIC
-    $<BUILD_INTERFACE:${METHCLA_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+target_include_directories(
+  methcla PUBLIC $<BUILD_INTERFACE:${METHCLA_SOURCE_DIR}/include>
+                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-install(TARGETS methcla EXPORT methclaTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+  TARGETS methcla
+  EXPORT methclaTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          FILE_SET HEADERS
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-target_include_directories(methcla PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ../external_libraries
-)
+target_include_directories(
+  methcla PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+                  ../external_libraries)
 
 if(METHCLA_ENABLE_RTAUDIO)
-    set(methcla_driver driver_rtaudio)
+  set(methcla_driver driver_rtaudio)
 else()
-    set(methcla_driver driver_dummy)
+  set(methcla_driver driver_dummy)
 endif()
 
-target_link_libraries(methcla
-    PUBLIC oscpp::oscpp
-    PRIVATE
-        $<BUILD_INTERFACE:boost_headers>
-        $<BUILD_INTERFACE:tinydir>
-        $<BUILD_INTERFACE:tlsf>
-        $<BUILD_INTERFACE:${methcla_driver}>)
+target_link_libraries(
+  methcla
+  PUBLIC oscpp::oscpp
+  PRIVATE $<BUILD_INTERFACE:boost_headers> $<BUILD_INTERFACE:tinydir>
+          $<BUILD_INTERFACE:tlsf> $<BUILD_INTERFACE:${methcla_driver}>)
 
-# GCC false positives triggered by third-party headers (boost::lockfree, tinydir)
-target_compile_options(methcla PRIVATE
+# GCC false positives triggered by third-party headers (boost::lockfree,
+# tinydir)
+target_compile_options(
+  methcla
+  PRIVATE
     "$<$<CXX_COMPILER_ID:GNU>:-Wno-array-bounds;-Wno-stringop-overflow;-Wno-restrict>"
 )
 
-if (LINUX)
-    target_link_libraries(methcla PUBLIC atomic dl pthread)
-endif ()
+if(LINUX)
+  target_link_libraries(methcla PUBLIC atomic dl pthread)
+endif()
 
 methcla_target_warnings(methcla)
 

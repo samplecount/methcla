@@ -51,7 +51,10 @@ namespace Methcla { namespace Audio {
             return m_refs;
         }
 
-        inline void retain() { m_refs++; }
+        inline void retain()
+        {
+            m_refs++;
+        }
 
         inline void release()
         {
@@ -62,9 +65,13 @@ namespace Methcla { namespace Audio {
         }
 
     protected:
-        virtual ~Reference() {}
+        virtual ~Reference()
+        {}
 
-        virtual void free() { delete this; }
+        virtual void free()
+        {
+            delete this;
+        }
 
     private:
         int m_refs;
@@ -82,11 +89,20 @@ namespace Methcla { namespace Audio {
         {}
 
         /// Access environment.
-        const Environment& env() const { return m_env; }
-        Environment&       env() { return m_env; }
+        const Environment& env() const
+        {
+            return m_env;
+        }
+        Environment& env()
+        {
+            return m_env;
+        }
 
         /// Return unique id.
-        Id id() const { return m_id; }
+        Id id() const
+        {
+            return m_id;
+        }
 
     private:
         Environment& m_env;
@@ -110,7 +126,10 @@ namespace Methcla { namespace Audio {
         ResourceMap(const ResourceMap&) = delete;
         ResourceMap& operator=(const ResourceMap&) = delete;
 
-        size_t size() const { return m_elems.size(); }
+        size_t size() const
+        {
+            return m_elems.size();
+        }
 
         bool contains(Id id) const
         {
@@ -142,7 +161,10 @@ namespace Methcla { namespace Audio {
             }
         }
 
-        void remove(Id id) { m_elems[id] = nullptr; }
+        void remove(Id id)
+        {
+            m_elems[id] = nullptr;
+        }
 
         Pointer lookup(Id id)
         {

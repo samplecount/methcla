@@ -58,8 +58,8 @@ namespace Methcla { namespace Audio {
 
         //* Return port descriptor at index.
         bool portDescriptor(const Methcla_SynthOptions* options,
-                            Methcla_PortCount index,
-                            Methcla_PortDescriptor* port) const;
+                            Methcla_PortCount           index,
+                            Methcla_PortDescriptor*     port) const;
 
         void construct(Methcla_World*              world,
                        const Methcla_SynthOptions* options,

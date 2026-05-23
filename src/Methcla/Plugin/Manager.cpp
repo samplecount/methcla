@@ -1,8 +1,8 @@
 #include "Methcla/Plugin/Manager.hpp"
 
-#include <tinydir.h>
-
 #include <stdexcept>
+
+#include <tinydir.h>
 
 using namespace Methcla::Plugin;
 

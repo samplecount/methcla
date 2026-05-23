@@ -3,6 +3,15 @@ on:
   pull_request:
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+      - uses: pre-commit/action@v3.0.1
+
   build:
     strategy:
       matrix:
@@ -58,12 +67,16 @@ jobs:
           cmake --build build/consumer-b --config ${{ matrix.build_type }}
 
   all-passed:
-    needs: build
+    needs: [pre-commit, build]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check all matrix jobs passed
         run: |
+          if [ "${{ needs.pre-commit.result }}" != "success" ]; then
+            echo "pre-commit failed"
+            exit 1
+          fi
           if [ "${{ needs.build.result }}" != "success" ]; then
             echo "build matrix failed"
             exit 1

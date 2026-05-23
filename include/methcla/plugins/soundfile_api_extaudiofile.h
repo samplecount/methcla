@@ -19,6 +19,6 @@
 #include <methcla/plugin.h>
 
 METHCLA_EXPORT Methcla_Library*
-               methcla_soundfile_api_extaudiofile(Methcla_Host*, const char*);
+methcla_soundfile_api_extaudiofile(Methcla_Host*, const char*);
 
 #endif // METHCLA_SOUNDFILEAPI_EXTAUDIOFILE_H_INCLUDED

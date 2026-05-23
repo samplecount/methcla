@@ -33,7 +33,8 @@ int main(int argc, const char* const* argv)
             int32_t rawSize;
             if (fread(&rawSize, sizeof(rawSize), 1, file) != 1)
                 break;
-            const size_t size = static_cast<size_t>(OSCPP::convert32<OSCPP::NetworkByteOrder>(rawSize));
+            const size_t size = static_cast<size_t>(
+                OSCPP::convert32<OSCPP::NetworkByteOrder>(rawSize));
             if (buffer.size() < size)
                 buffer.resize(size);
             const size_t n = fread(buffer.data(), 1, size, file);

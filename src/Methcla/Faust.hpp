@@ -30,7 +30,8 @@ namespace Faust {
     class UI
     {
     public:
-        virtual ~UI() {}
+        virtual ~UI()
+        {}
 
         // -- widget's layouts
 
@@ -68,7 +69,8 @@ namespace Faust {
 
         // -- metadata declarations
 
-        virtual void declare(float*, const char*, const char*) {}
+        virtual void declare(float*, const char*, const char*)
+        {}
     };
 
     class dsp
@@ -77,7 +79,8 @@ namespace Faust {
         int fSamplingFreq;
 
     public:
-        virtual ~dsp() {}
+        virtual ~dsp()
+        {}
 
         virtual int  getNumInputs() = 0;
         virtual int  getNumOutputs() = 0;

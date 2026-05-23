@@ -26,10 +26,22 @@ namespace Methcla { namespace Audio { namespace IO {
         RemoteIODriver(Options options, bool initializeAudioSession = true);
         virtual ~RemoteIODriver();
 
-        virtual double sampleRate() const override { return m_sampleRate; }
-        virtual size_t numInputs() const override { return m_numInputs; }
-        virtual size_t numOutputs() const override { return m_numOutputs; }
-        virtual size_t bufferSize() const override { return m_bufferSize; }
+        virtual double sampleRate() const override
+        {
+            return m_sampleRate;
+        }
+        virtual size_t numInputs() const override
+        {
+            return m_numInputs;
+        }
+        virtual size_t numOutputs() const override
+        {
+            return m_numOutputs;
+        }
+        virtual size_t bufferSize() const override
+        {
+            return m_bufferSize;
+        }
 
         virtual Methcla_Time currentTime() override;
 

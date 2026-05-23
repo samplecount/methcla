@@ -125,8 +125,9 @@ namespace {
     std::string toLower(const std::string& s)
     {
         std::string result(s);
-        std::transform(result.begin(), result.end(), result.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::transform(
+            result.begin(), result.end(), result.begin(),
+            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         return result;
     }
 
@@ -201,14 +202,14 @@ namespace {
     }
 
     METHCLA_C_LINKAGE size_t
-                      methcla_api_world_block_size(const Methcla_World* world)
+    methcla_api_world_block_size(const Methcla_World* world)
     {
         assert(world && world->handle);
         return static_cast<Environment*>(world->handle)->blockSize();
     }
 
     METHCLA_C_LINKAGE Methcla_Time
-                      methcla_api_world_current_time(const Methcla_World* world)
+    methcla_api_world_current_time(const Methcla_World* world)
     {
         assert(world != nullptr);
         assert(world->handle != nullptr);

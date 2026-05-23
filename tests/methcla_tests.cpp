@@ -47,7 +47,8 @@ std::string Methcla::Tests::outputFile(const std::string& name)
 namespace test_Methcla_Utility_Worker {
     struct Command
     {
-        void perform() {}
+        void perform()
+        {}
     };
 }; // namespace test_Methcla_Utility_Worker
 

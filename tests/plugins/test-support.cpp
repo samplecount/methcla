@@ -33,7 +33,10 @@ namespace {
 
     class TestStatsOptions
     {
-        void addStat(TestStatsType type) { m_stats[m_numStats++] = type; }
+        void addStat(TestStatsType type)
+        {
+            m_stats[m_numStats++] = type;
+        }
 
     public:
         TestStatsOptions(OSCPP::Server::ArgStream args)
@@ -68,7 +71,10 @@ namespace {
     public:
         typedef size_t Port;
 
-        static constexpr size_t numPorts() { return 2; }
+        static constexpr size_t numPorts()
+        {
+            return 2;
+        }
 
         static Methcla_PortDescriptor descriptor(Port port)
         {
@@ -104,9 +110,15 @@ namespace {
             }
         }
 
-        TestStatsType type() const { return kTestStat_MaxAbsAmp; }
+        TestStatsType type() const
+        {
+            return kTestStat_MaxAbsAmp;
+        }
 
-        float result() const { return m_result; }
+        float result() const
+        {
+            return m_result;
+        }
     };
 
     class TestStats
@@ -215,8 +227,8 @@ namespace {
 }; // namespace
 
 METHCLA_EXPORT const Methcla_Library*
-                     methcla_plugins_test_support(const Methcla_Host* host,
-                                                  const char* /* bundlePath */)
+methcla_plugins_test_support(const Methcla_Host* host,
+                             const char* /* bundlePath */)
 {
     kTestStatsDef(host, METHCLA_PLUGINS_TEST_STATS_URI);
     return &library;

@@ -30,11 +30,20 @@ namespace Methcla { namespace detail {
         : m_id(other.m_id)
         {}
 
-        T id() const { return m_id; }
+        T id() const
+        {
+            return m_id;
+        }
 
-        bool operator==(const D& other) const { return m_id == other.m_id; }
+        bool operator==(const D& other) const
+        {
+            return m_id == other.m_id;
+        }
 
-        bool operator!=(const D& other) const { return m_id != other.m_id; }
+        bool operator!=(const D& other) const
+        {
+            return m_id != other.m_id;
+        }
 
     private:
         T m_id;
@@ -73,7 +82,10 @@ namespace Methcla { namespace detail {
         }
     }
 
-    inline static void checkReturnCode(Methcla_Error err) { throwError(err); }
+    inline static void checkReturnCode(Methcla_Error err)
+    {
+        throwError(err);
+    }
 
     template <typename T> T combineFlags(T a, T b)
     {

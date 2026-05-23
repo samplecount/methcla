@@ -164,7 +164,10 @@ namespace Methcla { namespace detail {
             }
         }
 
-        void get() { wait(); }
+        void get()
+        {
+            wait();
+        }
     };
 }} // namespace Methcla::detail
 

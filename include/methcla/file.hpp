@@ -45,9 +45,15 @@ namespace Methcla {
             file_format = info.file_format;
         }
 
-        int64_t samples() const { return channels * frames; }
+        int64_t samples() const
+        {
+            return channels * frames;
+        }
 
-        double duration() const { return (double)frames / (double)samplerate; }
+        double duration() const
+        {
+            return (double)frames / (double)samplerate;
+        }
     };
 
     class SoundFile
@@ -126,9 +132,15 @@ namespace Methcla {
                 methcla_soundfile_close(m_file);
         }
 
-        operator bool() const { return m_file != nullptr; }
+        operator bool() const
+        {
+            return m_file != nullptr;
+        }
 
-        const SoundFileInfo& info() const { return m_info; }
+        const SoundFileInfo& info() const
+        {
+            return m_info;
+        }
 
         void close()
         {
