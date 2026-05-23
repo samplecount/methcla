@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.0]
-
 ### Added
 
+- Playback rate control to disksampler
+- Node placement options to node creation API commands (`Methcla::NodePlacement`)
+- `methcla_world_synth_done` function to plugin API to notify the engine when processing is finished
+- `operator bool` to `Methcla::NodeId`
+- `Methcla::Engine::nodeEndedHandler` API method returning `/node/ended` notification handler
+- `ExponentialFade` plugin (`METHCLA_PLUGINS_EXPONENTIAL_FADE_URI`) to `methcla_plugins_node_control` library
 - Install and export CMake targets; `methcla::methcla` now available via `find_package` (#123)
 - `METHCLA_BUILD_TESTS` CMake option, defaults to on when building as top-level project (#122)
 - CMake presets (`debug`, `release`) replacing ad-hoc build configuration
@@ -32,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Bus zeroing logic (#102)
+- Bug in linked list implementation when adding a node before or after an existing node
 - Rounding, float precision, and type safety issues (#135)
 - Implicit `NodeId` conversions broken by explicit constructor (#81)
 - Missing `#include` directives causing build failures with GCC 13 and recent Clang
@@ -39,29 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `Methcla_Resource` from plugin API: removed argument from `Methcla_SynthDef::construct`; renamed `methcla_world_resource_retain`/`methcla_world_resource_release` to `methcla_world_synth_retain`/`methcla_world_synth_release`
 - Dead platform code and unused vendored libraries (Android, iOS, PNaCl, NaCl) (#128)
 - `VERSION` file (version is solely in `CMakeLists.txt`)
 - Stale `doc/Notes.md` and `doc/diagrams/`
-
-## [0.3.0]
-
-### Added
-
-- Playback rate control to disksampler
-- Node placement options to node creation API commands (`Methcla::NodePlacement`)
-- `methcla_world_synth_done` function to plugin API to notify the engine when processing is finished
-- `operator bool` to `Methcla::NodeId`
-- `Methcla::Engine::nodeEndedHandler` API method returning `/node/ended` notification handler
-- `ExponentialFade` plugin (`METHCLA_PLUGINS_EXPONENTIAL_FADE_URI`) to `methcla_plugins_node_control` library
-
-### Fixed
-
-- Bus zeroing logic (#102)
-- Bug in linked list implementation when adding a node before or after an existing node
-
-### Removed
-
-- `Methcla_Resource` from plugin API: removed argument from `Methcla_SynthDef::construct`; renamed `methcla_world_resource_retain`/`methcla_world_resource_release` to `methcla_world_synth_retain`/`methcla_world_synth_release`
 
 ## [0.2.0]
 
@@ -78,7 +65,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed `Methcla::Engine::freeNode` to `Methcla::Engine::free`
 - Moved plugin includes to `<methcla/plugins/*>`
 
-[unreleased]: https://github.com/samplecount/methcla/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/samplecount/methcla/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/samplecount/methcla/compare/v0.2.0...v0.3.0
+[unreleased]: https://github.com/samplecount/methcla/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/samplecount/methcla/releases/tag/v0.2.0
