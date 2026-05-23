@@ -29,7 +29,7 @@ using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Securit
 ## Releasing
 
 1. Ensure `## [Unreleased]` in `CHANGELOG.md` is up to date.
-2. Run `tools/release.py <version>` (e.g. `tools/release.py 1.2.3`).
+2. Run `scripts/release.py <version>` (e.g. `scripts/release.py 1.2.3`).
    - Bumps the version in `CMakeLists.txt`
    - Moves `[Unreleased]` content to `[version]` in `CHANGELOG.md`
    - Commits both files and creates an annotated git tag
