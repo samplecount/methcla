@@ -29,13 +29,10 @@ using namespace Methcla::Audio::IO;
 
 DummyDriver::DummyDriver(Options options)
 : Driver(options)
-, m_sampleRate(options.sampleRate >= 0 ? options.sampleRate
-                                       : kDefaultSampleRate)
-, m_numInputs(options.numInputs >= 0 ? options.numInputs : kDefaultNumInputs)
-, m_numOutputs(options.numOutputs >= 0 ? options.numOutputs
-                                       : kDefaultNumOutputs)
-, m_bufferSize(options.bufferSize >= 0 ? options.bufferSize
-                                       : kDefaultBufferSize)
+, m_sampleRate(options.sampleRate.value_or(kDefaultSampleRate))
+, m_numInputs(options.numInputs.value_or(kDefaultNumInputs))
+, m_numOutputs(options.numOutputs.value_or(kDefaultNumOutputs))
+, m_bufferSize(options.bufferSize.value_or(kDefaultBufferSize))
 {
     assert(m_sampleRate > 0);
     assert(m_numOutputs > 0);

@@ -22,6 +22,7 @@
 #include <methcla/common.h>
 #include <methcla/platform/rtaudio.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <limits>
@@ -45,42 +46,30 @@ RtAudioDriver::RtAudioDriver(Options options)
     RtAudio::StreamParameters  iParams, oParams;
     RtAudio::StreamParameters* iParamsPtr = nullptr;
 
-    if (options.numInputs == -1)
+    iParams.deviceId = m_audio.getDefaultInputDevice();
+    if (!options.numInputs.has_value())
     {
-        iParams.deviceId = m_audio.getDefaultInputDevice();
-        iParams.nChannels = options.numInputs =
+        iParams.nChannels =
             m_audio.getDeviceInfo(iParams.deviceId).inputChannels;
         iParamsPtr = &iParams;
     }
-    else if (options.numInputs > 0)
+    else if (*options.numInputs > 0)
     {
-        iParams.deviceId = m_audio.getDefaultInputDevice();
-        int available = m_audio.getDeviceInfo(iParams.deviceId).inputChannels;
+        const auto available = std::max(
+            0u, m_audio.getDeviceInfo(iParams.deviceId).inputChannels);
         // clamp to number of available channels
-        if (options.numInputs <= available)
-            iParams.nChannels = options.numInputs;
-        else
-            iParams.nChannels = options.numInputs = available;
+        iParams.nChannels = std::min(static_cast<unsigned int>(*options.numInputs), available);
         if (0 < iParams.nChannels)
             iParamsPtr = &iParams;
     }
 
-    if (options.numOutputs == -1)
-    {
-        oParams.deviceId = m_audio.getDefaultOutputDevice();
-        oParams.nChannels = options.numOutputs =
-            m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
-    }
-    else
-    {
-        oParams.deviceId = m_audio.getDefaultOutputDevice();
-        oParams.nChannels = options.numOutputs;
-    }
+    oParams.deviceId = m_audio.getDefaultOutputDevice();
+    oParams.nChannels = options.numOutputs.has_value()
+        ? static_cast<unsigned int>(*options.numOutputs)
+        : m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
 
-    const unsigned int sampleRate =
-        options.sampleRate == -1 ? 44100 : options.sampleRate;
-    unsigned int bufferFrames =
-        options.bufferSize == -1 ? kDefaultBufferSize : options.bufferSize;
+    const unsigned int sampleRate = options.sampleRate.value_or(44100);
+    unsigned int bufferFrames = static_cast<unsigned int>(options.bufferSize.value_or(kDefaultBufferSize));
 
     RtAudio::StreamOptions streamOptions;
     streamOptions.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
