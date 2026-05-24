@@ -1,16 +1,5 @@
 {
-  "buildPresets": [
-    {
-      "configurePreset": "debug",
-      "displayName": "Debug",
-      "name": "debug"
-    },
-    {
-      "configurePreset": "release",
-      "displayName": "Release",
-      "name": "release"
-    }
-  ],
+  "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
     "minor": 24,
@@ -18,39 +7,50 @@
   },
   "configurePresets": [
     {
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "generator": "Unix Makefiles",
+      "name": "base",
       "hidden": true,
-      "name": "base"
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
     {
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      },
+      "name": "debug",
       "displayName": "Debug",
       "inherits": "base",
-      "name": "debug"
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
     },
     {
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      },
+      "name": "release",
       "displayName": "Release",
       "inherits": "base",
-      "name": "release"
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "configurePreset": "release"
     }
   ],
   "testPresets": [
     {
-      "configurePreset": "debug",
+      "name": "debug",
       "displayName": "Debug",
-      "name": "debug"
+      "configurePreset": "debug"
     },
     {
-      "configurePreset": "release",
+      "name": "release",
       "displayName": "Release",
-      "name": "release"
+      "configurePreset": "release"
     }
-  ],
-  "version": 3
+  ]
 }
