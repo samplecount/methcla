@@ -53,12 +53,15 @@ namespace Methcla { namespace Utility {
                 throw std::runtime_error("Message queue overflow");
         }
 
-        bool next(T& msg) override { return m_queue.pop(msg); }
+        bool next(T& msg) override
+        {
+            return m_queue.pop(msg);
+        }
 
     private:
         typedef methcla_boost::lockfree::spsc_queue<T> Queue;
-        Queue                                  m_queue;
-        std::mutex                             m_mutex;
+        Queue                                          m_queue;
+        std::mutex                                     m_mutex;
     };
 
     template <class Command> class Transport
@@ -68,7 +71,8 @@ namespace Methcla { namespace Utility {
         : m_queue(queueSize)
         , m_needsLock(needsLock)
         {}
-        virtual ~Transport() {}
+        virtual ~Transport()
+        {}
 
         Transport(const Transport&) = delete;
         Transport& operator=(const Transport&) = delete;
@@ -98,11 +102,20 @@ namespace Methcla { namespace Utility {
     protected:
         typedef methcla_boost::lockfree::spsc_queue<Command> Queue;
 
-        Queue& queue() { return m_queue; }
+        Queue& queue()
+        {
+            return m_queue;
+        }
 
-        bool needsLock() const { return m_needsLock; }
+        bool needsLock() const
+        {
+            return m_needsLock;
+        }
 
-        std::mutex& mutex() { return m_mutex; }
+        std::mutex& mutex()
+        {
+            return m_mutex;
+        }
 
         void sendCommand(const Command& cmd)
         {
@@ -172,7 +185,10 @@ namespace Methcla { namespace Utility {
             }
         }
 
-        bool dequeue(Command& cmd) override { return this->queue().pop(cmd); }
+        bool dequeue(Command& cmd) override
+        {
+            return this->queue().pop(cmd);
+        }
     };
 
     template <typename Command> class Worker : public WorkerInterface<Command>
@@ -187,21 +203,34 @@ namespace Methcla { namespace Utility {
         Worker(const Worker&) = delete;
         Worker& operator=(const Worker&) = delete;
 
-        size_t maxCapacity() const { return m_queueSize; }
+        size_t maxCapacity() const
+        {
+            return m_queueSize;
+        }
 
-        void sendToWorker(const Command& cmd) override { m_toWorker.send(cmd); }
+        void sendToWorker(const Command& cmd) override
+        {
+            m_toWorker.send(cmd);
+        }
 
         void sendFromWorker(const Command& cmd) override
         {
             m_fromWorker.send(cmd);
         }
 
-        void perform() override { m_fromWorker.performAll(); }
+        void perform() override
+        {
+            m_fromWorker.performAll();
+        }
 
     protected:
-        void work() { m_toWorker.performOne(); }
+        void work()
+        {
+            m_toWorker.performOne();
+        }
 
-        virtual void signalWorker() {}
+        virtual void signalWorker()
+        {}
 
     private:
         size_t              m_queueSize;
@@ -222,7 +251,10 @@ namespace Methcla { namespace Utility {
             }
         }
 
-        ~WorkerThread() { stop(); }
+        ~WorkerThread()
+        {
+            stop();
+        }
 
         void stop() override
         {
@@ -262,7 +294,10 @@ namespace Methcla { namespace Utility {
             }
         }
 
-        virtual void signalWorker() override { m_sem.post(); }
+        virtual void signalWorker() override
+        {
+            m_sem.post();
+        }
 
     private:
         Semaphore                m_sem;

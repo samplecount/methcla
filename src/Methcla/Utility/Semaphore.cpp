@@ -63,7 +63,10 @@ Semaphore::~Semaphore()
     delete m_impl;
 }
 
-void Semaphore::post() { zix_sem_post(m_impl); }
+void Semaphore::post()
+{
+    zix_sem_post(m_impl);
+}
 
 void Semaphore::wait()
 {
@@ -71,7 +74,10 @@ void Semaphore::wait()
     check(status);
 }
 
-bool Semaphore::tryWait() { return zix_sem_try_wait(m_impl); }
+bool Semaphore::tryWait()
+{
+    return zix_sem_try_wait(m_impl);
+}
 
 #else // !METHCLA_USE_CV_SEMAPHORE
 #    include <condition_variable>
@@ -132,13 +138,25 @@ namespace Methcla { namespace Utility {
         m_impl = new detail::SemaphoreImpl(initial);
     }
 
-    Semaphore::~Semaphore() { delete m_impl; }
+    Semaphore::~Semaphore()
+    {
+        delete m_impl;
+    }
 
-    void Semaphore::post() { m_impl->post(); }
+    void Semaphore::post()
+    {
+        m_impl->post();
+    }
 
-    void Semaphore::wait() { m_impl->wait(); }
+    void Semaphore::wait()
+    {
+        m_impl->wait();
+    }
 
-    bool Semaphore::tryWait() { return m_impl->tryWait(); }
+    bool Semaphore::tryWait()
+    {
+        return m_impl->tryWait();
+    }
 
 }} // namespace Methcla::Utility
 

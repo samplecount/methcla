@@ -33,10 +33,22 @@ namespace Methcla { namespace Audio { namespace IO {
         DummyDriver(Options options);
         virtual ~DummyDriver();
 
-        virtual double sampleRate() const override { return m_sampleRate; }
-        virtual size_t numInputs() const override { return m_numInputs; }
-        virtual size_t numOutputs() const override { return m_numOutputs; }
-        virtual size_t bufferSize() const override { return m_bufferSize; }
+        virtual double sampleRate() const override
+        {
+            return m_sampleRate;
+        }
+        virtual size_t numInputs() const override
+        {
+            return m_numInputs;
+        }
+        virtual size_t numOutputs() const override
+        {
+            return m_numOutputs;
+        }
+        virtual size_t bufferSize() const override
+        {
+            return m_bufferSize;
+        }
 
         virtual void start() override;
         virtual void stop() override;

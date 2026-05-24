@@ -52,12 +52,10 @@ Synth::Synth(Environment& env, NodeId nodeId, const SynthDef& synthDef,
     m_audioBuffers = kBufferAlignment.align(audioBuffers);
 
     // Validate alignment
-    assert(
-        Alignment::isAligned(std::alignment_of<AudioInputConnection>::value,
-                             (uintptr_t)m_audioInputConnections));
-    assert(
-        Alignment::isAligned(std::alignment_of<AudioOutputConnection>::value,
-                             (uintptr_t)m_audioOutputConnections));
+    assert(Alignment::isAligned(std::alignment_of<AudioInputConnection>::value,
+                                (uintptr_t)m_audioInputConnections));
+    assert(Alignment::isAligned(std::alignment_of<AudioOutputConnection>::value,
+                                (uintptr_t)m_audioOutputConnections));
     assert(Alignment::isAligned(std::alignment_of<sample_t>::value,
                                 (uintptr_t)m_controlBuffers));
     assert(kBufferAlignment.isAligned(m_audioBuffers));
@@ -176,15 +174,15 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
     Methcla_PortCount      controlOutputIndex = 0;
     Methcla_PortCount      audioInputIndex = 0;
     Methcla_PortCount      audioOutputIndex = 0;
-    for (Methcla_PortCount i = 0; m_synthDef.portDescriptor(synthOptions, i, &port); i++)
+    for (Methcla_PortCount i = 0;
+         m_synthDef.portDescriptor(synthOptions, i, &port); i++)
     {
         switch (port.type)
         {
             case kMethcla_ControlPort:
                 switch (port.direction)
                 {
-                    case kMethcla_Input:
-                    {
+                    case kMethcla_Input: {
                         // Initialize with control value
                         m_controlBuffers[controlInputIndex] =
                             controls.next<float>();
@@ -193,8 +191,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
                         controlInputIndex++;
                     };
                     break;
-                    case kMethcla_Output:
-                    {
+                    case kMethcla_Output: {
                         sample_t* buffer =
                             &m_controlBuffers[numControlInputs() +
                                               controlOutputIndex];
@@ -207,8 +204,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
             case kMethcla_AudioPort:
                 switch (port.direction)
                 {
-                    case kMethcla_Input:
-                    {
+                    case kMethcla_Input: {
                         new (&m_audioInputConnections[audioInputIndex])
                             AudioInputConnection(audioInputIndex);
                         sample_t* buffer = m_audioBuffers +
@@ -218,8 +214,7 @@ void Synth::connectPorts(const Methcla_SynthOptions* synthOptions,
                         audioInputIndex++;
                     };
                     break;
-                    case kMethcla_Output:
-                    {
+                    case kMethcla_Output: {
                         new (&m_audioOutputConnections[audioOutputIndex])
                             AudioOutputConnection(audioOutputIndex);
                         sample_t* buffer =
@@ -361,7 +356,8 @@ void Synth::doProcess(size_t numFrames)
     }
     else if (m_flags.state == kStateActivating)
     {
-        const size_t sampleOffset = static_cast<size_t>(std::floor(m_sampleOffset));
+        const size_t sampleOffset =
+            static_cast<size_t>(std::floor(m_sampleOffset));
         assert(m_sampleOffset < (double)numFrames && sampleOffset < numFrames);
         const size_t remainingFrames = numFrames - sampleOffset;
 

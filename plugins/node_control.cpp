@@ -279,9 +279,10 @@ public:
                     const Methcla_SynthDef*,
                     const ExponentialFadeOptions& options)
     : m_state(kRunning)
-    , m_numFramesLeft(static_cast<size_t>(std::llround(options.duration * world.sampleRate())))
-    , m_growth(static_cast<float>(std::pow(options.endLevel / options.startLevel,
-                                           1.0 / m_numFramesLeft)))
+    , m_numFramesLeft(static_cast<size_t>(
+          std::llround(options.duration * world.sampleRate())))
+    , m_growth(static_cast<float>(std::pow(
+          options.endLevel / options.startLevel, 1.0 / m_numFramesLeft)))
     , m_level(options.startLevel)
     {
         std::fill(m_ports, m_ports + ExponentialFadePorts::numPorts(), nullptr);
@@ -341,9 +342,9 @@ static StaticSynthDef<ExponentialFade, ExponentialFadeOptions,
 
 static Methcla_Library library = {NULL, NULL};
 
-METHCLA_EXPORT Methcla_Library* METHCLA_PLUGIN_LOAD(
-    methcla_plugins_node_control)(Methcla_Host* host,
-                                  const char* /* bundlePath */)
+METHCLA_EXPORT Methcla_Library*
+METHCLA_PLUGIN_LOAD(methcla_plugins_node_control)(Methcla_Host* host,
+                                                  const char* /* bundlePath */)
 {
     kDoneAfterDef(host, METHCLA_PLUGINS_DONE_AFTER_URI);
     kASREnvelopeDef(host, METHCLA_PLUGINS_ASR_ENVELOPE_URI);

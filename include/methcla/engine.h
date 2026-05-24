@@ -91,7 +91,7 @@ typedef struct Methcla_PacketHandler
 typedef struct Methcla_EngineOptions Methcla_EngineOptions;
 
 METHCLA_EXPORT Methcla_Error
-               methcla_engine_options_new(Methcla_EngineOptions** engine_options);
+methcla_engine_options_new(Methcla_EngineOptions** engine_options);
 
 METHCLA_EXPORT void
 methcla_engine_options_free(Methcla_EngineOptions* engine_options);
@@ -187,7 +187,7 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine);
 
 //* Send an OSC packet to the engine.
 METHCLA_EXPORT Methcla_Error
-               methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet);
+methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet);
 
 //* Open a sound file.
 METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(

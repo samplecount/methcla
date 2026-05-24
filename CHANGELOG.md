@@ -24,8 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/osc-api.md` (moved from `doc/OSC API.md`)
 - `examples/README.md` describing the thADDeus and sampler examples
 
+### Removed
+
+- PNaCl test harness (`tests/pnacl/`, `examples/common/`)
+- Duplicate `tinydir` copy in `examples/sampler/libs/`; Xcode projects now reference `external_libraries/tinydir`
+
 ### Changed
 
+- Disabled clang-format for JavaScript files
 - Dependency management modernised: `FetchContent` for oscpp and googletest; Boost 1.91.0 vendored with `methcla_boost` namespace to avoid symbol collisions (#129)
 - C++ standard raised to C++17
 - `Driver::Options` channel and buffer size fields changed from `int` to `size_t` (#80)

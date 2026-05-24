@@ -2,10 +2,6 @@ if(METHCLA_ENABLE_RTAUDIO)
     add_subdirectory(rtaudio)
 else()
     add_library(driver_dummy OBJECT DummyPlatform.cpp)
-    target_include_directories(driver_dummy PRIVATE
-        ../include
-        ../src
-    )
+    target_include_directories(driver_dummy PRIVATE ../include ../src)
     methcla_target_warnings(driver_dummy)
 endif()
-

@@ -27,11 +27,11 @@
 #include <boost/heap/priority_queue.hpp>
 
 #include <cassert>
-#include <oscpp/print.hpp>
-#include <oscpp/util.hpp>
-
 #include <functional>
 #include <stdexcept>
+
+#include <oscpp/print.hpp>
+#include <oscpp/util.hpp>
 
 using namespace Methcla;
 using namespace Methcla::Audio;
@@ -140,8 +140,7 @@ static inline void addNodeToTarget(Node* target, Node* node,
 {
     switch (nodePlacement)
     {
-        case kMethcla_NodePlacementHeadOfGroup:
-        {
+        case kMethcla_NodePlacementHeadOfGroup: {
             Group* group = dynamic_cast<Group*>(target);
             if (group != nullptr)
             {
@@ -155,8 +154,7 @@ static inline void addNodeToTarget(Node* target, Node* node,
             }
         }
         break;
-        case kMethcla_NodePlacementTailOfGroup:
-        {
+        case kMethcla_NodePlacementTailOfGroup: {
             Group* group = dynamic_cast<Group*>(target);
             if (group != nullptr)
             {
@@ -566,7 +564,8 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                });
             }
 
-            synth->mapInput(static_cast<Methcla_PortCount>(index), AudioBusId(busId), flags);
+            synth->mapInput(static_cast<Methcla_PortCount>(index),
+                            AudioBusId(busId), flags);
         }
         else if (msg == "/synth/map/output")
         {
@@ -607,7 +606,8 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                });
             }
 
-            synth->mapOutput(static_cast<Methcla_PortCount>(index), AudioBusId(busId), flags);
+            synth->mapOutput(static_cast<Methcla_PortCount>(index),
+                             AudioBusId(busId), flags);
         }
         else if (msg == "/synth/property/doneFlags/set")
         {

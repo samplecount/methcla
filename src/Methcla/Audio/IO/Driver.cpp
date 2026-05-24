@@ -3,9 +3,13 @@
 using namespace Methcla::Audio::IO;
 using Methcla::Audio::sample_t;
 
-Driver::Driver(Options) { setProcessCallback(nullptr, nullptr); }
+Driver::Driver(Options)
+{
+    setProcessCallback(nullptr, nullptr);
+}
 
-Driver::~Driver() {}
+Driver::~Driver()
+{}
 
 void Driver::setProcessCallback(ProcessCallback callback, void* data)
 {
@@ -21,4 +25,7 @@ void Driver::process(Methcla_Time currentTime, size_t numFrames,
                           outputs);
 }
 
-Methcla_Time Driver::currentTime() { return 0.; }
+Methcla_Time Driver::currentTime()
+{
+    return 0.;
+}

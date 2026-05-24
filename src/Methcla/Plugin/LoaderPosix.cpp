@@ -86,8 +86,7 @@ namespace {
             if (splitExtension(path) == kPluginExtension)
             {
                 clear_dlerror();
-                void* handle =
-                    dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+                void* handle = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
                 if (handle == nullptr)
                 {
                     check_dlerror();

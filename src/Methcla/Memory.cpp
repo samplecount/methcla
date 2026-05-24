@@ -36,7 +36,10 @@ void* Methcla::Memory::alloc(size_t size)
     return ptr;
 }
 
-void Methcla::Memory::free(void* ptr) noexcept { std::free(ptr); }
+void Methcla::Memory::free(void* ptr) noexcept
+{
+    std::free(ptr);
+}
 
 void* Methcla::Memory::allocAligned(Alignment align, size_t size)
 {

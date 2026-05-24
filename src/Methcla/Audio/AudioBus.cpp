@@ -23,7 +23,8 @@ AudioBus::AudioBus(sample_t* data, Epoch epoch)
 , m_data(data)
 {}
 
-AudioBus::~AudioBus() {}
+AudioBus::~AudioBus()
+{}
 
 ExternalAudioBus::ExternalAudioBus(Epoch epoch)
 : AudioBus(nullptr, epoch)
@@ -33,4 +34,7 @@ InternalAudioBus::InternalAudioBus(size_t numFrames, Epoch epoch)
 : AudioBus(allocAlignedOf<sample_t>(kSIMDAlignment, numFrames), epoch)
 {}
 
-InternalAudioBus::~InternalAudioBus() { Methcla::Memory::freeAligned(data()); }
+InternalAudioBus::~InternalAudioBus()
+{
+    Methcla::Memory::freeAligned(data());
+}

@@ -49,14 +49,26 @@ namespace Methcla { namespace Audio {
 
         // Lock& lock() { return m_lock; }
 
-        const Epoch& epoch() const { return m_epoch; }
+        const Epoch& epoch() const
+        {
+            return m_epoch;
+        }
 
-        void setEpoch(const Epoch& epoch) { m_epoch = epoch; }
+        void setEpoch(const Epoch& epoch)
+        {
+            m_epoch = epoch;
+        }
 
-        sample_t* data() { return m_data; }
+        sample_t* data()
+        {
+            return m_data;
+        }
 
     protected:
-        void setData(sample_t* data) { m_data = data; }
+        void setData(sample_t* data)
+        {
+            m_data = data;
+        }
 
     private:
         // Lock        m_lock;
@@ -68,7 +80,10 @@ namespace Methcla { namespace Audio {
     {
     public:
         ExternalAudioBus(Epoch epoch);
-        void setData(sample_t* data) { AudioBus::setData(data); }
+        void setData(sample_t* data)
+        {
+            AudioBus::setData(data);
+        }
     };
 
     class InternalAudioBus : public AudioBus

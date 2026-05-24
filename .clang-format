@@ -125,7 +125,8 @@ ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
 ---
 Language: JavaScript
-JavaScriptQuotes: Leave
-JavaScriptWrapImports: true
+DisableFormat: true
+---
+Language: Json
+DisableFormat: true
 ...
-

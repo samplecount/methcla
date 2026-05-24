@@ -366,7 +366,7 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				HEADER_SEARCH_PATHS = (
 					../../../include,
-					../libs/tinydir,
+					../../../external_libraries/tinydir,
 				);
 				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
@@ -397,7 +397,7 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				HEADER_SEARCH_PATHS = (
 					../../../include,
-					../libs/tinydir,
+					../../../external_libraries/tinydir,
 				);
 				INFOPLIST_FILE = "MethclaSampler/MethclaSampler-Info.plist";
 				LIBRARY_SEARCH_PATHS = (

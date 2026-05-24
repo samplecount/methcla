@@ -19,7 +19,8 @@ namespace Methcla { namespace Utility {
     template <typename Message> class MessageQueueInterface
     {
     public:
-        virtual ~MessageQueueInterface() {}
+        virtual ~MessageQueueInterface()
+        {}
         virtual void send(const Message& msg) = 0;
         virtual bool next(Message& msg) = 0;
     };

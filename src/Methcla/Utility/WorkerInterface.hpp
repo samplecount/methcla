@@ -19,9 +19,10 @@ namespace Methcla { namespace Utility {
     template <typename Command> class WorkerInterface
     {
     public:
-        virtual ~WorkerInterface() {}
+        virtual ~WorkerInterface()
+        {}
 
-        virtual void stop(){};
+        virtual void stop() {};
 
         virtual void sendToWorker(const Command& cmd) = 0;
         virtual void sendFromWorker(const Command& cmd) = 0;

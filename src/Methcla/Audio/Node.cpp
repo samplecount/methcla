@@ -63,7 +63,8 @@ void Node::free()
     pEnv->rtMem().free(this);
 }
 
-void Node::doProcess(size_t) {}
+void Node::doProcess(size_t)
+{}
 
 inline static void setDoneFreeSelf(Node* node)
 {

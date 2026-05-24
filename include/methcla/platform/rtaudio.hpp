@@ -18,6 +18,6 @@
 #include <methcla/engine.h>
 
 METHCLA_EXPORT Methcla_AudioDriver*
-               methcla_rtaudio_driver_new(const Methcla_AudioDriverOptions* options);
+methcla_rtaudio_driver_new(const Methcla_AudioDriverOptions* options);
 
 #endif // METHCLA_PLATFORM_RTAUDIO_HPP_INCLUDED

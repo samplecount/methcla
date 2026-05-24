@@ -12,7 +12,9 @@ def run(cmd):
 
 
 def get_output(cmd):
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(
+        cmd, check=True, capture_output=True, text=True
+    ).stdout.strip()
 
 
 def github_url():

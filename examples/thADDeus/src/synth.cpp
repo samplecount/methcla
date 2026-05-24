@@ -33,9 +33,15 @@ thaddeus::Engine::~Engine()
     delete m_engine;
 }
 
-void thaddeus::Engine::start() { m_engine->start(); }
+void thaddeus::Engine::start()
+{
+    m_engine->start();
+}
 
-void thaddeus::Engine::stop() { m_engine->stop(); }
+void thaddeus::Engine::stop()
+{
+    m_engine->stop();
+}
 
 void thaddeus::Engine::startVoice(VoiceId voice, float freq, float amp)
 {

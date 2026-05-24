@@ -73,10 +73,14 @@ Methcla::Audio::IO::Driver::Options
 Methcla::API::convertOptions(const Methcla_AudioDriverOptions* options)
 {
     Methcla::Audio::IO::Driver::Options result;
-    if (options->sample_rate) result.sampleRate = static_cast<double>(*options->sample_rate);
-    if (options->num_inputs)  result.numInputs  = *options->num_inputs;
-    if (options->num_outputs) result.numOutputs = *options->num_outputs;
-    if (options->buffer_size) result.bufferSize = *options->buffer_size;
+    if (options->sample_rate)
+        result.sampleRate = static_cast<double>(*options->sample_rate);
+    if (options->num_inputs)
+        result.numInputs = *options->num_inputs;
+    if (options->num_outputs)
+        result.numOutputs = *options->num_outputs;
+    if (options->buffer_size)
+        result.bufferSize = *options->buffer_size;
     return result;
 }
 
@@ -155,7 +159,8 @@ public:
         m_driver = std::unique_ptr<Methcla_AudioDriver>(driver);
         m_driver->driver()->setProcessCallback(processCallback, this);
 
-        engineOptions.sampleRate = static_cast<size_t>(m_driver->driver()->sampleRate());
+        engineOptions.sampleRate =
+            static_cast<size_t>(m_driver->driver()->sampleRate());
         engineOptions.blockSize = m_driver->driver()->bufferSize();
         engineOptions.numHardwareInputChannels =
             m_driver->driver()->numInputs();
@@ -328,7 +333,7 @@ METHCLA_EXPORT Methcla_Error methcla_default_audio_driver(
 }
 
 METHCLA_EXPORT Methcla_Error
-               methcla_engine_options_new(Methcla_EngineOptions** engine_options)
+methcla_engine_options_new(Methcla_EngineOptions** engine_options)
 {
     if (engine_options == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
@@ -522,7 +527,7 @@ METHCLA_EXPORT Methcla_Time methcla_engine_current_time(Methcla_Engine* engine)
 }
 
 METHCLA_EXPORT Methcla_Error
-               methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet)
+methcla_engine_send(Methcla_Engine* engine, const Methcla_OSCPacket* packet)
 {
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);

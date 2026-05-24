@@ -55,27 +55,30 @@ RtAudioDriver::RtAudioDriver(Options options)
     }
     else if (*options.numInputs > 0)
     {
-        const auto available = std::max(
-            0u, m_audio.getDeviceInfo(iParams.deviceId).inputChannels);
+        const auto available =
+            std::max(0u, m_audio.getDeviceInfo(iParams.deviceId).inputChannels);
         // clamp to number of available channels
-        iParams.nChannels = std::min(static_cast<unsigned int>(*options.numInputs), available);
+        iParams.nChannels =
+            std::min(static_cast<unsigned int>(*options.numInputs), available);
         if (0 < iParams.nChannels)
             iParamsPtr = &iParams;
     }
 
     oParams.deviceId = m_audio.getDefaultOutputDevice();
-    oParams.nChannels = options.numOutputs.has_value()
-        ? static_cast<unsigned int>(*options.numOutputs)
-        : m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
+    oParams.nChannels =
+        options.numOutputs.has_value()
+            ? static_cast<unsigned int>(*options.numOutputs)
+            : m_audio.getDeviceInfo(oParams.deviceId).outputChannels;
 
     const unsigned int sampleRate = options.sampleRate.value_or(44100);
-    unsigned int bufferFrames = static_cast<unsigned int>(options.bufferSize.value_or(kDefaultBufferSize));
+    unsigned int       bufferFrames = static_cast<unsigned int>(
+        options.bufferSize.value_or(kDefaultBufferSize));
 
     RtAudio::StreamOptions streamOptions;
     streamOptions.flags = RTAUDIO_MINIMIZE_LATENCY | RTAUDIO_SCHEDULE_REALTIME;
     const RtAudioErrorType err = m_audio.openStream(
-        &oParams, iParamsPtr, RTAUDIO_FLOAT32, sampleRate,
-        &bufferFrames, processCallback, this, &streamOptions);
+        &oParams, iParamsPtr, RTAUDIO_FLOAT32, sampleRate, &bufferFrames,
+        processCallback, this, &streamOptions);
     if (err != RTAUDIO_NO_ERROR)
         throw std::runtime_error("RtAudioDriver: Failed to open audio stream");
     m_sampleRate = m_audio.getStreamSampleRate();

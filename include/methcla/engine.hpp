@@ -326,7 +326,7 @@ namespace Methcla {
             while (!m_freeList.empty())
             {
                 void* ptr = m_freeList.front();
-                delete[](char*) ptr;
+                delete[] (char*)ptr;
                 m_freeList.pop_front();
             }
         }

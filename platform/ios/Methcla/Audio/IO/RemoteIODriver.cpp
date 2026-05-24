@@ -506,7 +506,10 @@ Methcla_Time RemoteIODriver::currentTime()
            CAHostTimeBase::GetInverseFrequency();
 }
 
-AudioUnit RemoteIODriver::audioUnit() { return m_rioUnit; }
+AudioUnit RemoteIODriver::audioUnit()
+{
+    return m_rioUnit;
+}
 
 Driver* Methcla::Platform::defaultAudioDriver(Driver::Options options)
 {

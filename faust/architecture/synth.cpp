@@ -87,11 +87,16 @@ public:
 
     // Layout widgets
 
-    virtual void openFrameBox(const char* label) {}
-    virtual void openTabBox(const char* label) {}
-    virtual void openHorizontalBox(const char* label) {}
-    virtual void openVerticalBox(const char* label) {}
-    virtual void closeBox() {}
+    virtual void openFrameBox(const char* label)
+    {}
+    virtual void openTabBox(const char* label)
+    {}
+    virtual void openHorizontalBox(const char* label)
+    {}
+    virtual void openVerticalBox(const char* label)
+    {}
+    virtual void closeBox()
+    {}
 
     // Active widgets
 
@@ -240,14 +245,22 @@ public:
     {}
 
     // Layout widgets
-    virtual void openFrameBox(const char* label) {}
-    virtual void openTabBox(const char* label) {}
-    virtual void openHorizontalBox(const char* label) {}
-    virtual void openVerticalBox(const char* label) {}
-    virtual void closeBox() {}
+    virtual void openFrameBox(const char* label)
+    {}
+    virtual void openTabBox(const char* label)
+    {}
+    virtual void openHorizontalBox(const char* label)
+    {}
+    virtual void openVerticalBox(const char* label)
+    {}
+    virtual void closeBox()
+    {}
 
     // Active widgets
-    virtual void addButton(const char*, float* zone) { addControlInput(zone); }
+    virtual void addButton(const char*, float* zone)
+    {
+        addControlInput(zone);
+    }
     virtual void addToggleButton(const char*, float* zone)
     {
         addControlInput(zone);
@@ -292,7 +305,8 @@ public:
     }
 
     // Metadata
-    virtual void declare(float*, const char*, const char*) {}
+    virtual void declare(float*, const char*, const char*)
+    {}
 
 private:
     void addControlInput(float* zone)
@@ -333,8 +347,14 @@ public:
         m_dsp.compute(numFrames, inputs, outputs);
     }
 
-    float* controlInput(size_t index) { return m_controlInputs[index]; }
-    float* controlOutput(size_t index) { return m_controlOutputs[index]; }
+    float* controlInput(size_t index)
+    {
+        return m_controlInputs[index];
+    }
+    float* controlOutput(size_t index)
+    {
+        return m_controlOutputs[index];
+    }
 
 private:
     FAUSTCLASS m_dsp;
