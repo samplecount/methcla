@@ -40,13 +40,3 @@ See [`docs/coding-style.md`](docs/coding-style.md). C++17, C99. No new dependenc
 
 Add an entry under `## [Unreleased]` in `CHANGELOG.md` for every feature, fix, or notable change,
 using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Security.
-
-## Releasing
-
-1. Ensure `## [Unreleased]` in `CHANGELOG.md` is up to date.
-2. Run `scripts/release.py <version>` (e.g. `scripts/release.py 1.2.3`).
-   - Bumps the version in `CMakeLists.txt`
-   - Moves `[Unreleased]` content to `[version]` in `CHANGELOG.md`
-   - Commits both files and creates an annotated git tag
-3. Push: `git push && git push --tags`
-4. Create a GitHub release from the tag, pasting the changelog entry as the description.

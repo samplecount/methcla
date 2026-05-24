@@ -66,15 +66,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ### Issue tracker
 
-Issues live in GitHub Issues for `samplecount/methcla`. See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues for `samplecount/methcla`. See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
 ### Triage labels
 
-Uses the default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+Uses the default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See [`docs/agents/triage-labels.md`](docs/agents/triage-labels.md).
 
 ### Domain docs
 
-Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context layout: one [`CONTEXT.md`](CONTEXT.md) + [`docs/adr/`](docs/adr/) at the repo root. See [`docs/agents/domain.md`](docs/agents/domain.md).
 
 ## Workflows
 
@@ -84,14 +84,16 @@ Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `doc
 - Before committing changes or submitting PRs, run `pre-commit run --all-files` to format code, then build locally and run tests.
 - When merging PRs via gh, update the working copy accordingly (pull and delete PR branch).
 - Keep PR branch name descriptive but short. No prefixes like `feat/`. Dashes: `my-awesome-new-feature`.
-- See `CONTRIBUTING.md` for the human-facing version of these workflows.
-- When adding features or fixes, add an entry under `## [Unreleased]` in `CHANGELOG.md` using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Security. Reference the relevant GitHub issue number (`(#N)`) at the end of each entry where one exists.
-- To cut a release: run `scripts/release.py <version>` then `git push && git push --tags`.
+- When adding features or fixes, add an entry under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Security. Reference the relevant GitHub issue number (`(#N)`) at the end of each entry where one exists.
+
+## Releases
+
+See [`docs/agents/releases.md`](docs/agents/releases.md).
 
 ## Domain and API references
 
-- Use the domain language in `CONTEXT.md`; avoid the listed synonyms.
-- Before changing build structure or dependencies, check `docs/adr/` for prior decisions.
-- When working with synth, node, or bus commands, consult `docs/osc-api.md`.
-- For audio routing and node tree structure, see `docs/architecture.md`.
-- Follow `docs/coding-style.md` for all code changes.
+- Use the domain language in [`CONTEXT.md`](CONTEXT.md); avoid the listed synonyms.
+- Before changing build structure or dependencies, check [`docs/adr/`](docs/adr/) for prior decisions.
+- When working with synth, node, or bus commands, consult [`docs/osc-api.md`](docs/osc-api.md).
+- For audio routing and node tree structure, see [`docs/architecture.md`](docs/architecture.md).
+- Follow [`docs/coding-style.md`](docs/coding-style.md) for all code changes.
