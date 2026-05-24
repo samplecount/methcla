@@ -10,8 +10,8 @@ target_include_directories(driver_rtaudio SYSTEM
                            PRIVATE ../../external_libraries/boost)
 
 target_link_libraries(
-  driver_rtaudio
-  PUBLIC PkgConfig::rtaudio
-  PRIVATE oscpp::oscpp)
+    driver_rtaudio
+    PUBLIC PkgConfig::rtaudio
+    PRIVATE oscpp::oscpp)
 
 methcla_target_warnings(driver_rtaudio)
