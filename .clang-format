@@ -126,4 +126,7 @@ ObjCSpaceBeforeProtocolList: true
 ---
 Language: JavaScript
 DisableFormat: true
+---
+Language: Json
+DisableFormat: true
 ...
