@@ -47,9 +47,9 @@ Encode a `Methcla_Time` value as a 64 bit unsigned integer for use as an OSC bun
   * `kMethcla_BusMappingFeedback = 0x02`
 
      Don't zero bus before reading, allowing feedback loops with a delay of one block size.
-  
+
   * `kMethcla_BusMappingReplace  = 0x04`
-  
+
      Zero bus before reading (default).
 
 * `/synth/map/output i:node-id i:index i:bus-id i:flags`
@@ -67,9 +67,9 @@ Encode a `Methcla_Time` value as a 64 bit unsigned integer for use as an OSC bun
   * `kMethcla_BusMappingFeedback = 0x02`
 
      Mix output with previous bus contents (default).
-  
+
   * `kMethcla_BusMappingReplace  = 0x04`
-  
+
      Replace bus contents by output.
 
 * `/node/free` i:node-id
