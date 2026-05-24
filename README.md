@@ -47,7 +47,7 @@ stop.closeBundle();
 stop.send();
 ```
 
-See [`docs/osc-api.md`](docs/osc-api.md) for the full command protocol and [`docs/architecture.md`](docs/architecture.md) for an overview of audio routing.
+See [`docs/usage.md`](docs/usage.md) for a full usage guide, [`docs/osc-api.md`](docs/osc-api.md) for the full command protocol, and [`docs/architecture.md`](docs/architecture.md) for an overview of audio routing.
 
 ## Integration
 
