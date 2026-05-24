@@ -7,6 +7,8 @@ repos:
         args: [--allow-multiple-documents]
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: pretty-format-json
+        args: [--autofix]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v19.1.7

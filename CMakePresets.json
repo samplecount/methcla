@@ -1,56 +1,56 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 24,
-        "patch": 0
+  "buildPresets": [
+    {
+      "configurePreset": "debug",
+      "displayName": "Debug",
+      "name": "debug"
     },
-    "configurePresets": [
-        {
-            "name": "base",
-            "hidden": true,
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/${presetName}"
-        },
-        {
-            "name": "debug",
-            "displayName": "Debug",
-            "inherits": "base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
-            "name": "release",
-            "displayName": "Release",
-            "inherits": "base",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "debug",
-            "displayName": "Debug",
-            "configurePreset": "debug"
-        },
-        {
-            "name": "release",
-            "displayName": "Release",
-            "configurePreset": "release"
-        }
-    ],
-    "testPresets": [
-        {
-            "name": "debug",
-            "displayName": "Debug",
-            "configurePreset": "debug"
-        },
-        {
-            "name": "release",
-            "displayName": "Release",
-            "configurePreset": "release"
-        }
-    ]
+    {
+      "configurePreset": "release",
+      "displayName": "Release",
+      "name": "release"
+    }
+  ],
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "generator": "Unix Makefiles",
+      "hidden": true,
+      "name": "base"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "displayName": "Debug",
+      "inherits": "base",
+      "name": "debug"
+    },
+    {
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "displayName": "Release",
+      "inherits": "base",
+      "name": "release"
+    }
+  ],
+  "testPresets": [
+    {
+      "configurePreset": "debug",
+      "displayName": "Debug",
+      "name": "debug"
+    },
+    {
+      "configurePreset": "release",
+      "displayName": "Release",
+      "name": "release"
+    }
+  ],
+  "version": 3
 }
