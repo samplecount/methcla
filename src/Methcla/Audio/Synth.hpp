@@ -16,7 +16,6 @@
 #define METHCLA_AUDIO_SYNTH_HPP_INCLUDED
 
 #include "Methcla/Audio/AudioBus.hpp"
-// #include "Methcla/Audio/DSP.h"
 #include "Methcla/Audio/Engine.hpp"
 
 #include <methcla/plugin.h>
@@ -95,7 +94,6 @@ namespace Methcla { namespace Audio {
         {
             if (bus() != nullptr)
             {
-                // std::lock_guard<AudioBus::Lock> lock(bus->lock());
                 if (((flags() & kMethcla_BusMappingExternal) ==
                      kMethcla_BusMappingExternal) ||
                     ((flags() & kMethcla_BusMappingFeedback) ==
@@ -141,7 +139,6 @@ namespace Methcla { namespace Audio {
                     else
                     { // Accumulate
                         sample_t* dst = buffer + offset;
-                        // accumulate(dst, src, numFrames);
                         for (size_t i = 0; i < numFrames; i++)
                         {
                             dst[i] += src[i];

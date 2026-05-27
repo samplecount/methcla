@@ -91,14 +91,12 @@ void Node::setDone()
             Node* node = m_parent->m_first;
             while (node != this)
             {
-                // env().freeNode(node->id());
                 setDoneFreeSelf(node);
                 node = node->m_next;
             }
             node = this->m_next;
             while (node != nullptr)
             {
-                // env().freeNode(node->id());
                 setDoneFreeSelf(node);
                 node = node->m_next;
             }
@@ -109,7 +107,6 @@ void Node::setDone()
         if (flags & kMethcla_NodeDoneFreePreceeding)
         {
             if (m_prev != nullptr)
-                // env().freeNode(m_prev->id());
                 setDoneFreeSelf(m_prev);
         }
         if (flags & kMethcla_NodeDoneFreeFollowing)

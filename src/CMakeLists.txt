@@ -8,8 +8,6 @@ set(sources
     Methcla/API.hpp
     Methcla/Audio/AudioBus.cpp
     Methcla/Audio/AudioBus.hpp
-    Methcla/Audio/DSP.c
-    Methcla/Audio/DSP.h
     Methcla/Audio/Engine.cpp
     Methcla/Audio/Engine.hpp
     Methcla/Audio/EngineImpl.cpp
@@ -23,7 +21,6 @@ set(sources
     Methcla/Audio/MultiChannelBuffer.hpp
     Methcla/Audio/Node.cpp
     Methcla/Audio/Node.hpp
-    Methcla/Audio/Resource.hpp
     Methcla/Audio/Synth.cpp
     Methcla/Audio/Synth.hpp
     Methcla/Audio/SynthDef.cpp

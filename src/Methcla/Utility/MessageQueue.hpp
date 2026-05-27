@@ -125,9 +125,6 @@ namespace Methcla { namespace Utility {
         }
 
     private:
-        // typedef
-        // methcla_boost::lockfree::queue<Command,methcla_boost::lockfree::capacity<queueSize>>
-        // Queue;
         Queue      m_queue;
         bool       m_needsLock;
         std::mutex m_mutex;

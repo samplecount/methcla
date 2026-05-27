@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Methcla_Resource` from plugin API: removed argument from `Methcla_SynthDef::construct`; renamed `methcla_world_resource_retain`/`methcla_world_resource_release` to `methcla_world_synth_retain`/`methcla_world_synth_release`
 - Dead platform code and unused vendored libraries (PNaCl, NaCl) (#127)
+- Dead code cleanup: `Resource.hpp` (deleted), `DSP.h`/`DSP.c` (deleted), `ResourceIdAllocator` renamed to `IdAllocator` with typedefs preserved (#148)
 
 ### Fixed
 

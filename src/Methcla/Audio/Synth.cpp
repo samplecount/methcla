@@ -110,10 +110,6 @@ Synth* Synth::construct(Environment& env, NodeId nodeId,
         }
     }
 
-    // const size_t numControlInputs           = synthDef.numControlInputs();
-    // const size_t numControlOutputs          = synthDef.numControlOutputs();
-    // const size_t numAudioInputs             = synthDef.numAudioInputs();
-    // const size_t numAudioOutputs            = synthDef.numAudioOutputs();
     const size_t blockSize = env.blockSize();
 
     const size_t synthAllocSize = sizeof(Synth) + synthDef.instanceSize();
@@ -304,21 +300,6 @@ void Synth::activate(double sampleOffset)
 
 void Synth::doProcess(size_t numFrames)
 {
-    // Sort connections by bus id (if necessary)
-    // Only needed for bus locking protocol in a parallel implementation
-    // if (m_flags.audioInputConnectionsChanged) {
-    //     m_flags.audioInputConnectionsChanged = false;
-    //     std::sort( m_audioInputConnections
-    //              , m_audioInputConnections + numAudioInputs()
-    //              , ByBusId<AudioInputConnection>() );
-    // }
-    // if (m_flags.audioOutputConnectionsChanged) {
-    //     m_flags.audioOutputConnectionsChanged = false;
-    //     std::sort( m_audioOutputConnections
-    //              , m_audioOutputConnections + numAudioOutputs()
-    //              , ByBusId<AudioOutputConnection>() );
-    // }
-
     Environment& env = this->env();
     const size_t blockSize = env.blockSize();
 
@@ -344,15 +325,6 @@ void Synth::doProcess(size_t numFrames)
             AudioOutputConnection& x = m_audioOutputConnections[i];
             x.write(env, numFrames, outputBuffers + x.index() * blockSize);
         }
-        // Reset triggers
-        //    if (m_flags.test(kHasTriggerInput)) {
-        //        for (size_t i=0; i < numControlInputs(); i++) {
-        //            if (synthDef().controlInputSpec(i).flags &
-        //            kMethclaControlTrigger) {
-        //                *controlInput(i) = 0.f;
-        //            }
-        //        }
-        //    }
     }
     else if (m_flags.state == kStateActivating)
     {

@@ -83,25 +83,13 @@ namespace Methcla {
     class GroupId : public NodeId
     {
     public:
-        // Inheriting constructors not supported by clang 3.2
-        // using NodeId::NodeId;
-        explicit GroupId(int32_t id)
-        : NodeId(id)
-        {}
-        GroupId()
-        : NodeId()
-        {}
+        using NodeId::NodeId;
     };
 
     class SynthId : public NodeId
     {
     public:
-        explicit SynthId(int32_t id)
-        : NodeId(id)
-        {}
-        SynthId()
-        : NodeId()
-        {}
+        using NodeId::NodeId;
     };
 
     class AudioBusId : public detail::Id<AudioBusId, int32_t>
@@ -219,7 +207,7 @@ namespace Methcla {
         }
     };
 
-    template <class Id, typename T> class ResourceIdAllocator
+    template <class Id, typename T> class IdAllocator
     {
     public:
         class Statistics
@@ -248,7 +236,7 @@ namespace Methcla {
             }
         };
 
-        ResourceIdAllocator(T minValue, size_t n)
+        IdAllocator(T minValue, size_t n)
         : m_offset(minValue)
         , m_bits(n)
         , m_pos(0)
@@ -617,8 +605,8 @@ namespace Methcla {
 
     static const Methcla_Time immediately = 0.;
 
-    typedef ResourceIdAllocator<NodeId, int32_t>     NodeIdAllocator;
-    typedef ResourceIdAllocator<AudioBusId, int32_t> AudioBusIdAllocator;
+    typedef IdAllocator<NodeId, int32_t>     NodeIdAllocator;
+    typedef IdAllocator<AudioBusId, int32_t> AudioBusIdAllocator;
 
     class Request;
 
@@ -1270,7 +1258,6 @@ namespace Methcla {
 
         void send(const OSCPP::Client::Packet& packet)
         {
-            // dumpRequest(std::cout, packet);
             Methcla_OSCPacket p{packet.data(), packet.size()};
             send(&p);
         }

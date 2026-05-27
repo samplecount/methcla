@@ -88,7 +88,6 @@ namespace Methcla { namespace Audio {
 
         ~Request()
         {
-            // std::cout << "~Request()\n";
             Methcla::Memory::free(m_refs);
         }
 
@@ -462,12 +461,6 @@ namespace Methcla { namespace Audio {
         //* Context: NRT
         void replyError(Methcla_RequestId requestId, const char* what)
         {
-            // EnvironmentImpl::ErrorData* data =
-            //     (EnvironmentImpl::ErrorData*)rtMem().alloc(sizeof(EnvironmentImpl::ErrorData)+strlen(msg)+1);
-            // data->requestId = requestId;
-            // data->message = (char*)data + sizeof(EnvironmentImpl::ErrorData);
-            // strcpy(data->message, msg);
-            // sendToWorker(perform_response_error, data);
             using namespace std::placeholders;
             auto out = nrt_log(kMethcla_LogError);
             out << "ERROR";
@@ -497,7 +490,6 @@ namespace Methcla { namespace Audio {
         //* Context: NRT
         void logLineNRT(Methcla_LogLevel level, const char* message)
         {
-            // std::cout << message << std::endl;
             m_logHandler(level, message);
         }
 

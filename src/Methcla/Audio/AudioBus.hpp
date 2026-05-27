@@ -26,28 +26,11 @@ namespace Methcla { namespace Audio {
     class AudioBus
     {
     public:
-        // class Lock
-        // {
-        // public:
-        //     void lock() { }
-        //     void try_lock() { }
-        //     void unlock() { }
-        //
-        //     void lock_shared() { }
-        //     bool try_lock_shared() { return true; }
-        //     void unlock_shared() { }
-        // };
-
-        // typedef boost::intrusive_ptr<AudioBus> Handle;
-
-    public:
         AudioBus(sample_t* data, Epoch epoch);
         virtual ~AudioBus();
 
         AudioBus(const AudioBus&) = delete;
         AudioBus& operator=(const AudioBus&) = delete;
-
-        // Lock& lock() { return m_lock; }
 
         const Epoch& epoch() const
         {
@@ -71,7 +54,6 @@ namespace Methcla { namespace Audio {
         }
 
     private:
-        // Lock        m_lock;
         Epoch     m_epoch;
         sample_t* m_data;
     };

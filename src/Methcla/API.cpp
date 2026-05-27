@@ -454,7 +454,6 @@ METHCLA_EXPORT Methcla_Error methcla_engine_new_with_driver(
 
 METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
 {
-    // cout << "Methcla_Engine_free" << endl;
     methcla_engine_stop(engine);
     try
     {
@@ -466,7 +465,6 @@ METHCLA_EXPORT void methcla_engine_free(Methcla_Engine* engine)
 
 METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
 {
-    // cout << "Methcla_Engine_start" << endl;
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_API_TRY
@@ -479,7 +477,6 @@ METHCLA_EXPORT Methcla_Error methcla_engine_start(Methcla_Engine* engine)
 
 METHCLA_EXPORT Methcla_Error methcla_engine_stop(Methcla_Engine* engine)
 {
-    // cout << "Methcla_Engine_stop" << endl;
     if (engine == nullptr)
         return methcla_error_new(kMethcla_ArgumentError);
     METHCLA_API_TRY

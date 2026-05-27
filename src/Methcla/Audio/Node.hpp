@@ -24,7 +24,6 @@
 namespace Methcla { namespace Audio {
 
     BOOST_STRONG_TYPEDEF(int32_t, NodeId);
-    // const NodeId InvalidNodeId = -1;
 
     class Environment;
     class Group;
