@@ -16,6 +16,7 @@
 #define METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
+#include "Methcla/Audio/MultiChannelBuffer.hpp"
 
 #include <atomic>
 #include <cstdint>
@@ -63,8 +64,8 @@ namespace Methcla { namespace Audio { namespace IO {
         size_t                m_numInputs;
         size_t                m_numOutputs;
         size_t                m_bufferSize;
-        sample_t**            m_inputBuffers;
-        sample_t**            m_outputBuffers;
+        MultiChannelBuffer    m_inputBuffer;
+        MultiChannelBuffer    m_outputBuffer;
         std::atomic<bool>     m_continue;
         std::atomic<uint64_t> m_time;
         std::thread           m_thread;

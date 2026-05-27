@@ -33,20 +33,17 @@ DummyDriver::DummyDriver(Options options)
 , m_numInputs(options.numInputs.value_or(kDefaultNumInputs))
 , m_numOutputs(options.numOutputs.value_or(kDefaultNumOutputs))
 , m_bufferSize(options.bufferSize.value_or(kDefaultBufferSize))
+, m_inputBuffer(m_numInputs, m_bufferSize)
+, m_outputBuffer(m_numOutputs, m_bufferSize)
 {
     assert(m_sampleRate > 0);
     assert(m_numOutputs > 0);
     assert(m_bufferSize > 0);
     assert(m_time.is_lock_free());
-    m_inputBuffers = makeBuffers(m_numInputs, m_bufferSize);
-    m_outputBuffers = makeBuffers(m_numOutputs, m_bufferSize);
 }
 
 DummyDriver::~DummyDriver()
-{
-    freeBuffers(m_numInputs, m_inputBuffers);
-    freeBuffers(m_numOutputs, m_outputBuffers);
-}
+{}
 
 void DummyDriver::start()
 {
@@ -83,7 +80,7 @@ void DummyDriver::run()
     while (m_continue)
     {
         storeTime(m_time, t);
-        process(t, bufferSize(), m_inputBuffers, m_outputBuffers);
+        process(t, bufferSize(), m_inputBuffer.data(), m_outputBuffer.data());
         struct timespec ts;
         ts.tv_sec = dt;
         ts.tv_nsec = (dt - ts.tv_sec) * 1e9;
@@ -101,7 +98,8 @@ void DummyDriver::run()
             std::chrono::duration_cast<std::chrono::duration<double>>(t - t0)
                 .count();
         storeTime(m_time, tDouble);
-        process(tDouble, bufferSize(), m_inputBuffers, m_outputBuffers);
+        process(tDouble, bufferSize(), m_inputBuffer.data(),
+                m_outputBuffer.data());
         std::this_thread::sleep_until(t);
         t += dt;
     }

@@ -16,6 +16,9 @@
 #define METHCLA_AUDIO_IO_REMOTEIODRIVER_HPP
 
 #include "Methcla/Audio/IO/Driver.hpp"
+#include "Methcla/Audio/MultiChannelBuffer.hpp"
+
+#include <memory>
 
 #include <AudioUnit/AudioUnit.h>
 
@@ -65,13 +68,13 @@ namespace Methcla { namespace Audio { namespace IO {
                        UInt32 inNumberFrames, AudioBufferList* ioData);
 
     private:
-        double     m_sampleRate;
-        size_t     m_numInputs;
-        size_t     m_numOutputs;
-        size_t     m_bufferSize;
-        AudioUnit  m_rioUnit;
-        sample_t** m_inputBuffers;
-        sample_t** m_outputBuffers;
+        double                              m_sampleRate;
+        size_t                              m_numInputs;
+        size_t                              m_numOutputs;
+        size_t                              m_bufferSize;
+        AudioUnit                           m_rioUnit;
+        std::unique_ptr<MultiChannelBuffer> m_inputBuffer;
+        std::unique_ptr<MultiChannelBuffer> m_outputBuffer;
     };
 }; }; }; // namespace Methcla::Audio::IO
 

@@ -85,13 +85,11 @@ RtAudioDriver::RtAudioDriver(Options options)
     m_isOpen = true;
 
     if (iParamsPtr)
-    {
-        m_inputBuffer = std::unique_ptr<MultiChannelBuffer>(
-            new MultiChannelBuffer(iParamsPtr->nChannels, bufferFrames));
-    }
+        m_inputBuffer = std::make_unique<MultiChannelBuffer>(
+            iParamsPtr->nChannels, bufferFrames);
 
-    m_outputBuffer = std::unique_ptr<MultiChannelBuffer>(
-        new MultiChannelBuffer(oParams.nChannels, bufferFrames));
+    m_outputBuffer =
+        std::make_unique<MultiChannelBuffer>(oParams.nChannels, bufferFrames);
 }
 
 RtAudioDriver::~RtAudioDriver()

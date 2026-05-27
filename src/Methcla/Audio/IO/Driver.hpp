@@ -57,18 +57,6 @@ namespace Methcla { namespace Audio { namespace IO {
         virtual void start() = 0;
         virtual void stop() = 0;
 
-        static Methcla_AudioSample** makeBuffers(size_t numChannels,
-                                                 size_t numFrames)
-        {
-            return MultiChannelBuffer::makeBuffers(numChannels, numFrames);
-        }
-
-        static void freeBuffers(size_t                numChannels,
-                                Methcla_AudioSample** buffers)
-        {
-            MultiChannelBuffer::freeBuffers(numChannels, buffers);
-        }
-
     protected:
         void process(Methcla_Time currentTime, size_t numFrames,
                      const sample_t* const* inputs, sample_t* const* outputs);

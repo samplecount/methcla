@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `DummyDriver` and `RemoteIODriver` now use `MultiChannelBuffer` for I/O buffer ownership instead of raw pointers; `Driver::makeBuffers`/`freeBuffers` removed (#32)
 - Dependency management modernised: `FetchContent` for oscpp and googletest; Boost 1.91.0 vendored with `methcla_boost` namespace to avoid symbol collisions (#129)
 - C++ standard raised to C++17
 - `Driver::Options` channel and buffer size fields changed from `int` to `size_t` (#80)

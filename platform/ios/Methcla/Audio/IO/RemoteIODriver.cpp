@@ -127,8 +127,6 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
 : Driver(options)
 , m_numInputs(options.numInputs.value_or(2))
 , m_numOutputs(options.numOutputs.value_or(2))
-, m_inputBuffers(nullptr)
-, m_outputBuffers(nullptr)
 {
     // TODO: Use AVAudioSession instead of AudioSessionServices (deprecated
     // in 7.0)
@@ -360,8 +358,11 @@ RemoteIODriver::RemoteIODriver(Options options, bool initializeAudioSession)
                            "couldn't initialize the remote I/O unit");
 
     // Initialize I/O buffers
-    m_inputBuffers = makeBuffers(m_numInputs, m_bufferSize);
-    m_outputBuffers = makeBuffers(m_numOutputs, m_bufferSize);
+    if (m_numInputs > 0)
+        m_inputBuffer =
+            std::make_unique<MultiChannelBuffer>(m_numInputs, m_bufferSize);
+    m_outputBuffer =
+        std::make_unique<MultiChannelBuffer>(m_numOutputs, m_bufferSize);
 }
 
 RemoteIODriver::~RemoteIODriver()
@@ -371,10 +372,6 @@ RemoteIODriver::~RemoteIODriver()
 
     // Free audio unit
     AudioComponentInstanceDispose(m_rioUnit);
-
-    // Free I/O buffers
-    freeBuffers(m_numInputs, m_inputBuffers);
-    freeBuffers(m_numOutputs, m_outputBuffers);
 }
 
 void RemoteIODriver::start()
@@ -425,8 +422,8 @@ OSStatus RemoteIODriver::InputCallback(
     if (err != noErr)
         return err;
 
-    const UInt32 numInputs = self->m_numInputs;
-    sample_t**   inputBuffers = self->m_inputBuffers;
+    const UInt32     numInputs = self->m_numInputs;
+    sample_t* const* inputBuffers = self->m_inputBuffer->data();
 
     for (UInt32 bufCount = 0; bufCount < bufferList.mNumberBuffers; bufCount++)
     {
@@ -458,9 +455,10 @@ OSStatus RemoteIODriver::RenderCallback(
 
     RemoteIODriver* self = static_cast<RemoteIODriver*>(inRefCon);
 
-    const sample_t* const* inputBuffers = self->m_inputBuffers;
-    const UInt32           numOutputs = self->m_numOutputs;
-    sample_t* const*       outputBuffers = self->m_outputBuffers;
+    sample_t* const* inputBuffers =
+        self->m_inputBuffer ? self->m_inputBuffer->data() : nullptr;
+    const UInt32     numOutputs = self->m_numOutputs;
+    sample_t* const* outputBuffers = self->m_outputBuffer->data();
 
     for (UInt32 bufCount = 0; bufCount < ioData->mNumberBuffers; bufCount++)
     {
