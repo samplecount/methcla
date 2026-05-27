@@ -150,15 +150,7 @@ size_t Engine::numSounds() const
 
 void Engine::useDisk(bool flag)
 {
-    if (flag && !Methcla::Version::isPro())
-    {
-        m_engine->logLine(kMethcla_LogWarn,
-                          "Disk streaming is only available in Methcla Pro!");
-    }
-    else
-    {
-        m_useDisk = flag;
-    }
+    m_useDisk = flag;
 }
 
 static Methcla_Time kLatency = 0.003;

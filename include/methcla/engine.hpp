@@ -44,13 +44,6 @@ namespace Methcla {
         return methcla_version();
     }
 
-    namespace Version {
-        static inline bool isPro()
-        {
-            return methcla_version_is_pro();
-        }
-    }; // namespace Version
-
     inline static void dumpRequest(std::ostream&                out,
                                    const OSCPP::Client::Packet& packet)
     {

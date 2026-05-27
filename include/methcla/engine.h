@@ -34,12 +34,6 @@ extern "C" {
 //* Return library version string.
 const char* methcla_version();
 
-//* Return true if using the pro version of methcla.
-static inline bool methcla_version_is_pro()
-{
-    return strstr(methcla_version(), "pro") != NULL;
-}
-
 //* Common audio driver options.
 typedef struct Methcla_AudioDriverOptions Methcla_AudioDriverOptions;
 
