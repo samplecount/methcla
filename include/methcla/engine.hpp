@@ -1047,7 +1047,7 @@ namespace Methcla {
 
         std::unique_ptr<Packet> allocPacket() override
         {
-            return std::unique_ptr<Packet>(new Packet(m_packets));
+            return std::make_unique<Packet>(m_packets);
         }
 
         void sendPacket(const std::unique_ptr<Packet>& packet) override

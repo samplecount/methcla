@@ -101,5 +101,5 @@ namespace {
 
 std::unique_ptr<Loader> Methcla::Plugin::defaultLoader()
 {
-    return std::unique_ptr<Loader>(new DLLoader());
+    return std::make_unique<DLLoader>();
 }

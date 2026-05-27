@@ -168,13 +168,12 @@ public:
             m_driver->driver()->numOutputs();
 
         using namespace std::placeholders;
-        m_env = std::unique_ptr<Methcla::Audio::Environment>(
-            new Methcla::Audio::Environment(
-                std::bind(options->log_handler.log_line,
-                          options->log_handler.handle, _1, _2),
-                std::bind(options->packet_handler.handle_packet,
-                          options->packet_handler.handle, _1, _2, _3),
-                engineOptions));
+        m_env = std::make_unique<Methcla::Audio::Environment>(
+            std::bind(options->log_handler.log_line,
+                      options->log_handler.handle, _1, _2),
+            std::bind(options->packet_handler.handle_packet,
+                      options->packet_handler.handle, _1, _2, _3),
+            engineOptions);
     }
 
     const Methcla::Audio::Environment& env() const

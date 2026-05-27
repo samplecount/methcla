@@ -34,15 +34,14 @@ namespace {
 TEST(Methcla_Engine, Creation_and_destruction)
 {
     std::unique_ptr<Methcla::Engine> engine;
-    ASSERT_NO_THROW(
-        engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine()));
+    ASSERT_NO_THROW(engine = std::make_unique<Methcla::Engine>());
     ASSERT_NO_THROW(engine->start());
     ASSERT_NO_THROW(engine->stop());
 }
 
 TEST(Methcla_Engine, Freeing_invalid_node_id_should_not_crash)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine());
+    auto engine = std::make_unique<Methcla::Engine>();
 
     engine->start();
     engine->free(Methcla::NodeId(-1));
@@ -52,7 +51,7 @@ TEST(Methcla_Engine, Freeing_invalid_node_id_should_not_crash)
 TEST(Methcla_Request,
      Should_not_be_able_to_add_message_to_closed_request_bundle)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine());
+    auto             engine = std::make_unique<Methcla::Engine>();
     Methcla::Request request(*engine);
     request.openBundle(0.);
     request.closeBundle();
@@ -61,8 +60,7 @@ TEST(Methcla_Request,
 
 TEST(Methcla_Engine, Node_tree_should_contain_only_root_node_after_startup)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(defaultEngineOptions()));
+    auto engine = std::make_unique<Methcla::Engine>(defaultEngineOptions());
     // engine->setLogFlags(kMethcla_EngineLogRequests);
     engine->start();
     // Methcla::Request request(*engine);
@@ -76,8 +74,7 @@ TEST(Methcla_Engine, Node_tree_should_contain_only_root_node_after_startup)
 
 TEST(Methcla_Engine, kMethcla_NodeDoneFlags_should_free_the_specified_nodes)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(defaultEngineOptions()));
+    auto engine = std::make_unique<Methcla::Engine>(defaultEngineOptions());
 
     engine->start();
 
@@ -164,8 +161,7 @@ TEST(Methcla_Engine, kMethcla_NodeDoneFlags_should_free_the_specified_nodes)
 
 TEST(Methcla_Engine, Node_ended_notification)
 {
-    auto engine = std::unique_ptr<Methcla::Engine>(
-        new Methcla::Engine(defaultEngineOptions()));
+    auto engine = std::make_unique<Methcla::Engine>(defaultEngineOptions());
 
     engine->start();
 

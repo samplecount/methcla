@@ -91,7 +91,7 @@ TEST(Methcla_Engine, issue_113_disksampler)
 
     float maxAbsAmp = 1.f;
 
-    auto engine = std::unique_ptr<Methcla::Engine>(new Methcla::Engine(
+    auto engine = std::make_unique<Methcla::Engine>(
         Methcla::EngineOptions()
             .addLibrary(methcla_plugins_disksampler)
             .addLibrary(methcla_soundfile_api_libsndfile)
@@ -101,7 +101,7 @@ TEST(Methcla_Engine, issue_113_disksampler)
                 [&maxAbsAmp](const std::string& stat, float value) {
                     maxAbsAmp = value;
                     TEST_COUT << stat << "=" << value << "\n";
-                }))));
+                })));
 
     engine->start();
 
