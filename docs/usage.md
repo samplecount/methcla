@@ -21,9 +21,11 @@ options.addLibrary(methcla_plugins_sine);
 options.addPluginDirectories({"/usr/lib/methcla/plugins"});
 
 // Tune capacity to your needs (defaults shown).
-options.realtimeMemorySize = 1024 * 1024;
-options.maxNumNodes        = 1024;
-options.maxNumAudioBuses   = 128;
+options.realtimeMemorySize  = 1024 * 1024;
+options.maxNumNodes         = 1024;
+options.maxNumAudioBuses    = 128;
+options.maxNumControlBuses  = 4096;
+options.blockSize           = 64;
 
 Methcla::Engine engine(options);
 engine.start();
@@ -44,6 +46,39 @@ options.audioDriver.bufferSize  = 256;
 ```
 
 Unset fields use the Driver's defaults. Pass a custom `Methcla_AudioDriver*` as the second argument to the `Engine` constructor to bypass the default Driver entirely.
+
+### Soundfile API plugins
+
+The `sampler` and `disksampler` plugins require a soundfile backend. Register one alongside them, or file loading silently fails:
+
+```cpp
+#include <methcla/plugins/soundfile_api_extaudiofile.h> // macOS / iOS
+#include <methcla/plugins/soundfile_api_libsndfile.h>   // Linux / other
+#include <methcla/plugins/soundfile_api_dummy.h>        // no-op, testing only
+
+// Pick the one appropriate for your platform:
+options.addLibrary(methcla_soundfile_api_extaudiofile); // macOS / iOS
+// or
+options.addLibrary(methcla_soundfile_api_libsndfile);   // Linux / other
+// or
+options.addLibrary(methcla_soundfile_api_dummy);        // testing
+```
+
+### Log handler
+
+```cpp
+options.logLevel   = kMethcla_LogWarn;  // kMethcla_LogError, kMethcla_LogInfo, kMethcla_LogDebug
+options.logHandler = [](Methcla_LogLevel level, const char* message) {
+    std::cerr << message << "\n";
+};
+```
+
+After construction you can also enable request-traffic tracing or emit host-side log lines:
+
+```cpp
+engine.setLogFlags(kMethcla_EngineLogRequests); // dump every OSC request sent to the engine
+engine.logLine(kMethcla_LogDebug, "my message");
+```
 
 ---
 
@@ -312,14 +347,16 @@ request.activate(cable2);
 request.closeBundle();
 
 request.closeBundle();
-request.send();
 
-// Free node IDs and buses when everything is torn down.
+// Register handlers BEFORE send to avoid a race where /node/ended fires
+// before the handler is installed.
 engine.addNotificationHandler(engine.freeNodeIdHandler(sampler));
 engine.addNotificationHandler(engine.freeNodeIdHandler(cable2, [&engine, bus1, bus2](Methcla::NodeId) {
     engine.audioBusId().free(bus1);
     engine.audioBusId().free(bus2);
 }));
+
+request.send();
 ```
 
 ---
@@ -338,3 +375,76 @@ request.free(nodeId);
 ```
 
 `request.free` also returns the node ID to the host-side allocator immediately. When freeing from `engine.free` (outside a bundle), the ID is returned at send time.
+
+---
+
+## Soundfile metadata
+
+Include `<methcla/file.hpp>` and make sure a soundfile API plugin is registered (see [Soundfile API plugins](#soundfile-api-plugins)). `Methcla::SoundFile` opens a file for reading its metadata or its sample data:
+
+```cpp
+#include <methcla/file.hpp>
+
+Methcla::SoundFile file(engine, "/path/to/file.wav");
+const auto& info = file.info();
+
+double duration = (double)info.frames / (double)info.samplerate;
+int    channels = info.channels;
+int    rate     = info.samplerate;
+```
+
+`SoundFile` is moveable but not copyable. It closes the underlying file on destruction.
+
+---
+
+## Diagnostics
+
+### Introspection
+
+Query the Engine's current resource usage at any time from the host thread:
+
+```cpp
+auto nodeStats = engine.getNodeTreeStatistics();
+// nodeStats.numGroups  — number of live Groups
+// nodeStats.numSynths  — number of live Synths
+
+auto memStats = engine.getRealtimeMemoryStatistics();
+// memStats.freeNumBytes
+// memStats.usedNumBytes
+// memStats.totalNumBytes()
+```
+
+Both calls block until the Engine responds. Use them to detect node or memory exhaustion (`maxNumNodes`, `realtimeMemorySize`).
+
+### ID allocator statistics
+
+```cpp
+auto nodeAlloc = engine.nodeIdAllocator().getStatistics();
+// nodeAlloc.capacity()   — equals maxNumNodes - 1
+// nodeAlloc.allocated()  — currently checked-out node IDs
+// nodeAlloc.available()
+```
+
+---
+
+## CMake integration
+
+### Installed package
+
+```cmake
+find_package(methcla CONFIG REQUIRED)
+target_link_libraries(myapp PRIVATE methcla::methcla)
+# oscpp is a public transitive dependency — no separate find_package needed.
+```
+
+### Subdirectory / FetchContent
+
+```cmake
+add_subdirectory(methcla)
+# or
+include(FetchContent)
+FetchContent_Declare(methcla GIT_REPOSITORY <url> GIT_TAG <tag>)
+FetchContent_MakeAvailable(methcla)
+
+target_link_libraries(myapp PRIVATE methcla::methcla)
+```

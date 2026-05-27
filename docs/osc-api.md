@@ -16,23 +16,36 @@ Get the current engine time as a `Methcla_Time` value (currently double precisio
 
 Encode a `Methcla_Time` value as a 64 bit unsigned integer for use as an OSC bundle timestamp.
 
-## OSC API
+## Node placement values (`target-spec`)
 
-* `/group/new i:node-id i:target-id i:target-spec`
+Used by **`/group/new`** and **`/synth/new`** to specify where a new node is inserted relative to `target-id`:
 
-  Create a new group with id `node-id` and insert it into the group with id `target-id` according to `target-spec`. **NOTE**: `target-spec` is currently ignored, new groups are always placed at the tail of the target group.
+| Constant | Meaning |
+|---|---|
+| `kMethcla_NodePlacementHeadOfGroup` | head of target group |
+| `kMethcla_NodePlacementTailOfGroup` | tail of target group |
+| `kMethcla_NodePlacementBeforeNode` | immediately before target node |
+| `kMethcla_NodePlacementAfterNode` | immediately after target node |
 
-* `/synth/new s:definition-name i:node-id i:target-id i:target-spec [f:synth-controls] [synth-options]`
+## Commands
 
-  Create a new synth with id `node-id` from the synth definition `definition-name` and insert it into the group with id `target-id` according to `target-spec`. `synth-controls` is an array of initial control values; its length must match the number of control inputs provided by the synth. `synth-options` is an array of options passed to the synth constructor; it may be empty and its interpretation depends on the synth definition.
+* **`/group/new`** `i:node-id i:target-id i:target-spec`
 
-  **NOTE**: `target-spec` is currently ignored, new groups are always placed at the tail of the target group.
+  Create a new group with id `node-id` and insert it into the node tree relative to `target-id` according to `target-spec`.
 
-* `/synth/activate i:node-id`
+* **`/group/freeAll`** `i:node-id`
 
-  Activate a synth after it has been created. In order to produce output, each `/synth/new` *must* be followed by `/synth/activate`. The intention is to be able to do useful asynchronous work (such as loading a soundfile) in the synth constructor by performing `/synth/new` instantly and scheduling `/synth/activate` into the future by the desired amount so as to compensate for the I/O latency and jitter.
+  Free all child nodes of the group `node-id`, keeping the group itself alive.
 
-* `/synth/map/input i:node-id i:index i:bus-id i:flags`
+* **`/synth/new`** `s:definition-name i:node-id i:target-id i:target-spec [f:synth-controls] [synth-options]`
+
+  Create a new synth with id `node-id` from the synth definition `definition-name` and insert it into the node tree relative to `target-id` according to `target-spec`. `synth-controls` is an array of initial control values; its length must match the number of control inputs provided by the synth. `synth-options` is an array of options passed to the synth constructor; it may be empty and its interpretation depends on the synth definition.
+
+* **`/synth/activate`** `i:node-id`
+
+  Activate a synth after it has been created. In order to produce output, each **`/synth/new`** *must* be followed by **`/synth/activate`**. The intention is to be able to do useful asynchronous work (such as loading a soundfile) in the synth constructor by performing **`/synth/new`** instantly and scheduling **`/synth/activate`** into the future by the desired amount so as to compensate for the I/O latency and jitter.
+
+* **`/synth/map/input`** `i:node-id i:index i:bus-id i:flags`
 
   Map a synth's audio input `index` to `bus-id`. Flags may be one of
 
@@ -52,7 +65,7 @@ Encode a `Methcla_Time` value as a 64 bit unsigned integer for use as an OSC bun
 
      Zero bus before reading (default).
 
-* `/synth/map/output i:node-id i:index i:bus-id i:flags`
+* **`/synth/map/output`** `i:node-id i:index i:bus-id i:flags`
 
   Map a synth's audio output `index` to `bus-id`. Flags may be one of
 
@@ -72,10 +85,54 @@ Encode a `Methcla_Time` value as a 64 bit unsigned integer for use as an OSC bun
 
      Replace bus contents by output.
 
-* `/node/free` i:node-id
+* **`/synth/property/doneFlags/set`** `i:node-id i:flags`
+
+  Set the done-action flags for a synth. `flags` is a bitmask of:
+
+  | Constant | Effect when `synthDone` fires |
+  |---|---|
+  | `kMethcla_NodeDoneDoNothing` | nothing — synth goes silent but stays allocated |
+  | `kMethcla_NodeDoneFreeSelf` | free this synth |
+  | `kMethcla_NodeDoneFreePreceeding` | free the node immediately before this one |
+  | `kMethcla_NodeDoneFreeFollowing` | free the node immediately after this one |
+  | `kMethcla_NodeDoneFreeAllSiblings` | free all other nodes in the same group |
+  | `kMethcla_NodeDoneFreeParent` | free the parent group |
+  | `kMethcla_NodeDoneNotify` | send a **`/node/done`** notification to the host |
+
+* **`/node/free`** `i:node-id`
 
   Free a node and all associated resources. Freeing a group frees all its children recursively.
 
-* `/node/set` i:node-id i:index f:value
+* **`/node/set`** `i:node-id i:index f:value`
 
   Set a synth's control input at `index` to the specified value.
+
+## Query messages
+
+These messages take a `request-id` and return a response message at the same address. On error the engine responds with **`/error`** instead (see below).
+
+* **`/node/tree/statistics`** `i:request-id`
+
+  Request node tree statistics. Response: **`/node/tree/statistics`** `i:num-groups i:num-synths`
+
+* **`/engine/realtime-memory/statistics`** `i:request-id`
+
+  Request realtime memory statistics. Response: **`/engine/realtime-memory/statistics`** `i:free-bytes i:used-bytes`
+
+## Notifications
+
+The engine sends these messages to the host without a corresponding request. They arrive on the packet handler registered via `methcla_engine_options_set_packet_handler` with `requestId == kMethcla_Notification`.
+
+* **`/node/done`** `i:node-id`
+
+  Sent when a synth signals completion (`synthDone`) and `kMethcla_NodeDoneNotify` is set in its done flags.
+
+* **`/node/ended`** `i:node-id`
+
+  Sent unconditionally when any node is freed (by any means, including **`/node/free`**, done-action flags, or parent group teardown).
+
+## Error responses
+
+* **`/error`** `i:error-code s:message`
+
+  Returned in place of the normal response when a query fails, or dispatched as a notification when a command fails. `error-code` is a `Methcla_ErrorCode` value.
