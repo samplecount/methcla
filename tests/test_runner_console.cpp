@@ -1,4 +1,5 @@
-// Copyright 2013-2019 Samplecount S.L.
+// Copyright (C) 2013-2019 Samplecount S.L.
+// Copyright (C) 2026 Methcla contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 

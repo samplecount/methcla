@@ -1,4 +1,4 @@
-// Copyright (C) 2026 Methcla authors (https://github.com/samplecount/methcla)
+// Copyright (C) 2026 Methcla contributors
 //
 // SPDX-License-Identifier: Apache-2.0
 

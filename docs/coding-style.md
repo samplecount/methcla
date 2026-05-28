@@ -32,7 +32,8 @@
 
 ### Headers
 
-- File header: `// Copyright (C) <year> Methcla authors (https://github.com/samplecount/methcla)` followed by `//` and `// SPDX-License-Identifier: Apache-2.0`.
+- File header for new files: `// Copyright (C) <year> Methcla contributors` followed by `//` and `// SPDX-License-Identifier: Apache-2.0`.
+- When editing a file that already has a copyright notice, add `// Copyright (C) <year> Methcla contributors` as an additional line immediately after the existing copyright line(s); keep the original notice. If the Methcla contributors line is already present, extend its year range to include the current year (e.g. `2026` → `2026-2027`).
 - Use `#pragma once` instead of `#ifndef` include guards.
 - Include order: own header first, then internal headers, then third-party, then standard library. Each group separated by a blank line.
 
