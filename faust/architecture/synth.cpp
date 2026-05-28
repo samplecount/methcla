@@ -15,12 +15,10 @@
 #include "Methcla/Audio/Plugin/API.hpp"
 #include "Methcla/Faust.hpp"
 
-#include <boost/type_traits.hpp>
-
 #include <algorithm>
 #include <cmath>
-#include <map>
 #include <string>
+#include <unordered_map>
 
 using namespace Faust;
 using namespace Methcla::Audio;
@@ -204,8 +202,8 @@ protected:
     Plugin::MetaData*
     addInputZone(float* zone, MethclaControlFlags flags = kMethclaControlFlags)
     {
-        BOOST_ASSERT_MSG(m_controlSpecs.find(zone) == m_controlSpecs.end(),
-                         "duplicate input zone");
+        assert(m_controlSpecs.find(zone) == m_controlSpecs.end() &&
+               "duplicate input zone");
         Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
         m_controlInputSpecs.push_back(spec);
         m_controlSpecs[zone] = spec;
@@ -215,8 +213,8 @@ protected:
     Plugin::MetaData*
     addOutputZone(float* zone, MethclaControlFlags flags = kMethclaControlFlags)
     {
-        BOOST_ASSERT_MSG(m_controlSpecs.find(zone) == m_controlSpecs.end(),
-                         "duplicate output zone");
+        assert(m_controlSpecs.find(zone) == m_controlSpecs.end() &&
+               "duplicate output zone");
         Plugin::ControlSpec* spec = new Plugin::ControlSpec(flags);
         m_controlOutputSpecs.push_back(spec);
         m_controlSpecs[zone] = spec;
@@ -224,8 +222,8 @@ protected:
     }
 
 private:
-    typedef boost::unordered_map<const float*, Plugin::MetaData*> MetaDataMap;
-    typedef boost::unordered_map<const float*, Plugin::ControlSpec*>
+    typedef std::unordered_map<const float*, Plugin::MetaData*> MetaDataMap;
+    typedef std::unordered_map<const float*, Plugin::ControlSpec*>
         ControlSpecMap;
 
     MetaDataMap                  m_metaData;

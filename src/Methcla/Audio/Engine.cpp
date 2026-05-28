@@ -353,7 +353,7 @@ size_t Environment::numAudioBuses() const
 
 AudioBus* Environment::audioBus(AudioBusId id)
 {
-    return m_impl->m_internalAudioBuses.at(id).get();
+    return m_impl->m_internalAudioBuses.at(id.id()).get();
 }
 
 size_t Environment::numExternalAudioOutputs() const
@@ -368,12 +368,12 @@ size_t Environment::numExternalAudioInputs() const
 
 AudioBus* Environment::externalAudioOutput(AudioBusId id)
 {
-    return m_impl->m_externalAudioOutputs.at(id).get();
+    return m_impl->m_externalAudioOutputs.at(id.id()).get();
 }
 
 AudioBus* Environment::externalAudioInput(AudioBusId id)
 {
-    return m_impl->m_externalAudioInputs.at(id).get();
+    return m_impl->m_externalAudioInputs.at(id.id()).get();
 }
 
 Memory::RTMemoryManager& Environment::rtMem()

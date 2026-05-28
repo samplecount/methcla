@@ -16,12 +16,12 @@
 #define METHCLA_AUDIO_AUDIOBUS_HPP_INCLUDED
 
 #include "Methcla/Audio.hpp"
-
-#include <boost/serialization/strong_typedef.hpp>
+#include "Methcla/Utility/StrongId.hpp"
 
 namespace Methcla { namespace Audio {
 
-    BOOST_STRONG_TYPEDEF(uint32_t, AudioBusId);
+    using AudioBusId =
+        Methcla::Utility::StrongId<uint32_t, struct AudioBusIdTag>;
 
     class AudioBus
     {

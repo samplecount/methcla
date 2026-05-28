@@ -15,15 +15,16 @@
 #ifndef METHCLA_AUDIO_NODE_HPP_INCLUDED
 #define METHCLA_AUDIO_NODE_HPP_INCLUDED
 
+#include "Methcla/Utility/StrongId.hpp"
+
 #include <methcla/types.h>
 
-#include <boost/serialization/strong_typedef.hpp>
-
+#include <cstddef>
 #include <cstdint>
 
 namespace Methcla { namespace Audio {
 
-    BOOST_STRONG_TYPEDEF(int32_t, NodeId);
+    using NodeId = Methcla::Utility::StrongId<int32_t, struct NodeIdTag>;
 
     class Environment;
     class Group;

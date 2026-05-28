@@ -32,12 +32,14 @@
 
 ### Headers
 
-- Header guards: `#ifndef METHCLA_<PATH>_HPP_INCLUDED` / `#define` / `#endif`.
+- File header: `// Copyright (C) <year> Methcla authors (https://github.com/samplecount/methcla)` followed by `//` and `// SPDX-License-Identifier: Apache-2.0`.
+- Use `#pragma once` instead of `#ifndef` include guards.
 - Include order: own header first, then internal headers, then third-party, then standard library. Each group separated by a blank line.
 
 ### Namespaces
 
 - `Methcla::` for C++ API.
+- Use C++17 compact nested namespace syntax.
 - Anonymous namespace for translation-unit-local helpers instead of `static`.
 
 ### Formatting

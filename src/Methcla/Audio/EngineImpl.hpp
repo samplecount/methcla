@@ -291,7 +291,8 @@ namespace Methcla { namespace Audio {
 
         bool isValid(NodeId nodeId) const
         {
-            return nodeId >= 0 && (size_t)nodeId < m_nodes.size();
+            return nodeId.id() >= 0 &&
+                   static_cast<size_t>(nodeId.id()) < m_nodes.size();
         }
 
         Methcla_Time currentTime() const
@@ -400,7 +401,7 @@ namespace Methcla { namespace Audio {
                 OSCPP::Client::DynamicPacket packet(
                     OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
                 packet.openMessage(address, 1);
-                packet.int32(nodeId());
+                packet.int32(nodeId().id());
                 packet.closeMessage();
                 env->notify(packet);
             }
@@ -429,7 +430,7 @@ namespace Methcla { namespace Audio {
                 OSCPP::Client::DynamicPacket packet(
                     OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
                 packet.openMessage(address, 1);
-                packet.int32(nodeId());
+                packet.int32(nodeId().id());
                 packet.closeMessage();
                 env->notify(packet);
             }
@@ -440,7 +441,7 @@ namespace Methcla { namespace Audio {
         {
             if (isValid(nodeId))
             {
-                m_nodes[nodeId] = nullptr;
+                m_nodes[nodeId.id()] = nullptr;
                 sendToWorker<NodeEndedNotification>(nodeId);
             }
         }

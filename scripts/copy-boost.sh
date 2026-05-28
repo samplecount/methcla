@@ -26,7 +26,7 @@ version_underscored=$(echo "$version" | tr '.' '_')
 archive="boost_${version_underscored}.tar.bz2"
 download_url="https://archives.boost.io/release/${version}/source/${archive}"
 out_dir="$(cd "$(dirname "$0")/.." && pwd)/external_libraries/boost"
-modules="heap lockfree serialization smart_ptr container_hash"
+modules="heap lockfree container_hash"
 namespace="methcla_boost"
 
 tmpdir=$(mktemp -d)

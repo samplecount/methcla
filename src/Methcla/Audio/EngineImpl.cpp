@@ -67,7 +67,7 @@ template <> const char* nodeTypeName<Synth>()
 
 static inline bool isValidNodeId(const std::vector<Node*>& nodes, NodeId nodeId)
 {
-    return nodeId >= 0 && (size_t)nodeId < nodes.size();
+    return nodeId.id() >= 0 && static_cast<size_t>(nodeId.id()) < nodes.size();
 }
 
 static inline void checkNodeIdIsValid(const std::vector<Node*>& nodes,
@@ -86,7 +86,7 @@ static inline void checkNodeIdIsFree(const std::vector<Node*>& nodes,
 {
     checkNodeIdIsValid(nodes, nodeId);
 
-    if (nodes[nodeId] != nullptr)
+    if (nodes[nodeId.id()] != nullptr)
     {
         throwErrorWith(kMethcla_NodeIdError, [&](std::stringstream& s) {
             s << "Node id " << nodeId << " already in use";
@@ -98,7 +98,7 @@ static inline void addNode(std::vector<Node*>& nodes, Node* node)
 {
     NodeId nodeId(node->id());
     checkNodeIdIsFree(nodes, nodeId);
-    nodes[nodeId] = node;
+    nodes[nodeId.id()] = node;
 }
 
 static inline Node* lookupNode(std::vector<Node*>& nodes, const char* prefix,
@@ -106,7 +106,7 @@ static inline Node* lookupNode(std::vector<Node*>& nodes, const char* prefix,
 {
     checkNodeIdIsValid(nodes, nodeId);
 
-    Node* node = nodes[nodeId];
+    Node* node = nodes[nodeId.id()];
 
     if (node == nullptr)
     {
@@ -529,7 +529,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
         {
             NodeId                  nodeId = NodeId(args.int32());
             int32_t                 index = args.int32();
-            int32_t                 busId = AudioBusId(args.int32());
+            int32_t                 busId = args.int32();
             Methcla_BusMappingFlags flags =
                 Methcla_BusMappingFlags(args.int32());
 
