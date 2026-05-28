@@ -11,10 +11,9 @@
 #include <methcla/plugins/patch-cable.h>
 #include <methcla/plugins/sampler.h>
 
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
-
-#include <tinydir.h>
 
 using namespace Methcla::Examples::Sampler;
 
@@ -34,45 +33,31 @@ static std::vector<Sound> loadSounds(Methcla::Engine&   engine,
 
     std::vector<Sound> result;
 
-    tinydir_dir dir;
-    int         err = tinydir_open(&dir, path.c_str());
-    if (err != 0)
+    for (auto& entry : std::filesystem::directory_iterator(path))
     {
         std::stringstream s;
-        s << "Couldn't open directory " << path << ": " << strerror(errno);
-        throw std::runtime_error(s.str());
-    }
-
-    while (dir.has_next)
-    {
-        tinydir_file file;
-        tinydir_readfile(&dir, &file);
-        std::stringstream s;
-        s << "readfile: " << file.path << " " << file.name << " " << file.is_dir
-          << " " << file.is_reg;
+        s << "readfile: " << entry.path().string() << " "
+          << entry.path().filename().string() << " " << entry.is_directory()
+          << " " << entry.is_regular_file();
         engine.logLine(kMethcla_LogDebug, s.str());
-        if (!file.is_dir)
+        if (!entry.is_directory())
         {
             try
             {
                 engine.logLine(kMethcla_LogDebug,
-                               std::string("Loading sound ") + path + "/" +
-                                   std::string(file.name));
-                result.push_back(
-                    Sound(engine, path + "/" + std::string(file.name)));
+                               std::string("Loading sound ") +
+                                   entry.path().string());
+                result.push_back(Sound(engine, entry.path().string()));
             }
             catch (std::exception& e)
             {
                 std::stringstream s;
-                s << "Exception while registering sound " << file.name << ": "
-                  << e.what();
+                s << "Exception while registering sound "
+                  << entry.path().filename().string() << ": " << e.what();
                 engine.logLine(kMethcla_LogError, s.str());
             }
         }
-        tinydir_next(&dir);
     }
-
-    tinydir_close(&dir);
 
     return result;
 }

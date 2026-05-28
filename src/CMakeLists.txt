@@ -102,11 +102,10 @@ endif()
 target_link_libraries(
     methcla
     PUBLIC oscpp::oscpp
-    PRIVATE $<BUILD_INTERFACE:boost_headers> $<BUILD_INTERFACE:tinydir>
-            $<BUILD_INTERFACE:tlsf> $<BUILD_INTERFACE:${methcla_driver}>)
+    PRIVATE $<BUILD_INTERFACE:boost_headers> $<BUILD_INTERFACE:tlsf>
+            $<BUILD_INTERFACE:${methcla_driver}>)
 
-# GCC false positives triggered by third-party headers (boost::lockfree,
-# tinydir)
+# GCC false positives triggered by third-party headers (boost::lockfree)
 target_compile_options(
     methcla
     PRIVATE

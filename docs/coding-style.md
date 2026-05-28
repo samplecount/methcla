@@ -37,6 +37,10 @@
 - Use `#pragma once` instead of `#ifndef` include guards.
 - Include order: own header first, then internal headers, then third-party, then standard library. Each group separated by a blank line.
 
+### Control flow
+
+- Prefer `else` branches over early returns.
+
 ### Namespaces
 
 - `Methcla::` for C++ API.

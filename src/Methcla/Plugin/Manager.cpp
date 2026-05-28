@@ -1,8 +1,7 @@
 #include "Methcla/Plugin/Manager.hpp"
 
+#include <filesystem>
 #include <stdexcept>
-
-#include <tinydir.h>
 
 using namespace Methcla::Plugin;
 
@@ -36,19 +35,26 @@ void Manager::loadPlugins(Methcla_Host*                             host,
 
 namespace {
     template <typename F>
-    void withDirectory(const std::string& directory, F func)
+    void withDirectory(Methcla_Host* host, const std::string& directory, F func)
     {
-        std::shared_ptr<tinydir_dir> dir(new tinydir_dir, tinydir_close);
-        tinydir_open(dir.get(), directory.c_str());
-        while (dir->has_next)
+        std::error_code                     ec;
+        std::filesystem::directory_iterator it(directory, ec);
+        if (ec)
         {
-            tinydir_file file;
-            tinydir_readfile(dir.get(), &file);
-            if (file.is_reg)
+            methcla_host_log_line(host, kMethcla_LogWarn,
+                                  ("Cannot access plugin directory " +
+                                   directory + ": " + ec.message())
+                                      .c_str());
+        }
+        else
+        {
+            for (auto& entry : it)
             {
-                func(file.path);
+                if (entry.is_regular_file())
+                {
+                    func(entry.path().string());
+                }
             }
-            tinydir_next(dir.get());
         }
     }
 } // namespace
@@ -57,7 +63,7 @@ void Manager::loadPlugins(Methcla_Host* host, const std::string& directory)
 {
     if (m_loader)
     {
-        withDirectory(directory, [&](const std::string& path) {
+        withDirectory(host, directory, [&](const std::string& path) {
             auto plugin = m_loader->open(path);
             if (plugin)
             {
