@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_FAUST_HPP_INCLUDED
-#define METHCLA_FAUST_HPP_INCLUDED
+#pragma once
 
 namespace Faust {
 
@@ -80,5 +79,3 @@ namespace Faust {
         virtual void compute(int len, float** inputs, float** outputs) = 0;
     };
 } // namespace Faust
-
-#endif // METHCLA_FAUST_HPP_INCLUDED

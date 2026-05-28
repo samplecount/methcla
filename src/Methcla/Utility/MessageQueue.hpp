@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED
-#define METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Utility/MessageQueueInterface.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
@@ -294,5 +293,3 @@ namespace Methcla { namespace Utility {
     };
 
 }} // namespace Methcla::Utility
-
-#endif // METHCLA_UTILITY_MESSAGEQUEUE_HPP_INCLUDED

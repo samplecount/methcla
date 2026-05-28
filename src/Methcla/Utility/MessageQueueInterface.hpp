@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_MESSAGE_QUEUE_INTERFACE_HPP_INCLUDED
-#define METHCLA_MESSAGE_QUEUE_INTERFACE_HPP_INCLUDED
+#pragma once
 
 namespace Methcla { namespace Utility {
     template <typename Message> class MessageQueueInterface
@@ -16,5 +15,3 @@ namespace Methcla { namespace Utility {
         virtual bool next(Message& msg) = 0;
     };
 }} // namespace Methcla::Utility
-
-#endif // METHCLA_MESSAGE_QUEUE_INTERFACE_HPP_INCLUDED

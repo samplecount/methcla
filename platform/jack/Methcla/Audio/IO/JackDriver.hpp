@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_IO_JACKDRIVER_HPP
-#define METHCLA_AUDIO_IO_JACKDRIVER_HPP
+#pragma once
 
 #include "Methcla/Audio/IO/Driver.hpp"
 
@@ -56,5 +55,3 @@ namespace Methcla { namespace Audio { namespace IO {
         sample_t**     m_outputBuffers;
     };
 }; }; }; // namespace Methcla::Audio::IO
-
-#endif // METHCLA_AUDIO_IO_JACKDRIVER_HPP

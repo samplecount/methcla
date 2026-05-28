@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef ENGINE_HPP_INCLUDED
-#define ENGINE_HPP_INCLUDED
+#pragma once
 
 #include <methcla/engine.hpp>
 
@@ -97,5 +96,3 @@ namespace Methcla { namespace Examples { namespace Sampler {
     };
 
 }}} // namespace Methcla::Examples::Sampler
-
-#endif // ENGINE_HPP_INCLUDED

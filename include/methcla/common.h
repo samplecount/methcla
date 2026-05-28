@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_COMMON_H_INCLUDED
-#define METHCLA_COMMON_H_INCLUDED
+#pragma once
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -203,5 +202,3 @@ static inline Methcla_Error methcla_no_error()
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* METHCLA_COMMON_H_INCLUDED */

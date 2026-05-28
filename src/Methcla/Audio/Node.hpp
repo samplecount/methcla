@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_NODE_HPP_INCLUDED
-#define METHCLA_AUDIO_NODE_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Utility/StrongId.hpp"
 
@@ -120,5 +119,3 @@ namespace Methcla { namespace Audio {
         bool                  m_done;
     };
 }} // namespace Methcla::Audio
-
-#endif // METHCLA_AUDIO_NODE_HPP_INCLUDED

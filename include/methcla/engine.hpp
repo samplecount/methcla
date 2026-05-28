@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_ENGINE_HPP_INCLUDED
-#define METHCLA_ENGINE_HPP_INCLUDED
+#pragma once
 
 #include <methcla/detail.hpp>
 #include <methcla/detail/result.hpp>
@@ -1322,5 +1321,3 @@ namespace Methcla {
         PacketPool            m_packets;
     };
 }; // namespace Methcla
-
-#endif // METHCLA_ENGINE_HPP_INCLUDED

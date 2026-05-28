@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_ENGINE_H_INCLUDED
-#define METHCLA_ENGINE_H_INCLUDED
+#pragma once
 
 #include <methcla/common.h>
 #include <methcla/file.h>
@@ -180,5 +179,3 @@ METHCLA_EXPORT Methcla_Error methcla_engine_soundfile_open(
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* METHCLA_ENGINE_H_INCLUDED */

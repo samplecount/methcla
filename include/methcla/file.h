@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_FILE_H_INCLUDED
-#define METHCLA_FILE_H_INCLUDED
+#pragma once
 
 #include <methcla/common.h>
 
@@ -117,5 +116,3 @@ methcla_soundfile_write_float(Methcla_SoundFile* file, const float* buffer,
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* METHCLA_FILE_H_INCLUDED */

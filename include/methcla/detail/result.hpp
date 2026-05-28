@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_DETAIL_RESULT_HPP_INCLUDED
-#define METHCLA_DETAIL_RESULT_HPP_INCLUDED
+#pragma once
 
 #include <methcla/common.h>
 
@@ -161,5 +160,3 @@ namespace Methcla { namespace detail {
         }
     };
 }} // namespace Methcla::detail
-
-#endif // METHCLA_DETAIL_RESULT_HPP_INCLUDED

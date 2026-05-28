@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef MethclaMobile_Engine_h
-#define MethclaMobile_Engine_h
+#pragma once
 
 #include <methcla/engine.hpp>
 #include <methcla/plugins/sine.h>
@@ -22,5 +21,3 @@ Methcla::Engine* makeEngine()
 
     return engine;
 }
-
-#endif

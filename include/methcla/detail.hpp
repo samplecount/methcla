@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_DETAIL_HPP_INCLUDED
-#define METHCLA_DETAIL_HPP_INCLUDED
+#pragma once
 
 #include <memory>
 #include <stdexcept>
@@ -87,5 +86,3 @@ namespace Methcla { namespace detail {
                               static_cast<enum_type>(b));
     }
 }} // namespace Methcla::detail
-
-#endif // METHCLA_DETAIL_HPP_INCLUDED

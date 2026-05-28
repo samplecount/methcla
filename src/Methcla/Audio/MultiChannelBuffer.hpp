@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_MULTICHANNELBUFFER_HPP_INCLUDED
-#define METHCLA_AUDIO_MULTICHANNELBUFFER_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Audio.hpp"
 #include "Methcla/Memory.hpp"
@@ -124,4 +123,3 @@ namespace Methcla { namespace Audio {
     };
 
 }} // namespace Methcla::Audio
-#endif // METHCLA_AUDIO_MULTICHANNELBUFFER_HPP_INCLUDED

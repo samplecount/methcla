@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_UTILITY_MACROS_H_INCLUDED
-#define METHCLA_UTILITY_MACROS_H_INCLUDED
+#pragma once
 
 #if defined(__GNUC__)
 #    if __GNUC__ > 4
@@ -23,5 +22,3 @@
 #    define METHCLA_WITHOUT_WARNINGS_BEGIN
 #    define METHCLA_WITHOUT_WARNINGS_END
 #endif
-
-#endif // METHCLA_UTILITY_MACROS_H_INCLUDED

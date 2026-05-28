@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_TESTS_HPP_INCLUDED
-#define METHCLA_TESTS_HPP_INCLUDED
+#pragma once
 
 #include <cmath>
 #include <cstdio>
@@ -111,5 +110,3 @@ namespace Methcla { namespace Tests {
 #endif
     }
 }} // namespace Methcla::Tests
-
-#endif // METHCLA_TESTS_HPP_INCLUDED

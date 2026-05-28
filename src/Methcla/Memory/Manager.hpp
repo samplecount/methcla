@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_MEMORY_MANAGER_HPP_INCLUDED
-#define METHCLA_MEMORY_MANAGER_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Memory.hpp"
 
@@ -156,5 +155,3 @@ namespace Methcla { namespace Memory {
         }
     };
 }} // namespace Methcla::Memory
-
-#endif // METHCLA_MEMORY_MANAGER_HPP_INCLUDED

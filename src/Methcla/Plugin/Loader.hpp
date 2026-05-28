@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_PLUGIN_LOADER_HPP_INCLUDED
-#define METHCLA_PLUGIN_LOADER_HPP_INCLUDED
+#pragma once
 
 #include <memory>
 #include <string>
@@ -33,5 +32,3 @@ namespace Methcla { namespace Plugin {
     std::unique_ptr<Loader> defaultLoader();
 
 }} // namespace Methcla::Plugin
-
-#endif // METHCLA_PLUGIN_LOADER_HPP_INCLUDED

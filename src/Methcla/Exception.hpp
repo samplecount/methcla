@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_EXCEPTION_HPP_INCLUDED
-#define METHCLA_EXCEPTION_HPP_INCLUDED
+#pragma once
 
 #include <methcla/common.h>
 
@@ -44,5 +43,3 @@ namespace Methcla {
         }
     };
 } // namespace Methcla
-
-#endif // METHCLA_EXCEPTION_HPP_INCLUDED

@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef THADDEUS_SYNTH_HPP_INCLUDED
-#define THADDEUS_SYNTH_HPP_INCLUDED
+#pragma once
 
 #include <methcla/engine.hpp>
 
@@ -33,5 +32,3 @@ namespace thaddeus {
         std::unordered_map<VoiceId, Methcla::SynthId> m_voices;
     };
 } // namespace thaddeus
-
-#endif // THADDEUS_SYNTH_HPP_INCLUDED

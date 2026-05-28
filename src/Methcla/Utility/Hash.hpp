@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_UTILITY_HASH_HPP_INCLUDED
-#define METHCLA_UTILITY_HASH_HPP_INCLUDED
+#pragma once
 
 #include <boost/functional/hash.hpp>
 
@@ -32,5 +31,3 @@ namespace Methcla { namespace Utility { namespace Hash {
         }
     };
 }}} // namespace Methcla::Utility::Hash
-
-#endif // METHCLA_UTILITY_HASH_HPP_INCLUDED

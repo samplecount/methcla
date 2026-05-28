@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_PLUGIN_H_INCLUDED
-#define METHCLA_PLUGIN_H_INCLUDED
+#pragma once
 
 #include <methcla/common.h>
 #include <methcla/file.h>
@@ -358,5 +357,3 @@ static inline void methcla_library_destroy(Methcla_Library* library)
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* METHCLA_PLUGIN_H_INCLUDED */

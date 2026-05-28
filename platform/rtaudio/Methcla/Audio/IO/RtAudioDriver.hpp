@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_IO_RTAUDIO_DRIVER_HPP
-#define METHCLA_AUDIO_IO_RTAUDIO_DRIVER_HPP
+#pragma once
 
 #include "Methcla/Audio/IO/Driver.hpp"
 #include "Methcla/Audio/MultiChannelBuffer.hpp"
@@ -43,5 +42,3 @@ namespace Methcla { namespace Audio { namespace IO {
                            unsigned int numFrames, double streamTime);
     };
 }; }; }; // namespace Methcla::Audio::IO
-
-#endif // METHCLA_AUDIO_IO_RTAUDIO_DRIVER_HPP

@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_LOG_H_INCLUDED
-#define METHCLA_LOG_H_INCLUDED
+#pragma once
 
 typedef enum Methcla_LogLevel
 {
@@ -19,5 +18,3 @@ typedef struct Methcla_LogHandler
     void* handle;
     void (*log_line)(void* handle, Methcla_LogLevel level, const char* message);
 } Methcla_LogHandler;
-
-#endif /* METHCLA_LOG_H_INCLUDED */

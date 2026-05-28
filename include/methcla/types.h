@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_TYPES_H_INCLUDED
-#define METHCLA_TYPES_H_INCLUDED
+#pragma once
 
 typedef enum Methcla_NodePlacement
 {
@@ -32,5 +31,3 @@ typedef enum Methcla_NodeDoneFlags
     kMethcla_NodeDoneFreeParent = 0x10,
     kMethcla_NodeDoneNotify = 0x20
 } Methcla_NodeDoneFlags;
-
-#endif /* METHCLA_TYPES_H_INCLUDED */

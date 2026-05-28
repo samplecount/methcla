@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED
-#define METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED
+#pragma once
 
 namespace Methcla { namespace Utility {
 
@@ -30,5 +29,3 @@ namespace Methcla { namespace Utility {
     };
 
 }} // namespace Methcla::Utility
-
-#endif // METHCLA_UTILITY_SEMAPHORE_HPP_INCLUDED

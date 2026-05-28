@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
-#define METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Audio.hpp"
 #include "Methcla/Audio/MultiChannelBuffer.hpp"
@@ -58,5 +57,3 @@ namespace Methcla { namespace Audio { namespace IO {
     };
 
 }}} // namespace Methcla::Audio::IO
-
-#endif // METHCLA_AUDIO_IO_DRIVER_HPP_INCLUDED

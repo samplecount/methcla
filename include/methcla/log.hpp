@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_LOG_HPP_INCLUDED
-#define METHCLA_LOG_HPP_INCLUDED
+#pragma once
 
 #include <methcla/log.h>
 
@@ -70,5 +69,3 @@ namespace Methcla {
     };
 
 } // namespace Methcla
-
-#endif // METHCLA_LOG_HPP_INCLUDED

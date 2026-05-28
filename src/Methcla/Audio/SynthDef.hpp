@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
-#define METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Utility/Hash.hpp"
 
@@ -86,5 +85,3 @@ namespace Methcla { namespace Audio {
         SynthDefMap;
 
 }} // namespace Methcla::Audio
-
-#endif // METHCLA_AUDIO_SYNTHDEF_HPP_INCLUDED

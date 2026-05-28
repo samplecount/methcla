@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_WORKER_INTERFACE_HPP_INCLUDED
-#define METHCLA_WORKER_INTERFACE_HPP_INCLUDED
+#pragma once
 
 namespace Methcla { namespace Utility {
     template <typename Command> class WorkerInterface
@@ -21,5 +20,3 @@ namespace Methcla { namespace Utility {
         virtual void perform() = 0;
     };
 }} // namespace Methcla::Utility
-
-#endif // METHCLA_WORKER_INTERFACE_HPP_INCLUDED

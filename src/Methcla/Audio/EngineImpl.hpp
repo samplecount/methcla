@@ -3,8 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#ifndef METHCLA_AUDIO_ENGINE_IMPL_HPP_INCLUDED
-#define METHCLA_AUDIO_ENGINE_IMPL_HPP_INCLUDED
+#pragma once
 
 #include "Methcla/Audio/AudioBus.hpp"
 #include "Methcla/Audio/Group.hpp"
@@ -523,5 +522,3 @@ namespace Methcla { namespace Audio {
     };
 
 }} // namespace Methcla::Audio
-
-#endif // METHCLA_AUDIO_ENGINE_IMPL_HPP_INCLUDED
