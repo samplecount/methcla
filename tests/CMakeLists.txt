@@ -15,9 +15,12 @@ if(METHCLA_BUILD_TESTS)
     # =============================================================================
     # methcla_tests
 
-    add_executable(methcla_tests test_runner_console.cpp methcla_tests.cpp)
+    add_executable(
+        methcla_tests
+        methcla_tests.cpp semaphore_tests.cpp worker_tests.cpp memory_tests.cpp
+        engine_tests.cpp ${CMAKE_CURRENT_BINARY_DIR}/config.cpp)
 
-    target_include_directories(methcla_tests PRIVATE ../src)
+    target_include_directories(methcla_tests PRIVATE . ../src)
     target_include_directories(methcla_tests SYSTEM
                                PRIVATE ../external_libraries/boost)
 
@@ -25,21 +28,5 @@ if(METHCLA_BUILD_TESTS)
     methcla_target_warnings(methcla_tests)
 
     add_test(methcla_tests methcla_tests)
-
-    # =============================================================================
-    # methcla_engine_tests
-
-    add_executable(
-        methcla_engine_tests test_runner_console.cpp methcla_engine_tests.cpp
-                             ${CMAKE_CURRENT_BINARY_DIR}/config.cpp)
-
-    target_include_directories(methcla_engine_tests PRIVATE . ../src)
-    target_include_directories(methcla_engine_tests SYSTEM
-                               PRIVATE ../external_libraries/boost)
-
-    target_link_libraries(methcla_engine_tests PRIVATE GTest::gtest methcla)
-    methcla_target_warnings(methcla_engine_tests)
-
-    add_test(methcla_engine_tests methcla_engine_tests)
 
 endif() # METHCLA_BUILD_TESTS

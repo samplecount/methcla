@@ -61,6 +61,11 @@ Enforced by clang-format. Configuration is in `.clang-format`. Run `pre-commit r
 - `snake_case` for all identifiers.
 - Header guards: `#ifndef METHCLA_<NAME>_H_INCLUDED`.
 
+## Testing
+
+- Name tests as `Subject_Description` (e.g. `Methcla_Utility_Semaphore.TryWait_empty_returns_false`).
+- Add a comment before each test describing the scenario and how it verifies the behaviour, unless the name makes it self-evident.
+
 ## Python
 
 - Type annotations on all function signatures.

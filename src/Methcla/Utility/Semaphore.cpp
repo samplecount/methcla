@@ -3,152 +3,192 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "Methcla/Exception.hpp"
 #include "Methcla/Utility/Semaphore.hpp"
 
-#if !METHCLA_USE_CV_SEMAPHORE
+#include <memory>
 
-#    include "Methcla/Exception.hpp"
+#if defined(__APPLE__)
 
-#    include "zix/sem.h"
+#    include <mach/mach.h>
+#    include <mach/mach_error.h>
 
-#    include <memory>
-#    include <stdexcept>
+namespace Methcla { namespace Utility { namespace detail {
 
-using namespace Methcla;
+    class SemaphoreImpl
+    {
+    public:
+        SemaphoreImpl(unsigned initial)
+        {
+            const kern_return_t kr =
+                semaphore_create(mach_task_self(), &m_sem, SYNC_POLICY_FIFO,
+                                 static_cast<int>(initial));
+            if (kr != KERN_SUCCESS)
+                throw Error(kMethcla_SystemError, mach_error_string(kr));
+        }
+
+        ~SemaphoreImpl()
+        {
+            semaphore_destroy(mach_task_self(), m_sem);
+        }
+
+        void post()
+        {
+            semaphore_signal(m_sem);
+        }
+
+        void wait()
+        {
+            const kern_return_t kr = semaphore_wait(m_sem);
+            if (kr != KERN_SUCCESS)
+                throw Error(kMethcla_SystemError, mach_error_string(kr));
+        }
+
+        bool tryWait()
+        {
+            const mach_timespec_t zero = {0, 0};
+            return semaphore_timedwait(m_sem, zero) == KERN_SUCCESS;
+        }
+
+    private:
+        semaphore_t m_sem;
+    };
+
+}}} // namespace Methcla::Utility::detail
+
+#elif defined(_WIN32)
+
+#    include <string>
+
+#    include <windows.h>
+
+namespace {
+    static std::string win32ErrorMessage(const DWORD code)
+    {
+        char* raw = nullptr;
+        FormatMessageA(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+            nullptr, code, 0, reinterpret_cast<LPSTR>(&raw), 0, nullptr);
+        const auto deleter = [](char* p) { LocalFree(p); };
+        const auto msg = std::unique_ptr<char, decltype(deleter)>(raw, deleter);
+        return msg ? msg.get() : "unknown error";
+    }
+} // namespace
+
+namespace Methcla { namespace Utility { namespace detail {
+
+    class SemaphoreImpl
+    {
+    public:
+        SemaphoreImpl(unsigned initial)
+        {
+            m_sem = CreateSemaphore(nullptr, static_cast<LONG>(initial),
+                                    LONG_MAX, nullptr);
+            if (m_sem == nullptr)
+                throw Error(kMethcla_SystemError,
+                            win32ErrorMessage(GetLastError()));
+        }
+
+        ~SemaphoreImpl()
+        {
+            CloseHandle(m_sem);
+        }
+
+        void post()
+        {
+            ReleaseSemaphore(m_sem, 1, nullptr);
+        }
+
+        void wait()
+        {
+            if (WaitForSingleObject(m_sem, INFINITE) != WAIT_OBJECT_0)
+                throw Error(kMethcla_SystemError,
+                            win32ErrorMessage(GetLastError()));
+        }
+
+        bool tryWait()
+        {
+            return WaitForSingleObject(m_sem, 0) == WAIT_OBJECT_0;
+        }
+
+    private:
+        HANDLE m_sem;
+    };
+
+}}} // namespace Methcla::Utility::detail
+
+#else // POSIX
+
+#    include <cerrno>
+#    include <cstring>
+
+#    include <semaphore.h>
+
+namespace Methcla { namespace Utility { namespace detail {
+
+    class SemaphoreImpl
+    {
+    public:
+        SemaphoreImpl(unsigned initial)
+        {
+            if (sem_init(&m_sem, 0, initial) != 0)
+            {
+                const int e = errno;
+                throw Error(kMethcla_SystemError, strerror(e));
+            }
+        }
+
+        ~SemaphoreImpl()
+        {
+            sem_destroy(&m_sem);
+        }
+
+        void post()
+        {
+            sem_post(&m_sem);
+        }
+
+        void wait()
+        {
+            while (sem_wait(&m_sem) != 0)
+            {
+                const int e = errno;
+                if (e != EINTR)
+                    throw Error(kMethcla_SystemError, strerror(e));
+            }
+        }
+
+        bool tryWait()
+        {
+            return sem_trywait(&m_sem) == 0;
+        }
+
+    private:
+        sem_t m_sem;
+    };
+
+}}} // namespace Methcla::Utility::detail
+
+#endif
+
 using namespace Methcla::Utility;
 
-class Methcla::Utility::detail::SemaphoreImpl : public ZixSem
-{};
-
-static void check(ZixStatus status)
-{
-    switch (status)
-    {
-        case ZIX_STATUS_SUCCESS:
-            break;
-        case ZIX_STATUS_ERROR:
-            throw Error(kMethcla_UnspecifiedError);
-        case ZIX_STATUS_NO_MEM:
-            throw std::bad_alloc();
-        case ZIX_STATUS_NOT_FOUND:
-            throw Error(kMethcla_FileNotFoundError);
-        case ZIX_STATUS_EXISTS:
-            throw Error(kMethcla_FileExistsError);
-        case ZIX_STATUS_BAD_ARG:
-            throw Error(kMethcla_ArgumentError);
-        case ZIX_STATUS_BAD_PERMS:
-            throw Error(kMethcla_PermissionsError);
-    }
-}
-
 Semaphore::Semaphore(unsigned initial)
-{
-    m_impl = new detail::SemaphoreImpl;
-    ZixStatus status = zix_sem_init(m_impl, initial);
-    check(status);
-}
+: m_impl(std::make_unique<detail::SemaphoreImpl>(initial))
+{}
 
-Semaphore::~Semaphore()
-{
-    zix_sem_destroy(m_impl);
-    delete m_impl;
-}
+Semaphore::~Semaphore() = default;
 
 void Semaphore::post()
 {
-    zix_sem_post(m_impl);
+    m_impl->post();
 }
-
 void Semaphore::wait()
 {
-    ZixStatus status = zix_sem_wait(m_impl);
-    check(status);
+    m_impl->wait();
 }
-
 bool Semaphore::tryWait()
 {
-    return zix_sem_try_wait(m_impl);
+    return m_impl->tryWait();
 }
-
-#else // !METHCLA_USE_CV_SEMAPHORE
-#    include <condition_variable>
-#    include <mutex>
-
-namespace Methcla { namespace Utility {
-
-    namespace detail {
-        class SemaphoreImpl
-        {
-            std::mutex              m_mutex;
-            std::condition_variable m_condVar;
-            unsigned                m_count;
-
-        public:
-            SemaphoreImpl(unsigned count)
-            : m_count(count)
-            {}
-
-            void post()
-            {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                m_count++;
-                m_condVar.notify_one();
-            }
-
-            void wait()
-            {
-                std::unique_lock<std::mutex> lock(m_mutex);
-
-                while (m_count == 0)
-                {
-                    m_condVar.wait(lock);
-                }
-
-                m_count--;
-            }
-
-            bool tryWait()
-            {
-                std::unique_lock<std::mutex> lock(m_mutex);
-
-                if (m_count > 0)
-                {
-                    m_count--;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        };
-    } // namespace detail
-
-    Semaphore::Semaphore(unsigned initial)
-    {
-        m_impl = new detail::SemaphoreImpl(initial);
-    }
-
-    Semaphore::~Semaphore()
-    {
-        delete m_impl;
-    }
-
-    void Semaphore::post()
-    {
-        m_impl->post();
-    }
-
-    void Semaphore::wait()
-    {
-        m_impl->wait();
-    }
-
-    bool Semaphore::tryWait()
-    {
-        return m_impl->tryWait();
-    }
-
-}} // namespace Methcla::Utility
-
-#endif // !METHCLA_USE_CV_SEMAPHORE
