@@ -8,7 +8,7 @@ A real-time C++ audio engine library for macOS and Linux. Exposes a C API with C
 
 - CMake 3.24+, C++17 (GCC or Clang)
 - Optional: [RtAudio](https://www.music.mcgill.ca/~gary/rtaudio/) for audio I/O (`-DMETHCLA_ENABLE_RTAUDIO=ON`)
-- Optional: [libsndfile](https://libsndfile.github.io/libsndfile/) for soundfile support on Linux
+- Optional: [libsndfile](https://libsndfile.github.io/libsndfile/) for soundfile support
 
 ## Build
 
