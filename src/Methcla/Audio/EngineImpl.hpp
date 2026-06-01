@@ -24,6 +24,8 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 // OSC request with reference counting.
@@ -261,6 +263,27 @@ namespace Methcla { namespace Audio {
         SynthDefMap                            m_synthDefs;
         std::list<const Methcla_SoundFileAPI*> m_soundFileAPIs;
 
+        using ResourceDefMap =
+            std::unordered_map<std::string, const Methcla_ResourceDef*>;
+        ResourceDefMap m_resourceDefs;
+
+        struct ResourceEntry
+        {
+            enum class State
+            {
+                Free,
+                Constructing,
+                Live,
+                Destroying
+            };
+            State                      state = State::Free;
+            bool                       freePending = false;
+            const Methcla_ResourceDef* def = nullptr;
+            void*                      data = nullptr;
+            size_t                     refCount = 0;
+        };
+        std::vector<ResourceEntry> m_resources;
+
         std::atomic<int> m_logLevel;
         std::atomic<int> m_logFlags;
 
@@ -435,6 +458,94 @@ namespace Methcla { namespace Audio {
                 sendToWorker<NodeEndedNotification>(nodeId);
             }
         }
+
+        class ResourceErrorNotification : public Notification
+        {
+            int32_t     m_resourceId;
+            const char* m_message; // must be a string literal or static string
+
+        public:
+            ResourceErrorNotification(int32_t resourceId, const char* message)
+            : m_resourceId(resourceId)
+            , m_message(message)
+            {}
+
+        private:
+            void notify(Environment* env) override
+            {
+                static const char*           address = "/resource/error";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 2) + OSCPP::Size::int32(1) +
+                    OSCPP::Size::string(m_message));
+                packet.openMessage(address, 2);
+                packet.int32(m_resourceId);
+                packet.string(m_message);
+                packet.closeMessage();
+                env->notify(packet);
+            }
+        };
+
+        //* Context: RT
+        void notifyResourceError(int32_t resourceId, const char* message)
+        {
+            sendToWorker<ResourceErrorNotification>(resourceId, message);
+        }
+
+        class ResourceReadyNotification : public Notification
+        {
+            int32_t m_resourceId;
+
+        public:
+            explicit ResourceReadyNotification(int32_t resourceId)
+            : m_resourceId(resourceId)
+            {}
+
+        private:
+            void notify(Environment* env) override
+            {
+                static const char*           address = "/resource/ready";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+                packet.openMessage(address, 1);
+                packet.int32(m_resourceId);
+                packet.closeMessage();
+                env->notify(packet);
+            }
+        };
+
+        //* Context: RT
+        void notifyResourceReady(int32_t resourceId)
+        {
+            sendToWorker<ResourceReadyNotification>(resourceId);
+        }
+
+        void registerResourceDef(const Methcla_ResourceDef* def);
+
+        //* Context: RT — schedule NRT destroy + /resource/destroyed
+        // notification.
+        void scheduleResourceDestroy(int32_t resourceId);
+
+        class ResourceDestroyedNotification : public Notification
+        {
+            int32_t m_resourceId;
+
+        public:
+            explicit ResourceDestroyedNotification(int32_t resourceId)
+            : m_resourceId(resourceId)
+            {}
+
+        private:
+            void notify(Environment* env) override
+            {
+                static const char*           address = "/resource/destroyed";
+                OSCPP::Client::DynamicPacket packet(
+                    OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+                packet.openMessage(address, 1);
+                packet.int32(m_resourceId);
+                packet.closeMessage();
+                env->notify(packet);
+            }
+        };
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)

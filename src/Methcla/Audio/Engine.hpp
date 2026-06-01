@@ -55,6 +55,7 @@ namespace Methcla { namespace Audio {
             size_t                             realtimeMemorySize = 1024 * 1024;
             size_t                             maxNumNodes = 1024;
             size_t                             maxNumAudioBuses = 1024;
+            size_t                             maxNumResources = 256;
             size_t                             maxNumControlBuses = 4096;
             size_t                             sampleRate = 44100;
             size_t                             blockSize = 64;
@@ -137,6 +138,9 @@ namespace Methcla { namespace Audio {
 
         //* Register SynthDef.
         void registerSynthDef(const Methcla_SynthDef* synthDef);
+
+        //* Register ResourceDef.
+        void registerResourceDef(const Methcla_ResourceDef* def);
 
         //* Lookup SynthDef
         const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;

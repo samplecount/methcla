@@ -50,6 +50,15 @@ namespace {
     }
 
     METHCLA_C_LINKAGE void
+    methcla_api_host_register_resource_def(Methcla_Host*              host,
+                                           const Methcla_ResourceDef* def)
+    {
+        assert(host && host->handle);
+        assert(def);
+        static_cast<Environment*>(host->handle)->registerResourceDef(def);
+    }
+
+    METHCLA_C_LINKAGE void
     methcla_api_host_register_soundfile_api(Methcla_Host*         host,
                                             Methcla_SoundFileAPI* api)
     {
@@ -295,7 +304,7 @@ Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
           methcla_api_host_free, methcla_api_host_alloc_aligned,
           methcla_api_host_free_aligned, methcla_api_host_soundfile_open,
           methcla_api_host_perform_command, methcla_api_host_notify,
-          methcla_api_host_log_line})
+          methcla_api_host_log_line, methcla_api_host_register_resource_def})
 
 // Methcla_World interface
 , m_world({this, methcla_api_world_samplerate, methcla_api_world_block_size,
@@ -465,6 +474,11 @@ void Environment::notify(const OSCPP::Client::Packet& packet)
 void Environment::registerSynthDef(const Methcla_SynthDef* def)
 {
     m_impl->registerSynthDef(def);
+}
+
+void Environment::registerResourceDef(const Methcla_ResourceDef* def)
+{
+    m_impl->registerResourceDef(def);
 }
 
 const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const

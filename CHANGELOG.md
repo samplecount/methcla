@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `METHCLA_BUILD_TESTS` CMake option, defaults to on when building as top-level project (#122)
 - CMake presets (`debug`, `release`) and GitHub Actions CI replacing ad-hoc configuration and Travis CI (#118)
 - Project documentation: CONTRIBUTING guide, architecture overview with Mermaid diagram, OSC API reference, examples README
+- Generic RT/NRT shared resource system (#147): `Methcla_ResourceDef` plugin API, `ResourceId` and `allocResourceId`/`freeResourceId` client API, OSC commands `/resource/new` and `/resource/free`, notifications `/resource/ready`, `/resource/error`, `/resource/destroyed`, with `freePending` support for races between construction and free
 
 ### Changed
 

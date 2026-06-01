@@ -17,8 +17,13 @@ if(METHCLA_BUILD_TESTS)
 
     add_executable(
         methcla_tests
-        methcla_tests.cpp semaphore_tests.cpp worker_tests.cpp memory_tests.cpp
-        engine_tests.cpp ${CMAKE_CURRENT_BINARY_DIR}/config.cpp)
+        methcla_tests.cpp
+        semaphore_tests.cpp
+        worker_tests.cpp
+        memory_tests.cpp
+        engine_tests.cpp
+        resource_tests.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/config.cpp)
 
     target_include_directories(methcla_tests PRIVATE . ../src)
     target_include_directories(methcla_tests SYSTEM

@@ -214,6 +214,7 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, LogHandler logHandler,
 , m_epoch(0)
 , m_currentTime(0)
 , m_nodes(options.maxNumNodes, nullptr)
+, m_resources(options.maxNumResources)
 , m_logLevel(options.logLevel)
 , m_logFlags(kMethcla_EngineLogDefault)
 {
@@ -713,6 +714,107 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
 
             sendToWorker<CommandNodeTreeStatistics>(requestId, stats);
         }
+        else if (msg == "/resource/new")
+        {
+            class ResourceConstructCommand
+            {
+                EnvironmentImpl*           m_impl;
+                int32_t                    m_resourceId;
+                const Methcla_ResourceDef* m_def;
+                void*                      m_options;
+                void*                      m_result;
+
+                static void completeOnRT(Environment* env, void* data)
+                {
+                    auto* self = static_cast<ResourceConstructCommand*>(data);
+                    auto& entry = self->m_impl->m_resources[self->m_resourceId];
+                    entry.def = self->m_def;
+                    entry.data = self->m_result;
+
+                    if (entry.freePending)
+                    {
+                        entry.state = ResourceEntry::State::Destroying;
+                        self->m_impl->scheduleResourceDestroy(
+                            self->m_resourceId);
+                    }
+                    else
+                    {
+                        entry.state = ResourceEntry::State::Live;
+                        self->m_impl->notifyResourceReady(self->m_resourceId);
+                    }
+                    env->rtMem().free(self);
+                }
+
+            public:
+                ResourceConstructCommand(EnvironmentImpl*           impl,
+                                         int32_t                    resourceId,
+                                         const Methcla_ResourceDef* def,
+                                         void*                      options)
+                : m_impl(impl)
+                , m_resourceId(resourceId)
+                , m_def(def)
+                , m_options(options)
+                , m_result(nullptr)
+                {}
+
+                void perform(Environment* env)
+                {
+                    Methcla_Host host(*env);
+                    m_result = Memory::alloc(m_def->instance_size);
+                    if (m_def->construct)
+                        m_def->construct(&host, m_def, m_options, m_result);
+                    if (m_options)
+                        env->sendFromWorker(perform_rt_free, m_options);
+                    env->sendFromWorker(completeOnRT, this);
+                }
+            };
+
+            /* args: requestId:i  resourceId:i  uri:s  [options...] */
+            args.int32(); // requestId — unused for now
+            const int32_t resourceId = args.int32();
+            const char*   uri = args.string();
+
+            auto it = m_resourceDefs.find(uri);
+            if (it == m_resourceDefs.end())
+            {
+                notifyResourceError(resourceId, "Unknown resource type");
+            }
+            else
+            {
+                const Methcla_ResourceDef* def = it->second;
+                auto&                      entry = m_resources[resourceId];
+                entry.state = ResourceEntry::State::Constructing;
+                entry.freePending = false;
+                entry.def = nullptr;
+                entry.data = nullptr;
+                entry.refCount = 0;
+
+                void* options = nullptr;
+                if (def->options_size > 0)
+                    options = rtMem().alloc(def->options_size);
+
+                sendToWorker<ResourceConstructCommand>(this, resourceId, def,
+                                                       options);
+            }
+        }
+        else if (msg == "/resource/free")
+        {
+            const int32_t resourceId = args.int32();
+            if (resourceId < 0 ||
+                static_cast<size_t>(resourceId) >= m_resources.size())
+                return;
+            auto& entry = m_resources[resourceId];
+            if (entry.state == ResourceEntry::State::Constructing)
+            {
+                entry.freePending = true;
+            }
+            else if (entry.state == ResourceEntry::State::Live &&
+                     entry.refCount == 0)
+            {
+                entry.state = ResourceEntry::State::Destroying;
+                scheduleResourceDestroy(resourceId);
+            }
+        }
         else if (msg == "/engine/realtime-memory/statistics")
         {
             class CommandRealtimeMemoryStatistics
@@ -762,6 +864,52 @@ void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 {
     auto synthDef = std::make_shared<SynthDef>(def);
     m_synthDefs[synthDef->uri()] = synthDef;
+}
+
+void EnvironmentImpl::registerResourceDef(const Methcla_ResourceDef* def)
+{
+    m_resourceDefs[def->uri] = def;
+}
+
+namespace {
+    struct ResourceDestroyCommand
+    {
+        EnvironmentImpl*           impl;
+        int32_t                    resourceId;
+        const Methcla_ResourceDef* def;
+        void*                      data;
+
+        static void completeOnRT(Environment* env, void* d)
+        {
+            auto* self = static_cast<ResourceDestroyCommand*>(d);
+            auto& entry = self->impl->m_resources[self->resourceId];
+            entry.state = EnvironmentImpl::ResourceEntry::State::Free;
+            entry.def = nullptr;
+            entry.data = nullptr;
+            self->impl
+                ->sendToWorker<EnvironmentImpl::ResourceDestroyedNotification>(
+                    self->resourceId);
+            env->rtMem().free(self);
+        }
+
+        void perform(Environment* env)
+        {
+            Methcla_Host host(*env);
+            if (def->destroy)
+                def->destroy(&host, data);
+            Memory::free(data);
+            env->sendFromWorker(completeOnRT, this);
+        }
+    };
+} // namespace
+
+void EnvironmentImpl::scheduleResourceDestroy(int32_t resourceId)
+{
+    auto& entry = m_resources[resourceId];
+    sendToWorker(
+        perform_perform<ResourceDestroyCommand>,
+        rtMem().construct<ResourceDestroyCommand>(
+            ResourceDestroyCommand{this, resourceId, entry.def, entry.data}));
 }
 
 const std::shared_ptr<SynthDef>&

@@ -94,6 +94,7 @@ struct Methcla_EngineOptions
     size_t realtime_memory_size = 1024 * 1024;
     size_t max_num_nodes = 1024;
     size_t max_num_audio_buses = 1024;
+    size_t max_num_resources = 256;
 
     Methcla_LogLevel log_level = kMethcla_LogWarn;
 
@@ -114,6 +115,7 @@ Methcla::API::convertOptions(const Methcla_EngineOptions* options)
     result.realtimeMemorySize = options->realtime_memory_size;
     result.maxNumNodes = options->max_num_nodes;
     result.maxNumAudioBuses = options->max_num_audio_buses;
+    result.maxNumResources = options->max_num_resources;
 
     if (options->plugin_libraries != nullptr)
     {

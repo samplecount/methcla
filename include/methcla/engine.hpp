@@ -86,6 +86,29 @@ namespace Methcla {
         {}
     };
 
+    class ResourceId : public detail::Id<ResourceId, int32_t>
+    {
+    public:
+        explicit ResourceId(int32_t id)
+        : Id<ResourceId, int32_t>(id)
+        {}
+        ResourceId()
+        : ResourceId(-1)
+        {}
+
+        operator bool() const
+        {
+            return *this != ResourceId();
+        }
+    };
+
+    inline static std::ostream& operator<<(std::ostream&     out,
+                                           const ResourceId& id)
+    {
+        out << id.id();
+        return out;
+    }
+
     // Node placement specification given a target.
     class NodePlacement
     {
@@ -509,6 +532,7 @@ namespace Methcla {
         size_t                     realtimeMemorySize = 1024 * 1024;
         size_t                     maxNumNodes = 1024;
         size_t                     maxNumAudioBuses = 128;
+        size_t                     maxNumResources = 256;
         size_t                     maxNumControlBuses = 4096;
         size_t                     sampleRate = 44100;
         size_t                     blockSize = 64;
@@ -590,6 +614,7 @@ namespace Methcla {
 
     typedef IdAllocator<NodeId, int32_t>     NodeIdAllocator;
     typedef IdAllocator<AudioBusId, int32_t> AudioBusIdAllocator;
+    typedef IdAllocator<ResourceId, int32_t> ResourceIdAllocator;
 
     class Request;
 
@@ -863,6 +888,28 @@ namespace Methcla {
                 .int32(flags)
                 .closeMessage();
         }
+
+        void resourceNew(ResourceId id, const char* uri)
+        {
+            beginMessage();
+
+            oscPacket()
+                .openMessage("/resource/new", 3)
+                .int32(0) // requestId (unused)
+                .int32(id.id())
+                .string(uri)
+                .closeMessage();
+        }
+
+        void resourceFree(ResourceId id)
+        {
+            beginMessage();
+
+            oscPacket()
+                .openMessage("/resource/free", 1)
+                .int32(id.id())
+                .closeMessage();
+        }
     };
 
     void EngineInterface::bundle(Methcla_Time                  time,
@@ -944,6 +991,7 @@ namespace Methcla {
         : m_logHandler(inOptions.logHandler)
         , m_nodeIds(1, inOptions.maxNumNodes - 1)
         , m_audioBusIds(0, inOptions.maxNumAudioBuses)
+        , m_resourceIds(0, inOptions.maxNumResources)
         , m_requestId(kMethcla_Notification + 1)
         , m_notificationHandlerId(0)
         , m_packets(8192)
@@ -1026,6 +1074,16 @@ namespace Methcla {
         AudioBusIdAllocator& audioBusId()
         {
             return m_audioBusIds;
+        }
+
+        ResourceId allocResourceId()
+        {
+            return m_resourceIds.alloc();
+        }
+
+        void freeResourceId(ResourceId id)
+        {
+            m_resourceIds.free(id);
         }
 
         std::unique_ptr<Packet> allocPacket() override
@@ -1311,6 +1369,7 @@ namespace Methcla {
         LogHandler            m_logHandler;
         NodeIdAllocator       m_nodeIds;
         AudioBusIdAllocator   m_audioBusIds;
+        ResourceIdAllocator   m_resourceIds;
         Methcla_RequestId     m_requestId;
         std::mutex            m_requestIdMutex;
         ResponseHandlers      m_responseHandlers;

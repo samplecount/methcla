@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -146,6 +147,42 @@ static inline void methcla_world_synth_done(Methcla_World* world,
     world->synth_done(world, synth);
 }
 
+typedef int32_t Methcla_ResourceId;
+
+typedef enum
+{
+    kMethcla_Immutable,
+    kMethcla_Mutable
+} Methcla_ResourceMutability;
+
+typedef struct Methcla_ResourceDef Methcla_ResourceDef;
+
+struct Methcla_ResourceDef
+{
+    //* Unique resource type URI.
+    const char* uri;
+
+    //* Size of an instance in bytes.
+    size_t instance_size;
+
+    //* Size of options struct in bytes.
+    size_t options_size;
+
+    //* Mutability hint.
+    Methcla_ResourceMutability mutability;
+
+    //* Parse OSC options and fill options struct.
+    void (*configure)(const void* tag_buffer, size_t tag_size,
+                      const void* arg_buffer, size_t arg_size, void* options);
+
+    //* Construct a resource instance at the given location.
+    void (*construct)(Methcla_Host* host, const Methcla_ResourceDef* def,
+                      const void* options, void* instance);
+
+    //* Destroy a resource instance.
+    void (*destroy)(Methcla_Host* host, void* instance);
+};
+
 typedef enum
 {
     kMethcla_Input,
@@ -262,7 +299,20 @@ struct Methcla_Host
     //* Log a message and a newline character.
     void (*log_line)(Methcla_Host* host, Methcla_LogLevel level,
                      const char* message);
+
+    //* Register a resource type definition.
+    void (*register_resource_def)(Methcla_Host*              host,
+                                  const Methcla_ResourceDef* def);
 };
+
+static inline void
+methcla_host_register_resource_def(Methcla_Host*              host,
+                                   const Methcla_ResourceDef* def)
+{
+    assert(host && host->register_resource_def);
+    assert(def);
+    host->register_resource_def(host, def);
+}
 
 static inline void
 methcla_host_register_synthdef(Methcla_Host*           host,
