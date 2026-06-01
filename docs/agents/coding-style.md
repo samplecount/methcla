@@ -47,10 +47,6 @@
 - Use C++17 compact nested namespace syntax.
 - Anonymous namespace for translation-unit-local helpers instead of `static`.
 
-### Formatting
-
-Enforced by clang-format. Configuration is in `.clang-format`. Run `pre-commit run --all-files` rather than formatting manually.
-
 ## C API
 
 - All public symbols prefixed `methcla_` (functions) or `Methcla_` (types).
@@ -59,7 +55,6 @@ Enforced by clang-format. Configuration is in `.clang-format`. Run `pre-commit r
 - `extern "C"` guards in every public header.
 - `METHCLA_EXPORT` on all exported symbols.
 - `snake_case` for all identifiers.
-- Header guards: `#ifndef METHCLA_<NAME>_H_INCLUDED`.
 
 ## Testing
 
@@ -72,7 +67,3 @@ Enforced by clang-format. Configuration is in `.clang-format`. Run `pre-commit r
 - `pathlib.Path` for file paths, not string concatenation.
 - `subprocess.run(..., check=True)` — don't silently swallow non-zero exit codes.
 - Keep scripts short and single-purpose. Extract helpers only when reused.
-
-### Formatting
-
-Enforced by black. Run `pre-commit run --all-files` rather than formatting manually.

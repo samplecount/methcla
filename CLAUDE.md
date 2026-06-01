@@ -1,99 +1,49 @@
 # CLAUDE.md
 
-## Fundamentals
+## Project
+Real-time C++ audio engine library for macOS and Linux; embedded by host applications via C or C++ APIs, controlled over OSC, and extended via Plugins.
 
-### 1. Think Before Coding
+## Stack
+- C++17, C99 (public API)
+- CMake with presets (`debug` / `release`)
+- RtAudio (desktop audio driver), DummyDriver (headless/offline)
+- macOS, Linux
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+## Commands
+- Configure: `cmake --preset debug`
+- Build: `cmake --build --preset debug`
+- Test: `ctest --preset debug`
+- Test (one): `ctest --preset debug -R <name>`
+- Format: `pre-commit run --all-files`
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+## Architecture
+- `include/methcla/` → public C/C++ API headers
+- `src/Methcla/` → engine implementation
+- `platform/` → platform-specific audio drivers (rtaudio, jack, ios, android)
+- `plugins/` → built-in Plugin implementations (SynthDefs and Soundfile APIs)
+- `tests/` → test suite
+- `cmake/` → CMake modules and helpers
+- `docs/` → architecture docs, OSC API reference, agent guides
+- `external_libraries/` → vendored third-party dependencies (do not edit)
+- `examples/` → example applications
+- `scripts/` → release and utility scripts
 
-### 2. Simplicity First
+## Rules
+- IMPORTANT: Follow [coding-style.md](docs/agents/coding-style.md) for all code changes
+- Use domain vocabulary from [CONTEXT.md](CONTEXT.md); avoid listed synonyms
 
-**Minimum code that solves the problem. Nothing speculative.**
+## Workflow
+- Format, build, and test before every commit
+- Create PRs for non-trivial changes; commit directly to `develop` for small/low-risk changes
+- PR branch names: short, descriptive, no prefixes, dashes (`my-awesome-feature`)
+- When merging a PR via `gh`, pull and delete the branch
+- Add a [CHANGELOG.md](CHANGELOG.md) entry under `[Unreleased]` for every feature or fix
+- See [releases.md](docs/agents/releases.md) when releasing
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+## Out of scope
+- Anything listed in `.gitignore` (build artifacts, generated files)
+- `external_libraries/` — vendored third-party dependencies
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-### 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-## Agent skills
-
-### Issue tracker
-
-Issues live in GitHub Issues for `samplecount/methcla`. See [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
-
-### Triage labels
-
-Uses the default five-role vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See [`docs/agents/triage-labels.md`](docs/agents/triage-labels.md).
-
-### Domain docs
-
-Single-context layout: one [`CONTEXT.md`](CONTEXT.md) + [`docs/adr/`](docs/adr/) at the repo root. See [`docs/agents/domain.md`](docs/agents/domain.md).
-
-## Workflows
-
-- Create PRs for non-trivial changes. This allows reviewing code and running actions before merging.
-- Create PR branches before submitting a PR or when prompted to submit changes to a PR branch.
-- For small, low-risk changes, or when prompted to do so, commit directly to develop.
-- Before committing changes or submitting PRs, run `pre-commit run --all-files` to format code, then build locally and run tests.
-- When merging PRs via gh, update the working copy accordingly (pull and delete PR branch).
-- Keep PR branch name descriptive but short. No prefixes like `feat/`. Dashes: `my-awesome-new-feature`.
-- When adding features or fixes, add an entry under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md) using the standard sections: Added, Changed, Deprecated, Removed, Fixed, Security. Reference the relevant GitHub issue number (`(#N)`) at the end of each entry where one exists.
-
-## Releases
-
-See [`docs/agents/releases.md`](docs/agents/releases.md).
-
-## Domain and API references
-
-- Use the domain language in [`CONTEXT.md`](CONTEXT.md); avoid the listed synonyms.
-- Before changing build structure or dependencies, check [`docs/adr/`](docs/adr/) for prior decisions.
-- When working with synth, node, or bus commands, consult [`docs/osc-api.md`](docs/osc-api.md).
-- For audio routing and node tree structure, see [`docs/architecture.md`](docs/architecture.md).
-- Follow [`docs/coding-style.md`](docs/coding-style.md) for all code changes.
+## Human approval required
+- Releases (version bumps, tagging, pushing tags)
+- Modifications to the public API (`include/methcla/`)

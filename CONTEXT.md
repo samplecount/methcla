@@ -1,7 +1,5 @@
 # Methcla
 
-A real-time C++ audio engine library for macOS and Linux desktop targets. Exposes a C API with C++ bindings for embedding in host applications.
-
 ## Language
 
 **Engine**:
@@ -31,37 +29,3 @@ _Avoid_: channel, buffer, bus (acceptable shorthand in code)
 **Soundfile API**:
 A Plugin category that provides file I/O capabilities to other Plugins (disksampler, sampler). Multiple soundfile API Plugins may be registered; the Engine selects by capability. Platform implementations: ExtAudioFile (macOS), libsndfile (Linux).
 _Avoid_: audio file backend, file reader
-
-## Project structure
-
-| Path | Contents |
-|---|---|
-| `include/methcla/` | Public C API headers (`.h`) and C++ bindings (`.hpp`) |
-| `src/` | Engine implementation (`Methcla/Audio/`, `Methcla/Memory/`, `Methcla/Plugin/`) |
-| `plugins/` | Built-in Plugin implementations (sine, disksampler, sampler, patch-cable, node-control, soundfile APIs) |
-| `platform/` | Driver implementations: `DummyPlatform.cpp`, `rtaudio/`, `jack/` |
-| `tests/` | Test suite (googletest); `tests/consumers/` for `add_subdirectory` and `find_package` integration tests |
-| `tools/dumposcfile/` | Developer tool: dumps binary OSC files to stdout |
-| `external_libraries/` | Vendored dependencies (tlsf, tinydir, Boost subset) |
-| `cmake/` | CMake helpers: `dependencies.cmake`, `methclaConfig.cmake` |
-| `scripts/` | `release.py` (version bump + changelog + tag), `copy-boost.sh` (re-vendor Boost subset) |
-| `docs/` | `osc-api.md`, `architecture.md`, `coding-style.md`, `adr/` |
-| `examples/` | Sample applications (thADDeus, sampler) |
-
-## Build system
-
-CMake 3.24+, C++17, C99. Presets: `debug` and `release` (`CMakePresets.json`).
-
-### Dependencies
-
-All declared in `cmake/dependencies.cmake` via `FetchContent`, included before any `add_subdirectory`.
-
-| Dependency | Kind | How |
-|---|---|---|
-| **oscpp** | header-only OSC library; part of the public API | FetchContent (pinned git SHA); provides `oscpp::oscpp` target |
-| **googletest v1.14** | test-only | FetchContent |
-| **tlsf** | two-level segregated-fit allocator; merged directly into `libmethcla` | vendored in `external_libraries/tlsf/`; CMake `OBJECT` library |
-| **tinydir** | header-only directory listing | vendored in `external_libraries/tinydir/`; CMake `INTERFACE` library |
-| **Boost** (lockfree, heap, container\_hash, smart\_ptr) | header-only subset; namespaced as `methcla_boost` | vendored in `external_libraries/boost/`; re-extracted with `scripts/copy-boost.sh <version>` |
-| **RtAudio** | optional desktop audio Driver | system package via `pkg-config` (`-DMETHCLA_ENABLE_RTAUDIO=ON`) |
-| **libsndfile** | Soundfile API Plugin on Linux | system package via `pkg-config` |
