@@ -137,7 +137,7 @@ namespace Methcla { namespace Audio {
         bool hasPendingCommands() const;
 
         //* Register SynthDef.
-        void registerSynthDef(const Methcla_SynthDef* synthDef);
+        void registerSynthDef(const Methcla_SynthDef* def);
 
         //* Register ResourceDef.
         void registerResourceDef(const Methcla_ResourceDef* def);

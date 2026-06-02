@@ -68,6 +68,7 @@ typedef enum
     kMethcla_SynthDefNotFoundError = 1000,
     kMethcla_NodeIdError,
     kMethcla_NodeTypeError,
+    kMethcla_UnsupportedResourceTypeError,
 
     /* File errors */
     kMethcla_FileNotFoundError = 2000,
@@ -109,6 +110,8 @@ static inline const char* methcla_error_code_description(Methcla_ErrorCode code)
             return "Invalid node id";
         case kMethcla_NodeTypeError:
             return "Invalid node type";
+        case kMethcla_UnsupportedResourceTypeError:
+            return "Unsupported resource type";
 
         /* File errors */
         case kMethcla_FileNotFoundError:

@@ -49,19 +49,7 @@ namespace Methcla {
         NodeId()
         : NodeId(-1)
         {}
-
-        operator bool() const
-        {
-            return *this != NodeId();
-        }
     };
-
-    inline static std::ostream& operator<<(std::ostream& out,
-                                           const NodeId& nodeId)
-    {
-        out << nodeId.id();
-        return out;
-    }
 
     class GroupId : public NodeId
     {
@@ -95,19 +83,7 @@ namespace Methcla {
         ResourceId()
         : ResourceId(-1)
         {}
-
-        operator bool() const
-        {
-            return *this != ResourceId();
-        }
     };
-
-    inline static std::ostream& operator<<(std::ostream&     out,
-                                           const ResourceId& id)
-    {
-        out << id.id();
-        return out;
-    }
 
     // Node placement specification given a target.
     class NodePlacement
@@ -629,7 +605,8 @@ namespace Methcla {
             return GroupId(0);
         }
 
-        virtual NodeIdAllocator& nodeIdAllocator() = 0;
+        virtual NodeIdAllocator&     nodeIdAllocator() = 0;
+        virtual ResourceIdAllocator& resourceIdAllocator() = 0;
 
         virtual std::unique_ptr<Packet> allocPacket() = 0;
         virtual void sendPacket(const std::unique_ptr<Packet>& packet) = 0;
@@ -892,10 +869,8 @@ namespace Methcla {
         void resourceNew(ResourceId id, const char* uri)
         {
             beginMessage();
-
             oscPacket()
-                .openMessage("/resource/new", 3)
-                .int32(0) // requestId (unused)
+                .openMessage("/resource/new", 2)
                 .int32(id.id())
                 .string(uri)
                 .closeMessage();
@@ -904,7 +879,6 @@ namespace Methcla {
         void resourceFree(ResourceId id)
         {
             beginMessage();
-
             oscPacket()
                 .openMessage("/resource/free", 1)
                 .int32(id.id())
@@ -1071,19 +1045,14 @@ namespace Methcla {
             return m_nodeIds;
         }
 
-        AudioBusIdAllocator& audioBusId()
+        AudioBusIdAllocator& audioBusIdAllocator()
         {
             return m_audioBusIds;
         }
 
-        ResourceId allocResourceId()
+        ResourceIdAllocator& resourceIdAllocator() override
         {
-            return m_resourceIds.alloc();
-        }
-
-        void freeResourceId(ResourceId id)
-        {
-            m_resourceIds.free(id);
+            return m_resourceIds;
         }
 
         std::unique_ptr<Packet> allocPacket() override

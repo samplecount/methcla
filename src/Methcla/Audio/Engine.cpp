@@ -42,11 +42,11 @@ namespace {
 
     METHCLA_C_LINKAGE void
     methcla_api_host_register_synthdef(Methcla_Host*           host,
-                                       const Methcla_SynthDef* synthDef)
+                                       const Methcla_SynthDef* def)
     {
         assert(host && host->handle);
-        assert(synthDef);
-        static_cast<Environment*>(host->handle)->registerSynthDef(synthDef);
+        assert(def);
+        static_cast<Environment*>(host->handle)->registerSynthDef(def);
     }
 
     METHCLA_C_LINKAGE void
@@ -300,11 +300,12 @@ Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
 , m_blockSize(options.blockSize)
 // Methcla_Host interface
 , m_host({this, methcla_api_host_register_synthdef,
+          methcla_api_host_register_resource_def,
           methcla_api_host_register_soundfile_api, methcla_api_host_alloc,
           methcla_api_host_free, methcla_api_host_alloc_aligned,
           methcla_api_host_free_aligned, methcla_api_host_soundfile_open,
           methcla_api_host_perform_command, methcla_api_host_notify,
-          methcla_api_host_log_line, methcla_api_host_register_resource_def})
+          methcla_api_host_log_line})
 
 // Methcla_World interface
 , m_world({this, methcla_api_world_samplerate, methcla_api_world_block_size,

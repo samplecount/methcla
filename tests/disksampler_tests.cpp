@@ -100,8 +100,8 @@ TEST(Methcla_Engine, issue_113_disksampler)
     Methcla::SynthId stats;
 
     std::tuple<Methcla::AudioBusId, Methcla::AudioBusId> bus;
-    std::get<0>(bus) = engine->audioBusId().alloc();
-    std::get<1>(bus) = engine->audioBusId().alloc();
+    std::get<0>(bus) = engine->audioBusIdAllocator().alloc();
+    std::get<1>(bus) = engine->audioBusIdAllocator().alloc();
 
     {
         Methcla::Request request(*engine);

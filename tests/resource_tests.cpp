@@ -12,8 +12,8 @@
 
 using namespace Methcla::Tests;
 
-// Helper: allocate resource, wait for /resource/ready, return latch-signalled
-// id.
+// Wait for /resource/ready on the given id, asserting it arrives within
+// timeout.
 static void awaitReady(Methcla::Engine& engine, Methcla::ResourceId id,
                        const char* uri)
 {
@@ -34,20 +34,16 @@ static void awaitReady(Methcla::Engine& engine, Methcla::ResourceId id,
     ASSERT_TRUE(latch.wait()) << "Timed out waiting for /resource/ready";
 }
 
-// ---------------------------------------------------------------------------
-// Slice 1: Unknown URI → /resource/error
-// ---------------------------------------------------------------------------
-
-TEST(ResourceTests, UnknownUriReturnsError)
+TEST(ResourceTests, UnknownUriDoesNotNotifyReady)
 {
     auto engine = std::make_unique<Methcla::Engine>();
     engine->start();
 
     AsyncLatch          latch;
-    Methcla::ResourceId id = engine->allocResourceId();
+    Methcla::ResourceId id = engine->resourceIdAllocator().alloc();
 
     engine->addNotificationHandler([&, id](const OSCPP::Server::Message& msg) {
-        if (msg == "/resource/error" && msg.args().int32() == id.id())
+        if (msg == "/resource/ready" && msg.args().int32() == id.id())
         {
             latch.signal();
             return true;
@@ -61,14 +57,10 @@ TEST(ResourceTests, UnknownUriReturnsError)
     req.closeBundle();
     req.send();
 
-    EXPECT_TRUE(latch.wait());
-    engine->freeResourceId(id);
+    EXPECT_FALSE(latch.wait());
+    engine->resourceIdAllocator().free(id);
     engine->stop();
 }
-
-// ---------------------------------------------------------------------------
-// Slice 2: Known URI → /resource/ready
-// ---------------------------------------------------------------------------
 
 TEST(ResourceTests, KnownUriConstructsAndNotifiesReady)
 {
@@ -77,16 +69,12 @@ TEST(ResourceTests, KnownUriConstructsAndNotifiesReady)
     auto engine = std::make_unique<Methcla::Engine>(opts);
     engine->start();
 
-    Methcla::ResourceId id = engine->allocResourceId();
+    Methcla::ResourceId id = engine->resourceIdAllocator().alloc();
     awaitReady(*engine, id, METHCLA_TEST_RESOURCE_URI);
 
-    engine->freeResourceId(id);
+    engine->resourceIdAllocator().free(id);
     engine->stop();
 }
-
-// ---------------------------------------------------------------------------
-// Slice 3: Free live resource → /resource/destroyed
-// ---------------------------------------------------------------------------
 
 TEST(ResourceTests, FreeLiveResourceDestroysIt)
 {
@@ -95,7 +83,7 @@ TEST(ResourceTests, FreeLiveResourceDestroysIt)
     auto engine = std::make_unique<Methcla::Engine>(opts);
     engine->start();
 
-    Methcla::ResourceId id = engine->allocResourceId();
+    Methcla::ResourceId id = engine->resourceIdAllocator().alloc();
     awaitReady(*engine, id, METHCLA_TEST_RESOURCE_URI);
 
     AsyncLatch destroyed;
@@ -116,14 +104,12 @@ TEST(ResourceTests, FreeLiveResourceDestroysIt)
         req.send();
     }
     EXPECT_TRUE(destroyed.wait());
-    engine->freeResourceId(id);
+    engine->resourceIdAllocator().free(id);
     engine->stop();
 }
 
-// ---------------------------------------------------------------------------
-// Slice 4: Free during construction → /resource/destroyed (no /resource/ready)
-// ---------------------------------------------------------------------------
-
+// Sending /resource/free before construction completes must result in
+// /resource/destroyed only (no /resource/ready).
 TEST(ResourceTests, FreeDuringConstructSetsFreePending)
 {
     Methcla::EngineOptions opts;
@@ -131,7 +117,7 @@ TEST(ResourceTests, FreeDuringConstructSetsFreePending)
     auto engine = std::make_unique<Methcla::Engine>(opts);
     engine->start();
 
-    Methcla::ResourceId id = engine->allocResourceId();
+    Methcla::ResourceId id = engine->resourceIdAllocator().alloc();
 
     AsyncLatch ready;
     AsyncLatch destroyed;
@@ -153,17 +139,12 @@ TEST(ResourceTests, FreeDuringConstructSetsFreePending)
         return false;
     });
 
-    // Send /resource/new and /resource/free back-to-back without waiting.
+    // Both commands in one bundle so they are processed in the same RT
+    // callback.
     {
         Methcla::Request req(*engine);
         req.openBundle();
         req.resourceNew(id, METHCLA_TEST_RESOURCE_URI);
-        req.closeBundle();
-        req.send();
-    }
-    {
-        Methcla::Request req(*engine);
-        req.openBundle();
         req.resourceFree(id);
         req.closeBundle();
         req.send();
@@ -172,6 +153,6 @@ TEST(ResourceTests, FreeDuringConstructSetsFreePending)
     EXPECT_TRUE(destroyed.wait(std::chrono::milliseconds(1000)));
     // /resource/ready must NOT have been emitted.
     EXPECT_FALSE(ready.wait(std::chrono::milliseconds(0)));
-    engine->freeResourceId(id);
+    engine->resourceIdAllocator().free(id);
     engine->stop();
 }

@@ -262,8 +262,11 @@ struct Methcla_Host
     void* handle;
 
     //* Register a synth definition.
-    void (*register_synthdef)(Methcla_Host*           host,
-                              const Methcla_SynthDef* synthDef);
+    void (*register_synthdef)(Methcla_Host* host, const Methcla_SynthDef* def);
+
+    //* Register a resource type definition.
+    void (*register_resource_def)(Methcla_Host*              host,
+                                  const Methcla_ResourceDef* def);
 
     //* Register sound file API.
     void (*register_soundfile_api)(Methcla_Host*         host,
@@ -299,11 +302,15 @@ struct Methcla_Host
     //* Log a message and a newline character.
     void (*log_line)(Methcla_Host* host, Methcla_LogLevel level,
                      const char* message);
-
-    //* Register a resource type definition.
-    void (*register_resource_def)(Methcla_Host*              host,
-                                  const Methcla_ResourceDef* def);
 };
+
+static inline void methcla_host_register_synthdef(Methcla_Host*           host,
+                                                  const Methcla_SynthDef* def)
+{
+    assert(host && host->register_synthdef);
+    assert(def);
+    host->register_synthdef(host, def);
+}
 
 static inline void
 methcla_host_register_resource_def(Methcla_Host*              host,
@@ -312,15 +319,6 @@ methcla_host_register_resource_def(Methcla_Host*              host,
     assert(host && host->register_resource_def);
     assert(def);
     host->register_resource_def(host, def);
-}
-
-static inline void
-methcla_host_register_synthdef(Methcla_Host*           host,
-                               const Methcla_SynthDef* synthDef)
-{
-    assert(host && host->register_synthdef);
-    assert(synthDef);
-    host->register_synthdef(host, synthDef);
 }
 
 static inline void
