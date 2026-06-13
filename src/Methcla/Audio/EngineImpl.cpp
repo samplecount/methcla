@@ -426,6 +426,38 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags       logFlags,
 
 namespace {
 
+    class ResourceErrorNotification : public EnvironmentImpl::Notification
+    {
+        int32_t       m_resourceId;
+        Methcla_Error m_error;
+
+    public:
+        ResourceErrorNotification(int32_t resourceId, Methcla_Error error)
+        : m_resourceId(resourceId)
+        , m_error(error)
+        {}
+
+    private:
+        void notify(Environment* env) override
+        {
+            constexpr const char* address = "/resource/error";
+            const char*           msg = methcla_error_message(m_error);
+            if (!msg)
+                msg =
+                    methcla_error_code_description(methcla_error_code(m_error));
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 3) + OSCPP::Size::int32(2) +
+                OSCPP::Size::string(msg));
+            packet.openMessage(address, 3);
+            packet.int32(m_resourceId);
+            packet.int32(static_cast<int32_t>(methcla_error_code(m_error)));
+            packet.string(msg);
+            packet.closeMessage();
+            env->notify(packet);
+            methcla_error_free(m_error);
+        }
+    };
+
     class ResourceConstructCommand
     {
         EnvironmentImpl*           m_impl;
@@ -433,23 +465,36 @@ namespace {
         const Methcla_ResourceDef* m_def;
         void*                      m_options;
         void*                      m_result;
+        Methcla_Error              m_error;
 
         static void completeOnRT(Environment* env, void* data)
         {
             auto* self = static_cast<ResourceConstructCommand*>(data);
-            auto& entry = self->m_impl->m_resources[self->m_resourceId];
-            entry.def = self->m_def;
-            entry.data = self->m_result;
 
-            if (entry.freePending)
+            if (methcla_is_error(self->m_error))
             {
-                entry.state = EnvironmentImpl::ResourceEntry::State::Destroying;
-                self->m_impl->scheduleResourceDestroy(self->m_resourceId);
+                self->m_impl->m_resources[self->m_resourceId] =
+                    EnvironmentImpl::ResourceEntry{};
+                self->m_impl->sendToWorker<ResourceErrorNotification>(
+                    self->m_resourceId, self->m_error);
             }
             else
             {
-                entry.state = EnvironmentImpl::ResourceEntry::State::Live;
-                self->m_impl->notifyResourceReady(self->m_resourceId);
+                auto& entry = self->m_impl->m_resources[self->m_resourceId];
+                entry.def = self->m_def;
+                entry.data = self->m_result;
+
+                if (entry.freePending)
+                {
+                    entry.state =
+                        EnvironmentImpl::ResourceEntry::State::Destroying;
+                    self->m_impl->scheduleResourceDestroy(self->m_resourceId);
+                }
+                else
+                {
+                    entry.state = EnvironmentImpl::ResourceEntry::State::Live;
+                    self->m_impl->notifyResourceReady(self->m_resourceId);
+                }
             }
             if (self->m_options)
                 env->rtMem().free(self->m_options);
@@ -464,6 +509,7 @@ namespace {
         , m_def(def)
         , m_options(options)
         , m_result(nullptr)
+        , m_error(methcla_no_error())
         {}
 
         void perform(Environment* env)
@@ -471,7 +517,12 @@ namespace {
             Methcla_Host host(*env);
             m_result = Memory::alloc(m_def->instance_size);
             if (m_def->construct)
-                m_def->construct(&host, m_def, m_options, m_result);
+                m_error = m_def->construct(&host, m_def, m_options, m_result);
+            if (methcla_is_error(m_error))
+            {
+                Memory::free(m_result);
+                m_result = nullptr;
+            }
             env->sendFromWorker(completeOnRT, this);
         }
     };
@@ -879,13 +930,31 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
             else
             {
                 const Methcla_ResourceDef* def = it->second;
-                auto& entry = m_resources[resourceId] = ResourceEntry{};
-                entry.state = ResourceEntry::State::Constructing;
 
                 void* options = nullptr;
                 if (def->options_size > 0)
                     options = rtMem().alloc(def->options_size);
 
+                if (def->configure)
+                {
+                    auto              state = args.state();
+                    Methcla_ErrorCode code = def->configure(
+                        std::get<0>(state).pos(),
+                        std::get<0>(state).consumable(),
+                        std::get<1>(state).pos(),
+                        std::get<1>(state).consumable(), options);
+                    if (code != kMethcla_NoError)
+                    {
+                        if (options)
+                            rtMem().free(options);
+                        throwErrorWith(code, [&](std::stringstream& s) {
+                            s << "configure failed for " << uri;
+                        });
+                    }
+                }
+
+                auto& entry = m_resources[resourceId] = ResourceEntry{};
+                entry.state = ResourceEntry::State::Constructing;
                 sendToWorker<ResourceConstructCommand>(this, resourceId, def,
                                                        options);
             }

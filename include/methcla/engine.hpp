@@ -627,6 +627,10 @@ namespace Methcla {
                               BusMappingFlags flags = kBusMappingInternal);
         inline void set(NodeId node, size_t index, double value);
         inline void free(NodeId node);
+        inline ResourceId
+                    resource(const char*             uri,
+                             const std::list<Value>& options = std::list<Value>());
+        inline void free(ResourceId id);
     };
 
     class Request
@@ -866,23 +870,37 @@ namespace Methcla {
                 .closeMessage();
         }
 
-        void resourceNew(ResourceId id, const char* uri)
+        ResourceId
+        resource(const char*             uri,
+                 const std::list<Value>& options = std::list<Value>())
         {
             beginMessage();
+
+            const ResourceId resourceId(
+                m_engine->resourceIdAllocator().alloc());
+
             oscPacket()
-                .openMessage("/resource/new", 2)
-                .int32(id.id())
-                .string(uri)
-                .closeMessage();
+                .openMessage("/resource/new", 2 + options.size())
+                .int32(resourceId.id())
+                .string(uri);
+
+            for (const auto& x : options)
+                x.put(oscPacket());
+
+            oscPacket().closeMessage();
+
+            return resourceId;
         }
 
-        void resourceFree(ResourceId id)
+        void free(ResourceId id)
         {
             beginMessage();
+
             oscPacket()
                 .openMessage("/resource/free", 1)
                 .int32(id.id())
                 .closeMessage();
+            m_engine->resourceIdAllocator().free(id);
         }
     };
 
@@ -954,6 +972,22 @@ namespace Methcla {
     {
         Request request(this);
         request.free(node);
+        request.send();
+    }
+
+    ResourceId EngineInterface::resource(const char*             uri,
+                                         const std::list<Value>& options)
+    {
+        Request    request(this);
+        ResourceId result = request.resource(uri, options);
+        request.send();
+        return result;
+    }
+
+    void EngineInterface::free(ResourceId id)
+    {
+        Request request(this);
+        request.free(id);
         request.send();
     }
 

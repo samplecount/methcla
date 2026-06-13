@@ -171,13 +171,19 @@ struct Methcla_ResourceDef
     //* Mutability hint.
     Methcla_ResourceMutability mutability;
 
-    //* Parse OSC options and fill options struct.
-    void (*configure)(const void* tag_buffer, size_t tag_size,
-                      const void* arg_buffer, size_t arg_size, void* options);
+    //* Parse OSC options and fill options struct. Returns kMethcla_NoError on
+    //* success. Runs on the RT thread; must not allocate.
+    Methcla_ErrorCode (*configure)(const void* tag_buffer, size_t tag_size,
+                                   const void* arg_buffer, size_t arg_size,
+                                   void* options);
 
-    //* Construct a resource instance at the given location.
-    void (*construct)(Methcla_Host* host, const Methcla_ResourceDef* def,
-                      const void* options, void* instance);
+    //* Construct a resource instance at the given location. Returns
+    //* methcla_no_error() on success. On failure the engine takes ownership of
+    //* the returned Methcla_Error and emits /resource/error; destroy will not
+    //* be called.
+    Methcla_Error (*construct)(Methcla_Host*              host,
+                               const Methcla_ResourceDef* def,
+                               const void* options, void* instance);
 
     //* Destroy a resource instance.
     void (*destroy)(Methcla_Host* host, void* instance);

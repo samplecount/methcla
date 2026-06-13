@@ -131,6 +131,30 @@ The engine sends these messages to the host without a corresponding request. The
 
   Sent unconditionally when any node is freed (by any means, including **`/node/free`**, done-action flags, or parent group teardown).
 
+## Resource commands
+
+* **`/resource/new`** `i:resource-id s:uri [options...]`
+
+  Allocate a resource of type `uri` with the given client-assigned `resource-id`. Any trailing arguments are passed to the resource definition's `configure` function. On success the engine sends `/resource/ready` asynchronously once construction on the NRT thread completes. On `configure` error the engine replies with `/error`; on `construct` error it sends `/resource/error`.
+
+* **`/resource/free`** `i:resource-id`
+
+  Release a live resource. If the resource is still being constructed, the free is deferred until construction completes (`freePending`). The engine sends `/resource/destroyed` once destruction is complete.
+
+## Resource notifications
+
+* **`/resource/ready`** `i:resource-id`
+
+  Sent when a resource has been successfully constructed and is ready for use.
+
+* **`/resource/error`** `i:resource-id i:error-code s:message`
+
+  Sent when a resource's `construct` function returns an error. The resource entry is freed and the id is reusable. `error-code` is a `Methcla_ErrorCode` value.
+
+* **`/resource/destroyed`** `i:resource-id`
+
+  Sent when a resource has been destroyed in response to `/resource/free`.
+
 ## Error responses
 
 * **`/error`** `i:error-code s:message`
