@@ -139,7 +139,7 @@ The engine sends these messages to the host without a corresponding request. The
 
 * **`/resource/free`** `i:resource-id`
 
-  Release a live resource. If the resource is still being constructed, the free is deferred until construction completes (`freePending`). The engine sends `/resource/destroyed` once destruction is complete.
+  Release a live resource. If the resource is still being constructed, or held by one or more consumers (refcount > 0), the free is deferred (`freePending`); the engine destroys it once the refcount drains and construction has completed. The engine sends `/resource/destroyed` once destruction is complete. See [architecture.md](architecture.md#resource-system) for the full state machine.
 
 ## Resource notifications
 

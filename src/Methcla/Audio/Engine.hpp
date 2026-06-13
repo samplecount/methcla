@@ -142,6 +142,18 @@ namespace Methcla { namespace Audio {
         //* Register ResourceDef.
         void registerResourceDef(const Methcla_ResourceDef* def);
 
+        //* Context: RT — acquire a live resource by id with URI check.
+        void* acquireResource(Methcla_ResourceId id, const char* expectedUri);
+
+        //* Context: RT — release a previously acquired resource.
+        void releaseResource(Methcla_ResourceId id);
+
+        //* Context: RT — bracket NRT callback with acquire/release of listed
+        //* resources.
+        void performWithResources(const Methcla_ResourceId* ids, size_t numIds,
+                                  Methcla_PerformWithResourcesFunction perform,
+                                  void* userData);
+
         //* Lookup SynthDef
         const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;
 

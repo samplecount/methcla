@@ -24,7 +24,15 @@ _Avoid_: voice, instance, node (overloaded with the Node base class)
 
 **AudioBus**:
 A multi-channel buffer used for audio routing between Synths inside the Engine.
-_Avoid_: channel, buffer, bus (acceptable shorthand in code)
+_Avoid_: channel, bus (acceptable shorthand in code)
+
+**Resource**:
+A Plugin-registered shared data object managed by the Engine, identified by a `Methcla_ResourceId` integer and typed by URI. Allocated/freed via OSC, acquired/released by Synths on the RT thread, accessed from the NRT context via `perform_with_resources`.
+_Avoid_: instance (a Synth is an instance; a Resource is the thing the Plugin allocates), buffer (overloaded)
+
+**ResourceDef**:
+A Resource type registered by a Plugin. Describes the configure, construct, destroy callbacks and the interface URI for one kind of shared Resource.
+_Avoid_: resource class, resource type
 
 **Soundfile API**:
 A Plugin category that provides file I/O capabilities to other Plugins (disksampler, sampler). Multiple soundfile API Plugins may be registered; the Engine selects by capability. Platform implementations: ExtAudioFile (macOS), libsndfile (Linux).

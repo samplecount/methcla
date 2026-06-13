@@ -282,6 +282,31 @@ namespace {
         assert(synth != nullptr);
         Synth::fromSynth(synth)->setDone();
     }
+
+    METHCLA_C_LINKAGE Methcla_Resource* methcla_api_world_resource_acquire(
+        Methcla_World* world, Methcla_ResourceId id, const char* expectedUri)
+    {
+        assert(world && world->handle);
+        return static_cast<Environment*>(world->handle)
+            ->acquireResource(id, expectedUri);
+    }
+
+    METHCLA_C_LINKAGE void
+    methcla_api_world_resource_release(Methcla_World*     world,
+                                       Methcla_ResourceId id)
+    {
+        assert(world && world->handle);
+        static_cast<Environment*>(world->handle)->releaseResource(id);
+    }
+
+    METHCLA_C_LINKAGE void methcla_api_world_perform_with_resources(
+        Methcla_World* world, const Methcla_ResourceId* ids, size_t numIds,
+        Methcla_PerformWithResourcesFunction perform, void* userData)
+    {
+        assert(world && world->handle);
+        static_cast<Environment*>(world->handle)
+            ->performWithResources(ids, numIds, perform, userData);
+    }
 } // namespace
 
 extern "C" {
@@ -312,7 +337,10 @@ Environment::Environment(LogHandler logHandler, PacketHandler packetHandler,
            methcla_api_world_current_time, methcla_api_world_alloc,
            methcla_api_world_free, methcla_api_world_alloc_aligned,
            methcla_api_world_free_aligned, methcla_api_world_perform_command,
-           methcla_api_world_log_line, methcla_api_world_synth_done})
+           methcla_api_world_log_line, methcla_api_world_synth_done,
+           methcla_api_world_resource_acquire,
+           methcla_api_world_resource_release,
+           methcla_api_world_perform_with_resources})
 
 {
     m_impl = new EnvironmentImpl(this, logHandler, packetHandler, options,
@@ -480,6 +508,24 @@ void Environment::registerSynthDef(const Methcla_SynthDef* def)
 void Environment::registerResourceDef(const Methcla_ResourceDef* def)
 {
     m_impl->registerResourceDef(def);
+}
+
+void* Environment::acquireResource(Methcla_ResourceId id,
+                                   const char*        expectedUri)
+{
+    return m_impl->acquireResource(id, expectedUri);
+}
+
+void Environment::releaseResource(Methcla_ResourceId id)
+{
+    m_impl->releaseResource(id);
+}
+
+void Environment::performWithResources(
+    const Methcla_ResourceId* ids, size_t numIds,
+    Methcla_PerformWithResourcesFunction perform, void* userData)
+{
+    m_impl->performWithResources(ids, numIds, perform, userData);
 }
 
 const std::shared_ptr<SynthDef>& Environment::synthDef(const char* uri) const

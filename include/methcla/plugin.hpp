@@ -299,4 +299,143 @@ namespace Methcla { namespace Plugin {
               SynthDefFlags Flags = kSynthDefDefaultFlags>
     using StaticSynthDef =
         SynthDef<Synth, StaticSynthOptions<Options, Ports>, Ports, Flags>;
+
+    // RAII handle for an acquired resource. `Resource` is a wrapper type that
+    // exposes a static `uri()` and a nested `c_type` typedef naming the C ABI
+    // layout (see e.g. the AudioBuffer wrapper). Acquire happens in the
+    // constructor; release happens in the destructor.
+    //
+    // The constructed handle is empty (`operator bool() == false`) if the
+    // engine refused the acquire — typically because the id is not Live or
+    // its URI does not match the wrapper's. Callers must check before use.
+    template <class Resource> class ResourceRef
+    {
+    public:
+        using c_type = typename Resource::c_type;
+
+        ResourceRef(Methcla_World* world, Methcla_ResourceId id)
+        : m_world(world)
+        , m_id(id)
+        , m_data(static_cast<c_type*>(
+              methcla_world_resource_acquire(world, id, Resource::uri())))
+        {}
+
+        ~ResourceRef()
+        {
+            if (m_data)
+                methcla_world_resource_release(m_world, m_id);
+        }
+
+        ResourceRef(const ResourceRef&) = delete;
+        ResourceRef& operator=(const ResourceRef&) = delete;
+
+        ResourceRef(ResourceRef&& other) noexcept
+        : m_world(other.m_world)
+        , m_id(other.m_id)
+        , m_data(other.m_data)
+        {
+            other.m_data = nullptr;
+        }
+
+        ResourceRef& operator=(ResourceRef&& other) noexcept
+        {
+            if (this != &other)
+            {
+                if (m_data)
+                    methcla_world_resource_release(m_world, m_id);
+                m_world = other.m_world;
+                m_id = other.m_id;
+                m_data = other.m_data;
+                other.m_data = nullptr;
+            }
+            return *this;
+        }
+
+        Methcla_ResourceId id() const
+        {
+            return m_id;
+        }
+        c_type* data() const
+        {
+            return m_data;
+        }
+        explicit operator bool() const
+        {
+            return m_data != nullptr;
+        }
+        Resource operator*() const
+        {
+            return Resource(m_data);
+        }
+
+    private:
+        Methcla_World*     m_world;
+        Methcla_ResourceId m_id;
+        c_type*            m_data;
+    };
+
+    // Plugin-author helper that bridges the C ABI for a resource type to a
+    // C++ class. The Resource class must be constructible from
+    // (HostContext, const typename Options::Type&). On registration the
+    // resource def is created with static storage duration so it remains
+    // valid for the engine's lifetime.
+    template <class Resource, class Options = NoOptions> class ResourceDef
+    {
+        static Methcla_ErrorCode configure(const void* tag_buffer,
+                                           size_t      tag_size,
+                                           const void* arg_buffer,
+                                           size_t arg_size, void* options)
+        {
+            try
+            {
+                OSCPP::Server::ArgStream args(
+                    OSCPP::ReadStream(tag_buffer, tag_size),
+                    OSCPP::ReadStream(arg_buffer, arg_size));
+                new (options) typename Options::Type(args);
+                return kMethcla_NoError;
+            }
+            catch (...)
+            {
+                return kMethcla_ArgumentError;
+            }
+        }
+
+        static Methcla_Error construct(Methcla_Host* host,
+                                       const Methcla_ResourceDef*,
+                                       const void* options, void* instance)
+        {
+            try
+            {
+                new (instance) Resource(
+                    HostContext(host),
+                    *static_cast<const typename Options::Type*>(options));
+                return methcla_no_error();
+            }
+            catch (const std::exception& e)
+            {
+                return methcla_error_new_with_message(kMethcla_ArgumentError,
+                                                      e.what());
+            }
+            catch (...)
+            {
+                return methcla_error_new(kMethcla_ArgumentError);
+            }
+        }
+
+        static void destroy(Methcla_Host*, void* instance)
+        {
+            static_cast<Resource*>(instance)->~Resource();
+        }
+
+    public:
+        void operator()(Methcla_Host* host, const char* uri,
+                        Methcla_ResourceMutability mutability)
+        {
+            static const Methcla_ResourceDef kDef = {
+                uri,        sizeof(Resource), sizeof(typename Options::Type),
+                mutability, configure,        construct,
+                destroy};
+            methcla_host_register_resource_def(host, &kDef);
+        }
+    };
 }} // namespace Methcla::Plugin

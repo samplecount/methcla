@@ -41,6 +41,22 @@ typedef void (*Methcla_HostPerformFunction)(Methcla_Host* host, void* data);
 //* Callback function type for performing commands in the realtime context.
 typedef void (*Methcla_WorldPerformFunction)(Methcla_World* world, void* data);
 
+//* Resource handle exposed by the engine via resource_acquire. Resources are
+//* identified by integer id (Methcla_ResourceId, declared below) and typed by
+//* URI; consumers cast this opaque pointer to the layout published in the
+//* resource type's header after a successful URI-checked acquire.
+typedef void Methcla_Resource;
+
+typedef int32_t Methcla_ResourceId;
+
+//* Callback function type for accessing one or more resources from the
+//* non-realtime context. The engine acquires each listed resource on the RT
+//* thread, invokes this callback on a worker thread with the data pointer
+//* array, and releases the resources after the callback returns.
+typedef void (*Methcla_PerformWithResourcesFunction)(
+    Methcla_Host* host, Methcla_Resource* const* resources,
+    size_t num_resources, void* user_data);
+
 //* Realtime interface
 struct Methcla_World
 {
@@ -72,6 +88,34 @@ struct Methcla_World
 
     //* Free synth.
     void (*synth_done)(Methcla_World* world, Methcla_Synth* synth);
+
+    //* Acquire a Live resource by id, checking that its type URI matches
+    //* `expected_uri` (compared by string equality). Returns the resource's
+    //* data pointer (cast by the consumer to the type published in the
+    //* resource's header) and increments its refcount. Returns NULL if the
+    //* id is out of range, the slot is not Live, or the URI does not match.
+    Methcla_Resource* (*resource_acquire)(Methcla_World*     world,
+                                          Methcla_ResourceId id,
+                                          const char*        expected_uri);
+
+    //* Decrement the refcount of a resource previously acquired by
+    //* resource_acquire. Each successful acquire must be paired with exactly
+    //* one release.
+    void (*resource_release)(Methcla_World* world, Methcla_ResourceId id);
+
+    //* Bracket a non-realtime callback with RT-side acquire/release of the
+    //* listed resources. The engine acquires every resource (incrementing
+    //* its refcount) on the RT thread, dispatches the callback to a worker
+    //* thread with the data pointer array, and releases the resources back
+    //* on the RT thread after the callback returns. The resource pointers
+    //* are valid only for the duration of the callback. If any acquire
+    //* fails the engine releases the resources it has already acquired and
+    //* the callback is not invoked.
+    void (*perform_with_resources)(Methcla_World*                       world,
+                                   const Methcla_ResourceId*            ids,
+                                   size_t                               num_ids,
+                                   Methcla_PerformWithResourcesFunction perform,
+                                   void* user_data);
 };
 
 static inline double methcla_world_samplerate(const Methcla_World* world)
@@ -147,7 +191,31 @@ static inline void methcla_world_synth_done(Methcla_World* world,
     world->synth_done(world, synth);
 }
 
-typedef int32_t Methcla_ResourceId;
+static inline Methcla_Resource*
+methcla_world_resource_acquire(Methcla_World* world, Methcla_ResourceId id,
+                               const char* expected_uri)
+{
+    assert(world && world->resource_acquire);
+    assert(expected_uri);
+    return world->resource_acquire(world, id, expected_uri);
+}
+
+static inline void methcla_world_resource_release(Methcla_World*     world,
+                                                  Methcla_ResourceId id)
+{
+    assert(world && world->resource_release);
+    world->resource_release(world, id);
+}
+
+static inline void methcla_world_perform_with_resources(
+    Methcla_World* world, const Methcla_ResourceId* ids, size_t num_ids,
+    Methcla_PerformWithResourcesFunction perform, void* user_data)
+{
+    assert(world && world->perform_with_resources);
+    assert(perform);
+    assert(num_ids == 0 || ids != NULL);
+    world->perform_with_resources(world, ids, num_ids, perform, user_data);
+}
 
 typedef enum
 {

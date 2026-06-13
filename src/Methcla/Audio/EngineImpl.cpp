@@ -18,6 +18,7 @@
 #include <boost/heap/priority_queue.hpp>
 
 #include <cassert>
+#include <cstring>
 #include <functional>
 #include <stdexcept>
 
@@ -1027,6 +1028,129 @@ void EnvironmentImpl::scheduleResourceDestroy(int32_t resourceId)
     auto& entry = m_resources[resourceId];
     sendToWorker<ResourceDestroyCommand>(this, resourceId, entry.def,
                                          entry.data);
+}
+
+void* EnvironmentImpl::acquireResource(int32_t     resourceId,
+                                       const char* expectedUri)
+{
+    if (resourceId < 0 || static_cast<size_t>(resourceId) >= m_resources.size())
+        return nullptr;
+
+    auto& entry = m_resources[resourceId];
+    if (entry.state != ResourceEntry::State::Live)
+        return nullptr;
+    assert(entry.def != nullptr);
+    if (expectedUri == nullptr || std::strcmp(entry.def->uri, expectedUri) != 0)
+        return nullptr;
+
+    entry.refCount++;
+    return entry.data;
+}
+
+void EnvironmentImpl::releaseResource(int32_t resourceId)
+{
+    assert(resourceId >= 0 &&
+           static_cast<size_t>(resourceId) < m_resources.size());
+    auto& entry = m_resources[resourceId];
+    assert(entry.refCount > 0);
+    entry.refCount--;
+    if (entry.refCount == 0 && entry.freePending &&
+        entry.state == ResourceEntry::State::Live)
+    {
+        entry.state = ResourceEntry::State::Destroying;
+        scheduleResourceDestroy(resourceId);
+    }
+}
+
+namespace {
+
+    // perform_with_resources state. Allocated in RT memory at dispatch time;
+    // ids are copied into the trailing flexible array so the caller's id
+    // buffer need not outlive the dispatch. NRT callback runs on a worker
+    // thread; release of all ids happens back on RT before freeing.
+    struct PerformWithResourcesCommand
+    {
+        EnvironmentImpl*                     impl;
+        Methcla_PerformWithResourcesFunction perform;
+        void*                                userData;
+        size_t                               numIds;
+        // Followed by:
+        //   Methcla_ResourceId ids[numIds];
+        //   Methcla_Resource*  resources[numIds];
+
+        Methcla_ResourceId* ids()
+        {
+            return reinterpret_cast<Methcla_ResourceId*>(this + 1);
+        }
+
+        Methcla_Resource** resources()
+        {
+            return reinterpret_cast<Methcla_Resource**>(ids() + numIds);
+        }
+
+        static size_t sizeFor(size_t n)
+        {
+            return sizeof(PerformWithResourcesCommand) +
+                   n * sizeof(Methcla_ResourceId) +
+                   n * sizeof(Methcla_Resource*);
+        }
+
+        static void completeOnRT(Environment* env, void* data)
+        {
+            auto* self = static_cast<PerformWithResourcesCommand*>(data);
+            for (size_t i = 0; i < self->numIds; ++i)
+                self->impl->releaseResource(self->ids()[i]);
+            env->rtMem().free(self);
+        }
+
+        static void runOnNRT(Environment* env, void* data)
+        {
+            auto*        self = static_cast<PerformWithResourcesCommand*>(data);
+            Methcla_Host host(*env);
+            self->perform(&host, self->resources(), self->numIds,
+                          self->userData);
+            env->sendFromWorker(completeOnRT, self);
+        }
+    };
+
+} // namespace
+
+void EnvironmentImpl::performWithResources(
+    const Methcla_ResourceId* ids, size_t numIds,
+    Methcla_PerformWithResourcesFunction perform, void* userData)
+{
+    assert(perform != nullptr);
+
+    void* mem = rtMem().alloc(PerformWithResourcesCommand::sizeFor(numIds));
+    auto* cmd = static_cast<PerformWithResourcesCommand*>(mem);
+    cmd->impl = this;
+    cmd->perform = perform;
+    cmd->userData = userData;
+    cmd->numIds = numIds;
+
+    for (size_t i = 0; i < numIds; ++i)
+    {
+        if (ids[i] < 0 || static_cast<size_t>(ids[i]) >= m_resources.size())
+        {
+            for (size_t j = 0; j < i; ++j)
+                releaseResource(cmd->ids()[j]);
+            rtMem().free(mem);
+            return;
+        }
+        auto& entry = m_resources[ids[i]];
+        if (entry.state != ResourceEntry::State::Live)
+        {
+            for (size_t j = 0; j < i; ++j)
+                releaseResource(cmd->ids()[j]);
+            rtMem().free(mem);
+            return;
+        }
+        entry.refCount++;
+        cmd->ids()[i] = ids[i];
+        cmd->resources()[i] = entry.data;
+    }
+
+    sendToWorker(PerformWithResourcesCommand::runOnNRT, cmd);
 }
 
 const std::shared_ptr<SynthDef>&

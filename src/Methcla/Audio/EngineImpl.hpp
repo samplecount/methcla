@@ -471,6 +471,24 @@ namespace Methcla { namespace Audio {
         // notification.
         void scheduleResourceDestroy(int32_t resourceId);
 
+        //* Context: RT — type-checked acquire. Returns the resource's data
+        //* pointer and increments its refcount on success, or nullptr on
+        //* out-of-range id, non-Live state, or URI mismatch.
+        void* acquireResource(int32_t resourceId, const char* expectedUri);
+
+        //* Context: RT — decrement refcount. If the resource is flagged
+        //* freePending and the refcount hits zero, transitions Live →
+        //* Destroying and schedules the NRT destroy.
+        void releaseResource(int32_t resourceId);
+
+        //* Context: RT — bracket an NRT callback with acquire/release of
+        //* the listed ids. Resources are released after the callback
+        //* returns. If any acquire fails the callback is not invoked and
+        //* the already-acquired resources are released.
+        void performWithResources(const Methcla_ResourceId* ids, size_t numIds,
+                                  Methcla_PerformWithResourcesFunction perform,
+                                  void* userData);
+
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)
         {
