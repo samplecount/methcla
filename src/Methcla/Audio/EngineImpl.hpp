@@ -269,6 +269,9 @@ namespace Methcla { namespace Audio {
                                Utility::Hash::cstr_equal>;
         ResourceDefMap m_resourceDefs;
 
+        // Module-internal slot record for the resource pool. All mutation is
+        // confined to EnvironmentImpl on the RT thread; fields are public for
+        // direct access by the OSC handlers and command classes below.
         struct ResourceEntry
         {
             enum class State
@@ -278,11 +281,11 @@ namespace Methcla { namespace Audio {
                 Live,
                 Destroying
             };
-            State                      state = State::Free;
-            bool                       freePending = false;
-            const Methcla_ResourceDef* def = nullptr;
-            void*                      data = nullptr;
-            size_t                     refCount = 0;
+            State                      m_state = State::Free;
+            bool                       m_freePending = false;
+            const Methcla_ResourceDef* m_def = nullptr;
+            void*                      m_data = nullptr;
+            size_t                     m_refCount = 0;
         };
         std::vector<ResourceEntry> m_resources;
 

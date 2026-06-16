@@ -42,17 +42,27 @@ The Engine owns a fixed-size pool of typed, reference-counted Resource slots, in
 
 Each slot is in one of four states; all transitions run on the RT thread.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Free
-    Free --> Constructing: /resource/new
-    Constructing --> Live: NRT construct ok
-    Constructing --> Free: NRT construct error\n(→ /resource/error)
-    Constructing --> Destroying: freePending after\nNRT construct ok
-    Live --> Destroying: /resource/free &&\nrefCount == 0
-    Live --> Live: /resource/free &&\nrefCount > 0\n(freePending = true)
-    Live --> Destroying: refCount drops to 0\n&& freePending
-    Destroying --> Free: NRT destroy returns\n(→ /resource/destroyed)
+```
+                 /resource/new (validated, id reserved)
+        Free ──────────────────────────────────────────→ Constructing
+         ▲                                                    │
+         │                                                    │  NRT construct returns
+         │                                          ┌─────────┴─────────┐
+         │                                          │                   │
+         │                                       error                 ok
+         │                                          │                   │
+         │ NRT destroy returns                      ▼                   ▼
+         │ (state → Free)                       (notify              Live
+         │                                       /resource/error)     │
+         │                                          │                  │ /resource/free
+         │                                          │                  │   refCount==0 → Destroying
+         │                                          ▼                  │   refCount>0  → freePending=true,
+         └──────────────────────────────────────  Free                 │                  drain via release path
+                                                                       ▼
+                                                                  Destroying
+                                                                       │
+                                                                       │ NRT destroy returns
+                                                                       └────────→ Free
 ```
 
 `freePending` records that `/resource/free` arrived while the slot was Constructing or Live-with-refCount>0. The state stays Live until the last `resource_release` drains the refcount; that release then transitions the slot to Destroying and schedules the NRT destroy.

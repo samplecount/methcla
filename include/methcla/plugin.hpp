@@ -10,6 +10,8 @@
 
 #include <cstring>
 #include <functional>
+#include <stdexcept>
+#include <system_error>
 
 #include <oscpp/server.hpp>
 
@@ -302,8 +304,8 @@ namespace Methcla { namespace Plugin {
 
     // RAII handle for an acquired resource. `Resource` is a wrapper type that
     // exposes a static `uri()` and a nested `c_type` typedef naming the C ABI
-    // layout (see e.g. the AudioBuffer wrapper). Acquire happens in the
-    // constructor; release happens in the destructor.
+    // layout. Acquire happens in the constructor; release happens in the
+    // destructor.
     //
     // The constructed handle is empty (`operator bool() == false`) if the
     // engine refused the acquire — typically because the id is not Live or
@@ -394,9 +396,33 @@ namespace Methcla { namespace Plugin {
                 new (options) typename Options::Type(args);
                 return kMethcla_NoError;
             }
-            catch (...)
+            catch (const std::invalid_argument&)
             {
                 return kMethcla_ArgumentError;
+            }
+            catch (const std::out_of_range&)
+            {
+                return kMethcla_ArgumentError;
+            }
+            catch (const std::domain_error&)
+            {
+                return kMethcla_ArgumentError;
+            }
+            catch (const std::logic_error&)
+            {
+                return kMethcla_LogicError;
+            }
+            catch (const std::bad_alloc&)
+            {
+                return kMethcla_MemoryError;
+            }
+            catch (const std::system_error&)
+            {
+                return kMethcla_SystemError;
+            }
+            catch (...)
+            {
+                return kMethcla_UnspecifiedError;
             }
         }
 
@@ -411,14 +437,44 @@ namespace Methcla { namespace Plugin {
                     *static_cast<const typename Options::Type*>(options));
                 return methcla_no_error();
             }
-            catch (const std::exception& e)
+            catch (const std::invalid_argument& e)
             {
                 return methcla_error_new_with_message(kMethcla_ArgumentError,
                                                       e.what());
             }
+            catch (const std::out_of_range& e)
+            {
+                return methcla_error_new_with_message(kMethcla_ArgumentError,
+                                                      e.what());
+            }
+            catch (const std::domain_error& e)
+            {
+                return methcla_error_new_with_message(kMethcla_ArgumentError,
+                                                      e.what());
+            }
+            catch (const std::logic_error& e)
+            {
+                return methcla_error_new_with_message(kMethcla_LogicError,
+                                                      e.what());
+            }
+            catch (const std::bad_alloc& e)
+            {
+                return methcla_error_new_with_message(kMethcla_MemoryError,
+                                                      e.what());
+            }
+            catch (const std::system_error& e)
+            {
+                return methcla_error_new_with_message(kMethcla_SystemError,
+                                                      e.what());
+            }
+            catch (const std::exception& e)
+            {
+                return methcla_error_new_with_message(kMethcla_UnspecifiedError,
+                                                      e.what());
+            }
             catch (...)
             {
-                return methcla_error_new(kMethcla_ArgumentError);
+                return methcla_error_new(kMethcla_UnspecifiedError);
             }
         }
 

@@ -482,18 +482,18 @@ namespace {
             else
             {
                 auto& entry = self->m_impl->m_resources[self->m_resourceId];
-                entry.def = self->m_def;
-                entry.data = self->m_result;
+                entry.m_def = self->m_def;
+                entry.m_data = self->m_result;
 
-                if (entry.freePending)
+                if (entry.m_freePending)
                 {
-                    entry.state =
+                    entry.m_state =
                         EnvironmentImpl::ResourceEntry::State::Destroying;
                     self->m_impl->scheduleResourceDestroy(self->m_resourceId);
                 }
                 else
                 {
-                    entry.state = EnvironmentImpl::ResourceEntry::State::Live;
+                    entry.m_state = EnvironmentImpl::ResourceEntry::State::Live;
                     self->m_impl->notifyResourceReady(self->m_resourceId);
                 }
             }
@@ -955,7 +955,7 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                 }
 
                 auto& entry = m_resources[resourceId] = ResourceEntry{};
-                entry.state = ResourceEntry::State::Constructing;
+                entry.m_state = ResourceEntry::State::Constructing;
                 sendToWorker<ResourceConstructCommand>(this, resourceId, def,
                                                        options);
             }
@@ -974,20 +974,20 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
             else
             {
                 auto& entry = m_resources[resourceId];
-                if (entry.state == ResourceEntry::State::Constructing)
+                if (entry.m_state == ResourceEntry::State::Constructing)
                 {
-                    entry.freePending = true;
+                    entry.m_freePending = true;
                 }
-                else if (entry.state == ResourceEntry::State::Live)
+                else if (entry.m_state == ResourceEntry::State::Live)
                 {
-                    if (entry.refCount == 0)
+                    if (entry.m_refCount == 0)
                     {
-                        entry.state = ResourceEntry::State::Destroying;
+                        entry.m_state = ResourceEntry::State::Destroying;
                         scheduleResourceDestroy(resourceId);
                     }
                     else
                     {
-                        entry.freePending = true;
+                        entry.m_freePending = true;
                     }
                 }
             }
@@ -1026,8 +1026,8 @@ void EnvironmentImpl::notifyResourceReady(int32_t resourceId)
 void EnvironmentImpl::scheduleResourceDestroy(int32_t resourceId)
 {
     auto& entry = m_resources[resourceId];
-    sendToWorker<ResourceDestroyCommand>(this, resourceId, entry.def,
-                                         entry.data);
+    sendToWorker<ResourceDestroyCommand>(this, resourceId, entry.m_def,
+                                         entry.m_data);
 }
 
 void* EnvironmentImpl::acquireResource(int32_t     resourceId,
@@ -1037,14 +1037,15 @@ void* EnvironmentImpl::acquireResource(int32_t     resourceId,
         return nullptr;
 
     auto& entry = m_resources[resourceId];
-    if (entry.state != ResourceEntry::State::Live)
+    if (entry.m_state != ResourceEntry::State::Live)
         return nullptr;
-    assert(entry.def != nullptr);
-    if (expectedUri == nullptr || std::strcmp(entry.def->uri, expectedUri) != 0)
+    assert(entry.m_def != nullptr);
+    if (expectedUri == nullptr ||
+        std::strcmp(entry.m_def->uri, expectedUri) != 0)
         return nullptr;
 
-    entry.refCount++;
-    return entry.data;
+    entry.m_refCount++;
+    return entry.m_data;
 }
 
 void EnvironmentImpl::releaseResource(int32_t resourceId)
@@ -1052,42 +1053,63 @@ void EnvironmentImpl::releaseResource(int32_t resourceId)
     assert(resourceId >= 0 &&
            static_cast<size_t>(resourceId) < m_resources.size());
     auto& entry = m_resources[resourceId];
-    assert(entry.refCount > 0);
-    entry.refCount--;
-    if (entry.refCount == 0 && entry.freePending &&
-        entry.state == ResourceEntry::State::Live)
+    assert(entry.m_refCount > 0);
+    entry.m_refCount--;
+    if (entry.m_refCount == 0 && entry.m_freePending &&
+        entry.m_state == ResourceEntry::State::Live)
     {
-        entry.state = ResourceEntry::State::Destroying;
+        entry.m_state = ResourceEntry::State::Destroying;
         scheduleResourceDestroy(resourceId);
     }
 }
 
 namespace {
 
-    // perform_with_resources state. Allocated in RT memory at dispatch time;
-    // ids are copied into the trailing flexible array so the caller's id
-    // buffer need not outlive the dispatch. NRT callback runs on a worker
-    // thread; release of all ids happens back on RT before freeing.
-    struct PerformWithResourcesCommand
+    // Command state for perform_with_resources. Allocated in RT memory at
+    // dispatch time with two trailing flexible arrays — ids and resolved
+    // resource pointers — so the caller's id buffer need not outlive the
+    // dispatch. NRT callback runs on a worker thread; release of all ids
+    // happens back on RT before freeing.
+    class PerformWithResourcesCommand
     {
-        EnvironmentImpl*                     impl;
-        Methcla_PerformWithResourcesFunction perform;
-        void*                                userData;
-        size_t                               numIds;
-        // Followed by:
-        //   Methcla_ResourceId ids[numIds];
-        //   Methcla_Resource*  resources[numIds];
-
-        Methcla_ResourceId* ids()
+    public:
+        // Allocate, RT-acquire each listed resource, and schedule the NRT
+        // callback. On any acquire failure releases the already-acquired
+        // resources, frees the allocation, and returns without dispatching.
+        static void dispatch(EnvironmentImpl*          impl,
+                             const Methcla_ResourceId* ids, size_t numIds,
+                             Methcla_PerformWithResourcesFunction perform,
+                             void*                                userData)
         {
-            return reinterpret_cast<Methcla_ResourceId*>(this + 1);
+            void* mem = impl->rtMem().alloc(sizeFor(numIds));
+            auto* self = static_cast<PerformWithResourcesCommand*>(mem);
+            self->m_impl = impl;
+            self->m_perform = perform;
+            self->m_userData = userData;
+            self->m_numIds = numIds;
+
+            for (size_t i = 0; i < numIds; ++i)
+            {
+                auto& resources = impl->m_resources;
+                if (ids[i] < 0 ||
+                    static_cast<size_t>(ids[i]) >= resources.size() ||
+                    resources[ids[i]].m_state !=
+                        EnvironmentImpl::ResourceEntry::State::Live)
+                {
+                    for (size_t j = 0; j < i; ++j)
+                        impl->releaseResource(self->idsArray()[j]);
+                    impl->rtMem().free(self);
+                    return;
+                }
+                resources[ids[i]].m_refCount++;
+                self->idsArray()[i] = ids[i];
+                self->resourcesArray()[i] = resources[ids[i]].m_data;
+            }
+
+            impl->sendToWorker(runOnNRT, self);
         }
 
-        Methcla_Resource** resources()
-        {
-            return reinterpret_cast<Methcla_Resource**>(ids() + numIds);
-        }
-
+    private:
         static size_t sizeFor(size_t n)
         {
             return sizeof(PerformWithResourcesCommand) +
@@ -1095,22 +1117,37 @@ namespace {
                    n * sizeof(Methcla_Resource*);
         }
 
-        static void completeOnRT(Environment* env, void* data)
+        Methcla_ResourceId* idsArray()
         {
-            auto* self = static_cast<PerformWithResourcesCommand*>(data);
-            for (size_t i = 0; i < self->numIds; ++i)
-                self->impl->releaseResource(self->ids()[i]);
-            env->rtMem().free(self);
+            return reinterpret_cast<Methcla_ResourceId*>(this + 1);
+        }
+
+        Methcla_Resource** resourcesArray()
+        {
+            return reinterpret_cast<Methcla_Resource**>(idsArray() + m_numIds);
         }
 
         static void runOnNRT(Environment* env, void* data)
         {
             auto*        self = static_cast<PerformWithResourcesCommand*>(data);
             Methcla_Host host(*env);
-            self->perform(&host, self->resources(), self->numIds,
-                          self->userData);
+            self->m_perform(&host, self->resourcesArray(), self->m_numIds,
+                            self->m_userData);
             env->sendFromWorker(completeOnRT, self);
         }
+
+        static void completeOnRT(Environment* env, void* data)
+        {
+            auto* self = static_cast<PerformWithResourcesCommand*>(data);
+            for (size_t i = 0; i < self->m_numIds; ++i)
+                self->m_impl->releaseResource(self->idsArray()[i]);
+            env->rtMem().free(self);
+        }
+
+        EnvironmentImpl*                     m_impl;
+        Methcla_PerformWithResourcesFunction m_perform;
+        void*                                m_userData;
+        size_t                               m_numIds;
     };
 
 } // namespace
@@ -1120,37 +1157,7 @@ void EnvironmentImpl::performWithResources(
     Methcla_PerformWithResourcesFunction perform, void* userData)
 {
     assert(perform != nullptr);
-
-    void* mem = rtMem().alloc(PerformWithResourcesCommand::sizeFor(numIds));
-    auto* cmd = static_cast<PerformWithResourcesCommand*>(mem);
-    cmd->impl = this;
-    cmd->perform = perform;
-    cmd->userData = userData;
-    cmd->numIds = numIds;
-
-    for (size_t i = 0; i < numIds; ++i)
-    {
-        if (ids[i] < 0 || static_cast<size_t>(ids[i]) >= m_resources.size())
-        {
-            for (size_t j = 0; j < i; ++j)
-                releaseResource(cmd->ids()[j]);
-            rtMem().free(mem);
-            return;
-        }
-        auto& entry = m_resources[ids[i]];
-        if (entry.state != ResourceEntry::State::Live)
-        {
-            for (size_t j = 0; j < i; ++j)
-                releaseResource(cmd->ids()[j]);
-            rtMem().free(mem);
-            return;
-        }
-        entry.refCount++;
-        cmd->ids()[i] = ids[i];
-        cmd->resources()[i] = entry.data;
-    }
-
-    sendToWorker(PerformWithResourcesCommand::runOnNRT, cmd);
+    PerformWithResourcesCommand::dispatch(this, ids, numIds, perform, userData);
 }
 
 const std::shared_ptr<SynthDef>&
