@@ -6,6 +6,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 
@@ -33,6 +34,17 @@ namespace Methcla { namespace detail {
         bool operator!=(const D& other) const
         {
             return m_id != other.m_id;
+        }
+
+        operator bool() const
+        {
+            return m_id != static_cast<T>(-1);
+        }
+
+        friend std::ostream& operator<<(std::ostream& out, const D& id)
+        {
+            out << id.m_id;
+            return out;
         }
 
     private:

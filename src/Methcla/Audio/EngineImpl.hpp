@@ -12,6 +12,7 @@
 #include "Methcla/Memory/Manager.hpp"
 #include "Methcla/Platform.hpp"
 #include "Methcla/Plugin/Manager.hpp"
+#include "Methcla/Utility/Hash.hpp"
 #include "Methcla/Utility/Macros.h"
 #include "Methcla/Utility/MessageQueue.hpp"
 
@@ -24,6 +25,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 // OSC request with reference counting.
@@ -261,6 +263,32 @@ namespace Methcla { namespace Audio {
         SynthDefMap                            m_synthDefs;
         std::list<const Methcla_SoundFileAPI*> m_soundFileAPIs;
 
+        using ResourceDefMap =
+            std::unordered_map<const char*, const Methcla_ResourceDef*,
+                               Utility::Hash::cstr_hash,
+                               Utility::Hash::cstr_equal>;
+        ResourceDefMap m_resourceDefs;
+
+        // Module-internal slot record for the resource pool. All mutation is
+        // confined to EnvironmentImpl on the RT thread; fields are public for
+        // direct access by the OSC handlers and command classes below.
+        struct ResourceEntry
+        {
+            enum class State
+            {
+                Free,
+                Constructing,
+                Live,
+                Destroying
+            };
+            State                      m_state = State::Free;
+            bool                       m_freePending = false;
+            const Methcla_ResourceDef* m_def = nullptr;
+            void*                      m_data = nullptr;
+            size_t                     m_refCount = 0;
+        };
+        std::vector<ResourceEntry> m_resources;
+
         std::atomic<int> m_logLevel;
         std::atomic<int> m_logFlags;
 
@@ -435,6 +463,34 @@ namespace Methcla { namespace Audio {
                 sendToWorker<NodeEndedNotification>(nodeId);
             }
         }
+
+        //* Context: RT
+        void notifyResourceReady(int32_t resourceId);
+
+        //* Context: NRT
+        void registerResourceDef(const Methcla_ResourceDef* resourceDef);
+
+        //* Context: RT — schedule NRT destroy + /resource/destroyed
+        // notification.
+        void scheduleResourceDestroy(int32_t resourceId);
+
+        //* Context: RT — type-checked acquire. Returns the resource's data
+        //* pointer and increments its refcount on success, or nullptr on
+        //* out-of-range id, non-Live state, or URI mismatch.
+        void* acquireResource(int32_t resourceId, const char* expectedUri);
+
+        //* Context: RT — decrement refcount. If the resource is flagged
+        //* freePending and the refcount hits zero, transitions Live →
+        //* Destroying and schedules the NRT destroy.
+        void releaseResource(int32_t resourceId);
+
+        //* Context: RT — bracket an NRT callback with acquire/release of
+        //* the listed ids. Resources are released after the callback
+        //* returns. If any acquire fails the callback is not invoked and
+        //* the already-acquired resources are released.
+        void performWithResources(const Methcla_ResourceId* ids, size_t numIds,
+                                  Methcla_PerformWithResourcesFunction perform,
+                                  void* userData);
 
         //* Context: NRT
         void reply(Methcla_RequestId requestId, const void* packet, size_t size)

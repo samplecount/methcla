@@ -55,6 +55,7 @@ namespace Methcla { namespace Audio {
             size_t                             realtimeMemorySize = 1024 * 1024;
             size_t                             maxNumNodes = 1024;
             size_t                             maxNumAudioBuses = 1024;
+            size_t                             maxNumResources = 256;
             size_t                             maxNumControlBuses = 4096;
             size_t                             sampleRate = 44100;
             size_t                             blockSize = 64;
@@ -136,7 +137,22 @@ namespace Methcla { namespace Audio {
         bool hasPendingCommands() const;
 
         //* Register SynthDef.
-        void registerSynthDef(const Methcla_SynthDef* synthDef);
+        void registerSynthDef(const Methcla_SynthDef* def);
+
+        //* Register ResourceDef.
+        void registerResourceDef(const Methcla_ResourceDef* def);
+
+        //* Context: RT — acquire a live resource by id with URI check.
+        void* acquireResource(Methcla_ResourceId id, const char* expectedUri);
+
+        //* Context: RT — release a previously acquired resource.
+        void releaseResource(Methcla_ResourceId id);
+
+        //* Context: RT — bracket NRT callback with acquire/release of listed
+        //* resources.
+        void performWithResources(const Methcla_ResourceId* ids, size_t numIds,
+                                  Methcla_PerformWithResourcesFunction perform,
+                                  void* userData);
 
         //* Lookup SynthDef
         const std::shared_ptr<SynthDef>& synthDef(const char* uri) const;

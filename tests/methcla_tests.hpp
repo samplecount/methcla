@@ -5,9 +5,12 @@
 
 #pragma once
 
+#include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdio>
 #include <limits>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -102,4 +105,26 @@ namespace Methcla { namespace Tests {
     {
         std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
     }
+
+    class AsyncLatch
+    {
+        std::mutex              m_mtx;
+        std::condition_variable m_cv;
+        bool                    m_signalled = false;
+
+    public:
+        void signal()
+        {
+            std::unique_lock<std::mutex> lock(m_mtx);
+            m_signalled = true;
+            m_cv.notify_all();
+        }
+
+        bool
+        wait(std::chrono::milliseconds timeout = std::chrono::milliseconds(500))
+        {
+            std::unique_lock<std::mutex> lock(m_mtx);
+            return m_cv.wait_for(lock, timeout, [this] { return m_signalled; });
+        }
+    };
 }} // namespace Methcla::Tests

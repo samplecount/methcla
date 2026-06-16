@@ -18,6 +18,7 @@
 #include <boost/heap/priority_queue.hpp>
 
 #include <cassert>
+#include <cstring>
 #include <functional>
 #include <stdexcept>
 
@@ -214,6 +215,7 @@ EnvironmentImpl::EnvironmentImpl(Environment* owner, LogHandler logHandler,
 , m_epoch(0)
 , m_currentTime(0)
 , m_nodes(options.maxNumNodes, nullptr)
+, m_resources(options.maxNumResources)
 , m_logLevel(options.logLevel)
 , m_logFlags(kMethcla_EngineLogDefault)
 {
@@ -422,6 +424,271 @@ void EnvironmentImpl::processBundle(Methcla_EngineLogFlags       logFlags,
         }
     }
 }
+
+namespace {
+
+    class ResourceErrorNotification : public EnvironmentImpl::Notification
+    {
+        int32_t       m_resourceId;
+        Methcla_Error m_error;
+
+    public:
+        ResourceErrorNotification(int32_t resourceId, Methcla_Error error)
+        : m_resourceId(resourceId)
+        , m_error(error)
+        {}
+
+    private:
+        void notify(Environment* env) override
+        {
+            constexpr const char* address = "/resource/error";
+            const char*           msg = methcla_error_message(m_error);
+            if (!msg)
+                msg =
+                    methcla_error_code_description(methcla_error_code(m_error));
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 3) + OSCPP::Size::int32(2) +
+                OSCPP::Size::string(msg));
+            packet.openMessage(address, 3);
+            packet.int32(m_resourceId);
+            packet.int32(static_cast<int32_t>(methcla_error_code(m_error)));
+            packet.string(msg);
+            packet.closeMessage();
+            env->notify(packet);
+            methcla_error_free(m_error);
+        }
+    };
+
+    class ResourceConstructCommand
+    {
+        EnvironmentImpl*           m_impl;
+        int32_t                    m_resourceId;
+        const Methcla_ResourceDef* m_def;
+        void*                      m_options;
+        void*                      m_result;
+        Methcla_Error              m_error;
+
+        static void completeOnRT(Environment* env, void* data)
+        {
+            auto* self = static_cast<ResourceConstructCommand*>(data);
+
+            if (methcla_is_error(self->m_error))
+            {
+                self->m_impl->m_resources[self->m_resourceId] =
+                    EnvironmentImpl::ResourceEntry{};
+                self->m_impl->sendToWorker<ResourceErrorNotification>(
+                    self->m_resourceId, self->m_error);
+            }
+            else
+            {
+                auto& entry = self->m_impl->m_resources[self->m_resourceId];
+                entry.m_def = self->m_def;
+                entry.m_data = self->m_result;
+
+                if (entry.m_freePending)
+                {
+                    entry.m_state =
+                        EnvironmentImpl::ResourceEntry::State::Destroying;
+                    self->m_impl->scheduleResourceDestroy(self->m_resourceId);
+                }
+                else
+                {
+                    entry.m_state = EnvironmentImpl::ResourceEntry::State::Live;
+                    self->m_impl->notifyResourceReady(self->m_resourceId);
+                }
+            }
+            if (self->m_options)
+                env->rtMem().free(self->m_options);
+            env->rtMem().free(self);
+        }
+
+    public:
+        ResourceConstructCommand(EnvironmentImpl* impl, int32_t resourceId,
+                                 const Methcla_ResourceDef* def, void* options)
+        : m_impl(impl)
+        , m_resourceId(resourceId)
+        , m_def(def)
+        , m_options(options)
+        , m_result(nullptr)
+        , m_error(methcla_no_error())
+        {}
+
+        void perform(Environment* env)
+        {
+            Methcla_Host host(*env);
+            m_result = Memory::alloc(m_def->instance_size);
+            if (m_def->construct)
+                m_error = m_def->construct(&host, m_def, m_options, m_result);
+            if (methcla_is_error(m_error))
+            {
+                Memory::free(m_result);
+                m_result = nullptr;
+            }
+            env->sendFromWorker(completeOnRT, this);
+        }
+    };
+
+    // Plays two roles in sequence to avoid an extra RT memory allocation:
+    // first dispatched as ResourceDestroyCommand (NRT destruction work), then
+    // re-queued as Notification (sends /resource/destroyed). perform() hides
+    // Notification::perform() intentionally; completeOnRT re-queues via
+    // static_cast<Notification*> to select the second role.
+    class ResourceDestroyCommand : public EnvironmentImpl::Notification
+    {
+        EnvironmentImpl*           m_impl;
+        int32_t                    m_resourceId;
+        const Methcla_ResourceDef* m_def;
+        void*                      m_data;
+
+        static void completeOnRT(Environment*, void* data)
+        {
+            auto* self = static_cast<ResourceDestroyCommand*>(data);
+            self->m_impl->m_resources[self->m_resourceId] =
+                EnvironmentImpl::ResourceEntry{};
+            self->m_impl->sendToWorker(
+                static_cast<EnvironmentImpl::Notification*>(self));
+        }
+
+        void notify(Environment* env) override
+        {
+            static const char*           address = "/resource/destroyed";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+            packet.openMessage(address, 1);
+            packet.int32(m_resourceId);
+            packet.closeMessage();
+            env->notify(packet);
+        }
+
+    public:
+        ResourceDestroyCommand(EnvironmentImpl* impl, int32_t resourceId,
+                               const Methcla_ResourceDef* def, void* data)
+        : m_impl(impl)
+        , m_resourceId(resourceId)
+        , m_def(def)
+        , m_data(data)
+        {}
+
+        void perform(Environment* env)
+        {
+            Methcla_Host host(*env);
+            if (m_def->destroy)
+                m_def->destroy(&host, m_data);
+            Memory::free(m_data);
+            env->sendFromWorker(completeOnRT, this);
+        }
+    };
+
+    class NodeTreeStatisticsCommand
+    {
+    public:
+        struct Statistics
+        {
+            Statistics()
+            : numGroups(0)
+            , numSynths(0)
+            {}
+            size_t numGroups;
+            size_t numSynths;
+        };
+
+        static Statistics collectStatistics(const Group* group,
+                                            Statistics   stats = Statistics())
+        {
+            stats.numGroups++;
+
+            const Node* cur = group->first();
+
+            while (cur != nullptr)
+            {
+                const Group* subGroup = dynamic_cast<const Group*>(cur);
+                if (subGroup == nullptr)
+                {
+                    stats.numSynths++;
+                }
+                else
+                {
+                    stats = collectStatistics(subGroup, stats);
+                }
+                cur = cur->next();
+            }
+
+            return stats;
+        }
+
+        NodeTreeStatisticsCommand(Methcla_RequestId requestId, Statistics stats)
+        : m_requestId(requestId)
+        , m_stats(stats)
+        {}
+
+        void perform(Environment* env)
+        {
+            static const char*           address = "/node/tree/statistics";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 2) + OSCPP::Size::int32(2));
+            packet.openMessage(address, 2);
+            packet.int32(static_cast<int32_t>(m_stats.numGroups));
+            packet.int32(static_cast<int32_t>(m_stats.numSynths));
+            packet.closeMessage();
+            env->reply(m_requestId, packet);
+            env->sendFromWorker(perform_rt_free, this);
+        }
+
+    private:
+        Methcla_RequestId m_requestId;
+        Statistics        m_stats;
+    };
+
+    class RTMemoryStatisticsCommand
+    {
+    public:
+        RTMemoryStatisticsCommand(Methcla_RequestId                  requestId,
+                                  const RTMemoryManager::Statistics& stats)
+        : m_requestId(requestId)
+        , m_stats(stats)
+        {}
+
+        void perform(Environment* env)
+        {
+            static const char* address = "/engine/realtime-memory/statistics";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 2) + OSCPP::Size::int32(2));
+            packet.openMessage(address, 2);
+            packet.int32(static_cast<int32_t>(m_stats.freeNumBytes));
+            packet.int32(static_cast<int32_t>(m_stats.usedNumBytes));
+            packet.closeMessage();
+            env->reply(m_requestId, packet);
+            env->sendFromWorker(perform_rt_free, this);
+        }
+
+    private:
+        Methcla_RequestId           m_requestId;
+        RTMemoryManager::Statistics m_stats;
+    };
+
+    class ResourceReadyNotification : public EnvironmentImpl::Notification
+    {
+        int32_t m_resourceId;
+
+    public:
+        explicit ResourceReadyNotification(int32_t resourceId)
+        : m_resourceId(resourceId)
+        {}
+
+    private:
+        void notify(Environment* env) override
+        {
+            static const char*           address = "/resource/ready";
+            OSCPP::Client::DynamicPacket packet(
+                OSCPP::Size::message(address, 1) + OSCPP::Size::int32(1));
+            packet.openMessage(address, 1);
+            packet.int32(m_resourceId);
+            packet.closeMessage();
+            env->notify(packet);
+        }
+    };
+
+} // namespace
 
 void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
                                      const OSCPP::Server::Message& msg,
@@ -642,112 +909,94 @@ void EnvironmentImpl::processMessage(Methcla_EngineLogFlags        logFlags,
         }
         else if (msg == "/node/tree/statistics")
         {
-            class CommandNodeTreeStatistics
-            {
-            public:
-                struct Statistics
-                {
-                    Statistics()
-                    : numGroups(0)
-                    , numSynths(0)
-                    {}
-
-                    size_t numGroups = 0;
-                    size_t numSynths = 0;
-                };
-
-                static Statistics
-                collectStatistics(const Group* group,
-                                  Statistics   stats = Statistics())
-                {
-                    stats.numGroups++;
-
-                    const Node* cur = group->first();
-
-                    while (cur != nullptr)
-                    {
-                        const Group* subGroup = dynamic_cast<const Group*>(cur);
-                        if (subGroup == nullptr)
-                        {
-                            stats.numSynths++;
-                        }
-                        else
-                        {
-                            stats = collectStatistics(subGroup, stats);
-                        }
-                        cur = cur->next();
-                    }
-
-                    return stats;
-                }
-
-                CommandNodeTreeStatistics(Methcla_RequestId requestId,
-                                          Statistics        stats)
-                : m_requestId(requestId)
-                , m_stats(stats)
-                {}
-
-                void perform(Environment* env)
-                {
-                    static const char* address = "/node/tree/statistics";
-                    OSCPP::Client::DynamicPacket packet(
-                        OSCPP::Size::message(address, 2) +
-                        OSCPP::Size::int32(2));
-                    packet.openMessage(address, 2);
-                    packet.int32(static_cast<int32_t>(m_stats.numGroups));
-                    packet.int32(static_cast<int32_t>(m_stats.numSynths));
-                    packet.closeMessage();
-                    env->reply(m_requestId, packet);
-                    env->sendFromWorker(perform_rt_free, this);
-                }
-
-            private:
-                Methcla_RequestId m_requestId;
-                Statistics        m_stats;
-            };
-
             Methcla_RequestId requestId = args.int32();
+            sendToWorker<NodeTreeStatisticsCommand>(
+                requestId,
+                NodeTreeStatisticsCommand::collectStatistics(rootNode()));
+        }
+        else if (msg == "/resource/new")
+        {
+            /* args: resourceId:i  uri:s  [options...] */
+            const int32_t resourceId = args.int32();
+            const char*   uri = args.string();
 
-            CommandNodeTreeStatistics::Statistics stats =
-                CommandNodeTreeStatistics::collectStatistics(rootNode());
+            auto it = m_resourceDefs.find(uri);
+            if (it == m_resourceDefs.end())
+            {
+                throwErrorWith(kMethcla_UnsupportedResourceTypeError,
+                               [&](std::stringstream& s) {
+                                   s << "Unknown resource type: " << uri;
+                               });
+            }
+            else
+            {
+                const Methcla_ResourceDef* def = it->second;
 
-            sendToWorker<CommandNodeTreeStatistics>(requestId, stats);
+                void* options = nullptr;
+                if (def->options_size > 0)
+                    options = rtMem().alloc(def->options_size);
+
+                if (def->configure)
+                {
+                    auto              state = args.state();
+                    Methcla_ErrorCode code = def->configure(
+                        std::get<0>(state).pos(),
+                        std::get<0>(state).consumable(),
+                        std::get<1>(state).pos(),
+                        std::get<1>(state).consumable(), options);
+                    if (code != kMethcla_NoError)
+                    {
+                        if (options)
+                            rtMem().free(options);
+                        throwErrorWith(code, [&](std::stringstream& s) {
+                            s << "configure failed for " << uri;
+                        });
+                    }
+                }
+
+                auto& entry = m_resources[resourceId] = ResourceEntry{};
+                entry.m_state = ResourceEntry::State::Constructing;
+                sendToWorker<ResourceConstructCommand>(this, resourceId, def,
+                                                       options);
+            }
+        }
+        else if (msg == "/resource/free")
+        {
+            const int32_t resourceId = args.int32();
+            if (resourceId < 0 ||
+                static_cast<size_t>(resourceId) >= m_resources.size())
+            {
+                throwErrorWith(
+                    kMethcla_ArgumentError, [&](std::stringstream& s) {
+                        s << "Resource id " << resourceId << " out of range";
+                    });
+            }
+            else
+            {
+                auto& entry = m_resources[resourceId];
+                if (entry.m_state == ResourceEntry::State::Constructing)
+                {
+                    entry.m_freePending = true;
+                }
+                else if (entry.m_state == ResourceEntry::State::Live)
+                {
+                    if (entry.m_refCount == 0)
+                    {
+                        entry.m_state = ResourceEntry::State::Destroying;
+                        scheduleResourceDestroy(resourceId);
+                    }
+                    else
+                    {
+                        entry.m_freePending = true;
+                    }
+                }
+            }
         }
         else if (msg == "/engine/realtime-memory/statistics")
         {
-            class CommandRealtimeMemoryStatistics
-            {
-            public:
-                CommandRealtimeMemoryStatistics(
-                    Methcla_RequestId                  requestId,
-                    const RTMemoryManager::Statistics& stats)
-                : m_requestId(requestId)
-                , m_stats(stats)
-                {}
-
-                void perform(Environment* env)
-                {
-                    static const char* address =
-                        "/engine/realtime-memory/statistics";
-                    OSCPP::Client::DynamicPacket packet(
-                        OSCPP::Size::message(address, 2) +
-                        OSCPP::Size::int32(2));
-                    packet.openMessage(address, 2);
-                    packet.int32(static_cast<int32_t>(m_stats.freeNumBytes));
-                    packet.int32(static_cast<int32_t>(m_stats.usedNumBytes));
-                    packet.closeMessage();
-                    env->reply(m_requestId, packet);
-                    env->sendFromWorker(perform_rt_free, this);
-                }
-
-            private:
-                Methcla_RequestId           m_requestId;
-                RTMemoryManager::Statistics m_stats;
-            };
-
-            const Methcla_RequestId     requestId = args.int32();
-            RTMemoryManager::Statistics stats(rtMem().statistics());
-            sendToWorker<CommandRealtimeMemoryStatistics>(requestId, stats);
+            const Methcla_RequestId requestId = args.int32();
+            sendToWorker<RTMemoryStatisticsCommand>(requestId,
+                                                    rtMem().statistics());
         }
     }
     catch (std::exception& e)
@@ -762,6 +1011,153 @@ void EnvironmentImpl::registerSynthDef(const Methcla_SynthDef* def)
 {
     auto synthDef = std::make_shared<SynthDef>(def);
     m_synthDefs[synthDef->uri()] = synthDef;
+}
+
+void EnvironmentImpl::registerResourceDef(const Methcla_ResourceDef* def)
+{
+    m_resourceDefs[def->uri] = def;
+}
+
+void EnvironmentImpl::notifyResourceReady(int32_t resourceId)
+{
+    sendToWorker<ResourceReadyNotification>(resourceId);
+}
+
+void EnvironmentImpl::scheduleResourceDestroy(int32_t resourceId)
+{
+    auto& entry = m_resources[resourceId];
+    sendToWorker<ResourceDestroyCommand>(this, resourceId, entry.m_def,
+                                         entry.m_data);
+}
+
+void* EnvironmentImpl::acquireResource(int32_t     resourceId,
+                                       const char* expectedUri)
+{
+    if (resourceId < 0 || static_cast<size_t>(resourceId) >= m_resources.size())
+        return nullptr;
+
+    auto& entry = m_resources[resourceId];
+    if (entry.m_state != ResourceEntry::State::Live)
+        return nullptr;
+    assert(entry.m_def != nullptr);
+    if (expectedUri == nullptr ||
+        std::strcmp(entry.m_def->uri, expectedUri) != 0)
+        return nullptr;
+
+    entry.m_refCount++;
+    return entry.m_data;
+}
+
+void EnvironmentImpl::releaseResource(int32_t resourceId)
+{
+    assert(resourceId >= 0 &&
+           static_cast<size_t>(resourceId) < m_resources.size());
+    auto& entry = m_resources[resourceId];
+    assert(entry.m_refCount > 0);
+    entry.m_refCount--;
+    if (entry.m_refCount == 0 && entry.m_freePending &&
+        entry.m_state == ResourceEntry::State::Live)
+    {
+        entry.m_state = ResourceEntry::State::Destroying;
+        scheduleResourceDestroy(resourceId);
+    }
+}
+
+namespace {
+
+    // Command state for perform_with_resources. Allocated in RT memory at
+    // dispatch time with two trailing flexible arrays — ids and resolved
+    // resource pointers — so the caller's id buffer need not outlive the
+    // dispatch. NRT callback runs on a worker thread; release of all ids
+    // happens back on RT before freeing.
+    class PerformWithResourcesCommand
+    {
+    public:
+        // Allocate, RT-acquire each listed resource, and schedule the NRT
+        // callback. On any acquire failure releases the already-acquired
+        // resources, frees the allocation, and returns without dispatching.
+        static void dispatch(EnvironmentImpl*          impl,
+                             const Methcla_ResourceId* ids, size_t numIds,
+                             Methcla_PerformWithResourcesFunction perform,
+                             void*                                userData)
+        {
+            void* mem = impl->rtMem().alloc(sizeFor(numIds));
+            auto* self = static_cast<PerformWithResourcesCommand*>(mem);
+            self->m_impl = impl;
+            self->m_perform = perform;
+            self->m_userData = userData;
+            self->m_numIds = numIds;
+
+            for (size_t i = 0; i < numIds; ++i)
+            {
+                auto& resources = impl->m_resources;
+                if (ids[i] < 0 ||
+                    static_cast<size_t>(ids[i]) >= resources.size() ||
+                    resources[ids[i]].m_state !=
+                        EnvironmentImpl::ResourceEntry::State::Live)
+                {
+                    for (size_t j = 0; j < i; ++j)
+                        impl->releaseResource(self->idsArray()[j]);
+                    impl->rtMem().free(self);
+                    return;
+                }
+                resources[ids[i]].m_refCount++;
+                self->idsArray()[i] = ids[i];
+                self->resourcesArray()[i] = resources[ids[i]].m_data;
+            }
+
+            impl->sendToWorker(runOnNRT, self);
+        }
+
+    private:
+        static size_t sizeFor(size_t n)
+        {
+            return sizeof(PerformWithResourcesCommand) +
+                   n * sizeof(Methcla_ResourceId) +
+                   n * sizeof(Methcla_Resource*);
+        }
+
+        Methcla_ResourceId* idsArray()
+        {
+            return reinterpret_cast<Methcla_ResourceId*>(this + 1);
+        }
+
+        Methcla_Resource** resourcesArray()
+        {
+            return reinterpret_cast<Methcla_Resource**>(idsArray() + m_numIds);
+        }
+
+        static void runOnNRT(Environment* env, void* data)
+        {
+            auto*        self = static_cast<PerformWithResourcesCommand*>(data);
+            Methcla_Host host(*env);
+            self->m_perform(&host, self->resourcesArray(), self->m_numIds,
+                            self->m_userData);
+            env->sendFromWorker(completeOnRT, self);
+        }
+
+        static void completeOnRT(Environment* env, void* data)
+        {
+            auto* self = static_cast<PerformWithResourcesCommand*>(data);
+            for (size_t i = 0; i < self->m_numIds; ++i)
+                self->m_impl->releaseResource(self->idsArray()[i]);
+            env->rtMem().free(self);
+        }
+
+        EnvironmentImpl*                     m_impl;
+        Methcla_PerformWithResourcesFunction m_perform;
+        void*                                m_userData;
+        size_t                               m_numIds;
+    };
+
+} // namespace
+
+void EnvironmentImpl::performWithResources(
+    const Methcla_ResourceId* ids, size_t numIds,
+    Methcla_PerformWithResourcesFunction perform, void* userData)
+{
+    assert(perform != nullptr);
+    PerformWithResourcesCommand::dispatch(this, ids, numIds, perform, userData);
 }
 
 const std::shared_ptr<SynthDef>&
